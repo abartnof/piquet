@@ -516,10 +516,36 @@ insight of the design.
 
 ### 6.1 Play phase — exact search
 
-Enumerate the consistent opponent hands (455 or fewer for elder, 6,188 or
-fewer for younger, both usually far smaller after declarations), solve each
-exactly, combine. No learning, no training data, no cloud compute. It is
-solved because it is small.
+Enumerate the consistent opponent hands, solve each exactly, combine. No
+learning, no training data, no cloud compute.
+
+**Built, and it works — but not from twelve cards.** Measured in Python, a
+double-dummy solve costs roughly 3.5x more per extra card:
+
+    cards each   4     5     6     7     8     9
+    seconds      0.000 0.001 0.003 0.019 0.028 0.34
+
+Extrapolating puts a full twelve-card solve near twenty seconds, which is far
+too slow to sit in front of. So the agent plays heuristically until **eight
+cards remain** and solves exactly from there. That is not much of a compromise:
+the cards bonus and the capot are decided in the endgame, and the endgame is
+precisely the part a human finds hardest to calculate.
+
+Two things make it affordable. `inference.possible_hands` narrows the
+candidates using cards accounted for, **voids** (a player who failed to follow
+suit holds none of it, permanently), and the declarations — and the median
+number of candidate hands at eight cards is **6**. And all the root moves share
+one transposition table, since their subtrees almost entirely coincide.
+
+Result: **81% and +6.0 points per pair against rung 4** — a larger jump than
+every heuristic rung put together.
+
+Two known limitations, both recorded rather than hidden. The search scores
+trick points, the last trick and the cards bonus but **not a pique**; see
+`solver.pique_is_live`, which identifies when that could matter (only when
+younger declared precisely nothing). And PIMC inherits its classic blind spot:
+it assumes the opponent can also see through the table, so it never sets a trap
+that depends on their ignorance.
 
 ### 6.2 Exchange — Monte Carlo, then regression
 

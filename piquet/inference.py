@@ -1,0 +1,140 @@
+"""Working out what the opponent can possibly hold.
+
+The exact solver needs both hands. We only have one, so this module supplies
+the other -- every hand consistent with what the rules have made public.
+
+Three sources of information, in increasing order of how much they narrow
+things down:
+
+1. **Cards accounted for.** Your hand, your discards, your talon cards, and
+   everything played. What is left is the candidate pool.
+2. **Voids.** A player who failed to follow suit holds none of it, for the rest
+   of the deal. Free, certain, and often decisive.
+3. **The declarations.** Enormously informative -- they cut the candidates by
+   about thirteen-fold on their own (docs/DESIGN.md §4.2).
+"""
+
+from __future__ import annotations
+
+from itertools import combinations
+from typing import Iterator, Optional
+
+from piquet.cards import Hand, Suit
+from piquet.combos import best_point, best_sequence, best_set
+from piquet.observation import View
+from piquet.scoring import Category
+
+__all__ = ["possible_hands", "opponent_hand_size", "known_voids", "opponent_played"]
+
+_BEST = {
+    Category.POINT: best_point,
+    Category.SEQUENCES: best_sequence,
+    Category.SETS: best_set,
+}
+
+
+def opponent_hand_size(view: View) -> int:
+    """How many cards the opponent is holding right now."""
+    remaining = 12 - len(view.tricks)
+    if view.current_trick is not None:
+        remaining -= 1      # they have already led to this trick
+    return max(remaining, 0)
+
+
+def known_voids(view: View) -> set[Suit]:
+    """Suits the opponent has shown they cannot hold.
+
+    Failing to follow suit is a permanent, certain fact -- the cheapest and
+    hardest information in the game.
+    """
+    voids: set[Suit] = set()
+    for trick in view.tricks:
+        if trick.followed is None:
+            continue
+        if trick.leader is view.me and trick.followed.suit is not trick.led.suit:
+            voids.add(trick.led.suit)
+    return voids
+
+
+def opponent_played(view: View) -> Hand:
+    """Every card the opponent has already put on the table."""
+    played = Hand.empty()
+    for trick in (*view.tricks, view.current_trick):
+        if trick is None:
+            continue
+        if trick.leader is not view.me:
+            played = played | Hand.of(trick.led)
+        elif trick.followed is not None:
+            played = played | Hand.of(trick.followed)
+    return played
+
+
+def _consistent_with_declarations(hand: Hand, view: View, played: Hand) -> bool:
+    """Could this hand have produced the declarations that were actually made?
+
+    The check must run against the opponent's **original twelve**, not what is
+    left of them. A quint declared before the play is broken up as soon as one
+    of its cards is led, so testing the remaining cards against the declaration
+    rejects the true hand -- which is what an earlier version did, and why the
+    candidate count went *up* as the deal went on instead of down.
+
+    Assumes the opponent declared honestly and fully. Against one who sinks this
+    is too strict, which is exactly what sinking buys, and why `possible_hands`
+    falls back gracefully.
+    """
+    hand = hand | played
+    for announcement in view.heard:
+        best = _BEST[announcement.category](hand)
+        if best is None or best.key != announcement.key:
+            return False
+    declared = {a.category for a in view.heard}
+    for category, finder in _BEST.items():
+        if category not in declared and finder(hand) is not None:
+            return False
+    return all(combination.is_supported_by(hand) for combination in view.seen)
+
+
+def possible_hands(
+    view: View,
+    limit: Optional[int] = None,
+    use_declarations: bool = True,
+) -> list[Hand]:
+    """Every hand the opponent could be holding, as far as anyone can tell.
+
+    If the declaration filter leaves nothing, it is dropped and the weaker
+    filters are used alone. That happens when the opponent sank something: the
+    concealed hand is genuinely inconsistent with what was said, so believing
+    the declarations would rule out the truth. Falling back is the honest
+    response to being lied to by omission -- and it is exactly the advantage
+    sinking is bought for.
+    """
+    size = opponent_hand_size(view)
+    if size == 0:
+        return [Hand.empty()]
+
+    pool = view.unseen
+    for suit in known_voids(view):
+        pool = pool - pool.in_suit(suit)
+    candidates = list(pool)
+    if len(candidates) < size:
+        return []
+
+    played = opponent_played(view)
+
+    def build(use_declarations: bool) -> Iterator[Hand]:
+        found = 0
+        for combination in combinations(candidates, size):
+            hand = Hand.of(*combination)
+            if use_declarations and not _consistent_with_declarations(
+                hand, view, played
+            ):
+                continue
+            yield hand
+            found += 1
+            if limit is not None and found >= limit:
+                return
+
+    hands = list(build(use_declarations))
+    if not hands and use_declarations:
+        hands = list(build(False))
+    return hands

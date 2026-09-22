@@ -6,8 +6,7 @@
 
 ## Where we are
 
-**Milestones 1–4 complete. 295 tests, ~28s to run, nothing has cost more than a
-few seconds of CPU except one 205-second search.**
+**Milestones 1–5 complete. 314 tests.**
 
 A deal can be dealt, exchanged, declared, played and scored. Four measured rungs
 of opponents exist, with styles and erraticism, and a tournament harness that
@@ -26,15 +25,19 @@ piquet/
   style.py         the third axis, calibrated by measurement
   match.py         running deals; the move log
   tournament.py    mirrored-pair duels, Bradley-Terry ratings
+  inference.py     which hands the opponent can possibly hold
+  solver.py        exact endgame search, and the agent that uses it
 ```
 
-Ratings, anchored on random play: **L1 359, L2 795, L3 847, L4 903.**
+Ratings, anchored on random play: **L1 359, L2 795, L3 847, L4 903.** The
+solver beats L4 by 81% / +6.0 points per mirrored pair — a bigger jump than all
+the heuristic rungs combined.
 
 ## Next action
 
-**Milestone 5 — the exact play-phase solver.** Now de-risked: the world count
-after declarations is a median of 21 (measured, `docs/DESIGN.md` §4.2), so
-enumeration is cheap enough to run while somebody waits.
+**Milestone 6 — the partie.** Six deals, alternating dealer, rubicon settlement.
+See the first TODO item: it is the largest thing still missing, and it unblocks
+both the rubicon endgame and the fourth style dimension.
 
 ## Settled decisions
 
@@ -60,7 +63,7 @@ enumeration is cheap enough to run while somebody waits.
 - [x] 2. `rules` + `scoring` — phase machine, event log, pique/repique
 - [x] 3. Random agent, statistical invariants, move log from the first deal
 - [x] 4. Heuristic ladder, styles, Elo harness with mirrored pairs
-- [ ] 5. **Exact play solver**; ladder rung for it
+- [x] 5. **Exact endgame solver** + inference; rung 5 (81%, +6.0 pts over L4)
 - [ ] 6. **The partie** — six deals, alternating deal, rubicon settlement
 - [ ] 7. **Terminal UI**; skill and erratic controls; a playable game
 - [ ] 8. Exchange policy — *runtime and cost agreed with Andrew first*
@@ -118,6 +121,7 @@ conviction first:
 | Carte blanche is 1 in 1,792 deals | 1 in 1,792 **hands**; 1 in ~896 deals |
 | Elder's advantage is structural | Only if he **uses** the full exchange: 52.5% vs 49.6% |
 | Keeping guards is a skill | Loses on every seed — piquet pays for tempo, not defence |
+| Cashing an ace beats ducking | Ducking wins: the ace takes the *last* trick, worth two |
 | The style dimensions are EV-neutral | None were, before calibration |
 
 And two methodological ones:
