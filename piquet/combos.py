@@ -65,6 +65,17 @@ class Point:
         """Length first, then pip value -- the order ties are broken in."""
         return (self.length, self.pip_value)
 
+    def is_supported_by(self, hand: Hand) -> bool:
+        """True if the hand can actually show this point.
+
+        An understated point -- "five spades" while holding six -- is supported
+        when the top cards of that suit add up to the value claimed.
+        """
+        ranks = hand.ranks_in(self.suit)
+        if self.length < 1 or len(ranks) < self.length:
+            return False
+        return sum(r.pip_value for r in ranks[: self.length]) == self.pip_value
+
     def __str__(self) -> str:
         return f"point of {self.length} ({self.pip_value})"
 
@@ -99,6 +110,20 @@ class Sequence:
             6: "sixième", 7: "septième", 8: "huitième",
         }[self.length]
 
+    def is_supported_by(self, hand: Hand) -> bool:
+        """True if the hand holds this exact run.
+
+        An understated sequence -- a tierce to the knave out of a quart to the
+        knave -- is supported, because the shorter run really is in the hand.
+        """
+        if not MINIMUM_SEQUENCE <= self.length <= 8:
+            return False
+        lowest = self.top - self.length + 1
+        if lowest < Rank.SEVEN:
+            return False
+        held = set(hand.ranks_in(self.suit))
+        return all(Rank(r) in held for r in range(lowest, self.top + 1))
+
     def __str__(self) -> str:
         return f"{self.name} to the {self.top.name.lower()}"
 
@@ -125,6 +150,18 @@ class CardSet:
     @property
     def name(self) -> str:
         return "quatorze" if self.count == 4 else "trio"
+
+    def is_supported_by(self, hand: Hand) -> bool:
+        """True if the hand holds at least this many of the rank.
+
+        A quatorze may be understated as a trio, which is one of Cavendish's
+        examples of sinking.
+        """
+        if not self.rank.counts_for_set:
+            return False
+        if not MINIMUM_SET <= self.count <= 4:
+            return False
+        return hand.count_of(self.rank) >= self.count
 
     def __str__(self) -> str:
         return f"{self.name} of {self.rank.name.lower()}s"

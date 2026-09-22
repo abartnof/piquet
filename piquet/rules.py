@@ -16,15 +16,32 @@ Clubs* (1892). See docs/PIQUET.md for the rules in prose.
 from __future__ import annotations
 
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Optional, Sequence
+from typing import Optional, Sequence as TypingSequence, Union
 
 from piquet.cards import Card, Hand, full_deck
-from piquet.combos import is_carte_blanche
+from piquet.combos import (
+    CardSet,
+    Comparison,
+    Point,
+    Sequence,
+    best_point,
+    compare_point,
+    compare_sequence,
+    compare_set,
+    is_carte_blanche,
+    sequences,
+    sets,
+)
 from piquet.scoring import Category, Player, ScoreLog
 
-__all__ = ["Phase", "Deal", "deal_from", "deal_shuffled", "CARTE_BLANCHE_SCORE"]
+__all__ = [
+    "Phase", "Deal", "Declaration", "CategoryResult",
+    "deal_from", "deal_shuffled", "CARTE_BLANCHE_SCORE",
+]
+
+Combination = Union[Point, Sequence, CardSet]
 
 HAND_SIZE = 12
 TALON_SIZE = 8
@@ -44,6 +61,149 @@ class Phase(Enum):
     COMPLETE = "complete"
 
 
+
+#: Which declaration each phase is contesting.
+_PHASE_CATEGORY = {
+    Phase.DECLARE_POINT: Category.POINT,
+    Phase.DECLARE_SEQUENCES: Category.SEQUENCES,
+    Phase.DECLARE_SETS: Category.SETS,
+}
+
+_NEXT_PHASE = {
+    Phase.DECLARE_POINT: Phase.DECLARE_SEQUENCES,
+    Phase.DECLARE_SEQUENCES: Phase.DECLARE_SETS,
+    Phase.DECLARE_SETS: Phase.PLAY,
+}
+
+_CATEGORY_TYPE = {
+    Category.POINT: Point,
+    Category.SEQUENCES: Sequence,
+    Category.SETS: CardSet,
+}
+
+_COMPARE = {
+    Category.POINT: compare_point,
+    Category.SEQUENCES: compare_sequence,
+    Category.SETS: compare_set,
+}
+
+
+@dataclass(frozen=True, slots=True)
+class Declaration:
+    """What a player announces in one category.
+
+    A declaration is a set of combinations claimed. The best of them decides
+    who wins the category; if you win, you score all of them.
+
+    Nothing obliges you to announce what you hold. Declaring nothing is a
+    **sink**; declaring less than you hold is also a sink, and Cavendish's
+    examples are all of that partial kind -- "he calls five cards, and declares
+    five spades, when he might have six." What a claim may *not* be is a lie:
+    every claim must be supported by the hand.
+    """
+
+    claims: tuple[Combination, ...] = ()
+
+    @classmethod
+    def sink(cls) -> "Declaration":
+        """Announce nothing, conceding the category to buy silence."""
+        return cls(())
+
+    @classmethod
+    def of(cls, *claims: Combination) -> "Declaration":
+        return cls(tuple(claims))
+
+    @classmethod
+    def full(cls, hand: Hand, category: Category) -> "Declaration":
+        """Announce everything the hand holds in this category."""
+        if category is Category.POINT:
+            point = best_point(hand)
+            return cls((point,) if point is not None else ())
+        if category is Category.SEQUENCES:
+            return cls(sequences(hand))
+        if category is Category.SETS:
+            return cls(sets(hand))
+        raise ValueError(f"{category} is not a declaration category")
+
+    @property
+    def best(self) -> Optional[Combination]:
+        """The claim that decides the category."""
+        return max(self.claims, key=lambda c: c.key) if self.claims else None
+
+    @property
+    def score(self) -> int:
+        """What this declaration is worth *if it wins the category*."""
+        return sum(claim.score for claim in self.claims)
+
+    def __bool__(self) -> bool:
+        return bool(self.claims)
+
+    def validate(self, hand: Hand, category: Category) -> None:
+        """Check the claims are of the right kind, held, and consistent."""
+        if not self.claims:
+            return
+
+        expected = _CATEGORY_TYPE[category]
+        for claim in self.claims:
+            if not isinstance(claim, expected):
+                raise ValueError(
+                    f"{claim} is the wrong category: "
+                    f"{category.name.lower()} was being contested"
+                )
+            if not claim.is_supported_by(hand):
+                raise ValueError(f"not held: {claim}")
+
+        if category is Category.POINT and len(self.claims) > 1:
+            raise ValueError("only one point may be declared")
+        if category is Category.SEQUENCES:
+            suits = [claim.suit for claim in self.claims]
+            if len(set(suits)) != len(suits):
+                raise ValueError(
+                    "two sequences cannot be claimed from the same suit: "
+                    "they would share cards"
+                )
+        if category is Category.SETS:
+            ranks = [claim.rank for claim in self.claims]
+            if len(set(ranks)) != len(ranks):
+                raise ValueError("two sets cannot be claimed of the same rank")
+
+    def __str__(self) -> str:
+        return ", ".join(str(claim) for claim in self.claims) if self.claims else "sunk"
+
+
+@dataclass(frozen=True, slots=True)
+class CategoryResult:
+    """How one category of the dialogue turned out. Kept for the tutor."""
+
+    category: Category
+    elder: Declaration
+    younger: Declaration
+    comparison: Comparison
+
+    @property
+    def winner(self) -> Optional[Player]:
+        if self.comparison is Comparison.BETTER:
+            return Player.ELDER
+        if self.comparison is Comparison.WORSE:
+            return Player.YOUNGER
+        return None
+
+    @property
+    def response(self) -> str:
+        """What younger says in answer to elder's declaration."""
+        return {
+            Comparison.BETTER: "good",
+            Comparison.WORSE: "not good",
+            Comparison.EQUAL: "equal",
+        }[self.comparison]
+
+    def __str__(self) -> str:
+        return (
+            f"{self.category.name.lower()}: elder declares {self.elder}, "
+            f"younger says {self.response}"
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class Deal:
     """One deal, mid-flight. Immutable; every action returns a new `Deal`."""
@@ -54,6 +214,13 @@ class Deal:
     talon_taken: int
     phase: Phase
     log: ScoreLog
+
+    #: Elder's declaration in the category being contested, awaiting younger's.
+    elder_declaration: Optional[Declaration] = None
+    #: How each category turned out, in order. For the tutor and the log.
+    results: tuple[CategoryResult, ...] = ()
+    #: Younger's winnings, withheld until elder has led to the first trick.
+    younger_pending: tuple[tuple[int, Category, str], ...] = ()
 
     # -- reading ----------------------------------------------------------
 
@@ -71,6 +238,25 @@ class Deal:
     @property
     def talon_untaken(self) -> tuple[Card, ...]:
         return self.talon[self.talon_taken:]
+
+    @property
+    def to_declare(self) -> Optional[Player]:
+        """Whose turn it is to declare, if the deal is in the dialogue.
+
+        Elder always speaks first in each category; younger answers.
+        """
+        if self.phase not in _PHASE_CATEGORY:
+            return None
+        return Player.ELDER if self.elder_declaration is None else Player.YOUNGER
+
+    @property
+    def pending_for_younger(self) -> int:
+        """What younger has won but not yet scored.
+
+        She scores nothing until elder has led to the first trick, which is the
+        whole reason only elder can ever score a pique.
+        """
+        return sum(amount for amount, _, _ in self.younger_pending)
 
     def exchange_limit(self, player: Player) -> int:
         """The most cards this player may exchange, right now.
@@ -140,6 +326,52 @@ class Deal:
             log=self.log,
         )
 
+    # -- the declaration dialogue -----------------------------------------
+
+    def declare(self, player: Player, declaration: Declaration) -> Deal:
+        """Announce a declaration in the category currently being contested.
+
+        Elder speaks first and scores at once if he wins. Younger answers, and
+        her winnings are withheld until elder has led to the first trick.
+        """
+        category = _PHASE_CATEGORY.get(self.phase)
+        if category is None:
+            raise ValueError(
+                f"nothing is being declared: the deal is at {self.phase.value}"
+            )
+        if player is not self.to_declare:
+            raise ValueError(
+                f"{player} cannot declare out of turn: "
+                f"{self.to_declare} is to speak in {category.name.lower()}"
+            )
+
+        declaration.validate(self.hand_of(player), category)
+
+        if player is Player.ELDER:
+            return replace(self, elder_declaration=declaration)
+
+        elder_declaration = self.elder_declaration or Declaration.sink()
+        comparison = _COMPARE[category](elder_declaration.best, declaration.best)
+        result = CategoryResult(category, elder_declaration, declaration, comparison)
+
+        log = self.log
+        pending = self.younger_pending
+        if result.winner is Player.ELDER:
+            log = log.record(
+                Player.ELDER, elder_declaration.score, category, str(elder_declaration)
+            )
+        elif result.winner is Player.YOUNGER:
+            pending = pending + ((declaration.score, category, str(declaration)),)
+
+        return replace(
+            self,
+            phase=_NEXT_PHASE[self.phase],
+            elder_declaration=None,
+            results=self.results + (result,),
+            log=log,
+            younger_pending=pending,
+        )
+
 
 def _replace_at(pair: tuple[Hand, Hand], index: int, value: Hand) -> tuple[Hand, Hand]:
     return (value, pair[1]) if index == 0 else (pair[0], value)
@@ -150,7 +382,7 @@ def _replace_at(pair: tuple[Hand, Hand], index: int, value: Hand) -> tuple[Hand,
 # --------------------------------------------------------------------------
 
 
-def deal_from(cards: Sequence[Card]) -> Deal:
+def deal_from(cards: TypingSequence[Card]) -> Deal:
     """Deal from an explicit ordering of the pack.
 
     The first twelve cards go to elder, the next twelve to younger, and the
