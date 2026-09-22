@@ -18,3 +18,7 @@ include = ["piquet*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+# Statistical tests play thousands of deals. They run by default -- they have
+# caught more real bugs than the unit tests have -- but `pytest -m "not slow"`
+# gives a fast loop while iterating.
+markers = ["slow: plays many deals; seconds rather than milliseconds"]

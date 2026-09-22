@@ -28,12 +28,14 @@ def R(rng):
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_a_duel_plays_every_deal_from_both_seats():
     result = duel(L(2), L(1), 40, random.Random(1674))
     assert result.pairs == 40
     assert result.a_wins + result.b_wins + result.drawn == 40
 
 
+@pytest.mark.slow
 def test_two_identical_agents_are_evenly_matched():
     """The sharpest check that the mirroring works: the same agent playing
     itself must come out level, because elder's advantage cancels."""
@@ -42,12 +44,14 @@ def test_two_identical_agents_are_evenly_matched():
     assert abs(result.margin) < 1.0
 
 
+@pytest.mark.slow
 def test_the_same_seed_gives_the_same_answer():
     a = duel(L(2), L(1), 60, random.Random(7))
     b = duel(L(2), L(1), 60, random.Random(7))
     assert a == b
 
 
+@pytest.mark.slow
 def test_a_duel_reports_both_a_win_rate_and_a_points_margin():
     """Win rate is coarse -- a deal won by one point counts the same as a
     capot -- so the margin is the finer instrument."""
@@ -56,6 +60,7 @@ def test_a_duel_reports_both_a_win_rate_and_a_points_margin():
     assert result.margin > 10
 
 
+@pytest.mark.slow
 def test_draws_count_as_half():
     result = DuelResult("a", "b", pairs=10, a_wins=4, b_wins=4, drawn=2,
                         a_points=0, b_points=0)
@@ -67,7 +72,9 @@ def test_draws_count_as_half():
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("level", range(2, MAX_LEVEL + 1))
+@pytest.mark.slow
 def test_every_rung_beats_the_one_below_it(level):
     """The ladder's whole claim. Two proposed rungs were deleted for failing
     this: one that kept guards, and one that judged cards probably-good rather
@@ -77,6 +84,7 @@ def test_every_rung_beats_the_one_below_it(level):
     assert result.margin > 0
 
 
+@pytest.mark.slow
 def test_the_bottom_rung_still_crushes_random_play():
     result = duel(L(1), R, 200, random.Random(1674))
     assert result.a_win_rate > 0.8
@@ -87,6 +95,7 @@ def test_the_bottom_rung_still_crushes_random_play():
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_ratings_order_the_ladder_correctly():
     results = round_robin([R, L(1), L(2), L(4)], 120, random.Random(1674))
     table = ratings(results, anchor="random")
@@ -94,6 +103,7 @@ def test_ratings_order_the_ladder_correctly():
     assert table["L1"] < table["L2"] < table["L4"]
 
 
+@pytest.mark.slow
 def test_ratings_do_not_depend_on_the_order_games_were_played():
     """Bradley-Terry is fitted over the whole round robin. Sequential Elo
     updates would give a different answer depending on who met whom first."""
@@ -104,6 +114,7 @@ def test_ratings_do_not_depend_on_the_order_games_were_played():
         assert forward[name] == pytest.approx(backward[name], abs=1e-6)
 
 
+@pytest.mark.slow
 def test_a_table_can_be_printed():
     results = round_robin([R, L(2)], 40, random.Random(1674))
     text = format_table(results, anchor="random")
@@ -115,7 +126,9 @@ def test_a_table_can_be_printed():
 # --------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize("dimension", sorted(CALIBRATED))
+@pytest.mark.slow
 def test_no_calibrated_style_costs_as_much_as_a_rung(dimension):
     """A style that reliably loses is not a style, it is a lower rung wearing a
     hat. The calibrated bands are chosen by measurement so that the extremes

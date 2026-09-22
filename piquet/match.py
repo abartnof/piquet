@@ -15,7 +15,7 @@ from typing import Iterable, Optional
 
 from piquet.agents import Agent
 from piquet.observation import view_for
-from piquet.rules import Deal, Phase, deal_shuffled
+from piquet.rules import Deal, Declaration, Phase, deal_shuffled
 from piquet.scoring import Category, Player
 
 __all__ = ["Decision", "DealRecord", "play_deal", "play_deals", "write_jsonl"]
@@ -23,7 +23,14 @@ __all__ = ["Decision", "DealRecord", "play_deal", "play_deals", "write_jsonl"]
 
 @dataclass(frozen=True, slots=True)
 class Decision:
-    """One choice by one agent, with the alternatives it had."""
+    """One choice by one agent, and what it could have done instead.
+
+    `options` is recorded only where the alternatives are genuinely enumerable,
+    which in practice means the play. An earlier version filled it in for every
+    phase and meant something different by it each time -- the exchange limit,
+    a hard-coded 2, and a real count -- which would have quietly poisoned the
+    very analysis this log exists for.
+    """
 
     ply: int
     player: str
@@ -31,8 +38,15 @@ class Decision:
     agent: str
     hand: str
     choice: str
-    #: How many options were available. A choice among one is not a decision.
-    options: int
+    #: Legal alternatives, where they can be counted. A choice among one is not
+    #: a decision. None where the space is not enumerable: the exchange has
+    #: thousands of possible discards, and a declaration may be understated to
+    #: any smaller holding.
+    options: Optional[int] = None
+    #: Points the player could have declared and did not. This is the cost side
+    #: of sinking, and the signal to look for when asking later whether
+    #: concealment ever paid.
+    forgone: Optional[int] = None
 
 
 @dataclass(slots=True)
@@ -77,7 +91,7 @@ def play_deal(
     agents = {Player.ELDER: elder, Player.YOUNGER: younger}
     ply = 0
 
-    def note(player: Player, choice: str, options: int, view) -> None:
+    def note(player: Player, choice: str, view, **extra) -> None:
         nonlocal ply
         ply += 1
         if record is not None:
@@ -89,14 +103,14 @@ def play_deal(
                     agent=agents[player].name,
                     hand=view.hand.code,
                     choice=choice,
-                    options=options,
+                    **extra,
                 )
             )
 
     for player in (Player.ELDER, Player.YOUNGER):
         view = view_for(deal, player)
         discard = agents[player].exchange(view)
-        note(player, discard.code, view.exchange_limit, view)
+        note(player, discard.code, view)
         deal = deal.exchange(player, discard)
 
     while deal.to_declare is not None:
@@ -104,14 +118,16 @@ def play_deal(
         category = deal.declaring_category
         view = view_for(deal, player)
         declaration = agents[player].declare(view, category)
-        note(player, str(declaration), 2, view)
+        available = Declaration.full(view.hand, category).score
+        note(player, str(declaration), view,
+             forgone=available - declaration.score)
         deal = deal.declare(player, declaration)
 
     while deal.phase is Phase.PLAY:
         player = deal.to_play
         view = view_for(deal, player)
         card = agents[player].play(view)
-        note(player, card.code, len(view.legal_plays), view)
+        note(player, card.code, view, options=len(view.legal_plays))
         deal = deal.play(player, card)
 
     if record is not None:

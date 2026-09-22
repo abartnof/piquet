@@ -137,5 +137,13 @@ And two methodological ones:
 - `observation.py` is the module most likely to be got subtly wrong. It has
   already leaked once — `View.results` handed over the opponent's full
   declarations including suits. Treat every addition to `View` with suspicion.
+- **`View` will need partie context** — the running scores and how many deals
+  remain — before an agent can play the rubicon endgame or express the
+  *rubicon nerve* style. Deliberately not built yet: designing an interface for
+  something that does not exist is how speculative generality gets in. It goes
+  in with the partie, in one edit, rather than being guessed at now.
+- Tests: `pytest -m "not slow"` runs in ~6s for a tight loop; the full suite is
+  ~28s. The slow ones are the statistical tests, and they have caught more real
+  bugs than the unit tests, so they stay in the default run.
 - Re-measure `style.CALIBRATED` whenever the ladder changes. What counts as a
   near-equal option depends on how well the agent plays.
