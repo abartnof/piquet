@@ -9,7 +9,13 @@
 **Phase: design complete, no code written yet.**
 
 Done:
-- Rules researched across four sources and reconciled (`docs/DESIGN.md` §3).
+- Rules researched across **twenty sources, nine of them period texts read in
+  full** (`docs/LITERATURE.md`), and reconciled in `docs/DESIGN.md` §3.
+- `docs/PIQUET.md` written: an encyclopedic account of the game's history,
+  rules, strategy and terminology, synthesised from the whole reading. Doubles
+  as source material for the training mode.
+- **All open rule questions closed**, every one in pagat's favour, most of them
+  by Cavendish's Portland Club laws (1892).
 - Combinatorics settled: the whole game is not tabular, but the play phase is
   nearly perfect-information and exactly solvable (§4). This is the finding the
   whole AI design rests on.
@@ -49,6 +55,8 @@ Next action: **Milestone 1 — `cards.py` and `combos.py`, TDD.**
 
 ## Open questions for Andrew
 
+0. **Rules research is complete** unless you want more. Every conflict is
+   resolved and documented; further reading is unlikely to change a decision.
 1. **Milestone 1 scope** — start with `cards`/`combos`, or go straight at the
    rules state machine? Recommendation: `cards`/`combos` first, they are pure
    functions and everything else depends on them.

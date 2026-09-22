@@ -109,8 +109,9 @@ or that scored nothing because of equality.
 
 ### 3.5 The play
 
-12 tricks, no trumps, must follow suit. 1 point for leading a card, 1 more
-for winning a card the opponent led, 1 for the last trick. **10 for cards**
+12 tricks, no trumps, must follow suit. Per Cavendish Law 65, each player
+scores **1 for every card he leads, and 1 for every trick he wins with the
+second card**; the winner of the **last trick scores 2 instead of 1**. **10 for cards**
 (winning most tricks; nothing at 6–6), or **40 for capot** (all 12).
 
 ### 3.6 Pique and repique
@@ -146,16 +147,17 @@ Sources consulted, roughly in order of trustworthiness:
 | **fr.wikipedia.org**, **de.wikipedia.org** | Good for terminology and history; both describe materially different continental rules (§3.9) |
 | **cardgameheaven.com** | Adequate |
 | **whiteknucklecards.com** | Mixed — it imports genuine *older* rules into a modern description. Not wrong so much as chronologically confused (§3.9) |
+| **Cavendish, *The Laws of Piquet* (1892/96)** | **The club laws themselves** — the authority every modern source descends from. Decisive where cited |
 | **britannica.com** | Very high — the piquet entry is **written by David Parlett**, and describes rubicon piquet specifically. Retrieved manually after the site refused automated access |
 | CMU medieval text | A different, older game (§3.8) |
 
 | # | Question | pagat | Other sources | Decision |
 |---|---|---|---|---|
-| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks, Parlett, and **Cotton 1674 decisively** (§3.11). **Yes**: en-Wikipedia, cardgameheaven | **No — considered settled.** Cotton gives the reckoning order explicitly and puts the cards won dead last, after play points. Flag kept for configurability, not because of doubt |
+| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Cavendish (decisive), Cotton 1674, Wikibooks, Parlett. **Yes**: en-Wikipedia, cardgameheaven | **No — closed.** Cavendish Law 67 puts "the cards" in category VI, after points made in play; Law 69 spells out the consequence: "A capot reckons after points made in play; and, therefore, does not count toward a pique." Law 66 makes capot and the ten for cards the same score. Flag kept for configurability only |
 | R2 | Minimum length for *point*? | None | Only en-Wikipedia claims 4; everyone else, none | **No minimum** |
-| R3 | Must *younger* exchange at least one card? | **Yes** | Britannica (Parlett) says younger "need not exchange any"; cardgameheaven agrees. But **Cotton 1674 is explicit the other way**: "let the Game be never so good the Gamesters are **both obliged to discard one Card at least**" | **Yes, at least one.** pagat agrees with the oldest source; the permissive rule looks like a later relaxation. Flag retained |
-| R4 | **Carte rouge**? | Not mentioned | Values vary wildly: 10, 20, 40, or 50. Parlett defines it as *every card participating in some scoring combination* | **Off by default**, behind a flag. The definition itself is unstable, which is reason enough to leave it out of v1 |
-| R5 | Last trick worth? | **1** | Wikibooks 1; fr-Wikipedia 2; de-Wikipedia 3 (1 under Portland Club); en-Wikipedia notes a 10 variant | **1** |
+| R3 | Must *younger* exchange at least one card? | **Yes** | **The conflict was never a conflict.** Cavendish Law 22 (*Piquet*): younger "is obliged to discard one card." The same volume's *Laws of Piquet au Cent*: younger "is **not** obliged to discard any card." Cotton 1674 agrees with the former | **Yes, at least one — closed.** Sources saying otherwise imported the au cent rule into a Rubicon description. Flag retained |
+| R4 | **Carte rouge**? | Not mentioned | Values vary wildly: 10, 20, 40, or 50. **Absent from Cavendish entirely** | **Off by default** — it is a continental rule with an unstable value, not part of the English club game |
+| R5 | Last trick worth? | 1 *bonus* | Cavendish Law 65: "The winner of the last trick scores **two** instead of one." fr-Wikipedia agrees (2 total); de-Wikipedia says 3 | **2 to its winner** — i.e. the normal 1 plus a bonus of 1. pagat's "one additional point" says the same thing; our earlier reading of this as a flat 1 was an ambiguity, not a conflict |
 | R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
 | R7 | Scoring system | Rubicon, 6 deals | Parlett distinguishes Rubicon from basic "Saunt" (race to 100) | **Rubicon** |
 
@@ -487,6 +489,14 @@ Sinking a quint trades 15 points for five cards' worth of secrecy, and the
 correct answer is a *mixed* strategy — sink this hand some percentage of the
 time — because every deterministic rule is exploitable once read.
 
+**The action space is larger than "declare or conceal."** Cavendish's examples
+of sinking are all *partial*: declaring five spades while holding six, calling a
+tierce to the knave while holding a quart to the knave, calling a trio while
+holding a quatorze. A player may declare **any value at or below what he
+actually holds**. This materially enlarges the CFR action space and makes the
+subgame considerably more interesting — under-declaring is a graded bluff, not a
+binary one. Any earlier design note treating sinking as a boolean is wrong.
+
 CFR plays itself, accumulates regret for actions not taken, plays
 proportionally to positive regret, and its *average* strategy provably
 converges to a Nash equilibrium in two-player zero-sum games. It is
@@ -537,6 +547,12 @@ This unifies the opponent and the tutor: the ladder *is* the curriculum, and
 the game can tell the player what changed ("level 5 opponents will use your
 declarations against you"). It also makes the opponent's weaknesses
 human-shaped, so beating a level-4 bot teaches something real.
+
+Cavendish supports this directly: his treatise contains a section titled *Habit
+of Adversary*, and his worked example of detecting a sink begins "your adversary
+is a player who rarely discards from his point." Modelling the opponent as a
+*person with habits* is how the game's own authority taught it, not a modern
+imposition — which is good warrant for both the ladder and the control below.
 
 **Erraticism** is then a separate, orthogonal control: the effective level
 is drawn *per decision* from a distribution centred on the slider, with
