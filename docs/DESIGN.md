@@ -389,6 +389,13 @@ Two things this vindicates. Hoyle's arithmetic, obviously -- but also the
 decision to build the engine before trusting our own reasoning about the game.
 The 153 figure felt right and was confidently written down.
 
+That 57 is the true maximum is *argued*, not proved: a hill-climb gives a lower
+bound on a maximum, never an upper one. The argument is that three quatorzes
+consume all twelve cards for 42 points, leaving each suit exactly three cards,
+which at consecutive ranks are four tierces; spending cards on anything else
+buys less than it costs. Corroborated by hill-climbing from 5,000 random hands,
+which never exceeded 57.
+
 ## 4. What the mathematics actually says
 
 The user's opening hypothesis was that Piquet is a large but bounded set of

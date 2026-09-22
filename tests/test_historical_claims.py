@@ -58,8 +58,8 @@ def test_no_hand_found_declares_better_than_fifty_seven():
     quatorzes plus a sixieme reaches only 50, and maximising length instead
     (a point of eight, a huitieme, a quatorze) reaches 40.
 
-    A separate run of 400 restarts, too slow for the suite, reached 57 and
-    never exceeded it. See docs/DESIGN.md section 3.11.
+    A separate run of 5,000 restarts (205 seconds, too slow for the suite)
+    reached 57 and never exceeded it. See docs/DESIGN.md section 3.11.
     """
     deck = list(full_deck())
     rng = random.Random(1744)

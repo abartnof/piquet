@@ -8,6 +8,11 @@
 
 **Phase: Milestone 3 complete. Agents play deals; every decision is logged.**
 
+The engine now reproduces Hoyle's 1744 maximum deal score of 170 exactly, in a
+fully legal deal. Doing so corrected our own figure of 153: the best declaring
+hand maximises *sets*, not length — ace, king and queen in every suit declares
+57. See `docs/DESIGN.md` §3.11.
+
 Done:
 - Rules researched across **twenty sources, nine of them period texts read in
   full** (`docs/LITERATURE.md`), and reconciled in `docs/DESIGN.md` §3.
@@ -76,8 +81,13 @@ more than a few seconds of CPU.
   conversation over speed, and wants to be consulted before any expensive
   training run, with a runtime and cost estimate in hand.
 - The single most load-bearing claim in the design is §4.2: elder faces at most
-  C(15,12)=455 possible opponent hands, younger at most C(17,12)=6,188, and both
-  collapse much further after the declaration dialogue. **Verify this
-  empirically at Milestone 5.** If it is wrong, §6.1 needs rethinking.
+  C(15,12)=455 possible opponent hands, younger at most C(17,12)=6,188. **Now
+  verified** — `tests/test_observation.py` asserts both, and elder's unseen count
+  is 15 whatever size exchange he makes. The further collapse after the
+  declaration dialogue is still to be measured, at Milestone 5.
+- Two of our own confident assertions have now been overturned by the engine:
+  the maximum deal score (153 → 170) and the carte blanche frequency (per hand,
+  not per deal). Both were written down with conviction. Prefer measuring to
+  reasoning wherever a measurement is cheap.
 - `observation.py` is the module most likely to be got subtly wrong, and a leak
   there invalidates every measurement. Treat it with suspicion.
