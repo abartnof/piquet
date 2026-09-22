@@ -146,8 +146,25 @@ and the candidate count goes from a median of **4 to 45**. That is concealment
 doing exactly what Cavendish says it does.
 
 It also means the earlier verdict that "sinking costs points at every setting"
-was measured against opponents that *do not use inference at all*. Rung 5 does.
-Whether sinking finally pays against it is an open question and a good one.
+was measured against opponents that do not use inference at all. Rung 5 does —
+so the question was whether sinking finally pays against it.
+
+**Measured: it still does not.** Two rung-5 solvers over the same deals, one
+concealing 60% of its cheap declarations and one declaring everything:
+
+    conceals vs open: 33.3%, margin -6.1 points per pair
+
+So concealment demonstrably damages the opponent's inference — elevenfold — and
+still loses heavily. The reason is that our sinking is **untargeted**: it hides
+any cheap declaration at random, paying a certain price for a diffuse benefit.
+Cavendish is explicit that the manoeuvre is for particular positions — "it is
+especially resorted to when a player has a suit unguarded, and calling all he
+holds would expose the fact."
+
+That sharpens the open question rather than closing it. It is no longer *does
+concealment have value* — it plainly does — but *can a policy find the positions
+where that value exceeds the points it costs?* Which is exactly what CFR is for,
+and a much better-posed question than the one we started with.
 
 ## Ideas worth considering
 
