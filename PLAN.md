@@ -6,7 +6,7 @@
 
 ## Where we are right now
 
-**Phase: Milestone 2 complete. A full deal can be played end to end.**
+**Phase: Milestone 3 complete. Agents play deals; every decision is logged.**
 
 Done:
 - Rules researched across **twenty sources, nine of them period texts read in
@@ -22,14 +22,11 @@ Done:
 - Architecture, AI approach, skill model, and tutor design written up (§5–§9).
 - Git repository initialised on `main`. Nothing pushed; no remote configured.
 
-Next action: **Milestone 3** — a random agent playing 10,000 legal deals with
-the statistical invariants checked and the move log written from the first game.
+Next action: **Milestone 4** — heuristic agents for ladder rungs 1–5, style
+vectors, and an Elo round-robin harness.
 
-A smoke run of 5,000 random deals already completes with all invariants
-holding. Early figures, from deliberately bad play: elder wins 53% of deals,
-carte blanche appeared 3 times against 2.8 expected, and both bonuses occur —
-105 elder piques, 32 elder repiques, and 16 **younger** repiques, which is the
-observable proof that the category-order derivation is right.
+Throughput is ~1,500 fully played deals per second, so nothing so far has cost
+more than a few seconds of CPU.
 
 ## Settled decisions
 
@@ -44,6 +41,7 @@ observable proof that the category-order derivation is right.
 | Exchange AI | Monte Carlo rollouts, then a fitted regression |
 | Declaration AI | CFR. Built last |
 | Skill model | **Capability ladder** (9 named rungs), not a noise dial |
+| Opponent style | A **third axis**, orthogonal to skill and erraticism: preference among roughly equal-value options. Must be EV-neutral, and **stable for a whole partie** so a human can build a read. Milestone 4 |
 | Erraticism | Effective level drawn per decision from a distribution around the slider |
 | LLM involvement | None in gameplay; optional for phrasing tutor explanations |
 
@@ -51,9 +49,10 @@ observable proof that the category-order derivation is right.
 
 - [x] 1. `cards` + `combos` — representation, detection, comparison (94 tests)
 - [x] 2. `rules` + `scoring` — phase machine, event log, pique/repique (191 tests)
-- [ ] 3. Random agent plays 10,000 legal games; statistical invariants pass;
-         move log written from the first game
-- [ ] 4. Heuristic agents, ladder levels 1–5; Elo round-robin harness
+- [x] 3. Random agent, statistical invariants, move log from the first deal
+         (229 tests; ~1,500 deals/sec)
+- [ ] 4. Heuristic agents, ladder levels 1–5; **style vectors**; Elo round-robin
+         harness (which also validates that styles are EV-neutral)
 - [ ] 5. Exact play solver; verify the 455-world bound empirically; level 7
 - [ ] 6. Playable game, basic UI, skill + erratic controls
 - [ ] 7. Exchange policy — **runtime and cost agreed with Andrew first**

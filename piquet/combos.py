@@ -303,6 +303,7 @@ def is_carte_blanche(hand: Hand) -> bool:
     """True if the hand holds no jack, queen or king.
 
     Worth 10 points. Tens and aces do not deny it. It occurs about once in
-    1,792 deals, and two players can never hold it at once in the 32-card game.
+    1,792 *hands* -- so about once in 896 deals, there being two hands to a
+    deal -- and two players can never hold it at once in the 32-card game.
     """
     return not any(card.rank.is_court for card in hand)

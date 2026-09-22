@@ -291,6 +291,11 @@ class Deal:
         return Player.ELDER if self.elder_declaration is None else Player.YOUNGER
 
     @property
+    def declaring_category(self) -> Optional[Category]:
+        """Which category is being contested, if the deal is in the dialogue."""
+        return _PHASE_CATEGORY.get(self.phase)
+
+    @property
     def pending_for_younger(self) -> int:
         """What younger has won but not yet scored.
 

@@ -62,10 +62,13 @@ opponent has discarded but *before* the holder discards. If elder holds it,
 he first announces how many cards he intends to discard, so younger can
 choose her own discards before seeing elder's hand.
 
-Two facts we can assert as tests: carte blanche occurs once in **1,792**
-deals (C(20,12)/C(32,12) = 5.579e-4, matching Wikipedia's "roughly once
-every 1,800 hands"), and **both players can never hold it simultaneously**
-(that would need 24 non-court cards; only 20 exist).
+Two facts we can assert as tests. Carte blanche occurs once in **1,792
+hands** (C(20,12)/C(32,12) = 5.579e-4, matching Wikipedia's "roughly once
+every 1,800 hands") -- but a deal has *two* hands and they are mutually
+exclusive, so one turns up **somewhere in a deal about once in 896 deals**.
+Our first draft conflated the two, and the statistical harness caught it at
+once by observing 1 in 873. And **both players can never hold it
+simultaneously**: that would need 24 non-court cards, and only 20 exist.
 
 ### 3.3 The exchange
 
@@ -569,6 +572,60 @@ is drawn *per decision* from a distribution centred on the slider, with
 width set by the erratic control. Real players are inconsistent, not
 uniformly bad, so this reads as far more human than epsilon-greedy noise.
 
+### 7.1 Style: a third axis, orthogonal to both
+
+Skill and erraticism are not enough to describe an opponent. There is a third
+thing, and it is genuinely separate rather than a rewording of the other two:
+
+- **Skill** is what the agent is *capable* of -- the ladder above.
+- **Erraticism** is how *consistently* it brings that capability to bear.
+- **Style** is which option it prefers among choices of roughly *equal value*.
+
+That last clause is load-bearing. **A style must be close to EV-neutral.** If a
+"style" reliably loses points it is not a style, it is a lower skill level
+wearing a hat, and the two controls have smeared into each other. This is
+checkable rather than a matter of taste: the Elo round-robin should show two
+styles at the same rung scoring within noise of each other, and if it does not,
+the style parameter is miscalibrated and must be pulled back towards neutral.
+
+The historical sources hand us the dimensions, so we are not inventing
+personality traits:
+
+| Dimension | The judgement it varies |
+|---|---|
+| **Discard boldness** | How readily it wrecks its point chasing a quint. The oldest strategic question in the game -- Hoyle wrote a whole 1744 treatise on it |
+| **Sinking frequency** | How often it conceals. Cavendish's central manoeuvre, with a wide band of defensible answers |
+| **Guard retention** | Whether it hoards stop cards in your long suit or plays for length |
+| **Rubicon nerve** | How much it gambles when trailing late in a partie, where failing to reach 100 is punished far worse than losing narrowly |
+
+**The style vector must be stable.** Draw it once per opponent, at the start of
+a partie, and hold it fixed for the whole match. A style that re-rolls every
+decision is just noise, and noise is what the erraticism control already
+supplies.
+
+Stability is the entire pedagogical payoff, and it comes straight from
+Cavendish. His worked example of spotting a sink opens: *"Your adversary, for
+instance, is a player who rarely discards from his point."* That inference only
+works if the adversary **has** a persistent habit. A randomly-styled but stable
+opponent lets a human build a read across six deals and then exploit it, which
+is precisely the skill Cavendish was teaching and which a single "correct" bot
+would never develop.
+
+Two things come free. It populates the diverse opponent pool of section 6.5 --
+a spread of style vectors is a cheap, principled alternative to a self-play
+monoculture. And it is a *tutor* feature as much as an opponent feature: the
+game can eventually say "this opponent has sunk three declarations in four
+deals; assume they are concealing," teaching the hardest skill in piquet with
+machinery built for other reasons.
+
+Cost is low -- a handful of parameters biasing decisions the agent already
+makes, with no extra search and no extra training. It belongs in **milestone 4**,
+alongside the heuristic agents, because that is the first point at which the
+decision points exist to bias. One caveat: style only becomes meaningful at
+rungs that have real choices to make. A level-1 agent that plays its highest
+card has no room for personality; styles should start to read as distinct
+around rungs 4 to 5 and grow richer up the ladder.
+
 ## 8. Training mode falls out of the engine
 
 Because the §6.1 solver already produces a decomposed evaluation for *every*
@@ -665,7 +722,7 @@ TDD throughout, but three kinds of test deserve naming:
    Hoyle, Foster, Parlett).
 3. **Statistical invariants** over many random deals — the sort of test that
    catches errors unit tests cannot:
-   - carte blanche occurs 1 deal in ~1,792
+   - carte blanche occurs in 1 hand in ~1,792, and so in 1 deal in ~896
    - both players never hold carte blanche
    - elder wins materially more than younger (dealing is a disadvantage)
    - every deal's points reconcile against the event log

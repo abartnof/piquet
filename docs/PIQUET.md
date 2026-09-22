@@ -111,7 +111,8 @@ opponent has discarded but *before* discarding themselves. If elder holds it, he
 first announces how many cards he intends to discard, so that younger can choose
 her own discards before seeing his hand.
 
-Carte blanche occurs about once in **1,792** deals. Two players cannot hold it
+Carte blanche occurs about once in **1,792 hands** -- so, since a deal has
+two hands, about once in 896 deals. Two players cannot hold it
 simultaneously in the 32-card game: that would require twenty-four cards with no
 court among them, and only twenty exist. In Cotton's 36-card game it was
 possible, and younger's blank cancelled elder's pique.
