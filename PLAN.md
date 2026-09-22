@@ -6,7 +6,7 @@
 
 ## Where we are right now
 
-**Phase: design complete, no code written yet.**
+**Phase: Milestone 1 complete. Terminal UI chosen for the first interface.**
 
 Done:
 - Rules researched across **twenty sources, nine of them period texts read in
@@ -22,7 +22,8 @@ Done:
 - Architecture, AI approach, skill model, and tutor design written up (§5–§9).
 - Git repository initialised on `main`. Nothing pushed; no remote configured.
 
-Next action: **Milestone 1 — `cards.py` and `combos.py`, TDD.**
+Next action: **Milestone 2 — `rules.py` and `scoring.py`**: the phase state
+machine, the scoring event log, and pique/repique.
 
 ## Settled decisions
 
@@ -42,7 +43,7 @@ Next action: **Milestone 1 — `cards.py` and `combos.py`, TDD.**
 
 ## Milestones
 
-- [ ] 1. `cards` + `combos` — representation, detection, comparison
+- [x] 1. `cards` + `combos` — representation, detection, comparison (94 tests)
 - [ ] 2. `rules` + `scoring` — phase machine, event log, pique/repique
 - [ ] 3. Random agent plays 10,000 legal games; statistical invariants pass;
          move log written from the first game

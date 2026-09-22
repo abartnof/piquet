@@ -231,6 +231,11 @@ Parlett gives a worked repique: 7 for point, then 15, 4 and 3 for sequences, the
 3 for a trio, making 32 — plus 60, for 92. Had younger held a carte blanche, she
 would have scored first and the repique would have been denied.
 
+The example is arithmetic rather than a real deal: exhaustive search shows no
+twelve-card hand can hold a point of seven, sequences scoring 15, 4 and 3, and a
+trio at once. A point of seven forces a seven-card suit, which leaves the other
+five cards confined to a single suit, and a trio needs three suits.
+
 ## Scoring the partie
 
 Under **rubicon** scoring, all six deals are played out regardless of the running

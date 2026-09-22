@@ -253,6 +253,16 @@ From Britannica (Parlett), usable directly as golden tests:
 for a trio = **32**, plus **60** for repique = **92**. Note this exercises the
 "winner of a category also scores his lesser combinations in it" rule twice.
 
+*Caveat, established with our own engine:* **this is not a constructible
+hand.** A point of 7 forces a seven-card suit; that suit can yield either a
+quart plus a tierce (7 cards, leaving exactly 5 for the quint, which must all
+lie in one other suit) or the quint itself (leaving too few cards for the quart
+and tierce). The first case spans only two suits, so no rank can appear three
+times and the trio is impossible. Verified by exhaustive search over all
+1,360,128 twelve-card hands containing a seven-card suit. Parlett's figure is
+illustrative arithmetic, so use it to test the **scoring rules**, not as a deal
+fixture.
+
 **Repique denied.** In the same hand, had younger declared a blank, the repique
 would be prevented — because carte blanche comes first in the repique ordering,
 so younger would have scored before elder reached 30. A precise, adversarial
