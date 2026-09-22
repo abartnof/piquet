@@ -132,48 +132,87 @@ ordered event log rather than a running total.
 ### 3.7 Rule conflicts across sources
 
 **pagat.com is our authority. Where sources disagree, pagat wins.** The
-disagreements are still recorded here, because each one is a real variant
-someone plays, and most are cheap to put behind a flag.
+disagreements are still recorded, because each is a variant someone plays and
+most are cheap to put behind a flag.
 
-Sources consulted: `pagat.com` (authority), `en.wikipedia.org/wiki/Piquet`,
-`cardgameheaven.com/piquet`, and a period 36-card version hosted at CMU
-(see §3.8).
+Sources consulted, roughly in order of trustworthiness:
 
-| # | Question | pagat (authority) | Others | Decision |
+| Source | Standing |
+|---|---|
+| **pagat.com** | Our authority |
+| **parlettgames.uk** (Parlett, historical rules) | Very high. Codifies the Portland Club game, with Henry Jones ("Cavendish", 1831–99) as principal authority — the same lineage pagat follows |
+| **en.wikibooks.org** | High; unusually precise on edge cases |
+| **en.wikipedia.org** | Good, but conflates variants with the core game |
+| **fr.wikipedia.org**, **de.wikipedia.org** | Good for terminology and history; both describe materially different continental rules (§3.9) |
+| **cardgameheaven.com** | Adequate |
+| **whiteknucklecards.com** | **Unreliable** — see §3.9 |
+| **britannica.com** | Could not be retrieved (HTTP 403) |
+| CMU medieval text | A different, older game (§3.8) |
+
+| # | Question | pagat | Other sources | Decision |
 |---|---|---|---|---|
-| R1 | Do the 10 for *cards* count toward a pique? | **No** | Wikipedia **yes**; cardgameheaven **yes** | **No**, per pagat — but this is 2-against-1, so implement it as a flag and document it loudly |
-| R2 | Minimum length for *point*? | None | Wikipedia says 4; cardgameheaven says none | **No minimum** |
-| R3 | Must *younger* exchange at least one card? | **Yes** | Wikipedia yes; cardgameheaven says she is *not obliged* | **Yes, at least one** |
-| R4 | **Carte rouge** (all 12 cards used in declarations)? | Not mentioned | Wikipedia: 20 points, variants 10/40; cardgameheaven: absent | **Off by default**, behind a flag |
-| R5 | Last trick worth 1 or 10? | 1 | Wikipedia notes a 10 variant | **1** |
-| R6 | Exact ties in a category | Broken by value/top card | All agree: if *still* exactly equal, **neither player scores** | Neither scores — and per pagat, equality still does not block pique or repique |
-| R7 | Scoring system | Rubicon, 6 deals | Wikipedia also documents Piquet au Cent | **Rubicon.** Au Cent uses a 36-card pack and different trick scoring — a separate game, out of scope for v1 |
+| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks (explicit), Parlett. **Yes**: en-Wikipedia, cardgameheaven | **No.** pagat is in the majority once Parlett and Wikibooks are counted. Flag retained, but this is no longer a close call |
+| R2 | Minimum length for *point*? | None | Only en-Wikipedia claims 4; everyone else, none | **No minimum** |
+| R3 | Must *younger* exchange at least one card? | **Yes** | Wikibooks: yes in Rubicon, optional in au cent. cardgameheaven and Parlett: optional | **Yes, at least one** (per pagat and the Rubicon reading) |
+| R4 | **Carte rouge**? | Not mentioned | Values vary wildly: 10, 20, 40, or 50. Parlett defines it as *every card participating in some scoring combination* | **Off by default**, behind a flag. The definition itself is unstable, which is reason enough to leave it out of v1 |
+| R5 | Last trick worth? | **1** | Wikibooks 1; fr-Wikipedia 2; de-Wikipedia 3 (1 under Portland Club); en-Wikipedia notes a 10 variant | **1** |
+| R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
+| R7 | Scoring system | Rubicon, 6 deals | Parlett distinguishes Rubicon from basic "Saunt" (race to 100) | **Rubicon** |
 
-On trick points specifically, cardgameheaven formulates them as "1 for
-winning a trick you led, 2 if the opponent led." We use pagat's accounting:
-**1 to the leader for leading, plus 1 to the winner if the opponent led it.**
-The two formulations nearly coincide but not exactly, and we follow pagat.
+A note on **pique and repique bookkeeping**: French and German sources express
+these as the score *jumping to* 60 and 90 respectively, rather than as +30 and
++60 bonuses. These are the same rule — 30+30 and 30+60 — stated differently.
+Ours is the additive form, but the continental form is a nice confirmation that
+the thresholds are right.
 
-Rubicon settlement (all modern sources agree): if the loser reached 100, the
-winner scores (difference + 100); if the loser failed to reach 100 — "crossed
-the Rubicon" — the winner scores (sum of both scores + 100). Worked example
-from Wikipedia: 105 to 101 pays 104; 97 to 89 pays 286.
+### 3.8 The sequence scores are a formula, not a table
 
-### 3.8 The period version, for context only
+Worth noticing, because it is both an implementation simplification and a good
+teaching device. whiteknucklecards states the sequence scores as "3 and 4 for
+tierce and quart, then **10 plus one per card** for five or more":
 
-The CMU medieval-recreation text describes a markedly older game, and it is
-worth knowing it exists so we do not mistake it for a variant of ours: a
-**36-card** pack (6s through aces), 12 cards in stock, **up to 8** exchanged
-per player, "ruffs" scored as one point per ten pips of the best suit
-(rounded), sequences of 5+ scoring 10 plus length, sets scoring **13** for
-three and 14 for four, capot worth **60**, and first to 100 winning. Both
-players holding a blank cancels both scores — which is impossible in the
-32-card game (§3.2).
+    tierce  3 -> 3      quint    5 -> 15
+    quart   4 -> 4      sixième  6 -> 16
+                        septième 7 -> 17
+                        huitième 8 -> 18
 
-This is essentially the ancestor game, closer to *Le Cent* as Rabelais knew
-it in 1535. **We are not implementing it.** It is recorded because it
-explains where several modern rules came from, and because the historical
-literature is a source of annotated hands we may want for §10.
+That reproduces the standard table exactly. The apparently bizarre jump from 4
+to 15 is just the point at which a 10-point bonus kicks in. The tutor should
+teach it this way — "a fifth card is worth eleven more points than the fourth"
+is memorable in a way the table is not, and it explains *why* players will
+wreck their point to chase a quint.
+
+### 3.9 The period version and the continental versions
+
+Recorded so we do not mistake them for variants of our game.
+
+**The period game** (CMU medieval text): a **36-card** pack, 12 in stock, up to
+8 exchanged per player, "ruffs" scored as one point per ten pips of the best
+suit, sequences of 5+ scoring 10 plus length, sets worth **13** for three, capot
+worth **60**, first to 100 wins. This is essentially the ancestor, close to
+*Le Cent* as Rabelais knew it in 1535; French Wikipedia confirms the pack was
+formalised from 36 to 32 cards in the late 17th century.
+
+**The German game** (de-Wikipedia) diverges sharply: forehand discards **3–5**
+rather than 1–5, the opponent must exchange **at least 3**, the last trick is
+worth **3**, and capot is **30**. It also adds a rule that a loser under 50
+points doubles the stake, and notes a variant treating tens as court cards for
+carte blanche.
+
+**The French game** (fr-Wikipedia) differs in two ways that matter: the last
+trick counts 2, and — contra pagat, Parlett and Wikibooks — *all* valid
+combinations score even when subordinate to the opponent's best. It also
+records the delightful *Estachin* house rule from the Comtat Venaissin:
+peeking at your opponent's cards costs you **70 points**.
+
+**whiteknucklecards** should be treated as unreliable: it states point as
+scoring 1, sets as ranking "9 and above", and imports au-cent trick scoring
+("1 point for each card led higher than a 9") into a Rubicon description. Its
+sequence formula in §3.8 is its one clear contribution.
+
+None of these are being implemented. They are recorded because they explain
+where our rules came from, and because the historical literature (Cavendish,
+Hoyle, Foster, Parlett) is a source of annotated hands we may want for §10.
 
 ## 4. What the mathematics actually says
 
@@ -417,6 +456,33 @@ The design consequences, each already committed to above:
   style, and pure self-play is fragile against those.
 - The tutor **closes the temporal gap** (§8) because that is the specific
   thing human learning cannot do and our engine can.
+
+### 9.1 The human has to enjoy this
+
+The project's stated goal is not a correct simulator or a strong bot; it is
+that **a person and a computer play a good game together**. An opponent that
+is strong but joyless has failed, and so has a tutor that is accurate but
+tedious. Concretely, this constrains several choices already made:
+
+- The **capability ladder** (§7) matters partly because losing to an opponent
+  whose weakness is *comprehensible* is fun, and losing to one that blunders
+  randomly is not. You can form a theory of a level-4 opponent. You cannot form
+  a theory of noise.
+- **Erraticism exists to make the opponent feel alive**, not to tune its
+  strength. A player who is occasionally brilliant and occasionally sloppy is a
+  better companion than one that is uniformly mediocre.
+- The tutor should **explain, not scold**. Parlett puts the central tension of
+  the game in one sentence worth quoting to the player directly: *"The point of
+  making a declaration is that you thereby score points in return for giving
+  away information about your hand."* That is the whole game, and it is more
+  useful than any number we could print.
+- Piquet's vocabulary is half its charm — quint, quatorze, repique, capot,
+  sinking. **Use the real terms**, and teach them, rather than flattening them
+  into "four of a kind". The game is 500 years old and that should be part of
+  the pleasure of playing it.
+
+Where correctness and enjoyment genuinely trade off, that is a decision to
+raise rather than resolve silently in favour of the machine-facing metric.
 
 ## 10. Testing strategy
 
