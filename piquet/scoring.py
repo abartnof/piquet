@@ -40,6 +40,11 @@ class Player(Enum):
     def opponent(self) -> Player:
         return Player.YOUNGER if self is Player.ELDER else Player.ELDER
 
+    @property
+    def index(self) -> int:
+        """A stable slot, so per-player state can live in a two-tuple."""
+        return 0 if self is Player.ELDER else 1
+
     def __str__(self) -> str:
         return self.value
 
