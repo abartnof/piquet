@@ -6,7 +6,7 @@
 
 ## Where we are
 
-**Milestones 1–5 complete. 314 tests.**
+**Milestones 1–5 complete. 319 tests. Reviewed; six bugs fixed.**
 
 A deal can be dealt, exchanged, declared, played and scored. Four measured rungs
 of opponents exist, with styles and erraticism, and a tournament harness that
@@ -93,6 +93,61 @@ Ordered by how much they are needed, not by size.
    checked and confirmed; this one is still open.
 6. **Card art.** Andrew has assets sourced. Not needed until the terminal UI is
    replaced.
+
+## Code review findings
+
+A critical pass over everything, after Milestone 5.
+
+### Bugs found and fixed
+
+| Bug | Why it mattered |
+|---|---|
+| `opponent_hand_size` decremented for *any* open trick | Wrong whenever the asker is the leader. Invisible in play — an agent only asks on its own turn — but it would have built candidate hands one card short |
+| `possible_hands(limit=)` took the **first** N | `combinations` emits in a fixed order, so the cap returned hands all sharing the same low-indexed cards: a systematically skewed sample fed straight into a Monte Carlo average. Now samples at random |
+| `ratings` crashed on a shutout | An agent winning nothing got strength zero, and the Elo conversion took its logarithm. A 10–0 result is exactly what the harness is *for* |
+| `best_card` duplicated `card_values` | ~45 duplicated lines, and a fresh transposition table per candidate — several times the cost for an identical answer |
+| `SolverAgent(3, rng=...)` crashed | `*args`/`**kwargs` forwarding injected a default `level` and then collided with a positional one |
+| Round-robin pairings saw **different deals** | Boards were drawn from the same generator the agents drew from, so a stochastic agent shifted every later deal just by consuming numbers. Deals now come from their own generator, and a round robin shares one set across every pairing — making the whole table a paired comparison |
+
+### Conceptual gaps — not bugs, but things I would not defend
+
+1. **The AI optimises the wrong objective.** Everything — heuristics, solver,
+   styles — maximises *points in a deal*. The game is a **partie** with rubicon
+   settlement, where failing to reach 100 costs you the sum of both scores
+   rather than the difference. Near that threshold, maximising deal points is
+   simply not the same as maximising the result. The solver will need a partie
+   context before it is playing the actual game.
+2. **Every strength claim is self-referential.** Rung N beats rung N−1, and
+   that is all we know. A ladder in which each rung beats the one below could
+   still be uniformly poor. The one external check we have is the solver, which
+   is *exact* in the endgame — and it beats rung 4 by 81%, which suggests rung 4
+   is considerably weaker in absolute terms than its rating implies.
+3. **Style stability is claimed, not enforced.** The design says a style is
+   drawn once per opponent and held for a partie. Nothing in the code does that:
+   agents are constructed once and reused, so stability is an accident of how
+   the harness happens to work.
+4. **The `Agent` protocol has no lifecycle.** No notion of a deal beginning or
+   ending, no per-partie state, nowhere for an opponent model to live. That will
+   have to change for the partie, and for the "show the opponent's habit" idea.
+5. **`solver.pique_is_live` is dead code** — a documented intention with no
+   caller. Either the solver should score piques or the helper should go.
+6. **`heuristics._keep_value` is unvalidated magic numbers.** Its weights were
+   chosen by taste. We know rung 2 beats rung 1 decisively; we do not know that
+   these particular coefficients are good ones.
+7. **Carte blanche's information timing is not modelled.** Elder must announce
+   how many cards he intends to discard so younger can choose hers before seeing
+   his hand. We score the ten and skip the choreography.
+
+### One finding worth chasing
+
+Inference assumes the opponent declared honestly and fully. Against an opponent
+who sinks, the filter rules out the truth and falls back to the weaker filters —
+and the candidate count goes from a median of **4 to 45**. That is concealment
+doing exactly what Cavendish says it does.
+
+It also means the earlier verdict that "sinking costs points at every setting"
+was measured against opponents that *do not use inference at all*. Rung 5 does.
+Whether sinking finally pays against it is an open question and a good one.
 
 ## Ideas worth considering
 

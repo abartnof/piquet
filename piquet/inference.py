@@ -16,8 +16,9 @@ things down:
 
 from __future__ import annotations
 
+import random
 from itertools import combinations
-from typing import Iterator, Optional
+from typing import Optional
 
 from piquet.cards import Hand, Suit
 from piquet.combos import best_point, best_sequence, best_set
@@ -34,10 +35,17 @@ _BEST = {
 
 
 def opponent_hand_size(view: View) -> int:
-    """How many cards the opponent is holding right now."""
+    """How many cards the opponent is holding right now.
+
+    Only decrement for a trick in progress if the *opponent* led it. An earlier
+    version decremented whenever any trick was open, which was invisible in
+    practice -- an agent only asks on its own turn, and then a trick is open
+    only because the opponent led -- but wrong for anyone else who looked, and
+    it would have generated candidate hands of the wrong length.
+    """
     remaining = 12 - len(view.tricks)
-    if view.current_trick is not None:
-        remaining -= 1      # they have already led to this trick
+    if view.current_trick is not None and view.current_trick.leader is view.opponent:
+        remaining -= 1
     return max(remaining, 0)
 
 
@@ -98,8 +106,15 @@ def possible_hands(
     view: View,
     limit: Optional[int] = None,
     use_declarations: bool = True,
+    rng: Optional[random.Random] = None,
 ) -> list[Hand]:
     """Every hand the opponent could be holding, as far as anyone can tell.
+
+    `limit` caps the result by taking a **random sample**, not the first so
+    many. `itertools.combinations` emits in a fixed order, so truncating it
+    yields hands that all share the same low-indexed cards -- a systematically
+    skewed picture of what the opponent might hold, which is precisely the
+    wrong thing to hand to a Monte Carlo average.
 
     If the declaration filter leaves nothing, it is dropped and the weaker
     filters are used alone. That happens when the opponent sank something: the
@@ -121,20 +136,18 @@ def possible_hands(
 
     played = opponent_played(view)
 
-    def build(use_declarations: bool) -> Iterator[Hand]:
-        found = 0
+    def build(filtered: bool) -> list[Hand]:
+        found = []
         for combination in combinations(candidates, size):
             hand = Hand.of(*combination)
-            if use_declarations and not _consistent_with_declarations(
-                hand, view, played
-            ):
+            if filtered and not _consistent_with_declarations(hand, view, played):
                 continue
-            yield hand
-            found += 1
-            if limit is not None and found >= limit:
-                return
+            found.append(hand)
+        return found
 
-    hands = list(build(use_declarations))
+    hands = build(use_declarations)
     if not hands and use_declarations:
-        hands = list(build(False))
+        hands = build(False)
+    if limit is not None and len(hands) > limit:
+        hands = (rng or random).sample(hands, limit)
     return hands

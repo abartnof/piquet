@@ -22,6 +22,7 @@ matter.
 
 from __future__ import annotations
 
+import random
 from typing import Iterator, Optional
 
 from piquet.cards import Card, Hand
@@ -29,6 +30,7 @@ from piquet.heuristics import MAX_LEVEL, HeuristicAgent
 from piquet.inference import possible_hands
 from piquet.observation import View
 from piquet.scoring import Player
+from piquet.style import BALANCED, Style
 
 __all__ = [
     "solve", "best_card", "card_values", "SolverAgent",
@@ -211,51 +213,16 @@ def best_card(
 ) -> tuple[Card, int]:
     """The best card for whoever is to play, and what it is worth.
 
-    The value is still elder-minus-younger, so younger's best card is the one
-    that makes it smallest.
+    The value is still elder-minus-younger, so elder takes the largest and
+    younger the smallest. An earlier version re-implemented the root expansion
+    and gave every candidate its own transposition table, which cost several
+    times as much for exactly the same answer.
     """
+    values = card_values(elder, younger, leader, led, elder_tricks)
     turn_is_elder = (leader is Player.ELDER) == (led is None)
-    hand = elder if turn_is_elder else younger
-    candidates = _legal(hand.bits, _NO_CARD if led is None else led.index)
-
-    best_value = None
-    chosen = None
-    for index in _bits(candidates):
-        card = Card.from_index(index)
-        played = Hand(hand.bits & ~(1 << index))
-        if led is None:
-            value = (1 if turn_is_elder else -1) + solve(
-                played if turn_is_elder else elder,
-                younger if turn_is_elder else played,
-                leader,
-                card,
-                elder_tricks,
-            )
-        else:
-            follower_wins = _beats(index, led.index)
-            winner = Player.ELDER if (
-                (turn_is_elder and follower_wins)
-                or (not turn_is_elder and not follower_wins)
-            ) else Player.YOUNGER
-            next_elder = played if turn_is_elder else elder
-            next_younger = younger if turn_is_elder else played
-            gained = 1 if follower_wins else 0
-            if not next_elder.bits and not next_younger.bits:
-                gained += 1
-            value = (gained if winner is Player.ELDER else -gained) + solve(
-                next_elder,
-                next_younger,
-                winner,
-                None,
-                elder_tricks + (winner is Player.ELDER),
-            )
-
-        if best_value is None or (
-            value > best_value if turn_is_elder else value < best_value
-        ):
-            best_value, chosen = value, card
-
-    return chosen, best_value
+    pick = max if turn_is_elder else min
+    card = pick(values, key=lambda candidate: values[candidate])
+    return card, values[card]
 
 
 def pique_is_live(younger_declared: int) -> bool:
@@ -340,12 +307,22 @@ class SolverAgent(HeuristicAgent):
     the table too, so it never sets a trap that depends on their ignorance.
     """
 
-    def __init__(self, *args, exact_from: int = 8, max_worlds: int = 30, **kwargs):
-        kwargs.setdefault("level", MAX_LEVEL)
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        level: int = MAX_LEVEL,
+        style: Style = BALANCED,
+        erraticism: float = 0.0,
+        rng: Optional["random.Random"] = None,
+        name: Optional[str] = None,
+        exact_from: int = 8,
+        max_worlds: int = 30,
+    ) -> None:
+        # Spelled out rather than forwarded through *args and **kwargs: the
+        # forwarding version injected a default `level` into kwargs and then
+        # crashed if anyone passed one positionally.
+        super().__init__(level, style, erraticism, rng, name or f"solver{exact_from}")
         self.exact_from = exact_from
         self.max_worlds = max_worlds
-        self.name = kwargs.get("name") or f"solver{exact_from}"
 
     def play(self, view: View) -> Card:
         legal = list(view.legal_plays)
@@ -354,7 +331,7 @@ class SolverAgent(HeuristicAgent):
         if len(view.hand) > self.exact_from:
             return super().play(view)
 
-        worlds = possible_hands(view, limit=self.max_worlds)
+        worlds = possible_hands(view, limit=self.max_worlds, rng=self.rng)
         if not worlds:
             return super().play(view)
 

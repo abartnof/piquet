@@ -594,6 +594,21 @@ cheap. A language model would be slower, weaker, and unexplainable. The one
 legitimate use is cosmetic and optional: phrasing the tutor's explanations
 in natural language. The engine decides; the model only narrates.
 
+### 6.4a The objective is currently wrong above the deal
+
+Worth stating plainly, because everything built so far shares the flaw: the
+heuristics, the solver and the style calibration all maximise **points within a
+deal**. The game is a partie of six deals settled by the rubicon rule, where a
+loser who fails to reach 100 pays the *sum* of both scores rather than the
+*difference*.
+
+Near that threshold the two objectives come apart. A player on 95 with one deal
+left should play quite differently from one on 130, and neither is playing to
+maximise this deal's points. Until `Deal` sits inside a `Partie` and the agents
+can see the running scores, the AI is optimising a proxy.
+
+This is the strongest argument for building the partie next.
+
 ### 6.5 A caution about self-play
 
 Pure self-play converges on strategies that beat *the agent's own lineage*

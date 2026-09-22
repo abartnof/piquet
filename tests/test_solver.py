@@ -216,3 +216,75 @@ def test_the_solver_agent_plays_legal_cards_throughout():
     )
     assert all(d.phase is Phase.COMPLETE for d in deals)
     assert all(len(d.tricks) == 12 for d in deals)
+
+
+# --------------------------------------------------------------------------
+# Regressions from the code review
+# --------------------------------------------------------------------------
+
+
+def test_the_opponents_hand_size_is_right_while_a_trick_is_open():
+    """Only the opponent having *led* reduces their count. An earlier version
+    decremented for any open trick, which was invisible in play -- an agent only
+    asks on its own turn -- but would have built candidate hands one card short.
+    """
+    from tests.helpers import declaring, play_cards, skip_declarations
+
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    deal = play_cards(deal, "AS")   # elder has led; younger has not yet played
+    for player in (E, Y):
+        view = view_for(deal, player)
+        assert opponent_hand_size(view) == len(deal.hand_of(player.opponent))
+
+
+def test_capping_the_candidates_samples_rather_than_truncates():
+    """`combinations` emits in a fixed order, so taking the first N yields hands
+    that all share the same low-indexed cards -- a skewed picture, and precisely
+    the wrong thing to feed a Monte Carlo average."""
+    for seed in range(1674, 1700):
+        deal = played_out(seed)
+        if deal.phase is not Phase.PLAY:
+            continue
+        view = view_for(deal, E)
+        everything = possible_hands(view)
+        if len(everything) >= 8:
+            break
+    else:
+        pytest.fail("no position with enough candidates to sample from")
+
+    first = possible_hands(view, limit=2, rng=random.Random(1))
+    second = possible_hands(view, limit=2, rng=random.Random(99))
+    assert len(first) == len(second) == 2
+    assert all(hand in everything for hand in first + second)
+    assert set(first) != set(second), "different seeds must give different samples"
+
+
+def test_ratings_survive_a_shutout():
+    """An agent that wins nothing would otherwise be given a strength of zero,
+    and the Elo conversion would take its logarithm."""
+    from piquet.tournament import DuelResult, ratings
+
+    table = ratings(
+        [DuelResult("winner", "loser", pairs=10, a_wins=10, b_wins=0, drawn=0,
+                    a_points=100, b_points=0)],
+        anchor="winner",
+    )
+    assert table["winner"] == 0
+    assert table["loser"] < -500
+
+
+def test_best_card_agrees_with_card_values_for_both_seats():
+    elder, younger = parse_hand("AS QS 7S"), parse_hand("KS JS 8S")
+    for leader, led in ((E, None), (E, Card.parse("7S"))):
+        hand = elder if (leader is E) == (led is None) else younger
+        if led is not None:
+            hand = younger
+        values = card_values(elder if led is None else parse_hand("AS QS"),
+                             younger, leader, led, elder_tricks=4)
+        card, value = best_card(elder if led is None else parse_hand("AS QS"),
+                                younger, leader, led, elder_tricks=4)
+        assert values[card] == value
+        assert value == (max(values.values()) if led is None else min(values.values()))

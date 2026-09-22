@@ -69,20 +69,29 @@ def duel(
     make_b: AgentFactory,
     pairs: int,
     rng: Optional[random.Random] = None,
+    deal_seed: Optional[float] = None,
 ) -> DuelResult:
     """Play `pairs` deals, each one twice with the seats swapped.
 
     Both agents get the same cards from both seats, so the only thing left to
     measure is how they played them.
+
+    The deals come from their **own** generator. Drawing them from the same one
+    the agents use means a stochastic agent shifts every later deal simply by
+    consuming random numbers, so two pairings in the same round robin would face
+    different cards for no reason. Pass `deal_seed` to give every pairing an
+    identical set -- which makes the whole table a paired comparison, not just
+    each duel within it.
     """
     rng = rng or random.Random()
+    deals = random.Random(deal_seed if deal_seed is not None else rng.random())
     agent_a, agent_b = make_a(rng), make_b(rng)
 
     a_wins = b_wins = drawn = 0
     a_points = b_points = 0
 
     for _ in range(pairs):
-        board = deal_shuffled(rng)
+        board = deal_shuffled(deals)
 
         first, _ = play_deal(agent_a, agent_b, deal=board)
         second, _ = play_deal(agent_b, agent_a, deal=board)
@@ -116,12 +125,13 @@ def round_robin(
     pairs: int,
     rng: Optional[random.Random] = None,
 ) -> list[DuelResult]:
-    """Every agent against every other, once."""
+    """Every agent against every other, once, over one shared set of deals."""
     rng = rng or random.Random()
+    deal_seed = rng.random()
     results: list[DuelResult] = []
     for i, make_a in enumerate(factories):
         for make_b in factories[i + 1:]:
-            results.append(duel(make_a, make_b, pairs, rng))
+            results.append(duel(make_a, make_b, pairs, rng, deal_seed=deal_seed))
     return results
 
 
@@ -157,11 +167,13 @@ def ratings(
         for name in names:
             denominator = 0.0
             for (a, b), played in games.items():
-                if name == a:
+                if name in (a, b):
                     denominator += played / (strength[a] + strength[b])
-                elif name == b:
-                    denominator += played / (strength[a] + strength[b])
-            updated[name] = wins[name] / denominator if denominator else strength[name]
+            # Floor the strength: an agent that won nothing would otherwise
+            # get a strength of zero and the Elo conversion would take the
+            # logarithm of it. A shutout is exactly what this harness is for.
+            fitted = wins[name] / denominator if denominator else strength[name]
+            updated[name] = max(fitted, 1e-9)
         total = sum(updated.values()) or 1.0
         strength = {name: value * len(names) / total for name, value in updated.items()}
 
