@@ -145,15 +145,15 @@ Sources consulted, roughly in order of trustworthiness:
 | **en.wikipedia.org** | Good, but conflates variants with the core game |
 | **fr.wikipedia.org**, **de.wikipedia.org** | Good for terminology and history; both describe materially different continental rules (§3.9) |
 | **cardgameheaven.com** | Adequate |
-| **whiteknucklecards.com** | **Unreliable** — see §3.9 |
+| **whiteknucklecards.com** | Mixed — it imports genuine *older* rules into a modern description. Not wrong so much as chronologically confused (§3.9) |
 | **britannica.com** | Very high — the piquet entry is **written by David Parlett**, and describes rubicon piquet specifically. Retrieved manually after the site refused automated access |
 | CMU medieval text | A different, older game (§3.8) |
 
 | # | Question | pagat | Other sources | Decision |
 |---|---|---|---|---|
-| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks (explicit), Parlett. **Yes**: en-Wikipedia, cardgameheaven. Britannica defines pique as "30 points in combinations and tricks" without resolving it | **No.** pagat, Parlett and Wikibooks against two weaker sources. Flag retained |
+| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks, Parlett, and **Cotton 1674 decisively** (§3.11). **Yes**: en-Wikipedia, cardgameheaven | **No — considered settled.** Cotton gives the reckoning order explicitly and puts the cards won dead last, after play points. Flag kept for configurability, not because of doubt |
 | R2 | Minimum length for *point*? | None | Only en-Wikipedia claims 4; everyone else, none | **No minimum** |
-| R3 | Must *younger* exchange at least one card? | **Yes** | **Britannica (Parlett), writing specifically about rubicon piquet: "younger... need not exchange any"**; cardgameheaven agrees; Wikibooks says required in Rubicon, optional in au cent | **Yes, at least one**, per pagat — but this is now the *closest* call in the table, with the best single source against us. Flag it, and revisit if play-testing suggests otherwise |
+| R3 | Must *younger* exchange at least one card? | **Yes** | Britannica (Parlett) says younger "need not exchange any"; cardgameheaven agrees. But **Cotton 1674 is explicit the other way**: "let the Game be never so good the Gamesters are **both obliged to discard one Card at least**" | **Yes, at least one.** pagat agrees with the oldest source; the permissive rule looks like a later relaxation. Flag retained |
 | R4 | **Carte rouge**? | Not mentioned | Values vary wildly: 10, 20, 40, or 50. Parlett defines it as *every card participating in some scoring combination* | **Off by default**, behind a flag. The definition itself is unstable, which is reason enough to leave it out of v1 |
 | R5 | Last trick worth? | **1** | Wikibooks 1; fr-Wikipedia 2; de-Wikipedia 3 (1 under Portland Club); en-Wikipedia notes a 10 variant | **1** |
 | R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
@@ -232,10 +232,12 @@ combinations score even when subordinate to the opponent's best. It also
 records the delightful *Estachin* house rule from the Comtat Venaissin:
 peeking at your opponent's cards costs you **70 points**.
 
-**whiteknucklecards** should be treated as unreliable: it states point as
-scoring 1, sets as ranking "9 and above", and imports au-cent trick scoring
-("1 point for each card led higher than a 9") into a Rubicon description. Its
-sequence formula in §3.8 is its one clear contribution.
+**whiteknucklecards** deserves a correction. An earlier revision of this
+document called it unreliable for scoring tricks as "1 point for each card led
+higher than a 9." That is in fact the **authentic 1674 rule** (§3.11) — the page
+is mixing eras, not inventing rules. Its point-scores-1 and sets-rank-"9-and-
+above" claims still look like errors, but its sequence formula (§3.8) and its
+trick scoring are both genuine historical material.
 
 None of these are being implemented. They are recorded because they explain
 where our rules came from, and because the historical literature (Cavendish,
@@ -262,6 +264,91 @@ wrong by guarding on the winner's score instead of the loser's.
 usually exchanges five cards." A trained policy that rarely takes all five is
 probably wrong, and this is a cheap sanity check on §6.2 before we spend
 anything on compute.
+
+### 3.11 The period sources
+
+Two primary texts, read in full rather than in summary.
+
+#### Cotton, *The Compleat Gamester* (1674) — "The Game at Picket"
+
+This is the **36-card ancestor**, and it confirms the CMU text independently:
+throw out "the Deuces, Treys, Fours and Fives," leaving "thirty and six"; the
+usual set is "an hundred"; twelve cards each with **twelve** left on the table;
+and elder "may take in eight of the twelve in the Stock." Trick scoring is by
+high card, not by trick: "for every Ace, King, Queen, Knave, or Ten, he reckons
+one." The last trick is worth 2 if won with a ten or better, otherwise 1.
+
+Four things in Cotton bear directly on decisions we had left open.
+
+**R1 is settled.** Cotton states the reckoning order outright, and it is the
+only source that spells out where the cards bonus sits:
+
+> "the Blanks are always first reckoned; but if no Blanks, then comes the
+> Ruff, next your Sequences, then your Aces, Kings, Queens, Knaves, and Tens,
+> next what Cards are reckoned in play, and **last of all the Cards you have
+> won**."
+
+The 10 for cards is reckoned *dead last*, after the play points. It therefore
+cannot help you reach 30 ahead of your opponent. pagat, Parlett and Wikibooks
+are right, and this is now settled rather than merely outvoted.
+
+**R3 is settled the same way.** "Let the Game be never so good the Gamesters are
+**both obliged to discard one Card at least**." pagat agrees with the oldest
+source; Parlett's permissive version looks like a later relaxation.
+
+**Pique and repique are unchanged since 1674**, including the bookkeeping. 30 in
+declarations alone scores "ninety" instead of thirty (+60, repique); 30 before
+the opponent has played or reckoned anything scores "sixty" instead of thirty
+(+30, pique). The continental habit of *announcing 60 and 90* that we noted in
+the French and German articles turns out to be the original English convention
+too. Capot is 40 and cards is 10, both already fixed in 1674 — German
+Wikipedia's 30 for capot is the outlier, not the survivor.
+
+**Carte blanche blocks the opponent's pique**, exactly as Britannica's worked
+example says: "He that hath a Blank, his Blank shall hinder the other Picq and
+Repicq, although he hath nothing to shew but his Blank."
+
+Cotton also supplies rules we are not implementing but which are good tutor
+material, because they show what the game cared about. Declaring is
+use-it-or-lose-it — a player "that sheweth not his Ruff before he play his first
+Card" loses it "absolutely," which is the origin of sinking's cost. False
+declaration is punished savagely: the offender is "debarred from [reckoning]
+any thing he really hath" while the adversary scores everything. And there is a
+genuine **disclosure obligation**: a player who discards from four aces and
+declares the remaining three "is bound to tell the other, if he ask him, what
+Ace, King, Queen he wants."
+
+#### Hoyle, *A Short Treatise on the Game of Piquet* (1745)
+
+By Hoyle the game is **already the modern 32-card version** — he computes "the
+Chances of taking in any one, two, three, four, or five certain Cards," and a
+five-card draw means elder's modern exchange. So the 36-to-32 transition
+happened between 1674 and 1744, matching French Wikipedia's "formalised to 32
+cards in the late 17th century."
+
+Hoyle's treatise is, in substance, **§6.2 done by hand in 1744**: an analysis of
+which discard maximises your chances. That makes it both a validation target and
+a source of worked examples. Two specifics worth keeping:
+
+- **An odds claim to check:** "it is but three to two against the younger-hand's
+  taking one Card out of three to save a Pique, or a Repique." A concrete
+  probability our engine should reproduce.
+- **A maximum-score claim to check:** asked "What is the highest Number to be
+  made of a Repique and Capot?", Hoyle answers **"A hundred and seventy
+  points."**
+
+That second figure does not obviously reconcile with the modern rules. Our best
+construction — point of 8, a huitième for 18, and a quatorze for 14, giving 40
+in declarations, plus 60 for repique, plus 12 leads, the last trick, and 40 for
+capot — reaches **153**, not 170. Either Hoyle's era scored something
+differently, or our reasoning is wrong, or the OCR is.
+
+**This is a genuinely useful test.** Once scoring works, construct the
+maximum-scoring deal programmatically and see what number falls out. If we get
+153 we have probably found a historical scoring difference worth documenting; if
+we get 170 we have learned something about the rules we got wrong. Either way
+the exercise validates the hardest part of the scoring module against a
+280-year-old authority. Recorded in §10 as a test, not asserted as a fact.
 
 ## 4. What the mathematics actually says
 
@@ -556,6 +643,11 @@ TDD throughout, but three kinds of test deserve naming:
    - both players never hold carte blanche
    - elder wins materially more than younger (dealing is a disadvantage)
    - every deal's points reconcile against the event log
+   - the maximum possible score for a single deal, constructed programmatically,
+     compared against Hoyle's 1744 claim of 170 (§3.11) — expected to surface
+     either a bug or a historical scoring difference
+   - Hoyle's odds claim that it is "three to two against" younger drawing one
+     needed card out of three
 
 Golden JSON vectors are emitted from the suite from the first milestone, to
 validate any future port.
