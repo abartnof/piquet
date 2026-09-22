@@ -20,8 +20,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 from piquet.cards import Card, Hand
-from piquet.rules import CategoryResult, Deal, ELDER_MAX_EXCHANGE, Phase, Trick
-from piquet.scoring import Player, ScoreLog
+from piquet.rules import (
+    Announcement,
+    Deal,
+    ELDER_MAX_EXCHANGE,
+    Phase,
+    Trick,
+)
+from piquet.scoring import Category, Player, ScoreLog
 
 __all__ = ["View", "view_for"]
 
@@ -33,6 +39,13 @@ class View:
     Everything here is either public at the table or private to `me`. Nothing
     in it can be used to reconstruct the opponent's hand except by inference,
     which is exactly the point.
+
+    Note what is deliberately *absent*: the opponent's `Declaration` objects.
+    An earlier version handed over the whole `CategoryResult`, which carries the
+    suits of every claim -- including claims that were beaten and so never had
+    to be shown. `heard` and `seen` replace it, and they are not the same thing:
+    you always hear the shape, and you only get to see the cards of a
+    combination that scored or tied.
     """
 
     me: Player
@@ -43,8 +56,17 @@ class View:
     talon_seen: tuple[Card, ...]
     talon_remaining: int
     exchange_limit: int
-    #: The declaration dialogue so far. Both players hear all of it.
-    results: tuple[CategoryResult, ...]
+    #: How each settled category came out. Public: the scores are called aloud.
+    outcomes: tuple[tuple[Category, Optional[Player]], ...]
+    #: What the opponent said aloud in settled categories -- always public, but
+    #: it names a shape ("point of five"), never a suit.
+    heard: tuple[Announcement, ...]
+    #: The opponent's combinations that had to be exposed, because they scored
+    #: or because the category was equal. A beaten declaration is never shown,
+    #: so its owner gives away the shape of the holding but not its suit.
+    seen: tuple[object, ...]
+    #: The opponent's declaration waiting on this player's answer, if any.
+    awaiting_answer: Optional[Announcement]
     #: Scores are called aloud, so the whole log is public.
     log: ScoreLog
     #: Cards already played are public, and may be reviewed.
@@ -113,6 +135,32 @@ def _to_act(deal: Deal, player: Player) -> bool:
     return False
 
 
+def _heard(deal: Deal, player: Player) -> tuple[Announcement, ...]:
+    """What the opponent announced in settled categories. Always public."""
+    opponent = player.opponent
+    spoken = (result.announcement_of(opponent) for result in deal.results)
+    return tuple(a for a in spoken if a is not None)
+
+
+def _seen(deal: Deal, player: Player) -> tuple:
+    """The opponent's combinations this player is entitled to have looked at."""
+    opponent = player.opponent
+    return tuple(c for result in deal.results for c in result.shown(opponent))
+
+
+def _awaiting_answer(deal: Deal, player: Player) -> Optional[Announcement]:
+    """Elder's declaration, heard by younger before she must answer it.
+
+    She learns the shape -- "point of five" -- and not the suit, which is what
+    makes answering "good" or "not good" a decision rather than a lookup.
+    """
+    if deal.to_declare is not player or player is not Player.YOUNGER:
+        return None
+    if deal.elder_declaration is None or deal.declaring_category is None:
+        return None
+    return deal.elder_declaration.announce(deal.declaring_category)
+
+
 def view_for(deal: Deal, player: Player) -> View:
     """Everything `player` may legally know about this deal, and nothing else."""
     return View(
@@ -123,7 +171,10 @@ def view_for(deal: Deal, player: Player) -> View:
         talon_seen=_talon_seen(deal, player),
         talon_remaining=deal.talon_remaining,
         exchange_limit=deal.exchange_limit(player),
-        results=deal.results,
+        outcomes=tuple((r.category, r.winner) for r in deal.results),
+        heard=_heard(deal, player),
+        seen=_seen(deal, player),
+        awaiting_answer=_awaiting_answer(deal, player),
         log=deal.log,
         tricks=deal.tricks,
         current_trick=deal.current_trick,

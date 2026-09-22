@@ -37,7 +37,7 @@ from piquet.combos import (
 from piquet.scoring import Category, Player, ScoreLog
 
 __all__ = [
-    "Phase", "Deal", "Declaration", "CategoryResult", "Trick",
+    "Phase", "Deal", "Declaration", "CategoryResult", "Trick", "Announcement",
     "deal_from", "deal_shuffled", "CARTE_BLANCHE_SCORE",
 ]
 
@@ -89,6 +89,41 @@ _COMPARE = {
     Category.SEQUENCES: compare_sequence,
     Category.SETS: compare_set,
 }
+
+
+@dataclass(frozen=True, slots=True)
+class Announcement:
+    """What is actually said aloud when declaring.
+
+    At the table you announce "point of five", not "five spades". The suit is
+    never spoken: what is given is the comparison key, and only as much of it as
+    is needed -- the length first, and the tie-break only if the opponent says
+    "equal".
+
+    So an announcement is exactly a declaration's sort key, stripped of the suit.
+    Which cards it was made of stays private unless the combination scores, at
+    which point either player "may ask to see any combination that has been
+    scored for or which caused no score because of equality" (Cavendish).
+    """
+
+    category: Category
+    #: Cards in the point or sequence, or the size of the set.
+    primary: int
+    #: Pip value, top rank, or set rank -- spoken only to settle a tie.
+    tiebreak: int
+
+    @property
+    def key(self) -> tuple[int, int]:
+        return (self.primary, self.tiebreak)
+
+    def __str__(self) -> str:
+        if self.category is Category.POINT:
+            return f"point of {self.primary}"
+        if self.category is Category.SEQUENCES:
+            name = {3: "tierce", 4: "quart", 5: "quint",
+                    6: "sixi\u00e8me", 7: "septi\u00e8me", 8: "huiti\u00e8me"}
+            return name.get(self.primary, f"sequence of {self.primary}")
+        return "quatorze" if self.primary == 4 else "trio"
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +211,18 @@ class Declaration:
             if len(set(ranks)) != len(ranks):
                 raise ValueError("two sets cannot be claimed of the same rank")
 
+    def announce(self, category: Category) -> Optional[Announcement]:
+        """What this declaration sounds like from across the table.
+
+        The suit is not spoken, so the opponent learns the shape of the holding
+        without learning which cards it is made of.
+        """
+        best = self.best
+        if best is None:
+            return None
+        primary, tiebreak = best.key
+        return Announcement(category, primary, tiebreak)
+
     def __str__(self) -> str:
         return ", ".join(str(claim) for claim in self.claims) if self.claims else "sunk"
 
@@ -205,6 +252,27 @@ class CategoryResult:
             Comparison.WORSE: "not good",
             Comparison.EQUAL: "equal",
         }[self.comparison]
+
+    def declaration_of(self, player: Player) -> Declaration:
+        return self.elder if player is Player.ELDER else self.younger
+
+    def announcement_of(self, player: Player) -> Optional[Announcement]:
+        """What that player said aloud. Always public."""
+        return self.declaration_of(player).announce(self.category)
+
+    def shown(self, player: Player) -> tuple:
+        """The cards this player had to expose, if any.
+
+        Either player "may ask to see any combination that has been scored for
+        or which caused no score because of equality". A declaration that was
+        beaten scores nothing and is never shown -- so the loser of a category
+        gives away its shape but not its suit.
+        """
+        if self.winner is player:
+            return self.declaration_of(player).claims
+        if self.winner is None:
+            return self.declaration_of(player).claims
+        return ()
 
     def __str__(self) -> str:
         return (

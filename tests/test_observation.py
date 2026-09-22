@@ -60,15 +60,25 @@ def test_a_player_may_consult_his_own_discards():
     assert len(view_for(deal, Y).my_discards) == 3
 
 
-def test_scores_and_the_dialogue_are_public():
+def test_scores_and_the_outcome_of_each_category_are_public():
     deal = skip_declarations(declaring(
         elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
         younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
     ))
     for player in (E, Y):
         view = view_for(deal, player)
-        assert len(view.results) == 3
+        assert len(view.outcomes) == 3
         assert view.log is deal.log
+
+
+def test_a_view_never_hands_over_the_opponents_declarations():
+    """An earlier version exposed the whole CategoryResult, which carries the
+    suit of every claim -- including beaten claims that were never shown."""
+    view = view_for(declaring(
+        elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
+        younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+    ), E)
+    assert "results" not in view.__slots__
 
 
 # --------------------------------------------------------------------------
