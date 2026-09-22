@@ -256,3 +256,10 @@ def test_a_full_deck_dealt_into_a_hand_holds_every_card():
     hand = Hand.of(*full_deck())
     assert len(hand) == 32
     assert hand.ranks_in(Suit.SPADES) == sorted(Rank, reverse=True)
+
+
+def test_a_hand_can_be_masked_down_to_one_suit():
+    hand = parse_hand("AS KS 9H 7C")
+    assert hand.in_suit(Suit.SPADES) == parse_hand("AS KS")
+    assert hand.in_suit(Suit.DIAMONDS) == Hand.empty()
+    assert not hand.in_suit(Suit.DIAMONDS)

@@ -432,14 +432,14 @@ class Deal:
         can, and may otherwise play any card. This is also what the tutor uses
         to rule moves out: an illegal move costs nothing to detect.
         """
-        player = player or self.to_play
+        if player is None:
+            player = self.to_play
         if player is None:
             return Hand.empty()
         hand = self.hand_of(player)
         if self.current_trick is None:
             return hand
-        led = self.current_trick.led.suit
-        following = Hand.of(*(card for card in hand if card.suit is led))
+        following = hand.in_suit(self.current_trick.led.suit)
         return following if following else hand
 
     def play(self, player: Player, card: Card) -> Deal:

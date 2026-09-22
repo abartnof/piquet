@@ -204,6 +204,11 @@ class Hand:
             raise KeyError(f"cards held twice: {shared.code}")
         return Hand(self.bits | other.bits)
 
+    def in_suit(self, suit: Suit) -> Hand:
+        """Just the cards of one suit. A mask, so it is cheap enough for the
+        play-phase solver to call on every node."""
+        return Hand(self.bits & (0xFF << (suit.index * 8)))
+
     def ranks_in(self, suit: Suit) -> list[Rank]:
         """The ranks held in one suit, highest first."""
         base = suit.index * 8
