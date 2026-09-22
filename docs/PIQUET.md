@@ -313,17 +313,25 @@ their combinations rather than only the category winner. The Comtat Venaissin
 had a house rule called *Estachin* under which peeking at an opponent's cards
 cost seventy points.
 
-## An unresolved puzzle
+## The highest possible score
 
 Asked in 1744 for "the highest Number to be made of a Repique and Capot", Hoyle
-answered **170 points**. Working from the modern rules, the best hand we can
-construct — a point of eight, a huitième for 18, and a quatorze for 14, giving 40
-in declarations, plus 60 for repique, twelve leads, the last trick and 40 for
-capot — reaches only **153**.
+answered **170 points**. He was right.
 
-The discrepancy is unexplained. It may reflect a scoring difference in Hoyle's
-day, an error in our reasoning, or an error in the optical transcription of a
-280-year-old book.
+The best declaring hand is not the one intuition suggests. Maximising length — a
+point of eight, a huitième, a quatorze — reaches only 40. But a quatorze is 14
+points for four cards where a huitième is 18 for eight, and the same twelve cards
+count in every category at once. So the strongest hand in piquet is **ace, king
+and queen in every suit**: a point of 3, four tierces for 12, and three quatorzes
+for 42, making **57**.
+
+With the repique it becomes 117; twelve leads and the last trick bring 13 more;
+the capot adds 40. One hundred and seventy.
+
+It is reachable in a legal deal. Deal elder eleven of those cards and one spare,
+with the twelfth on top of the talon so his compulsory exchange fetches it, and
+give younger a flat 3-3-3-3 among the jacks, tens and nines — she then wins no
+category, scores nothing, and takes no trick.
 
 ## References
 

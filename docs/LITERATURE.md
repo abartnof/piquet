@@ -30,8 +30,15 @@ already 32 cards, dating the transition to between 1674 and 1744. The treatise i
 our exchange-policy problem done by hand: it computes the odds of drawing given
 cards. Two checkable claims — that it is "three to two against the younger-hand's
 taking one Card out of three to save a Pique", and that the maximum from "a
-Repique and Capot" is **170 points**, where our reading of the modern rules
-reaches 153. Both are recorded as tests, not facts.
+Repique and Capot" is **170 points**.
+
+The maximum is now **confirmed**, and the exercise corrected us rather than him.
+Our first reading made it 153, reasoning from a hand that maximises *length*. The
+best hand maximises *sets*: a quatorze is 14 points for four cards where a
+huitième is 18 for eight, and the same twelve cards count in all three categories
+at once. Ace, king and queen in every suit declares 57 — a point of 3, four
+tierces, three quatorzes — and the engine plays the deal out to exactly 170.
+The odds claim remains to be checked.
 
 **Cavendish [Henry Jones], *The Laws of Piquet adopted by the Portland and Turf
 Clubs* (1892/1896).** The most valuable source found, and the direct ancestor of

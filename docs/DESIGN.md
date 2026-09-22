@@ -348,22 +348,46 @@ a source of worked examples. Two specifics worth keeping:
 - **An odds claim to check:** "it is but three to two against the younger-hand's
   taking one Card out of three to save a Pique, or a Repique." A concrete
   probability our engine should reproduce.
-- **A maximum-score claim to check:** asked "What is the highest Number to be
-  made of a Repique and Capot?", Hoyle answers **"A hundred and seventy
+- **A maximum-score claim, now confirmed:** asked "What is the highest Number to
+  be made of a Repique and Capot?", Hoyle answers **"A hundred and seventy
   points."**
 
-That second figure does not obviously reconcile with the modern rules. Our best
-construction — point of 8, a huitième for 18, and a quatorze for 14, giving 40
-in declarations, plus 60 for repique, plus 12 leads, the last trick, and 40 for
-capot — reaches **153**, not 170. Either Hoyle's era scored something
-differently, or our reasoning is wrong, or the OCR is.
+**Hoyle is exactly right, and an earlier draft of this document was wrong.** We
+had guessed the maximum at 153, reasoning from a hand that maximises *length* --
+a point of eight, a huitieme for 18, a quatorze for 14, giving 40 in
+declarations. That is the hand a human reaches for, and it is not the best one.
 
-**This is a genuinely useful test.** Once scoring works, construct the
-maximum-scoring deal programmatically and see what number falls out. If we get
-153 we have probably found a historical scoring difference worth documenting; if
-we get 170 we have learned something about the rules we got wrong. Either way
-the exercise validates the hardest part of the scoring module against a
-280-year-old authority. Recorded in §10 as a test, not asserted as a fact.
+Sets are worth far more per card than sequences: a quatorze is 14 points for
+four cards, where a huitieme is 18 for eight. And the same twelve cards count in
+all three categories at once. So the best declaring hand is **ace, king and
+queen in every suit**:
+
+    point of 3                      3
+    four tierces to the ace        12
+    three quatorzes                42
+                                   --
+                                   57
+
+Which assembles into Hoyle's figure exactly:
+
+    declarations                   57
+    repique                        60
+    twelve leads                   12
+    last trick                      1
+    capot                          40
+                                   ---
+                                  170
+
+And it is reachable in a **legal** deal, compulsory exchange included: deal
+elder eleven of those cards plus one junk club, and put the twelfth on top of
+the talon, so the exchange he is obliged to make fetches it. Younger, dealt
+3-3-3-3 among the jacks, tens and nines, swaps within a suit to keep that shape
+and so wins no category and scores nothing. `tests/test_historical_claims.py`
+plays the deal through the engine and gets 170 to 0.
+
+Two things this vindicates. Hoyle's arithmetic, obviously -- but also the
+decision to build the engine before trusting our own reasoning about the game.
+The 153 figure felt right and was confidently written down.
 
 ## 4. What the mathematics actually says
 
@@ -726,9 +750,8 @@ TDD throughout, but three kinds of test deserve naming:
    - both players never hold carte blanche
    - elder wins materially more than younger (dealing is a disadvantage)
    - every deal's points reconcile against the event log
-   - the maximum possible score for a single deal, constructed programmatically,
-     compared against Hoyle's 1744 claim of 170 (§3.11) — expected to surface
-     either a bug or a historical scoring difference
+   - the maximum possible score for a single deal, played through the engine,
+     reproducing Hoyle's 1744 claim of 170 exactly (§3.11)
    - Hoyle's odds claim that it is "three to two against" younger drawing one
      needed card out of three
 
