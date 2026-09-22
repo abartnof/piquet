@@ -1,0 +1,184 @@
+"""Measuring how strong an agent actually is.
+
+Piquet deals are wildly uneven -- a single deal can score anything from nothing
+to 170 -- so comparing two agents over independently shuffled deals is mostly
+measuring who was dealt better cards. An early ad-hoc harness put rung 3 at
+45.2% against rung 2 on one seed and 51.6% on another, a five-sigma
+disagreement that was entirely deal luck.
+
+The fix is **mirrored pairs**: every deal is played twice, once with each agent
+as elder, and the pair is scored as a unit. Both agents meet the same cards from
+both seats, so the deal cancels out and what is left is the difference between
+them. It also cancels elder's advantage, which is worth about two and a half
+points of win rate on its own.
+
+Ratings come from Bradley-Terry fitted over the whole round robin, which is
+order-independent -- unlike sequential Elo updates, where who played whom first
+changes the answer.
+"""
+
+from __future__ import annotations
+
+import math
+import random
+from dataclasses import dataclass
+from typing import Callable, Optional, Sequence
+
+from piquet.match import play_deal
+from piquet.rules import deal_shuffled
+from piquet.scoring import Player
+
+__all__ = ["DuelResult", "duel", "round_robin", "ratings", "format_table"]
+
+AgentFactory = Callable[[random.Random], object]
+
+
+@dataclass(frozen=True, slots=True)
+class DuelResult:
+    """The outcome of one agent meeting another over mirrored pairs."""
+
+    name_a: str
+    name_b: str
+    pairs: int
+    a_wins: int
+    b_wins: int
+    drawn: int
+    a_points: int
+    b_points: int
+
+    @property
+    def a_win_rate(self) -> float:
+        """Draws count as half, as they do in chess."""
+        return (self.a_wins + 0.5 * self.drawn) / self.pairs if self.pairs else 0.5
+
+    @property
+    def margin(self) -> float:
+        """Mean points by which A beats B per pair. The finer-grained measure."""
+        return (self.a_points - self.b_points) / self.pairs if self.pairs else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"{self.name_a} vs {self.name_b}: {100 * self.a_win_rate:.1f}% "
+            f"({self.a_wins}-{self.b_wins}-{self.drawn}), "
+            f"margin {self.margin:+.1f} points per pair"
+        )
+
+
+def duel(
+    make_a: AgentFactory,
+    make_b: AgentFactory,
+    pairs: int,
+    rng: Optional[random.Random] = None,
+) -> DuelResult:
+    """Play `pairs` deals, each one twice with the seats swapped.
+
+    Both agents get the same cards from both seats, so the only thing left to
+    measure is how they played them.
+    """
+    rng = rng or random.Random()
+    agent_a, agent_b = make_a(rng), make_b(rng)
+
+    a_wins = b_wins = drawn = 0
+    a_points = b_points = 0
+
+    for _ in range(pairs):
+        board = deal_shuffled(rng)
+
+        first, _ = play_deal(agent_a, agent_b, deal=board)
+        second, _ = play_deal(agent_b, agent_a, deal=board)
+
+        a_total = first.log.total(Player.ELDER) + second.log.total(Player.YOUNGER)
+        b_total = first.log.total(Player.YOUNGER) + second.log.total(Player.ELDER)
+
+        a_points += a_total
+        b_points += b_total
+        if a_total > b_total:
+            a_wins += 1
+        elif b_total > a_total:
+            b_wins += 1
+        else:
+            drawn += 1
+
+    return DuelResult(
+        name_a=getattr(agent_a, "name", "A"),
+        name_b=getattr(agent_b, "name", "B"),
+        pairs=pairs,
+        a_wins=a_wins,
+        b_wins=b_wins,
+        drawn=drawn,
+        a_points=a_points,
+        b_points=b_points,
+    )
+
+
+def round_robin(
+    factories: Sequence[AgentFactory],
+    pairs: int,
+    rng: Optional[random.Random] = None,
+) -> list[DuelResult]:
+    """Every agent against every other, once."""
+    rng = rng or random.Random()
+    results: list[DuelResult] = []
+    for i, make_a in enumerate(factories):
+        for make_b in factories[i + 1:]:
+            results.append(duel(make_a, make_b, pairs, rng))
+    return results
+
+
+def ratings(
+    results: Sequence[DuelResult],
+    anchor: Optional[str] = None,
+    iterations: int = 500,
+) -> dict[str, float]:
+    """Bradley-Terry strengths, reported on the Elo scale.
+
+    Fitted by minorisation-maximisation, which converges to the maximum
+    likelihood estimate regardless of the order games were played in. Sequential
+    Elo updates do not have that property, and with a handful of agents the
+    order would visibly change the answer.
+    """
+    names: list[str] = []
+    for result in results:
+        for name in (result.name_a, result.name_b):
+            if name not in names:
+                names.append(name)
+
+    wins = {name: 0.0 for name in names}
+    games: dict[tuple[str, str], float] = {}
+    for result in results:
+        a, b = result.name_a, result.name_b
+        wins[a] += result.a_wins + 0.5 * result.drawn
+        wins[b] += result.b_wins + 0.5 * result.drawn
+        games[(a, b)] = games.get((a, b), 0.0) + result.pairs
+
+    strength = {name: 1.0 for name in names}
+    for _ in range(iterations):
+        updated = {}
+        for name in names:
+            denominator = 0.0
+            for (a, b), played in games.items():
+                if name == a:
+                    denominator += played / (strength[a] + strength[b])
+                elif name == b:
+                    denominator += played / (strength[a] + strength[b])
+            updated[name] = wins[name] / denominator if denominator else strength[name]
+        total = sum(updated.values()) or 1.0
+        strength = {name: value * len(names) / total for name, value in updated.items()}
+
+    base = strength.get(anchor) if anchor else None
+    if not base:
+        base = math.exp(sum(math.log(v) for v in strength.values()) / len(strength))
+    return {
+        name: 400.0 * math.log10(value / base) for name, value in strength.items()
+    }
+
+
+def format_table(results: Sequence[DuelResult], anchor: Optional[str] = None) -> str:
+    """A readable summary: pairwise results, then the fitted ratings."""
+    lines = [str(result) for result in results]
+    lines.append("")
+    lines.append(f"{'agent':<18}{'rating':>9}")
+    scores = ratings(results, anchor=anchor)
+    for name, rating in sorted(scores.items(), key=lambda kv: -kv[1]):
+        lines.append(f"{name:<18}{rating:>9.0f}")
+    return "\n".join(lines)
