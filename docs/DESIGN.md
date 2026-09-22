@@ -1,0 +1,465 @@
+# Piquet — Design Document
+
+> Status: living document. Last substantive revision 2026-09-21.
+> This file is the project's memory. If the conversation context is lost,
+> this document plus `PLAN.md` should be sufficient to resume work.
+
+## 1. What we are building
+
+A playable, teachable implementation of **Piquet**, the two-player 32-card
+game that was France's national card game from the 16th century until it
+faded after WWI. David Parlett calls it "still one of the most
+skill-rewarding card games for two," but it is now played only by
+aficionados. Our audience is therefore *new players*, and teaching is a
+first-class goal, not a bonus feature.
+
+Three deliverables, in priority order:
+
+1. A correct, fast, well-tested **rules engine**.
+2. An **opponent** whose skill is adjustable, and whose inconsistency is
+   separately adjustable.
+3. A **training mode** that is interactive rather than expository — bad
+   decisions discouraged, impossible decisions blocked, with reasons given.
+
+Non-goals for now: graphics beyond the functional (the user has free card
+art we will integrate later), networked play, and the 3- and 4-player
+variants (Piquet Normand, Piquet Voleur, Piquet à Écrire).
+
+## 2. Engineering conventions
+
+- **Python** for the reference implementation.
+- **Test-driven development** — tests precede implementation.
+- **Atomic commits** — one logical change each.
+- **Modular design** — GUI, rules, scoring, search, and agents are separable
+  so that future card games can reuse the parts.
+- **Portability kept cheap, not free**: game state is plain serializable data
+  from day one, and the test suite emits golden JSON vectors, so a future
+  JavaScript/TypeScript port is a mechanical translation that can be
+  *verified* rather than a rewrite. A browser-embeddable version is a
+  long-term aspiration.
+
+## 3. The rules, as we will implement them
+
+Sources: pagat.com/notrump/piquet.html and en.wikipedia.org/wiki/Piquet.
+Where they disagree, see §3.7.
+
+### 3.1 Pack and deal
+
+32-card pack (A K Q J 10 9 8 7 in each suit). Ace high. 12 cards each,
+8 to the **talon**, split 5 (top, for elder) and 3 (bottom, for younger).
+The non-dealer is **elder hand**, the dealer **younger hand**; dealing is a
+disadvantage. A **partie** is 6 deals with the deal alternating. The dealer
+may deal in 2s or 3s but must keep the same method for her remaining deals
+in the partie.
+
+Card values for tie-breaking: ace 11, court cards 10, others face value.
+
+### 3.2 Carte blanche
+
+A hand with no court cards scores **10**. It must be announced as soon as
+noticed, and proved by dealing the hand rapidly face up — *after* the
+opponent has discarded but *before* the holder discards. If elder holds it,
+he first announces how many cards he intends to discard, so younger can
+choose her own discards before seeing elder's hand.
+
+Two facts we can assert as tests: carte blanche occurs once in **1,792**
+deals (C(20,12)/C(32,12) = 5.579e-4, matching Wikipedia's "roughly once
+every 1,800 hands"), and **both players can never hold it simultaneously**
+(that would need 24 non-court cards; only 20 exist).
+
+### 3.3 The exchange
+
+Elder discards 1–5 face down and draws the same number from the top five.
+If he takes fewer than five, he may look at the remainder of those five.
+**Elder therefore always knows all five top talon cards.** This single fact
+drives most of §4.
+
+Younger then discards at least one and at most (8 − elder's take), usually
+3. If she leaves cards, she may expose the remainder to both players after
+elder leads.
+
+Each player keeps his own discards beside him and **may refer to them during
+play**. This matters: a bot consulting its own discards is not cheating.
+
+### 3.4 Declarations
+
+Three categories, declared **one at a time**, elder first, with younger
+answering *good* / *not good* / *equal* after each before the next begins.
+Elder may adapt a later declaration to what he learns from an earlier
+answer, but **may not revise a declaration upward** once answered. After
+elder leads to the first trick, younger announces and scores the categories
+where she said *not good*, or that elder skipped.
+
+- **Point** — most cards in one suit; scores that number of cards. Ties
+  broken by summed card value; exact ties score for neither.
+- **Sequence** — longest run of 3+ in a suit. Tierce 3, quart 4, **quint 15,
+  sixième 16, septième 17, huitième 18**. Note the jump from 4 to 15. The
+  winner also scores every other sequence he holds; the loser scores none.
+  Ties broken by top card; exact ties score for neither.
+- **Set** — quatorze (four of A/K/Q/J/10) 14, trio (three of same) 3. Nines
+  and below never count. Any quatorze beats any trio. Winner also scores his
+  other sets; loser scores none.
+
+**Sinking** — deliberately not declaring a combination — is legal, and is
+the strategic heart of the game. Declaring buys points; concealing buys
+information advantage in the play.
+
+Either player may afterwards ask to see any combination that was scored for,
+or that scored nothing because of equality.
+
+### 3.5 The play
+
+12 tricks, no trumps, must follow suit. 1 point for leading a card, 1 more
+for winning a card the opponent led, 1 for the last trick. **10 for cards**
+(winning most tricks; nothing at 6–6), or **40 for capot** (all 12).
+
+### 3.6 Pique and repique
+
+- **Repique** — 30+ in *declarations alone* before the opponent scores
+  anything: **+60**. For repique, points are reckoned in strict *category*
+  order: carte blanche, point, sequences, sets.
+- **Pique** — 30+ in declarations *and play* before the opponent scores
+  anything: **+30**. Reckoned in *actual occurrence* order. Only elder can
+  score a pique, because he always scores 1 for leading before younger can
+  score anything.
+- A player scores pique or repique, never both.
+- Equality in a declaration does not prevent either.
+
+**These two rules use two different orderings of the same points.** That is
+the single subtlest thing in Piquet, and it is why §5.2 models scoring as an
+ordered event log rather than a running total.
+
+### 3.7 Rule conflicts across sources
+
+**pagat.com is our authority. Where sources disagree, pagat wins.** The
+disagreements are still recorded here, because each one is a real variant
+someone plays, and most are cheap to put behind a flag.
+
+Sources consulted: `pagat.com` (authority), `en.wikipedia.org/wiki/Piquet`,
+`cardgameheaven.com/piquet`, and a period 36-card version hosted at CMU
+(see §3.8).
+
+| # | Question | pagat (authority) | Others | Decision |
+|---|---|---|---|---|
+| R1 | Do the 10 for *cards* count toward a pique? | **No** | Wikipedia **yes**; cardgameheaven **yes** | **No**, per pagat — but this is 2-against-1, so implement it as a flag and document it loudly |
+| R2 | Minimum length for *point*? | None | Wikipedia says 4; cardgameheaven says none | **No minimum** |
+| R3 | Must *younger* exchange at least one card? | **Yes** | Wikipedia yes; cardgameheaven says she is *not obliged* | **Yes, at least one** |
+| R4 | **Carte rouge** (all 12 cards used in declarations)? | Not mentioned | Wikipedia: 20 points, variants 10/40; cardgameheaven: absent | **Off by default**, behind a flag |
+| R5 | Last trick worth 1 or 10? | 1 | Wikipedia notes a 10 variant | **1** |
+| R6 | Exact ties in a category | Broken by value/top card | All agree: if *still* exactly equal, **neither player scores** | Neither scores — and per pagat, equality still does not block pique or repique |
+| R7 | Scoring system | Rubicon, 6 deals | Wikipedia also documents Piquet au Cent | **Rubicon.** Au Cent uses a 36-card pack and different trick scoring — a separate game, out of scope for v1 |
+
+On trick points specifically, cardgameheaven formulates them as "1 for
+winning a trick you led, 2 if the opponent led." We use pagat's accounting:
+**1 to the leader for leading, plus 1 to the winner if the opponent led it.**
+The two formulations nearly coincide but not exactly, and we follow pagat.
+
+Rubicon settlement (all modern sources agree): if the loser reached 100, the
+winner scores (difference + 100); if the loser failed to reach 100 — "crossed
+the Rubicon" — the winner scores (sum of both scores + 100). Worked example
+from Wikipedia: 105 to 101 pays 104; 97 to 89 pays 286.
+
+### 3.8 The period version, for context only
+
+The CMU medieval-recreation text describes a markedly older game, and it is
+worth knowing it exists so we do not mistake it for a variant of ours: a
+**36-card** pack (6s through aces), 12 cards in stock, **up to 8** exchanged
+per player, "ruffs" scored as one point per ten pips of the best suit
+(rounded), sequences of 5+ scoring 10 plus length, sets scoring **13** for
+three and 14 for four, capot worth **60**, and first to 100 winning. Both
+players holding a blank cancels both scores — which is impossible in the
+32-card game (§3.2).
+
+This is essentially the ancestor game, closer to *Le Cent* as Rabelais knew
+it in 1535. **We are not implementing it.** It is recorded because it
+explains where several modern rules came from, and because the historical
+literature is a source of annotated hands we may want for §10.
+
+## 4. What the mathematics actually says
+
+The user's opening hypothesis was that Piquet is a large but bounded set of
+outcomes that could be precomputed into a state transition matrix. That is
+**false at the whole-game level but true, and better than expected, at the
+subgame level.**
+
+### 4.1 The whole game is not tabular
+
+Deals alone: C(32,12) x C(20,12) = **2.84e13**. Elder then has 1,585 legal
+discards (sum of C(12,k) for k=1..5), and the play tree follows. Suit
+symmetry divides by only 24. This is heads-up-limit-poker scale, which
+required a research cluster and terabytes of storage. It is not a
+pocket-money project, and no transition matrix will be built.
+
+### 4.2 But the play phase is nearly perfect information
+
+Count what each player actually knows when the first card is led:
+
+- **Elder** knows his 12 cards and all 5 top talon cards — 17 identities.
+  15 cards remain unknown, and younger holds 12 of them:
+  **C(15,12) = 455 possible opponent hands (an upper bound).**
+- **Younger** knows her 12 and what she drew — roughly 15 identities, so
+  **C(17,12) = 6,188 (an upper bound).**
+
+Then the declaration dialogue happens, and it is extraordinarily
+informative: point length and value, sequence length and top card, set rank,
+plus the right to inspect any combination scored. In practice the consistent
+world count collapses to tens, sometimes to one.
+
+Solving a *single* world is cheap: 12 tricks, two players, no trumps, strict
+follow-suit, with equivalent-card collapsing. This is a far smaller problem
+than bridge double-dummy and should run in well under a millisecond with
+alpha-beta and a transposition table.
+
+**Conclusion: the play phase can be solved essentially exactly, in real
+time, on a laptop — by enumeration, not approximation.** This is the
+foundation of the whole AI design, and it is a genuinely lucky property of
+this particular game.
+
+### 4.3 So the difficulty lives in two other places
+
+- **The exchange.** 1,585 choices made blind against 20 unknown cards. This
+  is the expensive computation and the only plausible use of paid compute.
+- **Declaration and sinking.** The only genuinely game-theoretic decision,
+  because it is a *signaling* problem. See §6.3.
+
+## 5. Architecture
+
+Modules in dependency order. Only `search` is performance-critical, which is
+what keeps Python viable.
+
+```
+piquet/
+  cards.py        ranks, suits, bitboard hand representation
+  rules.py        phase state machine; legal action generation
+  combos.py       point / sequence / set detection and comparison
+  scoring.py      the event log, and pique/repique derivation
+  observation.py  what each seat legally knows
+  search.py       exact solver + world enumeration   <- the only hot code
+  agents/         the capability ladder (see §7)
+  explain.py      machine evaluation -> human concepts (see §8)
+  train/          self-play drivers and the move log
+  ui/             deferred; plug-and-play by contract
+```
+
+### 5.1 `observation` is the most important module
+
+It defines the information sets. If it leaks, the bot cheats and every
+measurement we take is meaningless; if it is too strict, the bot forgets
+things the rules explicitly allow it to consult (its own discards, exposed
+talon cards, combinations it may ask to see). Everything the AI does reads
+through this module, never from the raw state. It is also what makes the 455
+figure in §4.2 a real engineering quantity rather than a thought experiment.
+
+### 5.2 Scoring is an ordered event log, not a tally
+
+Every point scored is an event: `(who, amount, source, category, sequence
+number)`. Repique is derived by scanning that log in *category* order;
+pique by scanning it in *temporal* order (§3.6). A running integer total
+cannot express both.
+
+This structure pays for itself three times over: it makes the hardest rule
+in the game testable, it gives the tutor a ready-made narrative ("you
+reached 30 before she scored anything — that is a repique, +60"), and it is
+already the per-decision training log the project wants for later analysis.
+One structure, three purposes.
+
+### 5.3 Evaluations are decomposed, not scalar
+
+The solver returns a *vector* — declaration points, trick points, the cards
+bonus, pique/repique — never a single number. This costs almost nothing and
+buys explainability: "this discard costs you 2 points of point but gains 14
+in quatorze equity" is teachable; "EV −0.3" is not. A scalar evaluation
+would quietly make §8 impossible, which is why this is settled now rather
+than later.
+
+## 6. The AI plan
+
+Three subgames, three different techniques. This division is the core
+insight of the design.
+
+### 6.1 Play phase — exact search
+
+Enumerate the consistent opponent hands (455 or fewer for elder, 6,188 or
+fewer for younger, both usually far smaller after declarations), solve each
+exactly, combine. No learning, no training data, no cloud compute. It is
+solved because it is small.
+
+### 6.2 Exchange — Monte Carlo, then regression
+
+Generate candidate discards heuristically rather than enumerating all 1,585
+(keep length in the point suit, keep sequence and quatorze potential,
+prefer shedding nines and below). Roll each candidate forward through the
+§6.1 solver against sampled talons and opponent hands. Then fit a regression
+from hand features to discard value, so the shipped game *evaluates a
+function* instead of searching.
+
+This is the only step with a meaningful compute bill, and its cost is
+tunable along three axes (candidates considered, rollouts per candidate,
+hands sampled). **We will agree an estimated runtime and a local-vs-cloud
+decision before launching this in earnest.**
+
+### 6.3 Declaration and sinking — CFR
+
+Counterfactual Regret Minimization. Search is structurally incapable here:
+it assumes the opponent knows everything, so it can never learn to conceal.
+Sinking a quint trades 15 points for five cards' worth of secrecy, and the
+correct answer is a *mixed* strategy — sink this hand some percentage of the
+time — because every deterministic rule is exploitable once read.
+
+CFR plays itself, accumulates regret for actions not taken, plays
+proportionally to positive regret, and its *average* strategy provably
+converges to a Nash equilibrium in two-player zero-sum games. It is
+infeasible on the full game (most information sets would never be visited)
+but very feasible on the declaration dialogue alone, with the §6.1 solver
+supplying the value of each resulting position.
+
+Build this **last**. It is the most complex component and it depends on
+everything else.
+
+### 6.4 Why not an LLM
+
+Piquet is a perfect-recall combinatorial game in which exact search is
+cheap. A language model would be slower, weaker, and unexplainable. The one
+legitimate use is cosmetic and optional: phrasing the tutor's explanations
+in natural language. The engine decides; the model only narrates.
+
+### 6.5 A caution about self-play
+
+Pure self-play converges on strategies that beat *the agent's own lineage*
+and can be badly exploitable by an unseen human style. We will therefore
+maintain a **diverse opponent pool** — every rung of the §7 ladder, plus
+deliberately flawed agents — rather than training only against the current
+best. This also gives us the honest Elo measurement we need.
+
+## 7. Skill as a capability ladder, not a noise dial
+
+The obvious way to build a weak opponent is to give the strong one less
+search and more randomness. That produces a bot that is weak but *alien*:
+it blunders uniformly, in ways no human ever would.
+
+Instead, each skill level **adds a named capability** — and each capability
+is a concept a human player has to learn:
+
+| Level | Capability gained |
+|---|---|
+| 1 | Follows suit legally; plays its highest card |
+| 2 | Basic discard heuristics; keeps its longest suit |
+| 3 | Remembers which cards have been played |
+| 4 | Holds stop cards (guards in the opponent's long suit) |
+| 5 | Infers the opponent's shape from the declaration dialogue |
+| 6 | Plays the exchange from the trained §6.2 policy |
+| 7 | Full exact solver in the play phase |
+| 8 | Plays for pique/repique and the rubicon threshold |
+| 9 | Mixed declaration strategy from §6.3 — sinks correctly |
+
+This unifies the opponent and the tutor: the ladder *is* the curriculum, and
+the game can tell the player what changed ("level 5 opponents will use your
+declarations against you"). It also makes the opponent's weaknesses
+human-shaped, so beating a level-4 bot teaches something real.
+
+**Erraticism** is then a separate, orthogonal control: the effective level
+is drawn *per decision* from a distribution centred on the slider, with
+width set by the erratic control. Real players are inconsistent, not
+uniformly bad, so this reads as far more human than epsilon-greedy noise.
+
+## 8. Training mode falls out of the engine
+
+Because the §6.1 solver already produces a decomposed evaluation for *every*
+legal action, the interactive tutor is largely a rendering problem over data
+we already have:
+
+- **Impossible moves** come straight from `rules.legal_actions` — free.
+- **Bad moves** are ranked by evaluation loss and bucketed (sound / dubious
+  / blunder).
+- **Why** comes from the §5.3 decomposition and the §5.2 event log.
+
+Two things the tutor must do that the engine does not do by itself:
+
+1. **Close the temporal gap.** The consequence of an exchange decision lands
+   twenty moves later. Humans cannot perform that credit assignment;
+   machines can. The tutor must therefore show the consequence *immediately*
+   — "this discard will cost you the point" — rather than at end of hand.
+2. **Speak in concepts, not numbers.** See §9.
+
+The declaration phase deserves the most tutorial attention. It is where
+beginners are destroyed, it is nearly impossible to learn from a rules page,
+and no existing resource teaches sinking well.
+
+## 9. How humans learn card games, and how machines do not
+
+This section exists because a strong bot is **not** automatically a good
+teacher, and the difference has to be designed for rather than discovered
+late.
+
+**Humans** learn through *named patterns* — and Piquet hands us an unusually
+rich vocabulary already: quint, quatorze, repique, capot, sinking, stop
+cards. The vocabulary is the curriculum. Humans need *immediate* feedback,
+because they cannot assign credit across a twenty-move gap. They learn from
+losing in memorable, specific ways. They need *progressive disclosure*:
+point before sequences before sinking. They reason about the opponent's
+*mind*. And they retain rough heuristics with reasons attached — "throw your
+nines even if it wrecks your point, because point is the cheapest category"
+is memorable in a way that a coefficient never is.
+
+**Machines** need none of that. They learn in arbitrary order, never forget,
+assign credit across long horizons via value functions and regret, and
+arrive at policies that are correct and completely inarticulate. A CFR
+solution that says "sink 23% of the time" is *right*, and pedagogically
+useless on its own.
+
+The design consequences, each already committed to above:
+
+- The **capability ladder** (§7) is a machine implementation of a human
+  curriculum — that is why skill is not a noise dial.
+- The **event log** (§5.2) and **decomposed evaluation** (§5.3) exist so the
+  tutor can say *why*, not just *how much*.
+- The **diverse opponent pool** (§6.5) exists because a human is an unseen
+  style, and pure self-play is fragile against those.
+- The tutor **closes the temporal gap** (§8) because that is the specific
+  thing human learning cannot do and our engine can.
+
+## 10. Testing strategy
+
+TDD throughout, but three kinds of test deserve naming:
+
+1. **Unit tests** on combination detection, comparison, and the scoring
+   event log. Pique and repique get adversarial treatment — that is the
+   likeliest place for a subtle permanent bug.
+2. **Constructed deals.** A text format for specifying an exact deal, so any
+   rules edge case can be written as a fixture. Needed for TDD anyway; also
+   lets us encode annotated hands from the historical literature (Cavendish,
+   Hoyle, Foster, Parlett).
+3. **Statistical invariants** over many random deals — the sort of test that
+   catches errors unit tests cannot:
+   - carte blanche occurs 1 deal in ~1,792
+   - both players never hold carte blanche
+   - elder wins materially more than younger (dealing is a disadvantage)
+   - every deal's points reconcile against the event log
+
+Golden JSON vectors are emitted from the suite from the first milestone, to
+validate any future port.
+
+## 11. Milestones
+
+1. **Cards and combinations.** Representation, plus point/sequence/set
+   detection and comparison. Pure functions, heavily tested.
+2. **Rules engine and the event log.** The full phase machine including the
+   carte blanche ordering quirk and the category-by-category declaration
+   dialogue. Scoring derived from the log; pique and repique correct.
+3. **Random agent plays 10,000 legal games** without crashing, with the
+   statistical invariants of §10 passing and the move log written from the
+   very first game — not retrofitted.
+4. **Heuristic agents**, ladder levels 1–5. A round-robin Elo harness.
+5. **Exact play solver** (§6.1) and world enumeration. Ladder level 7.
+   Verify the 455 bound empirically.
+6. **A playable game** with a basic UI and the skill and erratic controls.
+7. **Exchange policy** (§6.2). *Runtime and cost agreed before launching.*
+8. **Training mode** (§8).
+9. **CFR declarations** (§6.3). Ladder level 9.
+
+## 12. Deferred
+
+- Card art (assets already sourced by the user).
+- JavaScript/TypeScript port for browser embedding.
+- Piquet au Cent (36-card pack, different game).
+- Three- and four-player variants.
