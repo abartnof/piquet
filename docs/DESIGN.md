@@ -146,14 +146,14 @@ Sources consulted, roughly in order of trustworthiness:
 | **fr.wikipedia.org**, **de.wikipedia.org** | Good for terminology and history; both describe materially different continental rules (§3.9) |
 | **cardgameheaven.com** | Adequate |
 | **whiteknucklecards.com** | **Unreliable** — see §3.9 |
-| **britannica.com** | Could not be retrieved (HTTP 403) |
+| **britannica.com** | Very high — the piquet entry is **written by David Parlett**, and describes rubicon piquet specifically. Retrieved manually after the site refused automated access |
 | CMU medieval text | A different, older game (§3.8) |
 
 | # | Question | pagat | Other sources | Decision |
 |---|---|---|---|---|
-| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks (explicit), Parlett. **Yes**: en-Wikipedia, cardgameheaven | **No.** pagat is in the majority once Parlett and Wikibooks are counted. Flag retained, but this is no longer a close call |
+| R1 | Do the 10 for *cards* count toward a pique? | **No** | **No**: Wikibooks (explicit), Parlett. **Yes**: en-Wikipedia, cardgameheaven. Britannica defines pique as "30 points in combinations and tricks" without resolving it | **No.** pagat, Parlett and Wikibooks against two weaker sources. Flag retained |
 | R2 | Minimum length for *point*? | None | Only en-Wikipedia claims 4; everyone else, none | **No minimum** |
-| R3 | Must *younger* exchange at least one card? | **Yes** | Wikibooks: yes in Rubicon, optional in au cent. cardgameheaven and Parlett: optional | **Yes, at least one** (per pagat and the Rubicon reading) |
+| R3 | Must *younger* exchange at least one card? | **Yes** | **Britannica (Parlett), writing specifically about rubicon piquet: "younger... need not exchange any"**; cardgameheaven agrees; Wikibooks says required in Rubicon, optional in au cent | **Yes, at least one**, per pagat — but this is now the *closest* call in the table, with the best single source against us. Flag it, and revisit if play-testing suggests otherwise |
 | R4 | **Carte rouge**? | Not mentioned | Values vary wildly: 10, 20, 40, or 50. Parlett defines it as *every card participating in some scoring combination* | **Off by default**, behind a flag. The definition itself is unstable, which is reason enough to leave it out of v1 |
 | R5 | Last trick worth? | **1** | Wikibooks 1; fr-Wikipedia 2; de-Wikipedia 3 (1 under Portland Club); en-Wikipedia notes a 10 variant | **1** |
 | R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
@@ -164,6 +164,33 @@ these as the score *jumping to* 60 and 90 respectively, rather than as +30 and
 +60 bonuses. These are the same rule — 30+30 and 30+60 — stated differently.
 Ours is the additive form, but the continental form is a nice confirmation that
 the thresholds are right.
+
+### 3.7a Two things Britannica settles
+
+**Trick scoring is not what it looks like.** Britannica says "a trick scores one
+point if won by the player who led it; otherwise it scores two points," and
+Parlett's own site gives the same shorthand. Read carelessly, that says the
+winner of an opponent-led trick takes 2 and the leader takes nothing — which
+would contradict pagat and, more tellingly, contradict Britannica's own
+statement that elder "leads a card to the first trick, and adds one point for
+leading."
+
+The consistent reading is that this describes the trick's **total yield**, not
+one player's take:
+
+- Leader always scores **1 for leading**, regardless of outcome.
+- If the opponent wins it, the opponent scores **1** more.
+- So the trick is worth 1 point (leader led and won) or 2 (split 1–1).
+
+This matches pagat exactly. Recording it because the shorthand is a genuine
+trap, and because getting it wrong would silently corrupt every pique
+calculation — pique depends on *who* scored and *when*, not just on totals.
+
+**Set ties are impossible.** Britannica: "ties are not possible" for sets. This
+is a fact about the pack rather than a rule — two players cannot both hold three
+of the same rank (that needs six cards of a rank; only four exist), and sets are
+compared by rank, which is unique. So unlike point and sequence, the set
+category never needs exact-tie handling. Assert it rather than handle it.
 
 ### 3.8 The sequence scores are a formula, not a table
 
@@ -213,6 +240,28 @@ sequence formula in §3.8 is its one clear contribution.
 None of these are being implemented. They are recorded because they explain
 where our rules came from, and because the historical literature (Cavendish,
 Hoyle, Foster, Parlett) is a source of annotated hands we may want for §10.
+
+### 3.10 Worked examples to use as test fixtures
+
+From Britannica (Parlett), usable directly as golden tests:
+
+**Repique.** Elder scores 7 for point, then 15, 4 and 3 for sequences, then 3
+for a trio = **32**, plus **60** for repique = **92**. Note this exercises the
+"winner of a category also scores his lesser combinations in it" rule twice.
+
+**Repique denied.** In the same hand, had younger declared a blank, the repique
+would be prevented — because carte blanche comes first in the repique ordering,
+so younger would have scored before elder reached 30. A precise, adversarial
+test of the ordering rule in §3.6.
+
+**Rubicon, both players short.** Britannica is explicit that the loser is
+rubiconed "even if the winner also fails" to reach 100. An easy case to get
+wrong by guarding on the winner's score instead of the loser's.
+
+**A prior for the exchange policy (§6.2).** Britannica notes elder "in practice
+usually exchanges five cards." A trained policy that rarely takes all five is
+probably wrong, and this is a cheap sanity check on §6.2 before we spend
+anything on compute.
 
 ## 4. What the mathematics actually says
 
@@ -279,6 +328,12 @@ piquet/
   train/          self-play drivers and the move log
   ui/             deferred; plug-and-play by contract
 ```
+
+Britannica classifies piquet as a **trick-and-meld game**, alongside bezique,
+pinochle and sixty-six. That is the right seam for the reusable-engine goal: a
+trick-taking core (following suit, trick resolution, trick scoring) beneath a
+separate declaration/meld layer. Keeping those two apart is what makes the next
+card game cheap, so `rules.py` should not let meld logic leak into trick logic.
 
 ### 5.1 `observation` is the most important module
 
