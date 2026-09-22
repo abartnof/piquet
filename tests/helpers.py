@@ -11,7 +11,7 @@ from piquet.combos import is_carte_blanche
 from piquet.rules import CARTE_BLANCHE_SCORE, Deal, Phase, deal_from
 from piquet.scoring import Category, Player, ScoreLog
 
-__all__ = ["deal_with", "declaring", "remaining_after"]
+__all__ = ["deal_with", "declaring", "remaining_after", "play_cards", "skip_declarations"]
 
 
 def remaining_after(*hands: Hand) -> list[Card]:
@@ -60,3 +60,22 @@ def declaring(elder: str, younger: str) -> Deal:
         phase=Phase.DECLARE_POINT,
         log=log,
     )
+
+
+def play_cards(deal, *codes: str):
+    """Play an explicit sequence of cards, alternating as the rules require."""
+    from piquet.cards import Card
+
+    for code in codes:
+        deal = deal.play(deal.to_play, Card.parse(code))
+    return deal
+
+
+def skip_declarations(deal):
+    """Both players sink all three categories, reaching the play phase."""
+    from piquet.rules import Declaration
+    from piquet.scoring import Player
+
+    while deal.to_declare is not None:
+        deal = deal.declare(deal.to_declare, Declaration.sink())
+    return deal

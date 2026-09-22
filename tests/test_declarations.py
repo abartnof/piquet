@@ -105,14 +105,23 @@ def test_a_player_cannot_overstate_what_he_holds():
         Declaration.of(CardSet(Rank.ACE, 4)).validate(hand, Category.SETS)
 
 
-def test_two_sequences_cannot_be_claimed_from_the_same_suit():
-    """They would have to share cards."""
+def test_two_sequences_may_share_a_suit_when_a_gap_splits_it():
+    """Seven spades missing the ten are a quart and a tierce, both genuinely
+    held and both declarable."""
+    hand = parse_hand("7S 8S 9S JS QS KS AS")
+    both = Declaration.full(hand, Category.SEQUENCES)
+    both.validate(hand, Category.SEQUENCES)
+    assert both.score == 4 + 3
+
+
+def test_two_sequences_cannot_be_claimed_that_share_cards():
+    """A tierce to the queen and a tierce to the knave overlap on two cards."""
     hand = parse_hand("7S 8S 9S TS JS QS")
-    doubled = Declaration.of(
-        Sequence(Suit.SPADES, Rank.QUEEN, 3), Sequence(Suit.SPADES, Rank.NINE, 3)
+    overlapping = Declaration.of(
+        Sequence(Suit.SPADES, Rank.QUEEN, 3), Sequence(Suit.SPADES, Rank.JACK, 3)
     )
-    with pytest.raises(ValueError, match="same suit"):
-        doubled.validate(hand, Category.SEQUENCES)
+    with pytest.raises(ValueError, match="shares cards"):
+        overlapping.validate(hand, Category.SEQUENCES)
 
 
 # --------------------------------------------------------------------------

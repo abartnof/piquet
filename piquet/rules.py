@@ -20,7 +20,7 @@ from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Optional, Sequence as TypingSequence, Union
 
-from piquet.cards import Card, Hand, full_deck
+from piquet.cards import Card, Hand, Suit, full_deck
 from piquet.combos import (
     CardSet,
     Comparison,
@@ -37,7 +37,7 @@ from piquet.combos import (
 from piquet.scoring import Category, Player, ScoreLog
 
 __all__ = [
-    "Phase", "Deal", "Declaration", "CategoryResult",
+    "Phase", "Deal", "Declaration", "CategoryResult", "Trick",
     "deal_from", "deal_shuffled", "CARTE_BLANCHE_SCORE",
 ]
 
@@ -47,6 +47,9 @@ HAND_SIZE = 12
 TALON_SIZE = 8
 ELDER_MAX_EXCHANGE = 5
 CARTE_BLANCHE_SCORE = 10
+TRICKS_PER_DEAL = 12
+CARDS_SCORE = 10
+CAPOT_SCORE = 40
 
 
 class Phase(Enum):
@@ -156,12 +159,18 @@ class Declaration:
         if category is Category.POINT and len(self.claims) > 1:
             raise ValueError("only one point may be declared")
         if category is Category.SEQUENCES:
-            suits = [claim.suit for claim in self.claims]
-            if len(set(suits)) != len(suits):
-                raise ValueError(
-                    "two sequences cannot be claimed from the same suit: "
-                    "they would share cards"
-                )
+            # Two sequences may share a suit -- a gap splits it, so 7-8-9 and
+            # J-Q-K-A are both genuinely held. What they may not do is overlap.
+            seen: set[tuple[Suit, int]] = set()
+            for claim in self.claims:
+                lowest = claim.top - claim.length + 1
+                cells = {(claim.suit, r) for r in range(lowest, claim.top + 1)}
+                if cells & seen:
+                    raise ValueError(
+                        f"cannot claim {claim}: it shares cards with another "
+                        "sequence already declared"
+                    )
+                seen |= cells
         if category is Category.SETS:
             ranks = [claim.rank for claim in self.claims]
             if len(set(ranks)) != len(ranks):
@@ -205,6 +214,32 @@ class CategoryResult:
 
 
 @dataclass(frozen=True, slots=True)
+class Trick:
+    """One trick: a card led, and the card played to it."""
+
+    leader: Player
+    led: Card
+    followed: Optional[Card] = None
+
+    @property
+    def complete(self) -> bool:
+        return self.followed is not None
+
+    @property
+    def winner(self) -> Player:
+        """The higher card of the suit led takes it. There are no trumps, so a
+        card of another suit never wins, however high."""
+        if self.followed is None:
+            raise ValueError("the trick is not finished")
+        if (
+            self.followed.suit is self.led.suit
+            and self.followed.rank > self.led.rank
+        ):
+            return self.leader.opponent
+        return self.leader
+
+
+@dataclass(frozen=True, slots=True)
 class Deal:
     """One deal, mid-flight. Immutable; every action returns a new `Deal`."""
 
@@ -221,6 +256,12 @@ class Deal:
     results: tuple[CategoryResult, ...] = ()
     #: Younger's winnings, withheld until elder has led to the first trick.
     younger_pending: tuple[tuple[int, Category, str], ...] = ()
+    #: Tricks already played, in order.
+    tricks: tuple[Trick, ...] = ()
+    #: The trick in progress: led to, but not yet followed.
+    current_trick: Optional[Trick] = None
+    #: Who leads to the next trick. Elder leads to the first.
+    leader: Player = Player.ELDER
 
     # -- reading ----------------------------------------------------------
 
@@ -371,6 +412,119 @@ class Deal:
             log=log,
             younger_pending=pending,
         )
+
+    # -- the play ---------------------------------------------------------
+
+    @property
+    def to_play(self) -> Optional[Player]:
+        """Whose turn it is to play a card, if the deal is in the play."""
+        if self.phase is not Phase.PLAY:
+            return None
+        return self.leader if self.current_trick is None else self.leader.opponent
+
+    def tricks_won(self, player: Player) -> int:
+        return sum(1 for trick in self.tricks if trick.winner is player)
+
+    def legal_plays(self, player: Optional[Player] = None) -> Hand:
+        """The cards this player may legally play right now.
+
+        The leader may lead anything. The second player must follow suit if he
+        can, and may otherwise play any card. This is also what the tutor uses
+        to rule moves out: an illegal move costs nothing to detect.
+        """
+        player = player or self.to_play
+        if player is None:
+            return Hand.empty()
+        hand = self.hand_of(player)
+        if self.current_trick is None:
+            return hand
+        led = self.current_trick.led.suit
+        following = Hand.of(*(card for card in hand if card.suit is led))
+        return following if following else hand
+
+    def play(self, player: Player, card: Card) -> Deal:
+        """Lead or follow with one card."""
+        if self.phase is not Phase.PLAY:
+            raise ValueError(
+                f"no card can be played: the deal is at {self.phase.value}"
+            )
+        if player is not self.to_play:
+            raise ValueError(
+                f"{player} cannot play out of turn: {self.to_play} is to play"
+            )
+        if card not in self.hand_of(player):
+            raise ValueError(f"{player} does not hold {card.code}")
+        if card not in self.legal_plays(player):
+            led = self.current_trick.led.suit
+            raise ValueError(
+                f"{player} must follow suit: {led.name.lower()} was led"
+            )
+
+        hands = _replace_at(
+            self.hands, player.index, self.hand_of(player).remove(card)
+        )
+
+        if self.current_trick is None:
+            return self._lead(player, card, hands)
+        return self._follow(player, card, hands)
+
+    def _lead(self, player: Player, card: Card, hands) -> Deal:
+        log = self.log.record(player, 1, Category.PLAY, f"leads {card}")
+        deal = replace(
+            self, hands=hands, current_trick=Trick(player, card), log=log
+        )
+        if not self.tricks:
+            # Younger declares only after elder has led to the first trick.
+            # That single point is the whole reason she can never pique.
+            deal = deal._release_youngers_declarations()
+        return deal
+
+    def _follow(self, player: Player, card: Card, hands) -> Deal:
+        trick = replace(self.current_trick, followed=card)
+        winner = trick.winner
+        tricks = self.tricks + (trick,)
+
+        log = self.log
+        if winner is not trick.leader:
+            log = log.record(winner, 1, Category.PLAY, f"wins with {card}")
+        if len(tricks) == TRICKS_PER_DEAL:
+            log = log.record(winner, 1, Category.PLAY, "last trick")
+
+        deal = replace(
+            self,
+            hands=hands,
+            tricks=tricks,
+            current_trick=None,
+            leader=winner,
+            log=log,
+        )
+        if len(tricks) == TRICKS_PER_DEAL:
+            deal = deal._finish()
+        return deal
+
+    def _release_youngers_declarations(self) -> Deal:
+        log = self.log
+        for amount, category, detail in self.younger_pending:
+            log = log.record(Player.YOUNGER, amount, category, detail)
+        return replace(self, log=log, younger_pending=())
+
+    def _finish(self) -> Deal:
+        """Score the cards, apply the pique or repique, and close the deal."""
+        elder = self.tricks_won(Player.ELDER)
+        younger = TRICKS_PER_DEAL - elder
+
+        log = self.log
+        if elder == TRICKS_PER_DEAL:
+            log = log.record(Player.ELDER, CAPOT_SCORE, Category.CARDS, "capot")
+        elif younger == TRICKS_PER_DEAL:
+            log = log.record(Player.YOUNGER, CAPOT_SCORE, Category.CARDS, "capot")
+        elif elder > younger:
+            log = log.record(Player.ELDER, CARDS_SCORE, Category.CARDS, "the cards")
+        elif younger > elder:
+            log = log.record(Player.YOUNGER, CARDS_SCORE, Category.CARDS, "the cards")
+        # Six each: the cards are divided and neither scores.
+
+        return replace(self, phase=Phase.COMPLETE, log=log.with_bonuses())
 
 
 def _replace_at(pair: tuple[Hand, Hand], index: int, value: Hand) -> tuple[Hand, Hand]:

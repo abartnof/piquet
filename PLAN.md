@@ -6,7 +6,7 @@
 
 ## Where we are right now
 
-**Phase: Milestone 1 complete. Terminal UI chosen for the first interface.**
+**Phase: Milestone 2 complete. A full deal can be played end to end.**
 
 Done:
 - Rules researched across **twenty sources, nine of them period texts read in
@@ -22,8 +22,14 @@ Done:
 - Architecture, AI approach, skill model, and tutor design written up (§5–§9).
 - Git repository initialised on `main`. Nothing pushed; no remote configured.
 
-Next action: **Milestone 2 — `rules.py` and `scoring.py`**: the phase state
-machine, the scoring event log, and pique/repique.
+Next action: **Milestone 3** — a random agent playing 10,000 legal deals with
+the statistical invariants checked and the move log written from the first game.
+
+A smoke run of 5,000 random deals already completes with all invariants
+holding. Early figures, from deliberately bad play: elder wins 53% of deals,
+carte blanche appeared 3 times against 2.8 expected, and both bonuses occur —
+105 elder piques, 32 elder repiques, and 16 **younger** repiques, which is the
+observable proof that the category-order derivation is right.
 
 ## Settled decisions
 
@@ -44,7 +50,7 @@ machine, the scoring event log, and pique/repique.
 ## Milestones
 
 - [x] 1. `cards` + `combos` — representation, detection, comparison (94 tests)
-- [ ] 2. `rules` + `scoring` — phase machine, event log, pique/repique
+- [x] 2. `rules` + `scoring` — phase machine, event log, pique/repique (191 tests)
 - [ ] 3. Random agent plays 10,000 legal games; statistical invariants pass;
          move log written from the first game
 - [ ] 4. Heuristic agents, ladder levels 1–5; Elo round-robin harness
