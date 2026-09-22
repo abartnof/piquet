@@ -74,7 +74,6 @@ def play_cards(deal, *codes: str):
 def skip_declarations(deal):
     """Both players sink all three categories, reaching the play phase."""
     from piquet.rules import Declaration
-    from piquet.scoring import Player
 
     while deal.to_declare is not None:
         deal = deal.declare(deal.to_declare, Declaration.sink())

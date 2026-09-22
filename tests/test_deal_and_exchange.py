@@ -8,7 +8,7 @@ from the top of the stock (Cavendish, Law 23).
 
 import pytest
 
-from piquet.cards import Card, Hand, full_deck, parse_hand
+from piquet.cards import Card, Hand, full_deck
 from piquet.rules import Deal, Phase, deal_from, deal_shuffled
 from piquet.scoring import Category, Player
 

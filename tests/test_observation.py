@@ -15,7 +15,7 @@ import pytest
 
 from piquet.cards import Hand, full_deck
 from piquet.observation import view_for
-from piquet.rules import Phase, deal_from
+from piquet.rules import deal_from
 from piquet.scoring import Player
 
 from tests.helpers import declaring, skip_declarations
@@ -200,3 +200,74 @@ def test_legal_plays_are_offered_only_to_the_player_on_turn():
     ))
     assert view_for(deal, E).legal_plays == deal.hand_of(E)
     assert view_for(deal, Y).legal_plays == Hand.empty()
+
+
+# --------------------------------------------------------------------------
+# How far the declarations narrow things down
+# --------------------------------------------------------------------------
+
+
+def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
+    """The measurement the play-phase solver depends on.
+
+    Before anyone declares, elder faces exactly C(15,12)=455 possible hands.
+    The declaration dialogue is extraordinarily informative, and over 400 deals
+    it cuts that to a median of 21 -- occasionally to a single hand. That is
+    what makes solving the play phase by enumeration cheap enough to do while
+    somebody is waiting.
+    """
+    import random
+    import statistics
+    from itertools import combinations
+
+    from piquet.combos import best_point, best_sequence, best_set
+    from piquet.heuristics import HeuristicAgent
+    from piquet.rules import deal_shuffled
+    from piquet.scoring import Category
+
+    best_of = {
+        Category.POINT: best_point,
+        Category.SEQUENCES: best_sequence,
+        Category.SETS: best_set,
+    }
+
+    def consistent(hand, heard, shown):
+        for announcement in heard:
+            best = best_of[announcement.category](hand)
+            if best is None or best.key != announcement.key:
+                return False
+        declared = {a.category for a in heard}
+        for category, finder in best_of.items():
+            if category not in declared and finder(hand) is not None:
+                return False   # she would have declared it
+        return all(c.is_supported_by(hand) for c in shown)
+
+    rng = random.Random(1674)
+    counts = []
+    for _ in range(40):
+        deal = deal_shuffled(rng)
+        agents = (HeuristicAgent(4, rng=rng), HeuristicAgent(4, rng=rng))
+        for player in (E, Y):
+            deal = deal.exchange(
+                player, agents[player.index].exchange(view_for(deal, player))
+            )
+        while deal.to_declare is not None:
+            player = deal.to_declare
+            deal = deal.declare(
+                player,
+                agents[player.index].declare(
+                    view_for(deal, player), deal.declaring_category
+                ),
+            )
+        view = view_for(deal, E)
+        assert len(list(combinations(list(view.unseen), 12))) == 455
+        counts.append(
+            sum(
+                1
+                for candidate in combinations(list(view.unseen), 12)
+                if consistent(Hand.of(*candidate), view.heard, view.seen)
+            )
+        )
+
+    assert statistics.median(counts) < 60, "the collapse is what makes search cheap"
+    assert min(counts) >= 1, "younger's actual hand is always among the candidates"

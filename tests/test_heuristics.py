@@ -10,13 +10,13 @@ import random
 
 import pytest
 
-from piquet.cards import Card, Hand, parse_hand
+from piquet.cards import Card, parse_hand
 from piquet.combos import Point
 from piquet.heuristics import MAX_LEVEL, SINK_CEILING, HeuristicAgent
 from piquet.observation import view_for
 from piquet.rules import Declaration, Phase, deal_shuffled
 from piquet.scoring import Category, Player
-from piquet.style import BALANCED, Style
+from piquet.style import Style
 
 from tests.helpers import deal_with, declaring, skip_declarations
 

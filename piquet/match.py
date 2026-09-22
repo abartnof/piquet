@@ -16,7 +16,7 @@ from typing import Iterable, Optional
 from piquet.agents import Agent
 from piquet.observation import view_for
 from piquet.rules import Deal, Phase, deal_shuffled
-from piquet.scoring import Category, Player, ScoreLog
+from piquet.scoring import Category, Player
 
 __all__ = ["Decision", "DealRecord", "play_deal", "play_deals", "write_jsonl"]
 

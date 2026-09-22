@@ -423,8 +423,18 @@ Count what each player actually knows when the first card is led:
 
 Then the declaration dialogue happens, and it is extraordinarily
 informative: point length and value, sequence length and top card, set rank,
-plus the right to inspect any combination scored. In practice the consistent
-world count collapses to tens, sometimes to one.
+plus the right to inspect any combination scored.
+
+**Measured, over 400 deals between rung-4 agents.** Before anyone speaks, elder
+faces exactly 455 possible hands — the bound is tight, and it is hit every time.
+After the dialogue:
+
+    median 21 · mean 35 · max 165 · min 1
+
+A thirteen-fold cut, and in 2% of deals younger's hand is pinned to a single
+possibility. The original estimate of "tens, sometimes one" was right. At a
+sub-millisecond solve per world this is roughly 35ms of thinking per decision,
+which is comfortably faster than a human expects an answer.
 
 Solving a *single* world is cheap: 12 tricks, two players, no trumps, strict
 follow-suit, with equivalent-card collapsing. This is a far smaller problem

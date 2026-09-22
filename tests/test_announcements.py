@@ -10,7 +10,7 @@ information is the hinge the whole game turns on. Three separate things happen:
   the shape of your hand without giving away the suit.
 """
 
-from piquet.cards import Rank, Suit
+from piquet.cards import Suit
 from piquet.combos import Point
 from piquet.observation import view_for
 from piquet.rules import Declaration
