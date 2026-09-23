@@ -16,7 +16,7 @@ from piquet.observation import view_for
 from piquet.rules import Declaration
 from piquet.scoring import Category, Player
 
-from tests.helpers import declaring
+from tests.helpers import after_elders_lead, declaring
 
 E, Y = Player.ELDER, Player.YOUNGER
 
@@ -85,9 +85,24 @@ def test_a_sink_announces_nothing_at_all():
     assert view_for(deal, Y).awaiting_answer is None
 
 
-def test_both_players_hear_what_the_other_announced():
+def test_younger_hears_elder_as_he_goes():
+    """He names and scores each category as it is settled, so she hears it at
+    once -- and may ask to see anything that scored."""
     deal = declare_point(declare_point(declaring(**LOPSIDED), E), Y)
     assert [a.primary for a in view_for(deal, Y).heard] == [8]
+
+
+def test_elder_hears_nothing_of_hers_until_he_has_led():
+    """She answers "good" or "not good" and names nothing else. He learns that
+    her point beat his, and chooses the card he leads without learning more.
+
+    This is the same rule that lets him pique by leading, seen from the other
+    side, and it is what makes the first lead a genuinely blind one."""
+    deal = declare_point(declare_point(declaring(**LOPSIDED), E), Y)
+    assert view_for(deal, E).heard == ()
+    assert view_for(deal, E).outcomes == ((Category.POINT, E),), "the score is called"
+
+    deal = after_elders_lead(deal)
     assert [a.primary for a in view_for(deal, E).heard] == [7]
 
 
@@ -108,7 +123,7 @@ def test_a_combination_that_scores_must_be_shown():
 def test_a_beaten_declaration_is_never_shown():
     """Younger loses the point, so she gave away the shape of her hand -- seven
     cards in some suit -- without giving away which suit."""
-    deal = declare_point(declare_point(declaring(**LOPSIDED), E), Y)
+    deal = after_elders_lead(declare_point(declare_point(declaring(**LOPSIDED), E), Y))
     assert view_for(deal, E).seen == ()
     assert [a.primary for a in view_for(deal, E).heard] == [7]
 
@@ -117,8 +132,8 @@ def test_an_equal_declaration_is_shown_to_both():
     """"...or which caused no score because of equality"."""
     deal = declare_point(declare_point(declaring(**TIED_POINT), E), Y)
     assert deal.results[-1].winner is None
-    assert len(view_for(deal, E).seen) == 1
     assert len(view_for(deal, Y).seen) == 1
+    assert len(view_for(after_elders_lead(deal), E).seen) == 1
 
 
 def test_sinking_gives_away_nothing_whatever():
@@ -148,3 +163,64 @@ def test_understating_a_point_reveals_only_the_smaller_shape():
     deal = declare_point(deal, Y)
     assert deal.results[-1].winner is Y, "the understatement loses the category"
     assert view_for(deal, Y).seen == (), "and so is never shown"
+
+
+# --------------------------------------------------------------------------
+# The tie-break is asked for, not volunteered
+# --------------------------------------------------------------------------
+#
+# "Point of five." -- "Equal." -- "Making forty-nine." -- "Good."
+#
+# The pip total, the top card of a sequence and the rank of a set are the
+# tie-break, and they are spoken only when the two shapes match. And only elder
+# is ever asked for his, because he speaks first: younger answers his number
+# instead of naming her own, and on the occasions she has something to name she
+# has won the category and must show the cards anyway.
+
+
+def test_younger_must_answer_from_the_shape_alone():
+    """Which is what makes "good" or "not good" a decision and not a lookup."""
+    deal = declare_point(declaring(**LOPSIDED), E)
+    heard = view_for(deal, Y).awaiting_answer
+    assert heard.primary == 8
+    assert heard.tiebreak is None
+
+
+def test_a_beaten_point_never_states_its_pip_value():
+    """Younger loses the point, so she shows nothing -- and she was never asked
+    what her seven cards were worth either."""
+    deal = after_elders_lead(declare_point(declare_point(declaring(**LOPSIDED), E), Y))
+    heard, = view_for(deal, E).heard
+    assert heard.primary == 7, "the shape is public"
+    assert heard.tiebreak is None, "the pip total was never spoken"
+    assert view_for(deal, E).seen == ()
+
+
+def test_a_winning_point_gives_up_its_value_by_being_shown_not_by_being_said():
+    deal = declare_point(declare_point(declaring(**LOPSIDED), E), Y)
+    heard, = view_for(deal, Y).heard
+    assert heard.tiebreak is None
+    assert [c.pip_value for c in view_for(deal, Y).seen] == [75]
+
+
+def test_matching_shapes_are_what_make_elder_state_his_number():
+    """Both hold a four-card point worth 41, so he is asked and answers."""
+    deal = declare_point(declare_point(declaring(**TIED_POINT), E), Y)
+    heard, = view_for(deal, Y).heard
+    assert (heard.primary, heard.tiebreak) == (4, 41)
+
+
+def test_an_announcement_is_consistent_with_a_holding_only_as_far_as_it_went():
+    """A shape-only announcement must not be read as pinning the tie-break."""
+    from piquet.combos import Point
+    from piquet.rules import Announcement
+
+    shape = Announcement(Category.POINT, 5, None)
+    assert shape.matches(Point(Suit.SPADES, 5, 49))
+    assert shape.matches(Point(Suit.HEARTS, 5, 44))
+    assert not shape.matches(Point(Suit.SPADES, 6, 49))
+
+    stated = Announcement(Category.POINT, 5, 49)
+    assert stated.matches(Point(Suit.SPADES, 5, 49))
+    assert not stated.matches(Point(Suit.HEARTS, 5, 44))
+    assert not shape.matches(None)

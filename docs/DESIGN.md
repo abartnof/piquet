@@ -422,19 +422,30 @@ Count what each player actually knows when the first card is led:
   **C(17,12) = 6,188 (an upper bound).**
 
 Then the declaration dialogue happens, and it is extraordinarily
-informative: point length and value, sequence length and top card, set rank,
-plus the right to inspect any combination scored.
+informative: point length, sequence length, set size, the tie-break whenever
+two shapes match, and the right to inspect any combination that scored.
 
-**Measured, over 400 deals between rung-4 agents.** Before anyone speaks, elder
-faces exactly 455 possible hands — the bound is tight, and it is hit every time.
-After the dialogue:
+**Measured, over 300 deals between rung-4 agents, at elder's first lead** —
+which is the earliest either player can have heard everything, because younger
+names nothing until he has led:
 
-    median 21 · mean 35 · max 165 · min 1
+    elder   median 36 · mean  60
+    younger median 56 · mean 118
 
-A thirteen-fold cut, and in 2% of deals younger's hand is pinned to a single
-possibility. The original estimate of "tens, sometimes one" was right. At a
-sub-millisecond solve per world this is roughly 35ms of thinking per decision,
-which is comfortably faster than a human expects an answer.
+Roughly a twelve-fold cut for elder and a hundred-fold one for younger, and in
+some deals the hand is pinned to a single possibility. The original estimate of
+"tens, sometimes one" was right.
+
+The asymmetry is the interesting part, and it is new. An earlier version had
+both players at a median of 35, because `heard` published the tie-break
+unconditionally — so younger was handed elder's pip total even when he had been
+beaten outright and never stated it. With the dialogue modelled properly,
+younger's world is half again as large as elder's. That is his seat advantage
+showing up as a number: he reads five talon cards to her three, and he hears
+her holdings only after he has committed to a lead.
+
+At a sub-millisecond solve per world this is tens of milliseconds of thinking
+per decision, comfortably faster than a human expects an answer.
 
 Solving a *single* world is cheap: 12 tricks, two players, no trumps, strict
 follow-suit, with equivalent-card collapsing. This is a far smaller problem

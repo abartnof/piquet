@@ -150,7 +150,13 @@ def test_rung_three_prefers_a_suit_it_can_actually_run():
 
 def test_rung_four_keeps_out_of_the_opponents_known_long_suit():
     """Younger's point was shown, so her long suit is public. Leading into it
-    is how tricks are given away."""
+    is how tricks are given away.
+
+    But it becomes public only once elder has led: she names nothing until
+    then. So the capability this rung is named for cannot show itself on the
+    first lead -- which is the rule, not an oversight, and is why elder walks
+    straight into her hearts here before he can avoid them.
+    """
     deal = declaring(
         elder="AS KS 7S 8S AH KH 7H 8H AD KD 7C 8C",
         younger="QS JS TS 9S QH JH TH 9H QD JD QC JC",
@@ -158,6 +164,12 @@ def test_rung_four_keeps_out_of_the_opponents_known_long_suit():
     deal = deal.declare(E, Declaration.sink())
     deal = deal.declare(Y, Declaration.full(deal.hand_of(Y), Category.POINT))
     deal = skip_declarations(deal)
+    assert view_for(deal, E).seen == (), "she has named nothing yet"
+
+    from piquet.cards import Card
+
+    deal = deal.play(E, Card.parse("AH"))
+    deal = deal.play(Y, Card.parse("9H"))
 
     shown = [c for c in view_for(deal, E).seen if isinstance(c, Point)]
     assert shown, "younger's point must have been exposed for this to mean anything"

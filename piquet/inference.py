@@ -95,8 +95,7 @@ def _consistent_with_declarations(hand: Hand, view: View, played: Hand) -> bool:
     """
     hand = hand | played
     for announcement in view.heard:
-        best = _BEST[announcement.category](hand)
-        if best is None or best.key != announcement.key:
+        if not announcement.matches(_BEST[announcement.category](hand)):
             return False
     declared = {a.category for a in view.heard}
     for category, finder in _BEST.items():

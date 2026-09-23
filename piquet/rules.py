@@ -281,6 +281,18 @@ class Deal:
     # -- the play ---------------------------------------------------------
 
     @property
+    def elder_has_led(self) -> bool:
+        """True once elder has led to the first trick.
+
+        The hinge of the whole dialogue. Younger answers "good" or "not good"
+        as each category is contested, but she names nothing and scores nothing
+        until elder has led. So while he is still deciding what to call in
+        sequences and sets -- and while he chooses the card he leads -- all he
+        knows of her point is that it beat his.
+        """
+        return bool(self.tricks) or self.current_trick is not None
+
+    @property
     def to_play(self) -> Optional[Player]:
         """Whose turn it is to play a card, if the deal is in the play."""
         if self.phase is not Phase.PLAY:

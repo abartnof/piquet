@@ -137,11 +137,16 @@ to have the benefit of discarding."
 ## Declarations
 
 Three categories are contested in a fixed order — **point**, **sequence**,
-**set** — and each is a small dialogue. Elder announces his best holding in the
-category; younger replies **"good"** (elder's is better), **"not good"** (hers
-is), or **"equal"**. Only then does the next category begin, so elder may adapt a
-later declaration to what he has learned. He may not revise a declaration upward
-once answered.
+**set** — and each is a small dialogue. Elder announces the *shape* of his best
+holding in the category — "point of five", "a quart", "a trio" — and younger
+replies **"good"** (elder's is better), **"not good"** (hers is), or
+**"equal"**. On "equal" elder states the tie-break — the pip total, the top
+card, the rank — and she answers that. The tie-break is otherwise never spoken:
+a holding beaten outright gives away its shape and nothing else.
+
+Only then does the next category begin, so elder may adapt a later declaration
+to what he has learned — which is only ever that she beat him, never by how
+much. He may not revise a declaration upward once answered.
 
 Elder scores what he has won as he goes, then leads to the first trick, scoring
 one for the lead. Only then does younger declare and score the categories she

@@ -233,8 +233,7 @@ def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
 
     def consistent(hand, heard, shown):
         for announcement in heard:
-            best = best_of[announcement.category](hand)
-            if best is None or best.key != announcement.key:
+            if not announcement.matches(best_of[announcement.category](hand)):
                 return False
         declared = {a.category for a in heard}
         for category, finder in best_of.items():
@@ -259,6 +258,12 @@ def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
                     view_for(deal, player), deal.declaring_category
                 ),
             )
+        # She names nothing until elder has led, so the collapse happens at
+        # his first lead and not a moment before it. He chooses that card
+        # knowing only which categories she took.
+        assert view_for(deal, E).heard == ()
+        deal = deal.play(E, agents[E.index].play(view_for(deal, E)))
+
         view = view_for(deal, E)
         assert len(list(combinations(list(view.unseen), 12))) == 455
         counts.append(

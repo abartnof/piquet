@@ -61,25 +61,43 @@ class Announcement:
     """What is actually said aloud when declaring.
 
     At the table you announce "point of five", not "five spades". The suit is
-    never spoken: what is given is the comparison key, and only as much of it as
-    is needed -- the length first, and the tie-break only if the opponent says
-    "equal".
+    never spoken, and neither, unless it is asked for, is the tie-break:
 
-    So an announcement is exactly a declaration's sort key, stripped of the suit.
-    Which cards it was made of stays private unless the combination scores, at
-    which point either player "may ask to see any combination that has been
-    scored for or which caused no score because of equality" (Cavendish).
+        "Point of five."  "Equal."  "Making forty-nine."  "Good."
+
+    So an announcement is a declaration's sort key stripped of the suit, and
+    often stripped of its second half as well. Which cards it was made of stays
+    private unless the combination scores, at which point either player "may ask
+    to see any combination that has been scored for or which caused no score
+    because of equality" (Cavendish).
     """
 
     category: Category
     #: Cards in the point or sequence, or the size of the set.
     primary: int
-    #: Pip value, top rank, or set rank -- spoken only to settle a tie.
-    tiebreak: int
+    #: Pip value, top rank, or set rank. `None` when it was never spoken, which
+    #: is the usual case: it is asked for only to separate two matching shapes.
+    tiebreak: Optional[int] = None
 
     @property
-    def key(self) -> tuple[int, int]:
-        return (self.primary, self.tiebreak)
+    def shape(self) -> "Announcement":
+        """The same announcement with the tie-break left unsaid."""
+        return Announcement(self.category, self.primary)
+
+    def matches(self, best: Optional["Combination"]) -> bool:
+        """Whether a holding is consistent with what was actually said.
+
+        Only as far as it went: a shape announced without its tie-break rules
+        out every other length and nothing else. Reading more into it than was
+        spoken is how an engine quietly gives one player information the table
+        never gave them.
+        """
+        if best is None:
+            return False
+        primary, tiebreak = best.key
+        if primary != self.primary:
+            return False
+        return self.tiebreak is None or tiebreak == self.tiebreak
 
     def __str__(self) -> str:
         if self.category is Category.POINT:
@@ -221,9 +239,32 @@ class CategoryResult:
     def declaration_of(self, player: Player) -> Declaration:
         return self.elder if player is Player.ELDER else self.younger
 
+    @property
+    def shapes_match(self) -> bool:
+        """Whether the two holdings were the same length, or the same size.
+
+        This is the question "equal?" answers, and the only thing that makes
+        anyone state a tie-break.
+        """
+        elder, younger = self.elder.best, self.younger.best
+        if elder is None or younger is None:
+            return False
+        return elder.key[0] == younger.key[0]
+
     def announcement_of(self, player: Player) -> Optional[Announcement]:
-        """What that player said aloud. Always public."""
-        return self.declaration_of(player).announce(self.category)
+        """What that player said aloud. Always public.
+
+        Elder gives his tie-break when the shapes match, and not otherwise.
+        Younger never gives hers at all: she answers his number rather than
+        naming her own, and on the occasions she has something to name she has
+        won the category and has to show the cards anyway.
+        """
+        spoken = self.declaration_of(player).announce(self.category)
+        if spoken is None:
+            return None
+        if player is Player.ELDER and self.shapes_match:
+            return spoken
+        return spoken.shape
 
     def shown(self, player: Player) -> tuple:
         """The cards this player had to expose, if any.

@@ -181,30 +181,52 @@ def _to_act(deal: Deal, player: Player) -> bool:
     return False
 
 
+def _has_spoken(deal: Deal, player: Player) -> bool:
+    """Whether this player has named their combinations yet.
+
+    Elder names and scores his as the dialogue goes along. Younger names none
+    of hers until elder has led to the first trick -- so for the whole of the
+    sequence and set dialogue, and for the card he chooses to lead, elder knows
+    only whether each of her holdings beat his.
+    """
+    return player is Player.ELDER or deal.elder_has_led
+
+
 def _heard(deal: Deal, player: Player) -> tuple[Announcement, ...]:
     """What the opponent announced in settled categories. Always public."""
     opponent = player.opponent
+    if not _has_spoken(deal, opponent):
+        return ()
     spoken = (result.announcement_of(opponent) for result in deal.results)
     return tuple(a for a in spoken if a is not None)
 
 
 def _seen(deal: Deal, player: Player) -> tuple:
-    """The opponent's combinations this player is entitled to have looked at."""
+    """The opponent's combinations this player is entitled to have looked at.
+
+    Nothing can be asked for before it has been declared, so younger shows
+    elder nothing until he has led.
+    """
     opponent = player.opponent
+    if not _has_spoken(deal, opponent):
+        return ()
     return tuple(c for result in deal.results for c in result.shown(opponent))
 
 
 def _awaiting_answer(deal: Deal, player: Player) -> Optional[Announcement]:
     """Elder's declaration, heard by younger before she must answer it.
 
-    She learns the shape -- "point of five" -- and not the suit, which is what
-    makes answering "good" or "not good" a decision rather than a lookup.
+    She learns the shape -- "point of five" -- and neither the suit nor the pip
+    total, which is what makes answering "good" or "not good" a decision rather
+    than a lookup. If the shapes match she says "equal", and he answers with
+    his number; that is `CategoryResult.announcement_of`, one step later.
     """
     if deal.to_declare is not player or player is not Player.YOUNGER:
         return None
     if deal.elder_declaration is None or deal.declaring_category is None:
         return None
-    return deal.elder_declaration.announce(deal.declaring_category)
+    spoken = deal.elder_declaration.announce(deal.declaring_category)
+    return None if spoken is None else spoken.shape
 
 
 def view_for(deal: Deal, player: Player) -> View:

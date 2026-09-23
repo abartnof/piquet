@@ -11,7 +11,10 @@ from piquet.combos import is_carte_blanche
 from piquet.rules import CARTE_BLANCHE_SCORE, Deal, Phase, deal_from
 from piquet.scoring import Category, Player, ScoreLog
 
-__all__ = ["deal_with", "declaring", "remaining_after", "play_cards", "skip_declarations"]
+__all__ = [
+    "deal_with", "declaring", "remaining_after", "play_cards",
+    "skip_declarations", "after_elders_lead",
+]
 
 
 def remaining_after(*hands: Hand) -> list[Card]:
@@ -78,3 +81,16 @@ def skip_declarations(deal):
     while deal.to_declare is not None:
         deal = deal.declare(deal.to_declare, Declaration.sink())
     return deal
+
+
+def after_elders_lead(deal):
+    """Wound forward to just after elder leads to the first trick.
+
+    Younger names and scores her combinations at that moment and not before, so
+    anything about her holdings that elder is entitled to know only becomes
+    visible here.
+    """
+    from piquet.scoring import Player
+
+    deal = skip_declarations(deal) if deal.to_declare is not None else deal
+    return deal.play(Player.ELDER, next(iter(deal.legal_plays())))
