@@ -245,3 +245,42 @@ def test_no_rung_ever_makes_an_illegal_move():
         )
         assert all(d.phase is Phase.COMPLETE for d in deals)
         assert all(len(d.tricks) == 12 for d in deals)
+
+
+# --------------------------------------------------------------------------
+# A declaration is worth its face value in a deal and something else in a partie
+# --------------------------------------------------------------------------
+
+#: One tierce and nothing else in the sequence category, so exactly 3 points.
+ONE_TIERCE = dict(
+    elder="AS KS QS 9S 7S AH 9H 7H AD 9D 7D 9C",
+    younger="JS TS 8S KH QH JH TH 8H KD QD JD TD",
+)
+
+
+def test_a_point_is_worth_a_point_when_there_is_no_partie_around_the_deal():
+    from tests.helpers import declaring
+
+    view = view_for(declaring(**ONE_TIERCE), E)
+    assert agent(4).point_value(view) == 1.0
+
+
+def test_nobody_sinks_a_tierce_that_would_carry_them_over_the_rubicon():
+    """Three points is a cheap declaration and a concealing style throws it
+    away without thinking. Three points on eighty-two with the partie ending
+    is worth closer to eighteen, and sinking it stops being a trade anybody
+    would make."""
+    from piquet.partie import Standing
+    from piquet.rules import Declaration
+    from tests.helpers import declaring
+
+    deal = declaring(**ONE_TIERCE)
+    sneaky = HeuristicAgent(4, style=Style(sinking=1.0), rng=random.Random(1674))
+
+    loose = view_for(deal, E)
+    assert sneaky.declare(loose, Category.SEQUENCES) == Declaration.sink()
+
+    desperate = view_for(deal, E, Standing(mine=82, theirs=150, deals_left=1))
+    assert sneaky.point_value(desperate) > 2.0
+    called = sneaky.declare(desperate, Category.SEQUENCES)
+    assert called.score == 3, "he calls it, because he needs it"

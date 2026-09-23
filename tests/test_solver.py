@@ -409,3 +409,99 @@ def test_a_declaration_is_a_floor_that_concealment_cannot_lower():
         assert best_point(hand).length >= spoken[Category.POINT]
         if Category.SEQUENCES in spoken:
             assert best_sequence(hand).length >= spoken[Category.SEQUENCES]
+
+
+# --------------------------------------------------------------------------
+# Playing for the partie rather than for the deal
+# --------------------------------------------------------------------------
+
+
+def test_even_weights_are_the_deal_objective_and_change_nothing():
+    """The default has to be exactly what was there before, because the whole
+    solver was cross-checked against a brute-force reference at it."""
+    from piquet.solver import EVEN
+
+    elder, younger = parse_hand("AS KS 7H"), parse_hand("QS JS 8H")
+    plain = solve(elder, younger, E, elder_tricks=5)
+    assert solve(elder, younger, E, elder_tricks=5, weights=EVEN) == plain
+    assert solve(elder, younger, E, elder_tricks=5, weights=(1.0, 1.0)) == plain
+
+
+def test_scaling_both_weights_cannot_change_the_card():
+    """Only the ratio decides anything -- doubling what every point is worth
+    doubles the value and leaves the choice alone."""
+    elder, younger = parse_hand("7C 7D AS"), parse_hand("9C KD 8S")
+    one, value = best_card(elder, younger, E, None, 9, weights=(0.3, 1.0))
+    other, doubled = best_card(elder, younger, E, None, 9, weights=(0.6, 2.0))
+    assert one == other
+    assert doubled == pytest.approx(2 * value)
+
+
+def test_the_partie_objective_breaks_a_tie_the_deal_objective_cannot_see():
+    """Three cards, and by the deal's reckoning they are worth exactly the
+    same: nine, whichever he plays. So a deal-level solver picks among them by
+    tie-break and has no reason to prefer one.
+
+    Price a point to younger at seven times a point to elder -- which is what
+    `chances.point_weights` reports when she is a few points short of the
+    rubicon and he is safe -- and the ace is suddenly the only card worth
+    playing, because it is the one that stops her scoring.
+    """
+    elder, younger = parse_hand("7C 7D AS"), parse_hand("9C KD 8S")
+    even = card_values(elder, younger, E, None, 9)
+    assert len(set(even.values())) == 1, "the deal cannot tell these apart"
+
+    suppress = card_values(elder, younger, E, None, 9, weights=(0.15, 1.0))
+    best = max(suppress, key=suppress.get)
+    assert best == Card.parse("AS")
+    assert suppress[best] > suppress[Card.parse("7C")]
+
+
+def test_the_solver_weighs_points_evenly_when_there_is_no_partie():
+    """Which is the whole tournament harness and most of this file."""
+    from piquet.solver import EVEN, SolverAgent
+    from tests.helpers import declaring, skip_declarations
+
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    agent = SolverAgent(rng=random.Random(1674))
+    assert agent.weights(view_for(deal, E)) == EVEN
+
+
+def test_the_solver_weighs_its_own_points_up_when_it_needs_them():
+    from piquet.partie import Standing
+    from piquet.solver import SolverAgent
+    from tests.helpers import declaring, skip_declarations
+
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    agent = SolverAgent(rng=random.Random(1674))
+    short = Standing(mine=82, theirs=150, deals_left=1)
+
+    as_elder = agent.weights(view_for(deal, E, short))
+    assert abs(as_elder[0]) > abs(as_elder[1]), "his own points are dearer"
+
+    as_younger = agent.weights(view_for(deal, Y, short.reversed))
+    assert abs(as_younger[1]) > abs(as_younger[0]), "and the pair is by seat"
+
+
+def test_the_solver_weighs_their_points_up_when_keeping_them_short_pays():
+    """At 200 against 88 with one deal left, a point to her costs him nine --
+    carrying her over the line turns what she pays from the sum into the
+    difference."""
+    from piquet.partie import Standing
+    from piquet.solver import SolverAgent
+    from tests.helpers import declaring, skip_declarations
+
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    agent = SolverAgent(rng=random.Random(1674))
+    view = view_for(deal, E, Standing(mine=200, theirs=88, deals_left=1))
+    elder_weight, younger_weight = agent.weights(view)
+    assert younger_weight > 4 * elder_weight, "denying her is what matters"

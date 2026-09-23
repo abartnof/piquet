@@ -26,6 +26,7 @@ import random
 from typing import Iterator, Optional
 
 from piquet.cards import Card, Hand
+from piquet.chances import weights_for
 from piquet.heuristics import MAX_LEVEL, HeuristicAgent
 from piquet.inference import possible_hands
 from piquet.observation import View
@@ -34,7 +35,7 @@ from piquet.style import BALANCED, Style
 
 __all__ = [
     "solve", "best_card", "card_values", "SolverAgent",
-    "TRICKS", "CARDS_BONUS", "CAPOT_BONUS", "pique_is_live",
+    "TRICKS", "CARDS_BONUS", "CAPOT_BONUS", "pique_is_live", "EVEN",
 ]
 
 TRICKS = 12
@@ -43,6 +44,14 @@ CAPOT_BONUS = 40
 
 _SUIT_MASKS = tuple(0xFF << (suit * 8) for suit in range(4))
 _NO_CARD = -1
+
+#: What a point to each seat is worth. The default is the deal objective --
+#: a point is a point, whoever gets it -- and anything else is the partie
+#: objective, where they are not (see `chances.point_weights`). Elder always
+#: maximises `w_elder * E - w_younger * Y` and younger always minimises it,
+#: which works because the settlement is zero-sum: both sides agree on the
+#: same number and pull in opposite directions.
+EVEN = (1.0, 1.0)
 
 
 def _bits(mask: int) -> Iterator[int]:
@@ -114,17 +123,22 @@ def _check_position(
         )
 
 
-def _cards_bonus(elder_tricks: int) -> int:
+def _credit(to_elder: bool, amount: float, weights: tuple[float, float]) -> float:
+    """What `amount` scored by one seat is worth, in elder-minus-younger."""
+    return weights[0] * amount if to_elder else -weights[1] * amount
+
+
+def _cards_bonus(elder_tricks: int, weights: tuple[float, float] = EVEN) -> float:
     """Ten for the cards, forty for a capot, nothing at six each."""
     if elder_tricks == TRICKS:
-        return CAPOT_BONUS
+        return _credit(True, CAPOT_BONUS, weights)
     if elder_tricks == 0:
-        return -CAPOT_BONUS
+        return _credit(False, CAPOT_BONUS, weights)
     if elder_tricks > TRICKS // 2:
-        return CARDS_BONUS
+        return _credit(True, CARDS_BONUS, weights)
     if elder_tricks < TRICKS // 2:
-        return -CARDS_BONUS
-    return 0
+        return _credit(False, CARDS_BONUS, weights)
+    return 0.0
 
 
 def solve(
@@ -133,7 +147,8 @@ def solve(
     leader: Player = Player.ELDER,
     led: Optional[Card] = None,
     elder_tricks: int = 0,
-) -> int:
+    weights: tuple[float, float] = EVEN,
+) -> float:
     """The best achievable elder-minus-younger score for the rest of the play.
 
     Both hands are known: this is the double-dummy value, and the outer layer is
@@ -152,6 +167,7 @@ def solve(
         _NO_CARD if led is None else led.index,
         elder_tricks,
         {},
+        weights,
     )
 
 
@@ -162,7 +178,8 @@ def _search(
     led: int,
     elder_tricks: int,
     memo: dict,
-) -> int:
+    weights: tuple[float, float] = EVEN,
+) -> float:
     """Memoised minimax, deliberately without alpha-beta.
 
     The two do not mix naively: a pruned branch yields a *bound*, not a value,
@@ -173,7 +190,7 @@ def _search(
     otherwise.
     """
     if not elder and not younger and led == _NO_CARD:
-        return _cards_bonus(elder_tricks)
+        return _cards_bonus(elder_tricks, weights)
 
     # One packed integer rather than a five-tuple: hashing a single int is
     # appreciably cheaper, and this key is computed at every node.
@@ -196,13 +213,14 @@ def _search(
         remaining = hand & ~(1 << card)
         if led == _NO_CARD:
             # Leading. A point is scored for every card led, whoever wins it.
-            value = (1 if turn == 0 else -1) + _search(
+            value = _credit(turn == 0, 1, weights) + _search(
                 remaining if turn == 0 else elder,
                 younger if turn == 0 else remaining,
                 leader,
                 card,
                 elder_tricks,
                 memo,
+                weights,
             )
         else:
             follower_wins = _beats(card, led)
@@ -212,13 +230,14 @@ def _search(
             gained = 1 if follower_wins else 0
             if not next_elder and not next_younger:
                 gained += 1     # the winner of the last trick scores two
-            value = (gained if winner == 0 else -gained) + _search(
+            value = _credit(winner == 0, gained, weights) + _search(
                 next_elder,
                 next_younger,
                 winner,
                 _NO_CARD,
                 elder_tricks + (winner == 0),
                 memo,
+                weights,
             )
 
         if best is None or (value > best if maximising else value < best):
@@ -234,7 +253,8 @@ def best_card(
     leader: Player = Player.ELDER,
     led: Optional[Card] = None,
     elder_tricks: int = 0,
-) -> tuple[Card, int]:
+    weights: tuple[float, float] = EVEN,
+) -> tuple[Card, float]:
     """The best card for whoever is to play, and what it is worth.
 
     The value is still elder-minus-younger, so elder takes the largest and
@@ -242,7 +262,7 @@ def best_card(
     and gave every candidate its own transposition table, which cost several
     times as much for exactly the same answer.
     """
-    values = card_values(elder, younger, leader, led, elder_tricks)
+    values = card_values(elder, younger, leader, led, elder_tricks, weights)
     turn_is_elder = (leader is Player.ELDER) == (led is None)
     pick = max if turn_is_elder else min
     card = pick(values, key=lambda candidate: values[candidate])
@@ -266,7 +286,8 @@ def card_values(
     leader: Player = Player.ELDER,
     led: Optional[Card] = None,
     elder_tricks: int = 0,
-) -> dict[Card, int]:
+    weights: tuple[float, float] = EVEN,
+) -> dict[Card, float]:
     """What every legal card is worth, from elder's point of view.
 
     All the root moves share one transposition table, because their subtrees
@@ -279,17 +300,20 @@ def card_values(
     hand = elder if turn_is_elder else younger
     legal = _legal(hand.bits, _NO_CARD if led is None else led.index)
 
-    values: dict[Card, int] = {}
+    values: dict[Card, float] = {}
     for index in _bits(legal):
         rest = hand.bits & ~(1 << index)
         if led is None:
-            values[Card.from_index(index)] = (1 if turn_is_elder else -1) + _search(
+            values[Card.from_index(index)] = _credit(
+                turn_is_elder, 1, weights
+            ) + _search(
                 rest if turn_is_elder else elder.bits,
                 younger.bits if turn_is_elder else rest,
                 0 if leader is Player.ELDER else 1,
                 index,
                 elder_tricks,
                 memo,
+                weights,
             )
         else:
             follower_wins = _beats(index, led.index)
@@ -301,8 +325,8 @@ def card_values(
             gained = 1 if follower_wins else 0
             if not next_elder and not next_younger:
                 gained += 1
-            values[Card.from_index(index)] = (
-                gained if winner_is_elder else -gained
+            values[Card.from_index(index)] = _credit(
+                winner_is_elder, gained, weights
             ) + _search(
                 next_elder,
                 next_younger,
@@ -310,6 +334,7 @@ def card_values(
                 _NO_CARD,
                 elder_tricks + winner_is_elder,
                 memo,
+                weights,
             )
     return values
 
@@ -349,6 +374,27 @@ class SolverAgent(HeuristicAgent):
         self.exact_from = exact_from
         self.max_worlds = max_worlds
 
+    def weights(self, view: View) -> tuple[float, float]:
+        """What a point to each seat is worth, given where the partie stands.
+
+        The search wants the pair in *seat* order and `chances` reports it in
+        *my* order, so which way round they go depends on which chair I am in.
+        A point to them is normally worth about minus one, which is why the
+        second weight is negated: the search subtracts it.
+
+        Only the ratio decides anything, so the pair is scaled to keep the
+        numbers civil. `EVEN` for a deal played on its own, which is the whole
+        tournament harness and most of the test suite.
+        """
+        if view.partie is None:
+            return EVEN
+        mine, theirs = weights_for(view.partie, view.me is Player.ELDER)
+        pair = (mine, -theirs) if view.me is Player.ELDER else (-theirs, mine)
+        scale = max(abs(pair[0]), abs(pair[1]))
+        if scale < 1e-6:
+            return EVEN
+        return (pair[0] / scale, pair[1] / scale)
+
     def play(self, view: View) -> Card:
         legal = list(view.legal_plays)
         if len(legal) == 1:
@@ -368,12 +414,13 @@ class SolverAgent(HeuristicAgent):
         led = None if i_lead else view.current_trick.led
         sign = 1 if view.me is Player.ELDER else -1
 
-        totals: dict[Card, int] = {card: 0 for card in legal}
+        weights = self.weights(view)
+        totals: dict[Card, float] = {card: 0.0 for card in legal}
         for opponent_hand in worlds:
             elder = view.hand if view.me is Player.ELDER else opponent_hand
             younger = opponent_hand if view.me is Player.ELDER else view.hand
             for card, value in card_values(
-                elder, younger, leader, led, elder_tricks
+                elder, younger, leader, led, elder_tricks, weights
             ).items():
                 if card in totals:
                     totals[card] += sign * value

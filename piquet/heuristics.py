@@ -38,10 +38,11 @@ import random
 from typing import Optional
 
 from piquet.cards import Card, Hand, Rank, Suit
+from piquet.chances import weights_for
 from piquet.combos import Point
 from piquet.observation import View
 from piquet.rules import Declaration
-from piquet.scoring import Category
+from piquet.scoring import Category, Player
 from piquet.style import BALANCED, Style
 
 __all__ = ["HeuristicAgent", "MAX_LEVEL", "SINK_CEILING"]
@@ -136,6 +137,19 @@ class HeuristicAgent:
 
     # -- declaring --------------------------------------------------------
 
+    def point_value(self, view: View) -> float:
+        """What one point to me is worth in settlement, or one on its own.
+
+        A declaration is worth its face value inside a deal and something else
+        inside a partie. A player three points short of the rubicon with the
+        partie ending is looking at a tierce worth closer to eighteen, and
+        sinking it to buy silence stops being a trade anybody would make.
+        """
+        if view.partie is None:
+            return 1.0
+        mine, _ = weights_for(view.partie, view.me is Player.ELDER)
+        return max(mine, 0.0)
+
     def declare(self, view: View, category: Category) -> Declaration:
         """Declare everything, unless this opponent is the concealing sort.
 
@@ -147,7 +161,7 @@ class HeuristicAgent:
         full = Declaration.full(view.hand, category)
         if self._rung() < 4 or not full:
             return full
-        if full.score > SINK_CEILING:
+        if full.score * self.point_value(view) > SINK_CEILING:
             return full
         if self.rng.random() < self.style.sinking:
             return Declaration.sink()
