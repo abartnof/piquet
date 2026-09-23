@@ -5,6 +5,9 @@ description = "The historical two-player card game Piquet: engine, opponents, an
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+piquet = "piquet.terminal:main"
+
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 

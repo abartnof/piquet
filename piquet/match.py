@@ -11,7 +11,7 @@ import json
 import random
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Callable, Iterable, Optional
 
 from piquet.agents import Agent
 from piquet.observation import view_for
@@ -189,12 +189,19 @@ def play_partie(
     rng: Optional[random.Random] = None,
     opening_dealer: Side = Side.A,
     keep_records: bool = True,
+    on_deal: Optional[Callable[[Deal, Partie], None]] = None,
 ) -> tuple[Partie, list[DealRecord]]:
     """Play a whole partie, swapping the seats between every deal.
 
     The two agents are *people*, not seats. Which of them is elder alternates,
     and each is handed the running scores from its own side of the table, so an
     agent that cares about the rubicon has what it needs to.
+
+    `on_deal` is called with each finished deal and the partie it has just been
+    entered into. It is the one lifecycle hook the `Agent` protocol does not
+    provide, and the terminal table needs it to narrate what happened after the
+    last card of a deal -- the cards, the capot, the pique -- none of which any
+    agent is ever asked about.
     """
     rng = rng or random.Random()
     agents = {Side.A: side_a, Side.B: side_b}
@@ -219,5 +226,7 @@ def play_partie(
         partie = partie.record(deal)
         if done is not None:
             records.append(done)
+        if on_deal is not None:
+            on_deal(deal, partie)
 
     return partie, records
