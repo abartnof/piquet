@@ -139,13 +139,29 @@ def ratings(
     results: Sequence[DuelResult],
     anchor: Optional[str] = None,
     iterations: int = 500,
+    prior: float = 0.5,
 ) -> dict[str, float]:
     """Bradley-Terry strengths, reported on the Elo scale.
 
     Fitted by minorisation-maximisation, which converges to the maximum
-    likelihood estimate regardless of the order games were played in. Sequential
-    Elo updates do not have that property, and with a handful of agents the
-    order would visibly change the answer.
+    likelihood estimate regardless of the order games were played in.
+    Sequential Elo updates do not have that property, and with a handful of
+    agents the order would visibly change the answer. The model is Zermelo's,
+    1929, invented to rate chess players and rediscovered by Bradley and Terry
+    in 1952.
+
+    `prior` is **Laplace's rule of succession**, 1774: every agent is credited
+    with half a win and half a loss against a virtual opponent of average
+    strength. Laplace's own question was what odds to give on a sunrise you
+    have only ever seen succeed, and it is exactly ours -- a maximum-likelihood
+    fit answers "certain" and sends the loser's strength to zero and its rating
+    to minus infinity.
+
+    An earlier version floored the strength at 1e-9 instead. That stops the
+    crash and leaves the number meaningless: a shut-out anchor made the table
+    read ~3,700 for everyone, set entirely by the floor constant, and one
+    single win collapsed it to ~713. A rating scale should not be
+    discontinuous at the result the harness exists to produce.
     """
     names: list[str] = []
     for result in results:
@@ -161,19 +177,17 @@ def ratings(
         wins[b] += result.b_wins + 0.5 * result.drawn
         games[(a, b)] = games.get((a, b), 0.0) + result.pairs
 
+    # Strengths are renormalised to a mean of one each sweep, so the virtual
+    # opponent of "average strength" sits at exactly 1.0.
     strength = {name: 1.0 for name in names}
     for _ in range(iterations):
         updated = {}
         for name in names:
-            denominator = 0.0
+            denominator = 2.0 * prior / (strength[name] + 1.0)
             for (a, b), played in games.items():
                 if name in (a, b):
                     denominator += played / (strength[a] + strength[b])
-            # Floor the strength: an agent that won nothing would otherwise
-            # get a strength of zero and the Elo conversion would take the
-            # logarithm of it. A shutout is exactly what this harness is for.
-            fitted = wins[name] / denominator if denominator else strength[name]
-            updated[name] = max(fitted, 1e-9)
+            updated[name] = max((wins[name] + prior) / denominator, 1e-12)
         total = sum(updated.values()) or 1.0
         strength = {name: value * len(names) / total for name, value in updated.items()}
 

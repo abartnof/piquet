@@ -164,3 +164,62 @@ def test_no_calibrated_style_costs_as_much_as_a_rung(dimension):
         )
         result = duel(styled, neutral, 300, random.Random(1674))
         assert abs(result.margin) < 1.7, f"{dimension}={setting} is a skill change"
+
+
+# --------------------------------------------------------------------------
+# What a shutout is worth
+# --------------------------------------------------------------------------
+
+
+def shutout_table(anchor_wins=0):
+    """A ladder in which the anchor wins almost nothing. Exactly the result
+    the harness exists to produce, and exactly where maximum likelihood dies."""
+    return [
+        DuelResult("random", "L1", 50, anchor_wins, 50 - anchor_wins, 0, 100, 900),
+        DuelResult("random", "L2", 50, anchor_wins, 50 - anchor_wins, 0, 80, 950),
+        DuelResult("L1", "L2", 50, 20, 30, 0, 800, 880),
+    ]
+
+
+def test_a_shutout_gives_a_finite_and_sensible_rating():
+    """Laplace's rule of succession, 1774: half a win and half a loss against
+    a virtual opponent of average strength. Without it the fit sends the
+    loser's strength to zero and every other rating to infinity."""
+    scores = ratings(shutout_table(0), anchor="random")
+    assert scores["random"] == 0.0
+    assert all(0 < scores[name] < 1500 for name in ("L1", "L2"))
+    assert scores["L2"] > scores["L1"]
+
+
+def test_the_rating_scale_is_continuous_around_a_shutout():
+    """The bug the floor left behind: 0 wins read ~3,700 and 1 win ~713, so
+    the scale moved three thousand points on a single game -- and the 3,700
+    was the floor constant rather than anything about the play.
+
+    A gap remains, and it should: going from nothing in a hundred to one in a
+    hundred really is strong evidence, and a Beta(0.5, 0.5) posterior mean
+    triples. Three hundred points is that evidence. Three thousand was an
+    arbitrary constant.
+    """
+    none_at_all = ratings(shutout_table(0), anchor="random")
+    just_one = ratings(shutout_table(1), anchor="random")
+    assert abs(none_at_all["L2"] - just_one["L2"]) < 400
+
+    # And a heavier prior buys more stability, which is what a prior is for.
+    steadier = abs(
+        ratings(shutout_table(0), anchor="random", prior=3.0)["L2"]
+        - ratings(shutout_table(1), anchor="random", prior=3.0)["L2"]
+    )
+    assert steadier < abs(none_at_all["L2"] - just_one["L2"])
+
+
+def test_the_prior_barely_moves_a_well_populated_table():
+    """It should rescue the degenerate case and otherwise keep out of the way."""
+    table = [
+        DuelResult("A", "B", 500, 260, 230, 10, 9000, 8800),
+        DuelResult("B", "C", 500, 300, 180, 20, 9000, 8000),
+        DuelResult("A", "C", 500, 330, 160, 10, 9200, 7900),
+    ]
+    smoothed = ratings(table, anchor="C")
+    barely = ratings(table, anchor="C", prior=0.001)
+    assert all(abs(smoothed[n] - barely[n]) < 12 for n in smoothed)
