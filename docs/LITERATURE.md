@@ -1,8 +1,15 @@
 # Piquet — Literature Review
 
-Twenty sources, nine of them period texts read in full from Internet Archive
-OCR. **pagat.com is our rule authority**; the period record vindicates it on
-every contested point.
+Twenty sources on the game, nine of them period texts read in full from
+Internet Archive OCR, plus the mathematics the engine is built on.
+**pagat.com is our rule authority**; the period record vindicates it on every
+contested point.
+
+Two bibliographies, because there are two questions. What the game *is* —
+Cotton, Hoyle, Cavendish, pagat. And how it is *measured and searched* —
+Laplace, Zermelo, Bradley and Terry. The second half lived only in docstrings
+and commit messages until it was written down here, which is the wrong place
+for anyone arriving cold.
 
 ## What the reading settled
 
@@ -38,7 +45,9 @@ best hand maximises *sets*: a quatorze is 14 points for four cards where a
 huitième is 18 for eight, and the same twelve cards count in all three categories
 at once. Ace, king and queen in every suit declares 57 — a point of 3, four
 tierces, three quatorzes — and the engine plays the deal out to exactly 170.
-The odds claim remains to be checked.
+
+**The odds claim is now confirmed too**, and it pins down his method as well as
+his answer. See "The mathematics" below.
 
 **Cavendish [Henry Jones], *The Laws of Piquet adopted by the Portland and Turf
 Clubs* (1892/1896).** The most valuable source found, and the direct ancestor of
@@ -74,6 +83,113 @@ genuinely divergent continental games and are the best source of terminology.
 **cardgameheaven** is adequate. **whiteknucklecards** mixes eras rather than
 inventing rules — its odd trick scoring is authentically Cotton's 1674 rule, and
 an earlier draft of our design wrongly called it unreliable.
+
+## The mathematics
+
+Several of these are load-bearing rather than decorative, and one of them
+killed an approach before it was built.
+
+**Montmort, *Essay d'analyse sur les jeux de hazard*, 2nd edition (1713).**
+Part V is the correspondence between Montmort and Nicolaus Bernoulli, and it
+carries **Charles Waldegrave's** solution to *Le Her*, a two-player card game
+of imperfect information. It is the **first mixed strategy ever written down** —
+two hundred and fifteen years before von Neumann's minimax theorem of 1928.
+
+Not a curiosity for us. Le Her's solution is mixed because a pure rule is
+exploitable the moment the opponent knows it, and **sinking has exactly that
+shape**: a player who always conceals a tierce is read, and so is one who never
+does. That is the historical reason to expect §6.3's answer to be a mixed
+strategy rather than a rule of thumb, and the reason `style.sinking` is a
+probability and not a flag. Bellhouse and Fillion established which Waldegrave
+it was — Charles, an active Jacobite, rather than his nephew James the
+diplomat: *Statistical Science* 30:1 (2015), [doi:10.1214/14-STS469](https://projecteuclid.org/journals/statistical-science/volume-30/issue-1/Le-Her-and-Other-Problems-in-Probability-Discussed-by-Bernoulli/10.1214/14-STS469.full).
+
+**Laplace, *Mémoire sur la probabilité des causes par les événements* (1774);
+the sunrise example is in the *Essai philosophique sur les probabilités*
+(1814).** The rule of succession: having seen *n* successes and no failures,
+the next trial succeeds with probability (n+1)/(n+2) rather than 1.
+
+This is `tournament.ratings`' prior, and Laplace's question is exactly ours. An
+agent that has won nothing has a maximum-likelihood strength of zero and a
+rating of minus infinity — and a shutout is precisely the result the harness
+exists to produce. Half a win and half a loss against a virtual opponent of
+average strength is the same answer Laplace gave the sunrise.
+
+**Zermelo, "Die Berechnung der Turnier-Ergebnisse als ein Maximumproblem der
+Wahrscheinlichkeitsrechnung", *Mathematische Zeitschrift* 29 (1929), 436–460,
+[doi:10.1007/BF01180541](https://link.springer.com/content/pdf/10.1007/BF01180541.pdf).**
+The model `tournament.ratings` fits, invented to rank **chess** players from
+tournament results — our problem exactly, twenty-three years before it acquired
+the name it goes by.
+
+**Bradley and Terry, "Rank Analysis of Incomplete Block Designs: I. The Method
+of Paired Comparisons", *Biometrika* 39:3–4 (1952), 324–345,
+[jstor:2334029](https://www.jstor.org/stable/2334029).** The rediscovery the
+model is named after.
+
+**Hunter, "MM algorithms for generalized Bradley–Terry models", *Annals of
+Statistics* 32:1 (2004), 384–406,
+[doi:10.1214/aos/1079120141](https://projecteuclid.org/journals/annals-of-statistics/volume-32/issue-1/MM-algorithms-for-generalized-Bradley-Terry-models/10.1214/aos/1079120141.full).**
+The minorisation–maximisation fit `tournament.ratings` uses, and the reason it
+is order-independent where sequential Elo updates are not.
+
+**Smith and Winkler, "The Optimizer's Curse: Skepticism and Postdecision
+Surprise in Decision Analysis", *Management Science* 52:3 (2006), 311–322,
+[doi:10.1287/mnsc.1050.0451](https://pubsonline.informs.org/doi/10.1287/mnsc.1050.0451).**
+Pick the best of several noisy estimates and the winner's estimate is biased
+upward, even though every estimate was individually unbiased.
+
+Not background reading: this is what killed the obvious approach to milestone
+8. A rollout policy choosing the best of twelve candidate discards *believed*
+it was gaining six points a deal and was measured gaining 0.3. The paper is
+also the argument for §6.2's "**then** fit a regression" — an argmax amplifies
+the noise and a regression pools it away.
+
+**Frank and Basin, "Search in games with incomplete information: a case study
+using Bridge card play", *Artificial Intelligence* 100:1–2 (1998), 87–123,
+[doi:10.1016/S0004-3702(97)00082-9](https://www.sciencedirect.com/science/article/pii/S0004370297000829).**
+Names the two defects of precisely what `solver.SolverAgent` does — sample the
+opponent's hand, solve each world double-dummy, average the results.
+**Strategy fusion**: the average quietly assumes you may play differently in
+worlds you cannot tell apart. **Non-locality**: it assumes the opponent sees
+through the table too, so it will never set a trap that depends on their
+ignorance. Both are documented in the module. Neither is fixed.
+
+**Zinkevich, Johanson, Bowling and Piccione, "Regret Minimization in Games with
+Incomplete Information", *NIPS 20* (2007),
+[proceedings](https://papers.nips.cc/paper/3306-regret-minimization-in-games-with-incomplete-information).**
+Counterfactual regret minimisation, the method §6.3 earmarks for the
+declaration and sinking policy — and the modern answer to the question
+Waldegrave posed in 1713.
+
+**Common random numbers.** `chances.point_weights` differences two Monte Carlo
+estimates taken over the *same* draws, which makes the difference nearly exact
+rather than two noisy numbers subtracted. A standard simulation technique
+rather than a citable result; Law and Kelton, *Simulation Modeling and
+Analysis*, is the usual reference.
+
+**And Hoyle again.** The 1744 treatise listed above belongs in this section
+too. "Three to two against the younger-hand's taking one Card out of three to
+save a Pique" is a hypergeometric tail — 1 − C(17,3)/C(20,3) = 23/57, or 1.478
+to 1 — computed by hand a century and a half before the distribution had that
+name, and right. Four readings of the sentence are arithmetically possible and
+only one lands on his answer, so it pins down his method as well as his result.
+
+## Where each source is used
+
+| Module | What it rests on | Source |
+|---|---|---|
+| `combos`, `declarations` | scoring and comparison of the three categories | Cavendish, Laws 60–64 |
+| `scoring` | reckoning order; pique and repique | Cavendish, Laws 66–69 |
+| `rules` | both players must discard; last trick is 2 | Cotton 1674; Cavendish, Laws 21–22, 65 |
+| `partie` | six deals, alternating deal, rubicon settlement | pagat |
+| `observation` | what is said aloud, and when | Cavendish; pagat |
+| `chances` | hypergeometric odds; differencing over common random numbers | Hoyle 1744; Law and Kelton |
+| `tournament` | Bradley–Terry by MM, with a Laplace prior | Zermelo 1929; Bradley and Terry 1952; Hunter 2004; Laplace 1774 |
+| `solver` | perfect-information Monte Carlo, and its two known defects | Frank and Basin 1998 |
+| `style` | sinking as a probability rather than a rule | Cavendish pp. 156–158; Waldegrave via Montmort 1713 |
+| *planned* — declaration policy | counterfactual regret minimisation | Zinkevich et al. 2007 |
+| *rejected* — argmax over rollouts | the optimizer's curse | Smith and Winkler 2006 |
 
 ## Archive identifiers
 

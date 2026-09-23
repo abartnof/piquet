@@ -246,10 +246,13 @@ Parlett gives a worked repique: 7 for point, then 15, 4 and 3 for sequences, the
 3 for a trio, making 32 — plus 60, for 92. Had younger held a carte blanche, she
 would have scored first and the repique would have been denied.
 
-The example is arithmetic rather than a real deal: exhaustive search shows no
-twelve-card hand can hold a point of seven, sequences scoring 15, 4 and 3, and a
-trio at once. A point of seven forces a seven-card suit, which leaves the other
-five cards confined to a single suit, and a trio needs three suits.
+The example is arithmetic rather than a real deal, and the reason is tidier
+than it first looks. Sequences of 15, 4 and 3 are a quint, a quart and a
+tierce, and no two of them can share a suit — a quint and a quart in one suit
+would need ten cards of it, and only eight exist. So they occupy three distinct
+suits and consume all twelve cards at 5–4–3, which makes the longest suit five.
+**The point is 5, and can never be 7.** Checked by construction over every one
+of the 2,880 such hands.
 
 ## Scoring the partie
 
@@ -349,8 +352,40 @@ category, scores nothing, and takes no trick.
 
 ## References
 
-Principal sources: Cotton, *The Compleat Gamester* (1674); Hoyle, *A Short
-Treatise on the Game of Piquet* (1744); Cavendish [Henry Jones], *The Laws of
-Piquet adopted by the Portland and Turf Clubs* (1892); David Parlett, both at
-parlettgames.uk and in *Encyclopædia Britannica*; and pagat.com. See
-`LITERATURE.md` for the full review and archive identifiers.
+The rule authority is **[pagat.com/notrump/piquet.html](https://www.pagat.com/notrump/piquet.html)**;
+where sources disagree it wins, and the period record has vindicated it on
+every contested point.
+
+The period texts, read in full:
+
+- Charles Cotton, *The Compleat Gamester* (1674) —
+  [archive.org](https://archive.org/details/bim_early-english-books-1641-1700_the-compleat-gamester-_cotton-charles_1674)
+- Edmond Hoyle, *A Short Treatise on the Game of Piquet* (1744) —
+  [archive.org](https://archive.org/details/bim_eighteenth-century_a-short-treatise-on-the-_hoyle-edmond_1744)
+- Cavendish [Henry Jones], *The Laws of Piquet adopted by the Portland and Turf
+  Clubs* (1892) —
+  [archive.org](https://archive.org/details/lawsofpiquetadop00cavendi)
+
+David Parlett, at [parlettgames.uk](https://www.parlettgames.uk/) and in the
+*Encyclopædia Britannica* entry he wrote, is the best modern secondary source.
+`LITERATURE.md` has the full review, every archive identifier, and the
+mathematical bibliography the engine rests on.
+
+### Claims in this document that the engine checks
+
+Several statements above are not quotations but *computations*, and each is
+pinned by a test rather than by an assertion. If one of them is wrong, a test
+fails.
+
+| Claim | Where it is checked |
+|---|---|
+| The maximum deal score is 170, and the best declaring hand is ace-king-queen in every suit for 57 | `test_historical_claims.py::test_the_best_declaring_hand_scores_fifty_seven` and `::test_no_hand_found_declares_better_than_fifty_seven` |
+| Hoyle's "three to two against the younger-hand's taking one Card out of three" | `test_historical_claims.py::test_hoyles_three_to_two_against_younger_saving_a_pique`, and the engine's own dealing in `::test_the_engine_deals_hoyles_odds_when_you_actually_play_them` |
+| Carte blanche is about 1 in 1,792 hands, so 1 in ~896 deals | `test_invariants.py::test_carte_blanche_turns_up_about_once_in_1792_hands` and `::test_a_whole_deal_shows_one_about_twice_as_often` |
+| Two carte blanches at once are impossible in the 32-card game | `test_invariants.py::test_two_carte_blanches_at_once_never_happen` |
+| Dealing is a disadvantage, but only if elder uses the full exchange | `test_invariants.py::test_elders_advantage_depends_on_taking_the_full_exchange` |
+| Only elder can ever score a pique | `test_invariants.py::test_only_elder_ever_scores_a_pique` |
+| Younger can nonetheless score a repique | `test_invariants.py::test_younger_does_sometimes_repique` |
+| Parlett's worked repique of 92 is arithmetic rather than a real deal — no hand holds a point of seven alongside sequences of 15, 4 and 3 | `test_historical_claims.py::test_parletts_worked_repique_is_arithmetic_and_not_a_deal`, by construction over all 2,880 such hands |
+| Hoyle's 170 is reachable in a legal deal, not merely in arithmetic | `test_historical_claims.py::test_hoyles_maximum_deal_of_a_hundred_and_seventy` |
+| The capot is not what carries elder past thirty — it reckons after points made in play | `test_historical_claims.py::test_the_capot_is_not_what_carries_elder_past_thirty` |

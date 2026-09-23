@@ -212,3 +212,44 @@ def test_the_engine_deals_hoyles_odds_when_you_actually_play_them():
     assert abs(observed - 23 / 57) < 0.025, (
         f"observed {observed:.3f}, Hoyle's 0.4035"
     )
+
+
+def test_parletts_worked_repique_is_arithmetic_and_not_a_deal():
+    """Parlett totals a repique as 7 for point, then 15, 4 and 3 for
+    sequences, then 3 for a trio: 32, plus 60, for 92.
+
+    The arithmetic is right and no hand can do it. Sequences of 15, 4 and 3
+    are a quint, a quart and a tierce, and they cannot share a suit -- a quint
+    and a quart in one suit would need ten cards of it and only eight exist.
+    So they occupy three distinct suits and consume all twelve cards at
+    5-4-3, which makes the longest suit five. The point is 5, never 7.
+
+    Built by construction rather than by sampling: every quint, quart and
+    tierce in every arrangement of three suits is 2,880 hands, and the point
+    is five in all of them.
+    """
+    from itertools import permutations
+
+    from piquet.cards import Card, Hand, Rank, Suit
+
+    def run(suit, top, length):
+        return [Card(Rank(r), suit) for r in range(top - length + 1, top + 1)]
+
+    checked = 0
+    for quint_suit, quart_suit, tierce_suit in permutations(Suit, 3):
+        for quint_top in range(Rank.SEVEN + 4, Rank.ACE + 1):
+            for quart_top in range(Rank.SEVEN + 3, Rank.ACE + 1):
+                for tierce_top in range(Rank.SEVEN + 2, Rank.ACE + 1):
+                    hand = Hand.of(
+                        *run(quint_suit, quint_top, 5),
+                        *run(quart_suit, quart_top, 4),
+                        *run(tierce_suit, tierce_top, 3),
+                    )
+                    assert len(hand) == 12
+                    assert score_sequences(hand) == 15 + 4 + 3
+                    assert best_point(hand).length == 5, (
+                        "a point of seven alongside 15, 4 and 3 would be a "
+                        f"counterexample: {hand.code}"
+                    )
+                    checked += 1
+    assert checked == 2880
