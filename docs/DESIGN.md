@@ -48,6 +48,39 @@ variants (Piquet Normand, Piquet Voleur, Piquet à Écrire).
   TODO list, and the longer it is deferred the more of the engine there is to
   pin down when someone finally writes it.
 
+  It is worth being clear about what the vectors do, because it is easy to
+  hear the wrong thing. **They do not make the port easy. They make it
+  verifiable**, which is a different and larger favour: they turn "did I
+  translate this correctly?" from a code review into a test run. What makes
+  the port *easy* is the plain-data design, and that part is done.
+
+### 2.1 What a JavaScript port will actually hit
+
+An audit of the engine for the things a JS translation cannot do mechanically.
+Every one of these is silent — the code runs and gives wrong answers — which is
+precisely the argument for the vectors, since every one of them would show up
+as a failing vector on the first run.
+
+| Hazard | Where | Why it breaks |
+|---|---|---|
+| **Bit 31 is the sign bit** | the whole `Hand` representation | the ace of spades is card index 31, so any hand holding it has `bits = 2³¹`, which JS bitwise ops read as **−2147483648**. Every mask needs `>>> 0` discipline, or the pack wants re-indexing so nothing lands on bit 31 |
+| `~seen & 0xFFFFFFFF` | `observation.View.unseen` | `& 0xFFFFFFFF` does not unsign in JS; it needs `>>> 0` |
+| `int.bit_count()` | `cards.Hand.__len__` | no JS equivalent; needs a popcount helper |
+| `bits & -bits` | `cards.Hand.__iter__` | the lowest-set-bit trick, which meets the sign bit at 31 |
+| **A 71-bit memo key** | `solver._search` | the transposition key packs two hands, a leader, a led card and a trick count into one integer with shifts up to 71. JS numbers are doubles — 53 bits of safe integer, and 32 for bitwise — so this **cannot be built with JS operators at all**. It wants `BigInt` (slow), a composite key, or a string |
+
+Two more that are not bugs but constrain the vectors themselves:
+
+- **The RNG will not match.** Python's Mersenne Twister and any JS generator
+  disagree, so a vector must record **the dealt order of the pack**, never a
+  seed. The engine already separates these: `deal_from` takes an explicit
+  ordering and `deal_shuffled` is the convenience wrapper over it, so vectors
+  should be written against `deal_from`.
+- **Floats entered the solver** with the partie weights. `EVEN` is integers so
+  the default path is exact, but any vector covering a weighted search is
+  comparing floating point across two languages and should assert a tolerance
+  rather than equality.
+
 ## 3. The rules, as we will implement them
 
 Sources: pagat.com/notrump/piquet.html and en.wikipedia.org/wiki/Piquet.

@@ -240,6 +240,15 @@ Ordered by how much they are needed, not by size.
    anywhere else still gets whatever it is handed. There is no lifecycle on the
    `Agent` protocol to hang it from.
 5. **Golden JSON vectors are promised but not produced.** `docs/DESIGN.md`
+   §2.1 now lists what a JavaScript port will actually hit — five silent
+   hazards, of which the worst is that `solver._search` packs a **71-bit**
+   transposition key that JS cannot build with bitwise operators at all, and
+   the sneakiest is that the ace of spades sits on bit 31 and so reads as
+   negative. Every one of them would surface as a failing vector on the first
+   run, which is the argument for building them **before** anyone starts the
+   port rather than after.
+
+   *(Superseded text follows.)* `docs/DESIGN.md`
    says they are emitted "from day one" as portability insurance for a future
    JavaScript port. They are not. Owed.
 6. **No replay format for a finished deal.** Needed by the tutor (reviewing a
