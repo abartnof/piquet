@@ -332,3 +332,15 @@ def test_elder_taking_fewer_cards_leaves_him_less_certain_not_more():
         counts[elder_takes] = len(possible_hands(view_for(deal, E), use_declarations=False))
     assert counts[5] == 455
     assert counts[2] == 5005
+
+
+def test_an_impossible_position_is_rejected_rather_than_explored():
+    """Two hands that cannot both be true used to run a player out of cards
+    somewhere deep in the recursion and surface as a TypeError."""
+    with pytest.raises(ValueError, match="difference must be 0"):
+        solve(parse_hand("AS KS"), parse_hand("QS"), E, elder_tricks=5)
+    with pytest.raises(ValueError, match="difference must be 1"):
+        card_values(
+            parse_hand("AS KS"), parse_hand("QS"), E,
+            led=Card.parse("7S"), elder_tricks=5,
+        )

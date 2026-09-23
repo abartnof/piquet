@@ -66,7 +66,7 @@ def _beats(played: int, led: int) -> bool:
     return played >> 3 == led >> 3 and played > led
 
 
-def _distinct(hand: int, legal: int, unplayed: int) -> Iterator[int]:
+def _distinct(legal: int, unplayed: int) -> Iterator[int]:
     """Legal plays, skipping cards that are interchangeable with a cheaper one.
 
     Two cards in the same suit are equivalent when every card between them has
@@ -89,6 +89,29 @@ def _distinct(hand: int, legal: int, unplayed: int) -> Iterator[int]:
             if probe >= 0 and probe >> 3 == card >> 3 and (legal >> probe) & 1:
                 continue
         yield card
+
+
+def _check_position(
+    elder: Hand, younger: Hand, leader: Player, led: Optional[Card]
+) -> None:
+    """Reject a position whose two hands cannot both be true.
+
+    At the start of a trick both players hold the same number of cards; once
+    one has been led the leader holds one fewer. Given anything else the search
+    runs a player out of cards, finds no legal move, and returns `None`, which
+    surfaces as a `TypeError` several frames deep in the recursion. The check
+    is one subtraction and the alternative is undebuggable.
+    """
+    gap = 1 if led is not None else 0
+    short, tall = (
+        (elder, younger) if leader is Player.ELDER else (younger, elder)
+    )
+    if len(tall) - len(short) != gap:
+        raise ValueError(
+            f"{leader} leads holding {len(short)} cards against {len(tall)}; "
+            f"with {'a card led' if led is not None else 'no card led'} the "
+            f"difference must be {gap}"
+        )
 
 
 def _cards_bonus(elder_tricks: int) -> int:
@@ -121,6 +144,7 @@ def solve(
     with three cards each belongs with `elder_tricks` plus younger's making
     nine.
     """
+    _check_position(elder, younger, leader, led)
     return _search(
         elder.bits,
         younger.bits,
@@ -168,7 +192,7 @@ def _search(
     maximising = turn == 0
     best = None
 
-    for card in _distinct(hand, legal, unplayed):
+    for card in _distinct(legal, unplayed):
         remaining = hand & ~(1 << card)
         if led == _NO_CARD:
             # Leading. A point is scored for every card led, whoever wins it.
@@ -249,6 +273,7 @@ def card_values(
     overlap almost entirely. Evaluating each card with a fresh search instead
     costs several times as much for the same answer.
     """
+    _check_position(elder, younger, leader, led)
     memo: dict = {}
     turn_is_elder = (leader is Player.ELDER) == (led is None)
     hand = elder if turn_is_elder else younger

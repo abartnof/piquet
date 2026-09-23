@@ -36,12 +36,29 @@ def test_a_duel_plays_every_deal_from_both_seats():
 
 
 @pytest.mark.slow
-def test_two_identical_agents_are_evenly_matched():
+def test_two_identical_agents_are_exactly_level():
     """The sharpest check that the mirroring works: the same agent playing
-    itself must come out level, because elder's advantage cancels."""
+    itself must come out level, because elder's advantage cancels.
+
+    These rungs are deterministic, so "level" here is not a statistical claim
+    but an exact one -- every pair is drawn, to the point. Asserting a
+    tolerance would let a real asymmetry hide inside it.
+    """
     result = duel(L(3), L(3), 250, random.Random(1674))
-    assert abs(result.a_win_rate - 0.5) < 0.05
-    assert abs(result.margin) < 1.0
+    assert result.margin == 0.0
+    assert result.drawn == result.pairs
+
+
+@pytest.mark.slow
+def test_mirroring_holds_up_against_agents_that_roll_dice():
+    """With erraticism the two halves of a pair are no longer identical, so
+    this one really is statistical -- and it is the case the harness is for."""
+    def erratic(rng):
+        return HeuristicAgent(3, erraticism=0.5, rng=rng, name="erratic")
+
+    result = duel(erratic, erratic, 250, random.Random(1674))
+    assert abs(result.a_win_rate - 0.5) < 0.08
+    assert abs(result.margin) < 2.0
 
 
 @pytest.mark.slow
