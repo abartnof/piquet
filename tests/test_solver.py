@@ -344,3 +344,68 @@ def test_an_impossible_position_is_rejected_rather_than_explored():
             parse_hand("AS KS"), parse_hand("QS"), E,
             led=Card.parse("7S"), elder_tricks=5,
         )
+
+
+# --------------------------------------------------------------------------
+# What survives concealment
+# --------------------------------------------------------------------------
+#
+# The dialogue gives up three different grades of information and they are not
+# equally trustworthy:
+#
+#   what she showed  -- cards on the table. Not an assumption at all.
+#   what she claimed -- a floor. You may declare less than you hold, never more.
+#   what she did not -- only worth anything if she declared fully.
+#
+# An opponent who sinks breaks the third and nothing else.
+
+
+def _sinking_deal():
+    """Younger wins the point and shows it, then sinks a huitieme."""
+    from piquet.rules import Declaration
+    from piquet.scoring import Category
+    from tests.helpers import after_elders_lead, declaring
+
+    deal = declaring(
+        elder="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+        younger="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
+    )
+    deal = deal.declare(E, Declaration.full(deal.hand_of(E), Category.POINT))
+    deal = deal.declare(Y, Declaration.full(deal.hand_of(Y), Category.POINT))
+    deal = deal.declare(E, Declaration.full(deal.hand_of(E), Category.SEQUENCES))
+    deal = deal.declare(Y, Declaration.sink())
+    deal = deal.declare(E, Declaration.sink())
+    deal = deal.declare(Y, Declaration.sink())
+    return after_elders_lead(deal)
+
+
+def test_sinking_does_not_make_the_engine_forget_what_it_was_shown():
+    """She won the point, so elder was entitled to look at it, and did. Those
+    eight spades are on the table. Concealing her sequence cannot un-show them,
+    but they shared one filter with the honesty assumption and one fallback."""
+    deal = _sinking_deal()
+    view = view_for(deal, E)
+    assert view.seen, "her point scored, so it had to be shown"
+
+    hands = possible_hands(view)
+    assert deal.hand_of(Y) in hands, "and the truth is still in there"
+    for hand in hands:
+        assert all(c.is_supported_by(hand) for c in view.seen)
+
+
+def test_a_declaration_is_a_floor_that_concealment_cannot_lower():
+    """"He calls five cards, and declares five spades, when he might have six."
+    Never four. Understating is allowed and overstating is not, so the number
+    she said is the least she can hold -- true however much she sank."""
+    deal = _sinking_deal()
+    view = view_for(deal, Y)
+    spoken = {a.category: a.primary for a in view.heard}
+    assert spoken, "elder declared his point and his sequences"
+
+    from piquet.combos import best_point, best_sequence
+    from piquet.scoring import Category
+
+    for hand in possible_hands(view):
+        assert best_point(hand).length >= spoken[Category.POINT]
+        if Category.SEQUENCES in spoken:
+            assert best_sequence(hand).length >= spoken[Category.SEQUENCES]

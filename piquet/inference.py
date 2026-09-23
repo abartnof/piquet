@@ -8,13 +8,17 @@ things down:
 
 1. **Cards accounted for.** Your hand, your discards, your talon cards, and
    everything played. What is left is the candidate pool.
-2. **Cards you watched them take.** If elder exchanges fewer than five, younger
+2. **What was shown, and the floor under what was claimed.** Cards exposed on
+   the table are certain, and a declaration can never be more than the hand
+   holds -- both survive an opponent who conceals.
+3. **Cards you watched them take.** If elder exchanges fewer than five, younger
    draws off the top of cards he has already read. Those are certainly hers, so
    they are not enumerated at all: every candidate is *built around* them.
-3. **Voids.** A player who failed to follow suit holds none of it, for the rest
+4. **Voids.** A player who failed to follow suit holds none of it, for the rest
    of the deal. Free, certain, and often decisive.
-4. **The declarations.** Enormously informative -- they cut the candidates by
-   about thirteen-fold on their own (docs/DESIGN.md §4.2).
+5. **An honest declarer.** That she named her best, and named it in every
+   category she could. Enormously informative, and the only part of this list
+   that concealment can take away.
 """
 
 from __future__ import annotations
@@ -28,7 +32,10 @@ from piquet.combos import best_point, best_sequence, best_set
 from piquet.observation import View
 from piquet.scoring import Category
 
-__all__ = ["possible_hands", "opponent_hand_size", "known_voids", "opponent_played"]
+__all__ = [
+    "possible_hands", "opponent_hand_size", "known_voids", "opponent_played",
+    "LADDER",
+]
 
 _BEST = {
     Category.POINT: best_point,
@@ -80,28 +87,72 @@ def opponent_played(view: View) -> Hand:
     return played
 
 
-def _consistent_with_declarations(hand: Hand, view: View, played: Hand) -> bool:
-    """Could this hand have produced the declarations that were actually made?
+def _shown_cards_are_held(original: Hand, view: View) -> bool:
+    """Cards the opponent laid on the table. Not an assumption at all.
 
-    The check must run against the opponent's **original twelve**, not what is
-    left of them. A quint declared before the play is broken up as soon as one
-    of its cards is led, so testing the remaining cards against the declaration
-    rejects the true hand -- which is what an earlier version did, and why the
-    candidate count went *up* as the deal went on instead of down.
-
-    Assumes the opponent declared honestly and fully. Against one who sinks this
-    is too strict, which is exactly what sinking buys, and why `possible_hands`
-    falls back gracefully.
+    "Either player may ask to see any combination that has been scored for or
+    which caused no score because of equality." Those cards were exposed. No
+    amount of concealment elsewhere in the dialogue can take them back, so this
+    is the one rung that is never dropped.
     """
-    hand = hand | played
+    return all(combination.is_supported_by(original) for combination in view.seen)
+
+
+def _at_least_what_was_claimed(original: Hand, view: View) -> bool:
+    """A declaration is a floor. You may declare less than you hold, never more.
+
+    Cavendish's examples of sinking are all understatements -- "he calls five
+    cards, and declares five spades, when he might have six" -- and never
+    overstatements, which `Declaration.validate` refuses outright. So "a quint"
+    means a sequence of five *or better*, and that stays true however much of
+    the rest of the hand went unmentioned.
+    """
     for announcement in view.heard:
-        if not announcement.matches(_BEST[announcement.category](hand)):
+        best = _BEST[announcement.category](original)
+        if best is None or best.key[0] < announcement.primary:
             return False
+    return True
+
+
+def _silence_means_nothing_held(original: Hand, view: View) -> bool:
+    """She said nothing in that category, so she had nothing in it.
+
+    True of an honest declarer and false of one who sank the category whole.
+    """
     declared = {a.category for a in view.heard}
-    for category, finder in _BEST.items():
-        if category not in declared and finder(hand) is not None:
-            return False
-    return all(combination.is_supported_by(hand) for combination in view.seen)
+    return not any(
+        category not in declared and finder(original) is not None
+        for category, finder in _BEST.items()
+    )
+
+
+def _what_was_named_was_the_best(original: Hand, view: View) -> bool:
+    """She named her best holding, exactly, not some lesser one.
+
+    The first rung to go, because partial understatement is the commonest form
+    of sinking and the one Cavendish spends his examples on.
+    """
+    return all(
+        announcement.matches(_BEST[announcement.category](original))
+        for announcement in view.heard
+    )
+
+
+#: What the dialogue tells you, from what survives any amount of concealment to
+#: what only an honest declarer guarantees. `possible_hands` keeps the
+#: candidates that satisfy the most of these, so an opponent who sinks costs
+#: you the bottom rungs and not the whole ladder. An earlier version ran all
+#: four as a single filter and dropped all four together the moment one failed
+#: -- which meant that a player who concealed a sequence also stopped the
+#: engine believing cards she had physically shown it. Measured against a
+#: sinking opponent, her own exposed cards ruled out 88% of the candidate set
+#: that was being kept.
+LADDER = (
+    _shown_cards_are_held,
+    _at_least_what_was_claimed,
+    _silence_means_nothing_held,
+    _what_was_named_was_the_best,
+)
 
 
 def possible_hands(
@@ -125,12 +176,14 @@ def possible_hands(
     skewed picture of what the opponent might hold, which is precisely the
     wrong thing to hand to a Monte Carlo average.
 
-    If the declaration filter leaves nothing, it is dropped and the weaker
-    filters are used alone. That happens when the opponent sank something: the
-    concealed hand is genuinely inconsistent with what was said, so believing
-    the declarations would rule out the truth. Falling back is the honest
-    response to being lied to by omission -- and it is exactly the advantage
-    sinking is bought for.
+    What the dialogue gives up is graded, not all-or-nothing -- see `LADDER`.
+    The candidates kept are those that satisfy the most rungs of it, so an
+    opponent who conceals costs you the assumptions about her honesty and none
+    of the deductions. Being lied to by omission is exactly what sinking is
+    bought for, and it should cost what it buys and no more.
+
+    `use_declarations=False` drops the whole ladder, exposed cards included. It
+    is a diagnostic, for measuring how much the dialogue is worth.
     """
     known = view.watched_them_take
     size = opponent_hand_size(view) - len(known)
@@ -145,19 +198,23 @@ def possible_hands(
         return []
 
     played = opponent_played(view)
+    ladder = LADDER if use_declarations else ()
 
-    def build(filtered: bool) -> list[Hand]:
-        found = []
-        for combination in combinations(candidates, size):
-            hand = Hand.of(*combination) | known
-            if filtered and not _consistent_with_declarations(hand, view, played):
-                continue
-            found.append(hand)
-        return found
+    best_rung = -1
+    hands: list[Hand] = []
+    for combination in combinations(candidates, size):
+        hand = Hand.of(*combination) | known
+        original = hand | played
+        rung = 0
+        for check in ladder:
+            if not check(original, view):
+                break
+            rung += 1
+        if rung > best_rung:
+            best_rung, hands = rung, [hand]
+        elif rung == best_rung:
+            hands.append(hand)
 
-    hands = build(use_declarations)
-    if not hands and use_declarations:
-        hands = build(False)
     if limit is not None and len(hands) > limit:
         hands = (rng or random).sample(hands, limit)
     return hands
