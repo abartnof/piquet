@@ -570,7 +570,48 @@ function* instead of searching.
 This is the only step with a meaningful compute bill, and its cost is
 tunable along three axes (candidates considered, rollouts per candidate,
 hands sampled). **We will agree an estimated runtime and a local-vs-cloud
-decision before launching this in earnest.**
+decision before launching this in earnest.** A few minutes on the laptop is
+fine; anything approaching half an hour goes to a cloud VM.
+
+#### What reconnaissance already says: do not select the maximum
+
+The crippling experiment in §6.4b puts the discard at −32.6 points per pair,
+the highest-stakes decision in a deal, and it is governed by six coefficients
+in `heuristics._keep_value` chosen by taste. That looked like the richest seam
+in the project. A probe says otherwise, and the way it fails is the important
+part.
+
+A scratch agent was given elder's discard: twelve candidates, each rolled
+forward through twenty sampled worlds with rung-4 agents playing the deal out,
+keeping the candidate with the best mean. Over 250 mirrored pairs against plain
+rung 4 it won by **+0.3 points per pair, 28–25–197** — which at 53 decisive
+pairs is indistinguishable from nothing.
+
+Then the diagnosis. Sweeping the rollout count, over 120 elder exchanges:
+
+| rollouts per candidate | agrees with the tuned discard | gain it believes it is making |
+|---|---|---|
+| 5 | 62% | +7.72 |
+| 20 | 79% | +6.15 |
+| 80 | 84% | +4.15 |
+
+Both columns move the same way. As the noise falls the rollout agrees with
+`_keep_value` more often, and the gain it thinks it is making shrinks. A deal's
+score has a standard deviation around 24, so twenty rollouts leave a standard
+error near 5 — and taking the best of twelve candidates whose true values are
+nearly equal collects roughly one and a half of those. **What the agent reads
+as a six-point edge is mostly the optimizer's curse: the bias of maximising
+over noisy estimates.** (The decay is slower than 1/√n, partly because the
+"when it differs" subset shrinks as agreement rises, so the conditional mean is
+not a clean estimator either.)
+
+Two conclusions for this milestone. First, `_keep_value` is much better than it
+has any right to be — a Monte Carlo with a hundredfold more compute per
+decision agrees with it five times in six. Second, and more useful: **the
+architecture in this section is right and the obvious shortcut is not.**
+Selecting the argmax over rollouts amplifies noise; fitting a regression
+*pools* across thousands of deals so the noise averages out instead. The
+sentence "then fit a regression" was doing more work than it looked.
 
 ### 6.3 Declaration and sinking — CFR
 
