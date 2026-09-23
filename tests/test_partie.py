@@ -199,7 +199,8 @@ def test_the_partie_reports_the_standing_for_the_deal_about_to_be_played():
     partie = partie_of((30, 5), (2, 40), opening_dealer=A)   # A: 7, B: 70
     standing = partie.standing                                # deal 3, B is elder
     assert partie.elder is B
-    assert standing == Standing(mine=70, theirs=7, deals_left=4)
+    assert standing == Standing(mine=70, theirs=7, deals_left=4, number=3)
+    assert standing.reversed.number == 3, "which deal it is does not flip"
 
 
 def test_a_view_carries_the_standing_from_that_players_side():

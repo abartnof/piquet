@@ -9,6 +9,7 @@ The rule this file enforces more than any other: **the table never shows a
 player anything the rules do not.** Everything rendered comes out of a `View`.
 """
 
+import io
 import random
 
 import pytest
@@ -19,7 +20,11 @@ from piquet.partie import Standing
 from piquet.rules import Declaration, deal_shuffled
 from piquet.scoring import Category, Player
 from piquet.terminal import (
+    PLAIN,
     HumanAgent,
+    Palette,
+    detect_palette,
+    render_stages,
     choose_opponent,
     make_opponent,
     Table,
@@ -78,8 +83,16 @@ def test_a_card_can_be_named_with_the_symbol_it_was_drawn_with():
     assert Card.parse("10♥") == Card.parse("TH")
 
 
-def test_a_suit_the_hand_is_void_in_is_not_drawn_as_an_empty_row():
-    assert "♥" not in render_hand(parse_hand("AS KS QS JS"))
+def test_a_void_suit_is_drawn_as_a_dash_and_not_left_out():
+    """Leaving it out was my idea and it was wrong. Four fixed rows keep the
+    layout still, so the eye learns where hearts live instead of re-finding
+    them every trick -- and a void is a fact you *act* on, not an absence: it
+    is exactly what lets you throw whatever you like."""
+    shown = render_hand(parse_hand("AS KS QS JS"))
+    assert len(shown.splitlines()) == 4
+    for symbol in "♠♥♦♣":
+        assert symbol in shown
+    assert shown.count("—") == 3, "hearts, diamonds and clubs are all empty"
 
 
 def test_the_cards_you_may_legally_play_are_marked():
@@ -108,6 +121,109 @@ def test_a_hand_with_no_sequence_and_no_set_is_told_so():
     assert "no sequence" in shown and "no set" in shown
 
 
+# --------------------------------------------------------------------------
+# Where you are, and what it is costing you
+# --------------------------------------------------------------------------
+
+
+def test_the_stages_of_a_deal_are_laid_out_with_the_current_one_marked():
+    """A deal has a fixed spine and nobody arrives knowing it. Showing the
+    whole shape with your place in it is a table of contents for a game the
+    player is learning while playing it."""
+    deal = declaring(
+        elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
+        younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+    )
+    shown = render_stages(view_for(deal, E))
+    assert "exchange" in shown and "sequences" in shown and "play" in shown
+    assert "[point]" in shown, "and point is where we are"
+
+
+def test_the_stage_counts_the_tricks_once_the_play_starts():
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    assert "[play 1/12]" in render_stages(view_for(deal, E))
+    deal = deal.play(E, Card.parse("AS"))
+    deal = deal.play(Y, Card.parse("JS"))
+    assert "[play 2/12]" in render_stages(view_for(deal, E))
+
+
+def test_the_score_is_live_and_says_what_this_deal_has_added():
+    """The partie total is what you carry in; the deal total is what is
+    happening now, and a player watching a pique build wants to see it."""
+    deal = declaring(
+        elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
+        younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+    )
+    deal = deal.declare(E, Declaration.full(deal.hand_of(E), Category.POINT))
+    deal = deal.declare(Y, Declaration.full(deal.hand_of(Y), Category.POINT))
+    standing = Standing(mine=31, theirs=18, deals_left=5, number=2)
+    shown = render_standing(view_for(deal, E, standing), "Cavendish")
+    assert "deal 2 of 6" in shown
+    assert "31+8" in shown, "eight for the point, this deal, not yet banked"
+    assert "18" in shown
+
+
+def test_the_table_says_which_piquet_this_is_and_what_the_hundred_means():
+    """A hundred means two different things in the game's two families. In
+    *piquet au cent* it is a finish line you race to. In rubicon piquet the
+    six deals are played out regardless and a hundred is a line you must
+    clear, on pain of paying the sum of both scores instead of the
+    difference. A player who thinks they are racing will play it wrong."""
+    deal = deal_shuffled(random.Random(1674))
+    view = view_for(deal, E, Standing(mine=31, theirs=18, deals_left=5, number=2))
+    shown = render_standing(view, "Cavendish")
+    assert "rubicon" in shown.lower()
+    assert "100" in shown
+    assert "not a finish" in shown.lower() or "rather than a finish" in shown.lower()
+
+
+def test_once_you_are_over_the_line_the_question_becomes_whether_they_are():
+    """Keeping the opponent *down* pays in a way that has no counterpart
+    inside a single deal: a rubiconed loser pays the sum, not the difference."""
+    deal = deal_shuffled(random.Random(1674))
+    view = view_for(deal, E, Standing(mine=140, theirs=61, deals_left=2, number=5))
+    shown = render_standing(view, "Cavendish")
+    assert "39" in shown, "what Cavendish still needs"
+    assert "Cavendish" in shown
+
+
+# --------------------------------------------------------------------------
+# Colour
+# --------------------------------------------------------------------------
+
+
+def test_the_red_suits_are_red_and_the_black_ones_are_left_alone():
+    """Never painted black: half the world runs a dark terminal and the
+    spades would vanish into it."""
+    hand = parse_hand("AS KS AH KH AD KD AC KC")
+    lit = render_hand(hand, palette=Palette(True))
+    rows = lit.splitlines()
+    assert "\033[31m" in rows[1] and "\033[31m" in rows[2], "hearts and diamonds"
+    assert "\033[" not in rows[0] and "\033[" not in rows[3], "spades and clubs"
+
+
+def test_nothing_is_painted_when_nobody_is_watching():
+    assert "\033[" not in render_hand(parse_hand("AS KS AH KH"), palette=PLAIN)
+
+
+class FakeTty:
+    def isatty(self):
+        return True
+
+
+def test_colour_is_off_when_the_output_is_not_a_terminal():
+    assert not detect_palette(io.StringIO()).enabled
+    assert detect_palette(FakeTty()).enabled
+
+
+def test_no_color_is_honoured_because_it_is_a_convention_not_a_special_case(monkeypatch):
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert not detect_palette(FakeTty()).enabled
+
+
 def test_the_trick_names_who_led_and_what_you_must_follow():
     deal = skip_declarations(declaring(
         elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
@@ -117,7 +233,8 @@ def test_the_trick_names_who_led_and_what_you_must_follow():
     shown = render_trick(view_for(deal, Y), "Cavendish")
     assert "Cavendish" in shown
     assert "A♠" in shown
-    assert "spade" in shown.lower(), "and that she is held to the suit"
+    assert "spades" in shown.lower(), "and that she is held to the suit"
+    assert "spadess" not in shown.lower(), "Suit.name is already plural"
 
 
 def test_nothing_is_drawn_for_a_trick_that_has_not_been_led_to():
@@ -200,11 +317,12 @@ def test_the_table_says_which_chair_you_are_in():
     assert "you (younger)" in render_standing(view_for(deal, Y, standing), "Cavendish")
 
 
-def test_a_player_already_over_the_rubicon_is_not_nagged_about_it():
+def test_a_player_already_over_the_line_is_not_asked_about_their_own_distance():
     deal = deal_shuffled(random.Random(1674))
     view = view_for(deal, E, Standing(mine=140, theirs=71, deals_left=1))
     shown = render_standing(view, "Cavendish")
-    assert "rubicon" not in shown.lower()
+    assert "you need" not in shown, "he is home; the distance is behind him"
+    assert "you are over" in shown
 
 
 def test_a_deal_played_outside_a_partie_has_no_scoreboard():

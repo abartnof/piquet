@@ -334,7 +334,7 @@ class Deal:
         if card not in self.legal_plays(player):
             led = self.current_trick.led.suit
             raise ValueError(
-                f"{player} must follow suit: {led.name.lower()} was led"
+                f"{player} must follow suit: {led.name.lower()} were led"
             )
 
         hands = _replace_at(

@@ -90,11 +90,13 @@ class Standing:
     mine: int
     theirs: int
     deals_left: int
+    #: Which deal of the partie this is, counting from one.
+    number: int = 1
 
     @property
     def reversed(self) -> Standing:
         """The same table, read from the other chair."""
-        return Standing(self.theirs, self.mine, self.deals_left)
+        return Standing(self.theirs, self.mine, self.deals_left, self.number)
 
     @property
     def is_last_deal(self) -> bool:
@@ -220,6 +222,7 @@ class Partie:
             mine=self.score_of(elder),
             theirs=self.score_of(elder.other),
             deals_left=self.deals_left,
+            number=self.number,
         )
 
     # -- entering a result ------------------------------------------------

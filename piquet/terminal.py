@@ -21,7 +21,9 @@ thin.
 
 from __future__ import annotations
 
+import os
 import random
+import sys
 from typing import Callable, Optional, Sequence as TypingSequence
 
 from piquet.agents import Agent
@@ -31,15 +33,16 @@ from piquet.combos import CardSet, Point, Sequence, best_point, sequences, sets
 from piquet.heuristics import HeuristicAgent
 from piquet.observation import View
 from piquet.partie import RUBICON, Partie, Side
-from piquet.rules import Declaration, Deal
+from piquet.rules import TRICKS_PER_DEAL, Declaration, Deal, Phase
 from piquet.scoring import Category, Player, ScoreLog
 from piquet.solver import SolverAgent
 from piquet.style import Style
 
 __all__ = [
-    "render_hand", "render_combinations", "render_standing", "render_trick",
-    "render_events", "HumanAgent", "Console", "Table", "name_for", "OPPONENTS",
-    "main",
+    "render_hand", "render_combinations", "render_standing", "render_stages",
+    "render_briefing",
+    "render_trick", "render_events", "HumanAgent", "Console", "Table",
+    "Palette", "PLAIN", "detect_palette", "name_for", "OPPONENTS", "main",
 ]
 
 #: Suits in the order a player expects to see them laid out.
@@ -47,6 +50,58 @@ _DISPLAY_ORDER = (Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS)
 
 #: How wide a card's name is drawn, so the columns line up under the tens.
 _CELL = 5
+
+#: Drawn in red. The other two are never painted black: half the world runs a
+#: dark terminal and the spades would vanish into it.
+_RED_SUITS = (Suit.HEARTS, Suit.DIAMONDS)
+
+#: The spine of a deal, which nobody arrives knowing.
+_STAGES = ("exchange", "point", "sequences", "sets", "play")
+_STAGE_OF = {
+    Phase.ELDER_EXCHANGE: 0,
+    Phase.YOUNGER_EXCHANGE: 0,
+    Phase.DECLARE_POINT: 1,
+    Phase.DECLARE_SEQUENCES: 2,
+    Phase.DECLARE_SETS: 3,
+    Phase.PLAY: 4,
+    Phase.COMPLETE: 4,
+}
+
+
+class Palette:
+    """ANSI colour, or nothing at all."""
+
+    def __init__(self, enabled: bool = False) -> None:
+        self.enabled = enabled
+
+    def _wrap(self, text: str, code: str) -> str:
+        return f"\033[{code}m{text}\033[0m" if self.enabled else text
+
+    def red(self, text: str) -> str:
+        return self._wrap(text, "31")
+
+    def bold(self, text: str) -> str:
+        return self._wrap(text, "1")
+
+    def dim(self, text: str) -> str:
+        return self._wrap(text, "2")
+
+
+#: For anything that is not a terminal, and for the test suite.
+PLAIN = Palette(False)
+
+
+def detect_palette(stream=None) -> Palette:
+    """Colour when there is somebody there to see it.
+
+    Off when the output is not a terminal, and off when `NO_COLOR` is set --
+    a convention worth honouring rather than a special case to argue about.
+    """
+    stream = stream if stream is not None else sys.stdout
+    if os.environ.get("NO_COLOR"):
+        return PLAIN
+    isatty = getattr(stream, "isatty", None)
+    return Palette(bool(isatty and isatty()))
 
 
 def _name(card: Card) -> str:
@@ -64,34 +119,65 @@ def _name(card: Card) -> str:
 # --------------------------------------------------------------------------
 
 
-def render_hand(hand: Hand, legal: Optional[Hand] = None) -> str:
+def render_hand(
+    hand: Hand, legal: Optional[Hand] = None, palette: Palette = PLAIN
+) -> str:
     """A hand laid out by suit, highest first, legal plays in brackets.
 
     Every card is drawn as the code you would type to name it. An earlier
-    version drew the ranks alone under a suit symbol -- "♠  K J 7" -- which is
-    prettier and, the first person to sit down at it discovered, unusable:
-    the table spoke in symbols and the prompt wanted letters, and nothing
-    anywhere said how to get from one to the other. The display and the input
-    are now the same language, so there is nothing to translate.
+    version drew the ranks alone under a suit symbol -- "\u2660  K J 7" -- which is
+    prettier and, the first person to sit down at it discovered, unusable: the
+    table spoke in symbols and the prompt wanted letters, and nothing anywhere
+    said how to get from one to the other. The display and the input are now
+    the same language, so there is nothing to translate.
 
-    A void suit is not drawn at all: an empty row is a line of noise, and what
-    you are void in is something you already know.
+    All four suits are always drawn, a void as a dash. Leaving voids out was
+    my idea and it was wrong on both counts. Four fixed rows keep the layout
+    still, so the eye learns where hearts live instead of re-finding them
+    every trick; and a void is a fact you *act* on rather than an absence,
+    because it is exactly what lets you throw whatever you like.
     """
     rows = []
     if legal is not None and legal == hand:
         legal = None        # nothing is narrowed, so nothing is worth marking
     for suit in _DISPLAY_ORDER:
         ranks = hand.ranks_in(suit)
-        if not ranks:
-            continue
-        cells = []
-        for rank in ranks:
-            card = Card(rank, suit)
-            marked = legal is not None and card in legal
-            drawn = f"[{_name(card)}]" if marked else f" {_name(card)} "
-            cells.append(drawn.ljust(_CELL))
-        rows.append(f"  {suit.symbol} " + "".join(cells).rstrip())
+        if ranks:
+            cells = []
+            for rank in ranks:
+                card = Card(rank, suit)
+                marked = legal is not None and card in legal
+                drawn = f"[{_name(card)}]" if marked else f" {_name(card)} "
+                cells.append(drawn.ljust(_CELL))
+            body = "".join(cells).rstrip()
+        else:
+            body = " \u2014"
+        row = f"  {suit.symbol} {body}"
+        rows.append(palette.red(row) if suit in _RED_SUITS else row)
     return "\n".join(rows)
+
+
+def render_stages(view: View, palette: Palette = PLAIN) -> str:
+    """Where in a deal we are, with the whole shape of one around it.
+
+    A deal has a fixed spine and nobody arrives knowing it. Showing all five
+    stages with your place among them is a table of contents for a game the
+    player is learning while they play it -- and it answers, without being
+    asked, why the table wants a discard now and a card later.
+    """
+    here = _STAGE_OF[view.phase]
+    parts = []
+    for index, label in enumerate(_STAGES):
+        if label == "play":
+            trick = min(len(view.tricks) + 1, TRICKS_PER_DEAL)
+            label = f"play {trick}/{TRICKS_PER_DEAL}"
+        if index == here:
+            parts.append(palette.bold(f"[{label}]"))
+        elif index < here:
+            parts.append(palette.dim(label))
+        else:
+            parts.append(label)
+    return "  " + " \u00b7 ".join(parts)
 
 
 def _for_example(hand: Hand, count: int = 2) -> str:
@@ -122,59 +208,100 @@ def render_combinations(hand: Hand) -> str:
     return "  ·  ".join(parts)
 
 
-def render_standing(view: View, opponent: str, full: bool = True) -> str:
+def render_standing(
+    view: View, opponent: str, full: bool = True, palette: Palette = PLAIN
+) -> str:
     """The scoreboard, and what it means.
 
-    Late in a partie the score alone is not the useful fact. A player who is
-    short of a hundred pays the *sum* of both scores instead of the
-    difference, so they are playing a different game from one who is not, and
-    what they need to know is the distance and the odds. `chances` can answer
-    that because the uncertainty is over the deck and their own play, with no
-    opponent model in it at all.
+    Three things a player cannot work out for themselves. **Which chair they
+    are in**, which changes every deal and is why the discard is five cards
+    one deal and three the next. **What this deal has added so far**, shown
+    beside the total carried in, so a pique can be watched building. And
+    **which piquet this is**: a hundred is a finish line to race for in
+    *piquet au cent* and a line to clear in the rubicon game, and a player who
+    confuses the two will play the last deal wrong.
 
-    Which chair you are in is the other thing a player cannot otherwise work
-    out. It changes every deal, and it is why the discard is sometimes five
-    cards and sometimes three -- a player who has not been told will read that
-    as the table misbehaving.
+    Once a player is over the line the interesting question inverts: keeping
+    the *opponent* short pays the sum of both scores rather than the
+    difference, and that incentive has no counterpart inside a single deal.
 
-    `full=False` drops the seat gloss and the rubicon line. Neither can change
-    inside a deal, so saying them at every prompt is noise; the table says
-    them once, when the deal opens.
+    `full=False` keeps only the live line. The rest cannot change inside a
+    deal, so the table says it once, when the deal opens.
     """
     standing = view.partie
     if standing is None:
         return ""
-    deals = standing.deals_left
-    plural = "" if deals == 1 else "s"
     elder = view.me is Player.ELDER
     mine, theirs = ("elder", "younger") if elder else ("younger", "elder")
+
+    def running(banked: int, gained: int) -> str:
+        return f"{banked}+{gained}" if gained else str(banked)
+
+    of = standing.number + standing.deals_left - 1
+    live = (
+        f"  deal {standing.number} of {of}"
+        f"   ·   you ({mine}) {running(standing.mine, view.log.total(view.me))}"
+        f"   ·   {opponent} ({theirs})"
+        f" {running(standing.theirs, view.log.total(view.opponent))}"
+    )
+    if not full:
+        return live
+    return "\n".join([live] + render_briefing(view, opponent))
+
+
+def render_briefing(view: View, opponent: str) -> list[str]:
+    """What cannot change inside a deal, so is said once when it opens.
+
+    Which chair you are in, which piquet this is, and how far off the line
+    you are. Three things a player cannot work out for themselves and which
+    the table would otherwise repeat at every prompt.
+    """
+    standing = view.partie
+    if standing is None:
+        return []
+    elder = view.me is Player.ELDER
+    of = standing.number + standing.deals_left - 1
     lines = [
-        f"  you ({mine}) {standing.mine}  ·  {opponent} ({theirs}) {standing.theirs}"
-        f"   ·  {deals} deal{plural} to play"
+        "  you exchange first, up to five, and lead to the first trick"
+        if elder else
+        f"  {opponent} exchanges first and leads; you take what they leave",
+        f"  rubicon piquet — all {of} deals are played;"
+        f" {RUBICON} is a line to clear, not a finish",
     ]
-    if full:
-        lines.append(
-            "  you exchange first, up to five, and lead to the first trick"
-            if elder else
-            f"  {opponent} exchanges first and leads; you take what he leaves"
-        )
-        needed = RUBICON - standing.mine
-        if needed > 0:
-            odds = chance_of(needed, deals, elder)
-            lines.append(f"  {needed} more to cross the rubicon — {in_words(odds)}")
-    return "\n".join(lines)
+    needed = RUBICON - standing.mine
+    if needed > 0:
+        odds = chance_of(needed, standing.deals_left, elder)
+        lines.append(f"  you need {needed} more to cross it — {in_words(odds)}")
+    else:
+        short = RUBICON - standing.theirs
+        if short > 0:
+            odds = chance_of(short, standing.deals_left, not elder)
+            lines.append(
+                f"  you are over. {opponent} needs {short} — {in_words(odds)};"
+                " short, and they pay the sum"
+            )
+        else:
+            lines.append("  you are both over — the difference is what pays now")
+    return lines
 
 
-def render_trick(view: View, opponent: str) -> str:
-    """The card on the table, and whether you are held to its suit."""
+def render_trick(view: View, opponent: str, palette: Palette = PLAIN) -> str:
+    """The card on the table, and whether you are held to its suit.
+
+    `Suit.name` is already plural, so nothing here adds an "s" to it. An
+    earlier version did, and told a player to follow "clubss".
+    """
     trick = view.current_trick
     if trick is None:
         return ""
+    card = str(trick.led)
+    if trick.led.suit in _RED_SUITS:
+        card = palette.red(card)
     if trick.leader is view.me:
-        return f"  you lead {trick.led}"
-    line = f"  {opponent} leads {trick.led}"
+        return f"  you lead {card}"
+    line = f"  {opponent} leads {card}"
     if view.hand.in_suit(trick.led.suit):
-        line += f" — you must follow {trick.led.suit.name.lower()}s"
+        line += f" — you must follow {trick.led.suit.name.lower()}"
     return line
 
 
@@ -263,10 +390,12 @@ class HumanAgent:
         console: Console,
         name: str = "you",
         opponent: str = "your opponent",
+        palette: Palette = PLAIN,
     ) -> None:
         self.console = console
         self.name = name
         self.opponent = opponent
+        self.palette = palette
         self._narrated = 0
         self._opened = False
 
@@ -280,16 +409,20 @@ class HumanAgent:
         )
 
         self.console.write("")
-        standing = render_standing(view, self.opponent, full=not self._opened)
+        live = render_standing(view, self.opponent, full=False, palette=self.palette)
+        if live:
+            self.console.write(live)
+        self.console.write(render_stages(view, self.palette))
+        if not self._opened:
+            for line in render_briefing(view, self.opponent):
+                self.console.write(line)
         self._opened = True
-        if standing:
-            self.console.write(standing)
         for line in lines:
             self.console.write(line)
-        trick = render_trick(view, self.opponent)
+        trick = render_trick(view, self.opponent, self.palette)
         if trick:
             self.console.write(trick)
-        self.console.write(render_hand(view.hand, legal))
+        self.console.write(render_hand(view.hand, legal, self.palette))
 
     # -- the three decisions ----------------------------------------------
 
@@ -367,7 +500,7 @@ class HumanAgent:
                 continue
             if card not in legal:
                 led = view.current_trick.led.suit.name.lower()
-                self.console.write(f"  you must follow {led}s while you can")
+                self.console.write(f"  you must follow {led} while you can")
                 continue
             return card
 
@@ -423,8 +556,10 @@ class Table:
         console: Optional[Console] = None,
         rng: Optional[random.Random] = None,
         opening_dealer: Side = Side.A,
+        palette: Palette = PLAIN,
     ) -> None:
         self.sides = (side_a, side_b)
+        self.palette = palette
         self.console = console or Console()
         self.rng = rng or random.Random()
         self.opening_dealer = opening_dealer
@@ -500,10 +635,16 @@ def main(
     """Sit a person down opposite one of the named opponents."""
     console = console or Console()
     rng = rng or random.Random()
+    palette = detect_palette()
     level, erraticism = choose_opponent(console)
-    you = HumanAgent(console, name="you", opponent=name_for(level))
+    you = HumanAgent(
+        console, name="you", opponent=name_for(level), palette=palette
+    )
     them = make_opponent(level, erraticism, rng)
     # You deal the first, and so sit elder in the critical sixth deal -- which
     # pagat says is why the winner of the cut should choose to deal.
-    Table(you, them, console=console, rng=rng, opening_dealer=Side.A).play()
+    Table(
+        you, them, console=console, rng=rng,
+        opening_dealer=Side.A, palette=palette,
+    ).play()
     return 0
