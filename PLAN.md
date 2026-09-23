@@ -6,7 +6,7 @@
 
 ## Where we are
 
-**Milestones 1–7 complete. 428 tests. Two review passes and one play-test.**
+**Milestones 1–7 complete, and the AI now plays the partie. 449 tests.**
 
 **It is playable.** `python -m piquet` sits you down against a named opponent
 for a partie of six deals, settled by the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
@@ -21,7 +21,7 @@ piquet/
   rules.py         Deal as an immutable state machine
   scoring.py       the event log; pique and repique
   partie.py        six deals, Side vs seat, the rubicon settlement
-  chances.py       the odds on reaching a total, measured and convolved
+  chances.py       the odds on reaching a total; what a point is worth
   terminal.py      the table a person sits at; the human as an Agent
   observation.py   View — the only way an agent sees a deal
   agents.py        the Agent protocol; RandomAgent
@@ -86,6 +86,8 @@ the player and the screen rather than anything inside the engine.
 | Bonus reckoning | Law 67's **order of precedence**, for pique and repique alike |
 | Seats vs people | `Player` is a seat and swaps each deal; `Side` plays the partie |
 | Evaluation model | **Decomposed vector**, never a scalar |
+| AI objective | **Expected settlement**, not points in a deal. `chances.point_weights` prices a point to each side and the solver's search takes the pair |
+| Measuring it | **Mirrored parties** (`tournament.partie_duel`), scored in settlement. A deal-level harness is structurally blind to a partie objective |
 | Play-phase AI | Exact enumeration + solver. No training needed |
 | Exchange AI | Monte Carlo rollouts, then a fitted regression |
 | Declaration AI | CFR. Built last |
@@ -167,11 +169,14 @@ thousands of deals and averages it out.** Worth knowing before buying compute.
 
 Ordered by how much they are needed, not by size.
 
-1. **Nothing reads `View.partie`.** The heuristics, the solver and the style
-   calibration all still maximise points within a deal. The interface exists
-   now; the behaviour does not. `docs/DESIGN.md` §6.4a.
-2. **`rubicon nerve`, the fourth style dimension**, specified in
-   `docs/DESIGN.md` §7.1 and now finally possible to implement.
+1. **`rubicon nerve`, the fourth style dimension**, specified in
+   `docs/DESIGN.md` §7.1 and now finally possible to implement — `chances`
+   supplies everything it needs.
+2. **The heuristic rungs read the partie in one place only.** The sink ceiling
+   is priced in settlement, so nobody sinks a tierce that would carry them
+   over the rubicon; but `_lead` and `_follow` are rules rather than an
+   objective and there is nothing in them to weight. The solver is where the
+   objective lives, and rungs 1–4 are partie-blind in play.
 3. **Nothing enforces style stability except `make_opponent`.** The terminal
    draws a style once per opponent, which is right, but an agent constructed
    anywhere else still gets whatever it is handed. There is no lifecycle on the
@@ -333,6 +338,8 @@ conviction first:
 | A pique reckons in the order it happened | In the **order of precedence**, like a repique — the two derivations had been contradicting each other about the same fact |
 | "Point of five, forty-nine" | "Point of five." The tie-break is asked for, never volunteered |
 | Elder declares knowing what younger holds | He does not. He leads to the first trick before she names anything, so his first lead is blind |
+| A point is a point | Not in a partie. Six, when it carries you over the rubicon; **plus one to your opponent** while a hundred is out of their reach, because a rubiconed loser pays the sum |
+| The two scores in a deal are roughly independent | They correlate at **−0.47**, so the joint had to be sampled rather than assumed |
 | Every unaccounted-for card is equally likely to be hers | An ace is, 100% of the time; a seven, 28% — though correcting it is worth only +0.3 a pair |
 | The hand-tuned discard must be leaving points on the table | A Monte Carlo with a hundredfold more compute per decision agrees with it five times in six |
 | Hoyle's three-to-two on younger's draw | Right, and the sentence pins down which sum he did: 23/57, or 1.478 to 1 |
