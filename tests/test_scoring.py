@@ -3,10 +3,14 @@
 Piquet's two bonuses read the *same* points in *two different orders*, which is
 why scoring is an ordered log rather than a running total:
 
-- **Repique** (Cavendish, Law 68) reckons in strict *category* order --
-  carte blanche, point, sequences, sets -- and ignores play entirely.
-- **Pique** (Law 69) reckons in *actual occurrence* order, over declarations
-  and play together.
+- **Repique** (Cavendish, Law 68) is made "in his hand alone" -- carte blanche,
+  point, sequences, sets -- and ignores play entirely.
+- **Pique** (Law 69) is made "in hand and play", so it counts points scored for
+  leading and winning tricks as well.
+
+Both reckon in Law 67's order of precedence, which is *not* the order of the
+log: younger's declarations are entered only when elder leads to the first
+trick, but her point still reckons before his sequences.
 
 Law 67 fixes the categories: I carte blanche, II point, III sequences,
 IV quatorzes and trios, V points made in play, VI the cards.
@@ -92,7 +96,7 @@ def test_players_know_their_opponent():
 
 
 # --------------------------------------------------------------------------
-# Repique -- category order
+# Repique -- the hand alone
 # --------------------------------------------------------------------------
 
 
@@ -174,7 +178,7 @@ def test_exactly_thirty_is_enough():
 
 
 # --------------------------------------------------------------------------
-# Pique -- temporal order
+# Pique -- hand and play
 # --------------------------------------------------------------------------
 
 
@@ -278,3 +282,70 @@ def test_events_carry_a_human_readable_detail_for_explanation():
     log = ScoreLog().record(E, 15, Category.SEQUENCES, "quint to the ace")
     assert log.events[0].detail == "quint to the ace"
     assert "quint to the ace" in str(log.events[0])
+
+
+# --------------------------------------------------------------------------
+# Pique and repique must agree about who reckoned first
+# --------------------------------------------------------------------------
+
+
+def test_a_pique_is_denied_by_a_category_the_opponent_won_earlier():
+    """Younger's declarations are *entered* late but *reckon* in their place.
+
+    This is the log as the engine really writes it: elder declares and scores,
+    leads for his thirtieth point, and only then does younger enter the point
+    she won. Read down the page elder got there first. Read in Law 67's order
+    of precedence he did not -- point is category II and sequences is III, so
+    younger reckoned before elder's sequences ever counted.
+    """
+    log = log_of(
+        (E, 4, Category.SEQUENCES),
+        (E, 28, Category.SETS),
+        (E, 1, Category.PLAY),         # elder leads to the first trick
+        (Y, 6, Category.POINT),        # ...and now younger names her point
+    )
+    assert log.repique is None, "younger reckoned first, so no repique"
+    assert log.pique is None, "and for exactly the same reason, no pique"
+
+
+def test_the_two_bonuses_never_disagree_about_who_reckoned_first():
+    """The same fact cannot block one bonus and not the other.
+
+    Elder has thirty-two in hand alone, which would be a repique were younger
+    silent. She is not: she won the point. That denies the repique, and it must
+    deny the pique too -- otherwise the engine charges her declaration against
+    the sixty and lets elder keep the thirty.
+    """
+    log = log_of(
+        (E, 3, Category.SEQUENCES),
+        (E, 28, Category.SETS),
+        (E, 1, Category.PLAY),
+        (Y, 5, Category.POINT),
+    )
+    assert log.repique is None and log.pique is None
+    assert not [e for e in log.with_bonuses() if e.category is Category.BONUS]
+
+
+def test_a_pique_survives_a_category_the_opponent_won_later():
+    """The mirror image: younger's set reckons *after* elder's sequences, so
+    elder is already past thirty when she reckons at all."""
+    log = log_of(
+        (E, 6, Category.POINT),
+        (E, 24, Category.SEQUENCES),
+        (E, 1, Category.PLAY),
+        (Y, 14, Category.SETS),
+    )
+    assert log.repique is E, "thirty in hand alone before she reckoned anything"
+
+
+def test_elder_still_piques_by_leading_when_younger_declared_nothing():
+    """The classic case, and the reason a pique exists at all: twenty-nine in
+    hand, and the thirtieth point comes from leading to the first trick."""
+    log = log_of(
+        (E, 6, Category.POINT),
+        (E, 23, Category.SEQUENCES),
+        (E, 1, Category.PLAY),
+    )
+    assert log.repique is None, "twenty-nine in hand alone is not enough"
+    assert log.pique is E
+    assert log.with_bonuses().total(E) == 30 + PIQUE_BONUS

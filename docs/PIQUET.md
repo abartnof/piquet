@@ -215,8 +215,17 @@ reckoning order. Cavendish's Law 67 gives it:
 a card is played — and adds **60**.
 
 **Pique** is thirty reached "in hand and play" before the opponent has reckoned
-anything, and adds **30**. Only elder can score a pique, because he scores one
-for leading to the first trick before younger has declared anything.
+anything, and adds **30**. Only elder can score a pique, and that follows from
+the order rather than being a separate rule: if younger reaches thirty in
+categories I–IV with elder silent she has a *repique*, and if she is short of
+thirty after declaring, the first entry in category V is elder's point for
+leading to the first trick, by which time she has reckoned.
+
+Both bonuses are reckoned in that order of precedence, and not in the order the
+points were entered. Younger's declarations are only *entered* after elder
+leads, but her point is still category II and reckons before his sequences at
+III — so a category she has won denies elder a pique just as it denies him a
+repique.
 
 A player scores one or the other, never both. Equality in a category does not
 count as scoring and so does not block either bonus.
