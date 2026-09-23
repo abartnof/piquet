@@ -435,11 +435,13 @@ And three methodological ones:
   `_heard` gave elder younger's declarations before he had led. Treat every
   addition to `View` with suspicion, and ask of each field *when was this said
   aloud, and by whom*.
-- Tests: 445 of them. The full suite now takes **~94 seconds**, up from 35 —
-  the partie and `chances` tests play whole parties, and the solver ones are
-  not cheap. `pytest -m "not slow"` is the tight loop. The slow ones are the
-  statistical tests and they have caught more real bugs than the unit tests,
-  so they stay in the default run; but the full suite is no longer something
-  to run on every keystroke.
+- Tests: 446 of them. `pytest -m "not slow"` is the tight loop at **~16s**;
+  the full suite is **~94s**. Both had drifted badly and the drift was one
+  test: a full twelve-card solve, unmarked, taking forty-five seconds on its
+  own and making the "fast" loop sixty-three. It is marked now, and a cheap
+  test covers the same arithmetic. **Check `--durations` when the loop starts
+  to feel slow** — it was one test, not creeping decay, and it will be again.
+- The slow tests are the statistical ones and they have caught more real bugs
+  than the unit tests, so they stay in the default run.
 - Re-measure `style.CALIBRATED` whenever the ladder changes. What counts as a
   near-equal option depends on how well the agent plays.

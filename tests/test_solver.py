@@ -43,8 +43,18 @@ def test_the_last_trick_taken_by_the_follower():
 
 
 def test_a_capot_is_worth_forty_on_top_of_the_trick_points():
-    """Elder holds every card that matters: twelve leads, the last trick, and
-    forty for taking all twelve."""
+    """Elder takes the last two of twelve, so he has taken all twelve: two
+    leads, the last trick, and forty for the capot."""
+    value = solve(parse_hand("AS KS"), parse_hand("QS JS"), E, elder_tricks=10)
+    assert value == 1 + 1 + 1 + CAPOT_BONUS
+
+
+@pytest.mark.slow
+def test_the_whole_play_can_be_solved_from_twelve_cards():
+    """Forty-five seconds, which is why `SolverAgent` waits until eight and
+    why this is the only test that asks for it. Kept as an end-to-end and as
+    a performance canary: if it starts taking minutes, something in the search
+    has regressed."""
     elder = parse_hand("AS KS QS JS TS 9S 8S 7S AH KH QH JH")
     younger = parse_hand("TH 9H 8H 7H AD KD QD JD AC KC QC JC")
     assert solve(elder, younger, E) == 12 + 1 + CAPOT_BONUS

@@ -51,7 +51,7 @@ _NO_CARD = -1
 #: maximises `w_elder * E - w_younger * Y` and younger always minimises it,
 #: which works because the settlement is zero-sum: both sides agree on the
 #: same number and pull in opposite directions.
-EVEN = (1.0, 1.0)
+EVEN = (1, 1)
 
 
 def _bits(mask: int) -> Iterator[int]:
@@ -347,10 +347,13 @@ def card_values(
 class SolverAgent(HeuristicAgent):
     """Rung 5: heuristic play early, exact play once the endgame is reachable.
 
-    Solving the whole play from twelve cards would take about twenty seconds in
-    Python, which is far too slow to sit in front of. Solving from eight is a
-    few hundredths of a second, so the agent plays by rule of thumb until the
-    endgame comes into range and then plays it perfectly.
+    Solving the whole play from twelve cards takes about **forty-five seconds**
+    in Python, which is far too slow to sit in front of. Eight cards is about
+    two and a half seconds and six is a tenth of one -- the cost roughly
+    nineteenfold per two cards, which is the branching factor and the single
+    biggest lever on anything that rolls this forward in bulk. The agent plays
+    by rule of thumb until the endgame comes into range and then plays it
+    perfectly.
 
     That is not a compromise so much as where the value is. The cards bonus and
     the capot are decided in the endgame, and the endgame is exactly the part a
