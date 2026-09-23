@@ -201,6 +201,9 @@ def _search(
     if cached is not None:
         return cached
 
+    # Unpacked once rather than called per node: `_search` visits millions of
+    # them and a function call each is a measurable share of the whole search.
+    w_elder, w_younger = weights
     turn = leader if led == _NO_CARD else 1 - leader
     hand = elder if turn == 0 else younger
     unplayed = elder | younger | (0 if led == _NO_CARD else 1 << led)
@@ -213,7 +216,7 @@ def _search(
         remaining = hand & ~(1 << card)
         if led == _NO_CARD:
             # Leading. A point is scored for every card led, whoever wins it.
-            value = _credit(turn == 0, 1, weights) + _search(
+            value = (w_elder if turn == 0 else -w_younger) + _search(
                 remaining if turn == 0 else elder,
                 younger if turn == 0 else remaining,
                 leader,
@@ -230,7 +233,9 @@ def _search(
             gained = 1 if follower_wins else 0
             if not next_elder and not next_younger:
                 gained += 1     # the winner of the last trick scores two
-            value = _credit(winner == 0, gained, weights) + _search(
+            value = (
+                w_elder * gained if winner == 0 else -w_younger * gained
+            ) + _search(
                 next_elder,
                 next_younger,
                 winner,
