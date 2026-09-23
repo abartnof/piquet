@@ -6,7 +6,7 @@
 
 ## Where we are
 
-**Milestones 1–6 complete. 365 tests. Two review passes; ten bugs fixed.**
+**Milestones 1–6 complete. 389 tests. Two review passes; twelve bugs fixed.**
 
 A whole partie can now be played: six deals, the deal alternating, settled by
 the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
@@ -21,6 +21,7 @@ piquet/
   rules.py         Deal as an immutable state machine
   scoring.py       the event log; pique and repique
   partie.py        six deals, Side vs seat, the rubicon settlement
+  chances.py       the odds on reaching a total, measured and convolved
   observation.py   View — the only way an agent sees a deal
   agents.py        the Agent protocol; RandomAgent
   heuristics.py    the capability ladder, rungs 1–4
@@ -31,8 +32,9 @@ piquet/
   solver.py        exact endgame search, and the agent that uses it
 ```
 
-Ratings, re-measured after the second review pass, 500 mirrored pairs per
-pairing, anchored on random play: **L1 336, L2 778, L3 818, L4 866.** The
+Ratings, re-measured after the second review pass and under the smoothed fit,
+500 mirrored pairs per pairing, anchored on random play: **L1 335, L2 776,
+L3 816, L4 863.** The
 solver beats L4 by **82.5% / +5.0 points per pair** over 100 pairs — still a
 bigger jump than all the heuristic rungs above the first combined.
 
@@ -42,15 +44,13 @@ threat, not a curiosity.
 
 ## Next action
 
-**Undecided — put to Andrew.** Three candidates, in the order I would rank
-them; see "Open questions for Andrew" below.
+**Milestone 7, the terminal UI.** The engine is now rich enough that the
+binding constraint is that nobody can play it. `chances.in_words` was written
+with the scoreboard in mind: the job of a scoreboard late in a partie is to
+tell a player *which game they are in*, and "you need eighteen — about two
+chances in three" does that where "82" does not.
 
-1. **Milestone 7, the terminal UI.** Makes the thing playable by a person,
-   which is the point of the project.
-2. **Teach the agents the partie.** `View.partie` now exists and nothing reads
-   it. This is `docs/DESIGN.md` §6.4a, the objective being wrong above the deal.
-3. **Fix the solver's world prior.** The largest measured weakness in the AI
-   (see below), and cheap.
+The three questions put to Andrew earlier are all resolved; see below.
 
 ## Settled decisions
 
@@ -85,59 +85,60 @@ them; see "Open questions for Andrew" below.
 - [ ] 9. Training mode
 - [ ] 10. CFR declarations
 
-## Open questions for Andrew
+## The three open questions, settled
 
-Three things I would not decide alone.
+All three were measured rather than argued, and one of them went against the
+claim that raised it.
 
-### 1. The solver's model of the opponent is measurably miscalibrated
+### 1. The solver's world prior — real, and small
 
-`possible_hands` treats every consistent hand as equally likely. It is not.
-The cards that are *not* in the opponent's hand are her discards and whatever
-is left of the talon, and both are systematically low, because everybody
-throws low cards. Measured over 600 deals at elder's first lead:
+`possible_hands` treats every consistent hand as equally likely, and it is not:
+the cards *not* in her hand are her discards and the talon leftovers, and both
+are systematically low. Measured at the point the solver actually runs — eight
+cards, not the first lead, which is where the first measurement was wrongly
+taken — an unaccounted-for ace is hers 100% of the time against a model that
+believes 89%, and a seven 23% against a model that believes 46%.
 
-| unseen card | really in her hand | the model believes | error |
-|---|---|---|---|
-| ace | 100.0% | 89.3% | −10.7 |
-| king | 99.9% | 89.9% | −10.0 |
-| ten | 96.5% | 85.7% | −10.8 |
-| nine | 69.1% | 72.2% | +3.1 |
-| eight | 47.6% | 65.2% | +17.6 |
-| seven | 27.7% | 56.7% | +29.0 |
+**But the fix is worth +0.3 points per mirrored pair.** A scratch solver that
+weights its worlds by the measured rates, same number of searches per decision,
+beat the stock one 39–13 in decisive pairs over 150 — statistically solid at
+p = 4×10⁻⁴, and about a sixth of a rung of the ladder. For scale: rung 3 to
+rung 4 is +1.8 and the solver over rung 4 is +5.0.
 
-The error runs in the worst possible direction: the solver **under-rates the
-opponent's high cards and over-rates her low ones**, which is exactly the
-mistake that makes it too optimistic about its own winners.
+So it is a real effect and a small one, and the claim it was written up under —
+"the largest measured weakness in the AI" — was wrong. Not landed, because the
+weights are fitted to rung-4 discard habits and would be a guess against a
+human. The principled version is milestone 8's exchange policy read backwards.
 
-The fix is small — weight the sample by rank, or weight each world's value —
-but it changes every strength number we publish, so it wants a deliberate
-re-measurement rather than a quiet patch. It also interacts with Milestone 8:
-a trained discard policy *is* the correct prior, so a hand-fitted one now is
-either a stopgap or a baseline to beat.
+### 2. `ratings()` around a shutout — fixed
 
-### 2. `ratings()` is meaningless around a shutout
+Now Laplace's rule of succession, 1774: half a win and half a loss against a
+virtual opponent of average strength. The floor read ~3,700 for a shut-out
+anchor and ~713 after one win; the scale is now continuous, and on a
+well-populated table the prior moves ratings by about three points.
 
-The log-of-zero crash was fixed with a `1e-9` floor. With a genuine 0-win
-anchor the floor is now the only thing setting the scale: the table reads
-~3,700 for everyone, and one single win collapses it to ~713. The number is
-the floor constant, not the play. Iterating longer does not change it.
+### 3. `ratings()` and the margin — a preference, not a finding
 
-The standard fix is a smoothing prior — a fraction of a win and a loss against
-a virtual average opponent — which keeps ratings finite and continuous. It
-would move every published rating slightly. Worth doing, but it is the
-yardstick, and I would rather not change the yardstick without saying so.
+Bradley-Terry models win probability; using margins means a different model.
+Listed here originally as though it were a defect, which it is not. Left alone.
 
-### 3. `ratings()` throws the margin away
+## The exchange is not the seam it looked like
 
-Bradley-Terry is fitted on wins and draws only, though `DuelResult.margin` is
-described in the code as "the finer-grained measure" — and under rubicon
-settlement the margin is what a partie actually pays out on. A deal won by one
-point counts the same as a capot. There is a lot of statistical power on the
-floor here, and it is free to pick up.
+The crippling experiment (`docs/DESIGN.md` §6.4b) puts the discard at −32.6
+points per pair, the highest-stakes decision in a deal, governed by six
+coefficients chosen by taste. A rollout probe — twelve candidates, twenty
+worlds each — beats it by +0.3 points per pair over 250 mirrored pairs, which
+at 53 decisive pairs is nothing.
 
-Related: L3 and L4 draw **390 of 500** mirrored pairs. Rung 4's one
-distinguishing capability now fires rarely, because it cannot fire on the
-first lead at all (see the review below). The rung is real but thin.
+Sweeping the rollout count explains why: agreement with the hand-tuned discard
+rises 62% → 79% → 84% as rollouts go 5 → 20 → 80, while the gain the agent
+*believes* it is making falls 7.72 → 6.15 → 4.15. It is the optimizer's curse —
+the bias from maximising over noisy estimates — and it is most of what a naive
+Monte Carlo discard policy would be chasing.
+
+Which validates §6.2's architecture and kills the shortcut: **selecting an
+argmax over rollouts amplifies noise; fitting a regression pools across
+thousands of deals and averages it out.** Worth knowing before buying compute.
 
 ## TODO — things owed that are not yet built
 
@@ -156,19 +157,16 @@ Ordered by how much they are needed, not by size.
 5. **`explain.py` does not exist.** The design makes it a first-class module
    (§5.3, §8) and nothing has been written. The event log and the `outcomes`
    / `heard` / `seen` split were built to feed it.
-6. **Hoyle's odds claim is unchecked.** "Three to two against the younger-hand's
-   taking one Card out of three to save a Pique." The maximum-score claim was
-   checked and confirmed; this one is still open.
-7. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
+6. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
    leaks were closed, and the bands were fitted against the old one.
-8. **`solver.pique_is_live` is still dead code** — a documented intention with
+7. **`solver.pique_is_live` is still dead code** — a documented intention with
    no caller. Either the solver should score piques or the helper should go.
-9. **Younger's untaken talon cards.** If she leaves any she may expose them to
+8. **Younger's untaken talon cards.** If she leaves any she may expose them to
    both players after elder leads, or leave them face down. Not modelled.
-10. **Carte blanche's information timing.** Elder must announce how many cards
+9. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-11. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
+10. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
 ## Code review findings
@@ -286,7 +284,9 @@ conviction first:
 | A pique reckons in the order it happened | In the **order of precedence**, like a repique — the two derivations had been contradicting each other about the same fact |
 | "Point of five, forty-nine" | "Point of five." The tie-break is asked for, never volunteered |
 | Elder declares knowing what younger holds | He does not. He leads to the first trick before she names anything, so his first lead is blind |
-| Every unaccounted-for card is equally likely to be hers | An ace is, 100% of the time; a seven, 28% |
+| Every unaccounted-for card is equally likely to be hers | An ace is, 100% of the time; a seven, 28% — though correcting it is worth only +0.3 a pair |
+| The hand-tuned discard must be leaving points on the table | A Monte Carlo with a hundredfold more compute per decision agrees with it five times in six |
+| Hoyle's three-to-two on younger's draw | Right, and the sentence pins down which sum he did: 23/57, or 1.478 to 1 |
 
 And three methodological ones:
 
@@ -295,6 +295,9 @@ And three methodological ones:
   sigma.
 - **Prefer measuring to reasoning wherever measuring is cheap.** It has been
   cheap every single time.
+- **Beware the maximum of noisy estimates.** The optimizer's curse turned a
+  measurement error of a few points into an apparent six-point edge, and it
+  will do it again anywhere a policy is chosen by argmax over rollouts.
 - **A test that cannot fail is not a test.** Two deterministic agents playing
   mirrored pairs come out level *exactly*, so a tolerance of 1.0 was measuring
   nothing. Check whether the slack is doing any work.
