@@ -193,7 +193,25 @@ Ordered by how much they are needed, not by size.
 10. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-11. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
+11. **Documentation and citations — explicitly not a first-order concern.**
+    Andrew asked for this to be written down and then left alone, so it is
+    recorded here rather than done. Two gaps:
+
+    - **The statistics has no bibliography.** `docs/LITERATURE.md` covers the
+      piquet sources thoroughly and the statistical ones not at all, though
+      several are load-bearing: Laplace's *rule of succession* (1774) is the
+      ratings prior; Zermelo (1929) is the model Bradley and Terry rediscovered
+      in 1952; Hoyle (1744) computes a hypergeometric tail by hand; Waldegrave's
+      solution to *Le Her* (1713, in the Montmort–Bernoulli correspondence) is
+      the oldest known mixed-strategy equilibrium and the historical reason to
+      expect sinking to want a *mixed* answer rather than a rule. All of that
+      currently lives in docstrings and commit messages, which is the wrong
+      place for anyone arriving cold.
+    - **There is no README**, and nothing that orients a reader who has not
+      read `DESIGN.md` end to end. The docstrings are good and there are
+      fourteen of them.
+
+12. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
 ## Code review findings
