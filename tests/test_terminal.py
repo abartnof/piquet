@@ -485,3 +485,25 @@ def test_an_opponent_carries_one_style_for_the_whole_partie():
     assert partie.complete
     assert agent.style == before, "and it is the same habit at the end of it"
     assert agent.name == "Cavendish"
+
+
+@pytest.mark.slow
+def test_the_settlement_is_announced_with_the_players_name_only_once():
+    """`Settlement.__str__` names the *side* -- "B wins 114" -- which is right
+    for a log and reads as "Cavendish B wins 114" at a table."""
+    from piquet.heuristics import HeuristicAgent
+
+    console = Script()
+    rng = random.Random(1674)
+    table = Table(
+        HeuristicAgent(2, rng=rng, name="Cotton"),
+        HeuristicAgent(4, rng=rng, name="Hoyle"),
+        console=console,
+        rng=rng,
+    )
+    partie = table.play()
+    closing = console.shown.strip().splitlines()[-1]
+    assert " A " not in closing and " B " not in closing
+    if partie.settlement.winner is not None:
+        assert "wins" in closing
+        assert str(partie.settlement.points) in closing

@@ -32,7 +32,7 @@ from piquet.chances import chance_of, in_words
 from piquet.combos import CardSet, Point, Sequence, best_point, sequences, sets
 from piquet.heuristics import HeuristicAgent
 from piquet.observation import View
-from piquet.partie import RUBICON, Partie, Side
+from piquet.partie import PARTIE_BONUS, RUBICON, Partie, Side
 from piquet.rules import TRICKS_PER_DEAL, Declaration, Deal, Phase
 from piquet.scoring import Category, Player, ScoreLog
 from piquet.solver import SolverAgent
@@ -599,8 +599,15 @@ class Table:
         if settlement.winner is None:
             self.console.write("\n  the partie is drawn.")
         else:
+            # `Settlement.__str__` names the *side* -- "B wins 114" -- which is
+            # right for a log and wrong at a table, where the sides have names.
+            how = (
+                "rubiconed, paying the sum" if settlement.rubicon
+                else "paying the difference"
+            )
             self.console.write(
-                f"\n  {self.sides[settlement.winner.index].name} {settlement}"
+                f"\n  {self.sides[settlement.winner.index].name} wins"
+                f" {settlement.points} \u2014 {how} plus {PARTIE_BONUS}"
             )
         return partie
 
