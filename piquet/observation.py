@@ -22,6 +22,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from piquet.cards import Card, Hand
+from piquet.partie import Standing
 from piquet.rules import (
     Announcement,
     Deal,
@@ -73,6 +74,10 @@ class View:
     seen: tuple[object, ...]
     #: The opponent's declaration waiting on this player's answer, if any.
     awaiting_answer: Optional[Announcement]
+    #: Where the partie stands, from this player's side. Both running totals
+    #: are public -- scores are called aloud -- and under rubicon settlement
+    #: they change what correct play is. `None` for a deal played on its own.
+    partie: Optional[Standing]
     #: Scores are called aloud, so the whole log is public.
     log: ScoreLog
     #: Cards already played are public, and may be reviewed.
@@ -229,8 +234,14 @@ def _awaiting_answer(deal: Deal, player: Player) -> Optional[Announcement]:
     return None if spoken is None else spoken.shape
 
 
-def view_for(deal: Deal, player: Player) -> View:
-    """Everything `player` may legally know about this deal, and nothing else."""
+def view_for(
+    deal: Deal, player: Player, standing: Optional[Standing] = None
+) -> View:
+    """Everything `player` may legally know about this deal, and nothing else.
+
+    `standing` is given from **elder's** side of the table, because that is how
+    `partie.Partie.standing` reports it, and is flipped here for younger.
+    """
     return View(
         me=player,
         phase=deal.phase,
@@ -244,6 +255,11 @@ def view_for(deal: Deal, player: Player) -> View:
         heard=_heard(deal, player),
         seen=_seen(deal, player),
         awaiting_answer=_awaiting_answer(deal, player),
+        partie=(
+            standing
+            if standing is None or player is Player.ELDER
+            else standing.reversed
+        ),
         log=deal.log,
         tricks=deal.tricks,
         current_trick=deal.current_trick,

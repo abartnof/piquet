@@ -15,10 +15,14 @@ from typing import Iterable, Optional
 
 from piquet.agents import Agent
 from piquet.observation import view_for
+from piquet.partie import Partie, Side, Standing
 from piquet.rules import Deal, Declaration, Phase, deal_shuffled
 from piquet.scoring import Category, Player
 
-__all__ = ["Decision", "DealRecord", "play_deal", "play_deals", "write_jsonl"]
+__all__ = [
+    "Decision", "DealRecord", "play_deal", "play_deals", "play_partie",
+    "write_jsonl",
+]
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,14 +86,20 @@ def play_deal(
     rng: Optional[random.Random] = None,
     deal: Optional[Deal] = None,
     record: Optional[DealRecord] = None,
+    standing: Optional[Standing] = None,
 ) -> tuple[Deal, Optional[DealRecord]]:
     """Play one deal to completion, asking each agent in turn.
 
     Pass a `deal` to replay a specific one; otherwise a fresh one is shuffled.
+    `standing` is where the partie stands, from elder's side; a deal played on
+    its own has none, and the agents simply cannot see one.
     """
     deal = deal if deal is not None else deal_shuffled(rng)
     agents = {Player.ELDER: elder, Player.YOUNGER: younger}
     ply = 0
+
+    def seen_by(player: Player):
+        return view_for(deal, player, standing)
 
     def note(player: Player, choice: str, view, **extra) -> None:
         nonlocal ply
@@ -108,7 +118,7 @@ def play_deal(
             )
 
     for player in (Player.ELDER, Player.YOUNGER):
-        view = view_for(deal, player)
+        view = seen_by(player)
         discard = agents[player].exchange(view)
         note(player, discard.code, view)
         deal = deal.exchange(player, discard)
@@ -116,7 +126,7 @@ def play_deal(
     while deal.to_declare is not None:
         player = deal.to_declare
         category = deal.declaring_category
-        view = view_for(deal, player)
+        view = seen_by(player)
         declaration = agents[player].declare(view, category)
         available = Declaration.full(view.hand, category).score
         note(player, str(declaration), view,
@@ -125,7 +135,7 @@ def play_deal(
 
     while deal.phase is Phase.PLAY:
         player = deal.to_play
-        view = view_for(deal, player)
+        view = seen_by(player)
         card = agents[player].play(view)
         note(player, card.code, view, options=len(view.legal_plays))
         deal = deal.play(player, card)
@@ -171,3 +181,43 @@ def write_jsonl(records: Iterable[DealRecord], path: str | Path) -> Path:
         for record in records:
             handle.write(json.dumps(record.as_dict(), separators=(",", ":")) + "\n")
     return path
+
+
+def play_partie(
+    side_a: Agent,
+    side_b: Agent,
+    rng: Optional[random.Random] = None,
+    opening_dealer: Side = Side.A,
+    keep_records: bool = True,
+) -> tuple[Partie, list[DealRecord]]:
+    """Play a whole partie, swapping the seats between every deal.
+
+    The two agents are *people*, not seats. Which of them is elder alternates,
+    and each is handed the running scores from its own side of the table, so an
+    agent that cares about the rubicon has what it needs to.
+    """
+    rng = rng or random.Random()
+    agents = {Side.A: side_a, Side.B: side_b}
+    partie = Partie(opening_dealer=opening_dealer)
+    records: list[DealRecord] = []
+
+    while not partie.complete:
+        elder_side = partie.elder
+        elder, younger = agents[elder_side], agents[elder_side.other]
+        record = (
+            DealRecord(
+                deal=partie.number,
+                elder_agent=elder.name,
+                younger_agent=younger.name,
+            )
+            if keep_records
+            else None
+        )
+        deal, done = play_deal(
+            elder, younger, rng=rng, record=record, standing=partie.standing
+        )
+        partie = partie.record(deal)
+        if done is not None:
+            records.append(done)
+
+    return partie, records
