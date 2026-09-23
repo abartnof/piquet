@@ -6,7 +6,7 @@
 
 ## Where we are
 
-**Milestones 1–7 complete. 417 tests. Two review passes; twelve bugs fixed.**
+**Milestones 1–7 complete. 428 tests. Two review passes and one play-test.**
 
 **It is playable.** `python -m piquet` sits you down against a named opponent
 for a partie of six deals, settled by the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
@@ -45,21 +45,35 @@ threat, not a curiosity.
 
 ## Next action
 
-**Undecided.** The engine is complete enough to play and the remaining work
-splits three ways; the first is the one I would take.
+**Teach the agents the partie.** `View.partie` exists and nothing reads it, so
+every agent still maximises points in a deal — `docs/DESIGN.md` §6.4a. `chances`
+now supplies the missing piece, and it unblocks *rubicon nerve*, the fourth
+style dimension. It is the largest remaining *correctness* gap in the AI, as
+opposed to a strength gap, and the table already shows the human the number the
+agents cannot see.
 
-1. **Teach the agents the partie.** `View.partie` exists and nothing reads it,
-   so every agent still maximises points in a deal — `docs/DESIGN.md` §6.4a.
-   `chances` now supplies the missing piece, and it unblocks *rubicon nerve*,
-   the fourth style dimension. It is also the largest remaining correctness
-   gap in the AI, as opposed to a strength gap.
-2. **Play it and see what is annoying.** The fastest way to find out what the
-   table is missing is for Andrew to sit at it for a partie. Play-feel is a
-   design constraint here, not a finishing touch.
-3. **Milestone 8, the exchange policy** — now with reconnaissance in hand
-   saying the obvious shortcut fails, and that it wants a regression rather
-   than an argmax. Runtime and local-vs-cloud to be agreed first; anything
-   near half an hour goes to a VM.
+After that, milestone 8, with the reconnaissance in §6.2 in hand: a regression
+rather than an argmax, and a runtime and local-vs-cloud decision agreed first.
+A few minutes on the laptop is fine; anything near half an hour goes to a VM.
+
+## The first play-test
+
+Andrew played a partie. Everything found was in the same family and none of it
+was visible from inside the code.
+
+| what he hit | what it really was |
+|---|---|
+| "I'm not sure how to name the cards I'm supposed to discard" | The table drew `♠ K J 7` and the prompt wanted `KS`. Two languages and no dictionary. Now the hand is drawn in the words the prompt takes back |
+| "clubss" | `Suit.name` is already plural. Two sites, plus "clubs was led" in the rules engine |
+| A dash for a suit you are void in | Right, and better than my reason for leaving it out: four fixed rows keep the layout still, and a void is a fact you *act* on |
+| A live score, and a table of contents for where you are | Both, combined into one status block |
+| Colour for the red suits | ANSI. Never black for the black suits — half the world runs a dark terminal |
+| Say which piquet this is, and what the 100 is for | A hundred is a finish line in *piquet au cent* and a line to clear in the rubicon game. A player who confuses them plays the last deal wrong |
+
+The general lesson is in the hard-won list below. The specific one is that a
+play-test found six real problems in one partie, and the two review passes that
+preceded it found none of them, because every one was about the gap between
+the player and the screen rather than anything inside the engine.
 
 ## Settled decisions
 
@@ -315,6 +329,10 @@ And three methodological ones:
 - **Beware the maximum of noisy estimates.** The optimizer's curse turned a
   measurement error of a few points into an apparent six-point edge, and it
   will do it again anywhere a policy is chosen by argmax over rollouts.
+- **A display that is prettier than it is typeable is unusable.** The hand was
+  drawn as `♠ K J 7` and the prompt wanted `KS`. I never saw it because I had
+  been typing codes the whole time; the first person to sit down could not
+  start. Make the output and the input the same language.
 - **A test that cannot fail is not a test.** Two deterministic agents playing
   mirrored pairs come out level *exactly*, so a tolerance of 1.0 was measuring
   nothing. Check whether the slack is doing any work.
