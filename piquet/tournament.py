@@ -24,11 +24,15 @@ import random
 from dataclasses import dataclass
 from typing import Callable, Optional, Sequence
 
-from piquet.match import play_deal
+from piquet.match import play_deal, play_partie
+from piquet.partie import Partie, Side
 from piquet.rules import deal_shuffled
 from piquet.scoring import Player
 
-__all__ = ["DuelResult", "duel", "round_robin", "ratings", "format_table"]
+__all__ = [
+    "DuelResult", "duel", "round_robin", "ratings", "format_table",
+    "PartieResult", "partie_duel",
+]
 
 AgentFactory = Callable[[random.Random], object]
 
@@ -208,3 +212,98 @@ def format_table(results: Sequence[DuelResult], anchor: Optional[str] = None) ->
     for name, rating in sorted(scores.items(), key=lambda kv: -kv[1]):
         lines.append(f"{name:<18}{rating:>9.0f}")
     return "\n".join(lines)
+
+
+# --------------------------------------------------------------------------
+# Measuring a whole partie
+# --------------------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class PartieResult:
+    """The outcome of one agent meeting another over mirrored parties."""
+
+    name_a: str
+    name_b: str
+    pairs: int
+    a_wins: int
+    b_wins: int
+    drawn: int
+    #: Settlement points to A, summed over every pair. This is the real
+    #: currency: deal points are only an input to it.
+    a_settlement: int
+
+    @property
+    def a_win_rate(self) -> float:
+        return (self.a_wins + 0.5 * self.drawn) / self.pairs if self.pairs else 0.5
+
+    @property
+    def margin(self) -> float:
+        """Mean settlement to A per mirrored pair."""
+        return self.a_settlement / self.pairs if self.pairs else 0.0
+
+    def __str__(self) -> str:
+        return (
+            f"{self.name_a} vs {self.name_b}: {100 * self.a_win_rate:.1f}% "
+            f"({self.a_wins}-{self.b_wins}-{self.drawn}), "
+            f"{self.margin:+.1f} settlement points per pair"
+        )
+
+
+def _paid_to(partie: Partie, side: Side) -> int:
+    settlement = partie.settlement
+    if settlement is None or settlement.winner is None:
+        return 0
+    return settlement.points if settlement.winner is side else -settlement.points
+
+
+def partie_duel(
+    make_a: AgentFactory,
+    make_b: AgentFactory,
+    pairs: int,
+    rng: Optional[random.Random] = None,
+    deal_seed: Optional[float] = None,
+) -> PartieResult:
+    """Play `pairs` parties, each one twice with the two sides swapped.
+
+    The same mirroring as `duel`, one level up, and it has to be one level up:
+    a partie objective cannot be measured in deals. An agent that gives away a
+    point to keep its opponent under a hundred *loses* by the deal-level
+    yardstick and wins by the only one that pays.
+
+    Scored in **settlement** rather than in deal points, because that is what
+    a partie actually pays out -- the difference plus a hundred, or the sum
+    plus a hundred if the loser was rubiconed.
+    """
+    rng = rng or random.Random()
+    seeds = random.Random(deal_seed if deal_seed is not None else rng.random())
+    agent_a, agent_b = make_a(rng), make_b(rng)
+
+    a_wins = b_wins = drawn = 0
+    a_settlement = 0
+    for _ in range(pairs):
+        seed = seeds.random()
+        first, _ = play_partie(
+            agent_a, agent_b, rng=random.Random(seed), keep_records=False
+        )
+        second, _ = play_partie(
+            agent_b, agent_a, rng=random.Random(seed), keep_records=False
+        )
+        paid = _paid_to(first, Side.A) + _paid_to(second, Side.B)
+        a_settlement += paid
+        if paid > 0:
+            a_wins += 1
+        elif paid < 0:
+            b_wins += 1
+        else:
+            drawn += 1
+
+    return PartieResult(
+        name_a=getattr(agent_a, "name", "A"),
+        name_b=getattr(agent_b, "name", "B"),
+        pairs=pairs,
+        a_wins=a_wins,
+        b_wins=b_wins,
+        drawn=drawn,
+        a_settlement=a_settlement,
+    )

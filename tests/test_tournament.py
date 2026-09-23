@@ -223,3 +223,30 @@ def test_the_prior_barely_moves_a_well_populated_table():
     smoothed = ratings(table, anchor="C")
     barely = ratings(table, anchor="C", prior=0.001)
     assert all(abs(smoothed[n] - barely[n]) < 12 for n in smoothed)
+
+
+# --------------------------------------------------------------------------
+# Measuring a partie, which is the only place a partie objective shows up
+# --------------------------------------------------------------------------
+
+
+@pytest.mark.slow
+def test_mirrored_parties_leave_two_identical_agents_exactly_level():
+    from piquet.tournament import partie_duel
+
+    result = partie_duel(L(3), L(3), 40, random.Random(1674))
+    assert result.margin == 0.0
+    assert result.drawn == result.pairs
+
+
+@pytest.mark.slow
+def test_a_partie_duel_is_scored_in_settlement_not_in_deal_points():
+    """Which is the point of having one. An agent that gives away a point to
+    keep its opponent under a hundred loses by the deal-level yardstick and
+    wins by the only one that pays."""
+    from piquet.tournament import partie_duel
+
+    result = partie_duel(L(4), R, 30, random.Random(1674))
+    assert result.a_win_rate > 0.8
+    assert result.margin > 100, "settlements are hundreds, not single points"
+    assert result.a_wins + result.b_wins + result.drawn == 30
