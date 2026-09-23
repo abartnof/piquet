@@ -620,6 +620,82 @@ can see the running scores, the AI is optimising a proxy.
 
 This is the strongest argument for building the partie next.
 
+### 6.4b Where the uncertainty lives, and what to do about it
+
+Piquet is several different decision problems wearing one coat, and they do not
+want the same machinery. Two questions sort them. **How much is riding on this
+stage?** And **is my uncertainty about the deck, or about the opponent?**
+
+The first is measurable. Take a rung-4 agent, cripple it at exactly one stage,
+and duel it against its intact self over 400 mirrored pairs. The margin is what
+competence at that stage is worth:
+
+| stage crippled | points per pair |
+|---|---|
+| what to throw in the exchange | **−32.6** |
+| which card to play | −27.0 |
+| what to declare | −20.1 |
+| how many cards to exchange | −14.6 |
+
+That bounds a stage's *importance*, not its remaining *headroom* — a stage can
+matter enormously and already be played near-optimally. But there is no
+headroom to find at a stage that does not matter, so it is the right first cut.
+It also says something uncomfortable about where effort has gone: almost all of
+it into the play, which is the stage with the best information, while the
+highest-stakes decision is governed by six coefficients in
+`heuristics._keep_value` that were chosen by taste.
+
+The second question decides the tool. **Bayes needs a likelihood, and here the
+likelihood is always the opponent's policy.**
+
+- **The exchange.** Highest stakes, and the uncertainty is almost entirely
+  about the deck: nothing has happened yet, so there is no evidence to update
+  on. This is expected value over a known combinatorial distribution — rollouts
+  and a fitted policy, as §6.2 says. One genuinely Bayesian scrap is going
+  begging: younger sees *how many* cards elder took before she discards, which
+  is real evidence about his hand and the first information either player gets
+  about the other. It is also asymmetric — she gets it and he does not, which
+  partly offsets his advantage. Nothing uses it, because using it needs a model
+  of how elder chooses a count.
+
+- **The declarations.** What to say and what to believe are dual: your
+  inference depends on their policy and their policy depends on your inference.
+  That is a fixed point, which is what CFR computes (§6.3). A hand-built
+  Bayesian filter solves half the problem and is exploited on the other half.
+  Waldegrave's 1713 solution to *Le Her* — a two-player card game with hidden
+  information, solved in the Montmort–Bernoulli correspondence two centuries
+  before von Neumann — is the oldest known mixed-strategy equilibrium, and it
+  has exactly the shape of the sinking decision. That is the historical reason
+  to expect a *mixed* answer rather than a rule.
+
+- **The play.** Once you have the worlds there is no probability left; you
+  solve. And the game has a fortunate shape: information rises through the play
+  as the worlds collapse, while the stakes per trick also rise — the last trick
+  is worth two, the cards ten, a capot forty. Uncertainty falls exactly where
+  precision starts to matter, which is why "solve the endgame exactly and guess
+  early" is not a compromise.
+
+- **The partie.** The highest stakes of all and *no* opponent uncertainty:
+  scores are called aloud. But it does contain a probabilistic question — *"I
+  am on 82 with one deal left and I am elder; what is the chance I score 18?"*
+  — and that distribution is over the deck and our own play, not over anything
+  hidden. It can be measured straight out of the engine. **It is the only
+  probabilistic opportunity in the pipeline that is not blocked on a model we
+  have not built**, and it is the same machinery as the *rubicon nerve* style
+  of §7.1.
+
+The general rule that falls out: **hard-code what the rules guarantee, and
+model only what the opponent chooses — and not until there is a policy to be
+probabilistic about.** Deductions are true against a rung-1 bot, a human, and
+whatever milestone 8 trains. A probability table fitted today is a model of the
+agents we happen to own, which is §6.5's warning wearing a different hat.
+
+`inference.LADDER` is that rule made concrete. The declaration dialogue gives
+up four grades of information, from cards physically shown to the assumption
+that the opponent declared her best; the candidates kept are those satisfying
+the most rungs. When a likelihood finally exists the rungs become weights, and
+that is a change of coefficients rather than a rewrite.
+
 ### 6.5 A caution about self-play
 
 Pure self-play converges on strategies that beat *the agent's own lineage*
