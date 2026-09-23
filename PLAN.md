@@ -6,7 +6,8 @@
 
 ## Where we are
 
-**Milestones 1–7 complete, and the AI now plays the partie. 449 tests.**
+**Milestones 1–7 complete. 452 tests.** The AI can be told what a point is
+worth in a partie; told, it plays slightly worse, so it is not told by default.
 
 **It is playable.** `python -m piquet` sits you down against a named opponent
 for a partie of six deals, settled by the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
@@ -56,6 +57,37 @@ After that, milestone 8, with the reconnaissance in §6.2 in hand: a regression
 rather than an argmax, and a runtime and local-vs-cloud decision agreed first.
 A few minutes on the laptop is fine; anything near half an hour goes to a VM.
 
+## The partie objective: a linearisation that does not survive the cliff
+
+`chances.point_weights` prices a point to each side in settlement, and the
+prices are real and dramatic — six to one when it carries you over the
+rubicon, minus nine when it carries *them* over. Feeding that pair into the
+solver's search as a linear weight is the obvious thing to do with it.
+
+**Measured, and it lost.** Over 75 mirrored pairs of last deals, stacked at
+the three standings where it should have mattered most: nothing won, nine
+lost, sixty-six drawn. The draws dominate — in 88% of pairs the weights
+changed no card at all — and the nine losses share boards across the three
+standings, so they are suggestive rather than airtight. What is clear is that
+there is no evidence for it and some against.
+
+The likely reason is that a marginal price is a *linearisation*, and the
+settlement is violently non-linear exactly where the price is most extreme. A
+point to her is worth minus nine on 88 and minus one past a hundred, and a
+single deal moves her twenty points. One fixed weight applied across that
+cliff is worst precisely where the cliff is.
+
+Doing it properly means the search carrying **both totals to the leaf and
+settling there**, instead of collapsing them to a weighted scalar on the way
+down. That is a different and larger change. Until something measures better,
+`SolverAgent(partie_aware=True)` is a flag and not a default.
+
+Two things survive. The machinery in `chances` is right and is what the
+terminal scoreboard quotes to the player. And the sink ceiling being priced in
+settlement is a different mechanism — a one-shot price on a known number of
+points, not a linearisation across a swing — though it too is unmeasured,
+because the default style never sinks at all.
+
 ## The first play-test
 
 Andrew played a partie. Everything found was in the same family and none of it
@@ -86,7 +118,7 @@ the player and the screen rather than anything inside the engine.
 | Bonus reckoning | Law 67's **order of precedence**, for pique and repique alike |
 | Seats vs people | `Player` is a seat and swaps each deal; `Side` plays the partie |
 | Evaluation model | **Decomposed vector**, never a scalar |
-| AI objective | **Expected settlement**, not points in a deal. `chances.point_weights` prices a point to each side and the solver's search takes the pair |
+| AI objective | Still **points in a deal**. `chances.point_weights` prices a point in settlement and the search accepts the pair, but weighting by it measured *worse* and is off by default — see below |
 | Measuring it | **Mirrored parties** (`tournament.partie_duel`), scored in settlement. A deal-level harness is structurally blind to a partie objective |
 | Play-phase AI | Exact enumeration + solver. No training needed |
 | Exchange AI | Monte Carlo rollouts, then a fitted regression |

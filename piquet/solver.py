@@ -371,6 +371,7 @@ class SolverAgent(HeuristicAgent):
         name: Optional[str] = None,
         exact_from: int = 8,
         max_worlds: int = 30,
+        partie_aware: bool = False,
     ) -> None:
         # Spelled out rather than forwarded through *args and **kwargs: the
         # forwarding version injected a default `level` into kwargs and then
@@ -378,6 +379,7 @@ class SolverAgent(HeuristicAgent):
         super().__init__(level, style, erraticism, rng, name or f"solver{exact_from}")
         self.exact_from = exact_from
         self.max_worlds = max_worlds
+        self.partie_aware = partie_aware
 
     def weights(self, view: View) -> tuple[float, float]:
         """What a point to each seat is worth, given where the partie stands.
@@ -388,10 +390,28 @@ class SolverAgent(HeuristicAgent):
         second weight is negated: the search subtracts it.
 
         Only the ratio decides anything, so the pair is scaled to keep the
-        numbers civil. `EVEN` for a deal played on its own, which is the whole
-        tournament harness and most of the test suite.
+        numbers civil.
+
+        **Off by default, because it was measured and it lost.** Over 75
+        mirrored pairs of last deals, stacked at the standings where it should
+        have mattered most, it won nothing, lost nine and drew sixty-six. The
+        draws are the dominant fact -- in 88% of pairs the weights changed no
+        card at all -- and the nine losses are suggestive rather than airtight,
+        since the three standings shared boards.
+
+        The likely reason it hurts where it fires is that this is a
+        *linearisation*, and the settlement is violently non-linear exactly
+        where the weights are most skewed. A point to her is worth minus nine
+        when she is on 88 and minus one once she is past a hundred, and a deal
+        moves her twenty points. Applying one fixed marginal price across that
+        cliff is worst precisely where the price is most extreme.
+
+        Doing it properly means the search carrying *both* totals to the leaf
+        and settling there, rather than collapsing them to a weighted scalar
+        on the way down. That is a real change and it is not this one, so this
+        stays behind a flag until something measures better.
         """
-        if view.partie is None:
+        if view.partie is None or not self.partie_aware:
             return EVEN
         mine, theirs = weights_for(view.partie, view.me is Player.ELDER)
         pair = (mine, -theirs) if view.me is Player.ELDER else (-theirs, mine)

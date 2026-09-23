@@ -466,7 +466,7 @@ def test_the_solver_weighs_points_evenly_when_there_is_no_partie():
         elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
         younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
     ))
-    agent = SolverAgent(rng=random.Random(1674))
+    agent = SolverAgent(rng=random.Random(1674), partie_aware=True)
     assert agent.weights(view_for(deal, E)) == EVEN
 
 
@@ -479,7 +479,7 @@ def test_the_solver_weighs_its_own_points_up_when_it_needs_them():
         elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
         younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
     ))
-    agent = SolverAgent(rng=random.Random(1674))
+    agent = SolverAgent(rng=random.Random(1674), partie_aware=True)
     short = Standing(mine=82, theirs=150, deals_left=1)
 
     as_elder = agent.weights(view_for(deal, E, short))
@@ -501,7 +501,24 @@ def test_the_solver_weighs_their_points_up_when_keeping_them_short_pays():
         elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
         younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
     ))
-    agent = SolverAgent(rng=random.Random(1674))
+    agent = SolverAgent(rng=random.Random(1674), partie_aware=True)
     view = view_for(deal, E, Standing(mine=200, theirs=88, deals_left=1))
     elder_weight, younger_weight = agent.weights(view)
     assert younger_weight > 4 * elder_weight, "denying her is what matters"
+
+
+def test_the_partie_weighting_is_off_unless_it_is_asked_for():
+    """It was measured and it lost: nothing won, nine lost, sixty-six drawn
+    over 75 mirrored pairs of last deals stacked where it should have helped
+    most. Two rungs of the ladder were deleted for less."""
+    from piquet.partie import Standing
+    from piquet.solver import EVEN, SolverAgent
+    from tests.helpers import declaring, skip_declarations
+
+    deal = skip_declarations(declaring(
+        elder="AS KS QS AH KH QH 7D 8D 9D 7C 8C 9C",
+        younger="JS TS 9S JH TH 9H AD KD QD AC KC QC",
+    ))
+    view = view_for(deal, E, Standing(mine=82, theirs=150, deals_left=1))
+    assert SolverAgent(rng=random.Random(1)).weights(view) == EVEN
+    assert SolverAgent(rng=random.Random(1), partie_aware=True).weights(view) != EVEN
