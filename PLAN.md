@@ -51,81 +51,43 @@ threat, not a curiosity.
 
 ## Next action
 
-**Undecided — three candidates, and Andrew has the compute estimate for the
-third.**
+Four candidates. The first two are cheap and unblock everything else.
 
-1. **Milestone 9, the training mode.** The largest unmet *product* requirement:
-   an interactive tutor that flags bad and impossible moves rather than
-   animating a tutorial. It needs no compute. `docs/DESIGN.md` §8 has been
-   corrected — the decomposed evaluation it assumed was never built — and the
-   replacement is ladder-based: rank a move by *which rung would play it*, so
-   the explanation names a skill the player can go and learn. `explain.py` is
-   still owed.
-2. **Fix the partie objective properly.** We now know what is wrong with it:
-   the search must carry both totals to the leaf and settle there instead of
-   linearising on the way down.
-3. **Milestone 8, the exchange policy.** Priced: the design of 20,000 hands ×
-   8 discards × 30 shared-world rollouts is 4.8M deal playouts, which is
+1. **Golden JSON vectors** (TODO 5). The specification that makes any rewrite
+   verifiable, and the only work here that *cannot be wasted* whichever
+   language wins. They would catch all five porting hazards in
+   `docs/DESIGN.md` §2.1 on the first run — including the one where the ace of
+   spades sits on bit 31 and reads as negative in JavaScript, and the one where
+   the solver's 71-bit memo key cannot be built with JS operators at all.
+   Write them against `deal_from`, never against a seed: no two languages
+   share a random number generator.
 
-       heuristic rollouts    4 core-hours    7 min on 32 vCPU    ~$0.03 spot
-       solver from 6 cards 177 core-hours    5.5 h               ~$0.83–1.94
-       solver from 8 cards 3,332 core-hours  4.3 days            ~$16–36
+2. **Port `solver.py` to Rust and measure it** — 355 lines, self-contained,
+   and every speed estimate in `docs/DESIGN.md` §13 rests on it. A day's work,
+   and it turns those estimates into a number. ~100× and Rust is worth the
+   rewrite; ~20× and TypeScript wins on effort, and a day is the cheapest way
+   to have found that out.
 
-   on an n2-standard-32. Two things to do before renting anything: **test
-   PyPy** — the solver is pure-Python bitmask arithmetic and at even 10× the
-   real run fits on the laptop overnight — and **run the heuristic tier
-   locally**, seven free minutes that answer whether there is any signal at
-   all. The reconnaissance in §6.2 says there may not be.
+3. **Milestone 9, the training mode.** The largest unmet *product* requirement
+   and it needs no compute. `docs/DESIGN.md` §8 is corrected — the decomposed
+   evaluation it assumed was never built — and the replacement is
+   ladder-based: rank a move by *which rung would play it*, so the explanation
+   names a skill the player can go and learn. `explain.py` is owed.
 
-## The partie objective: a linearisation that does not survive the cliff
+4. **Milestone 8, the exchange policy.** Priced, and the price depends on the
+   language decision. In CPython: 4.8M deal playouts is 4 core-hours with
+   heuristic rollouts, 177 with solver-from-6, 3,332 with solver-from-8 — about
+   $0.03, $0.83–1.94 and $16–36 respectively on an n2-standard-32 Spot
+   instance. Before renting anything: **try PyPy** (20 minutes, no rewrite, and
+   it may put the real run on the laptop overnight) and **run the heuristic
+   tier locally** (7 free minutes, and it answers whether there is any signal
+   at all — the reconnaissance in §6.2 says there may not be).
 
-`chances.point_weights` prices a point to each side in settlement, and the
-prices are real and dramatic — six to one when it carries you over the
-rubicon, minus nine when it carries *them* over. Feeding that pair into the
-solver's search as a linear weight is the obvious thing to do with it.
-
-**Measured, and it lost.** Over 75 mirrored pairs of last deals, stacked at
-the three standings where it should have mattered most: nothing won, nine
-lost, sixty-six drawn. The draws dominate — in 88% of pairs the weights
-changed no card at all — and the nine losses share boards across the three
-standings, so they are suggestive rather than airtight. What is clear is that
-there is no evidence for it and some against.
-
-The likely reason is that a marginal price is a *linearisation*, and the
-settlement is violently non-linear exactly where the price is most extreme. A
-point to her is worth minus nine on 88 and minus one past a hundred, and a
-single deal moves her twenty points. One fixed weight applied across that
-cliff is worst precisely where the cliff is.
-
-Doing it properly means the search carrying **both totals to the leaf and
-settling there**, instead of collapsing them to a weighted scalar on the way
-down. That is a different and larger change. Until something measures better,
-`SolverAgent(partie_aware=True)` is a flag and not a default.
-
-Two things survive. The machinery in `chances` is right and is what the
-terminal scoreboard quotes to the player. And the sink ceiling being priced in
-settlement is a different mechanism — a one-shot price on a known number of
-points, not a linearisation across a swing — though it too is unmeasured,
-because the default style never sinks at all.
-
-## The first play-test
-
-Andrew played a partie. Everything found was in the same family and none of it
-was visible from inside the code.
-
-| what he hit | what it really was |
-|---|---|
-| "I'm not sure how to name the cards I'm supposed to discard" | The table drew `♠ K J 7` and the prompt wanted `KS`. Two languages and no dictionary. Now the hand is drawn in the words the prompt takes back |
-| "clubss" | `Suit.name` is already plural. Two sites, plus "clubs was led" in the rules engine |
-| A dash for a suit you are void in | Right, and better than my reason for leaving it out: four fixed rows keep the layout still, and a void is a fact you *act* on |
-| A live score, and a table of contents for where you are | Both, combined into one status block |
-| Colour for the red suits | ANSI. Never black for the black suits — half the world runs a dark terminal |
-| Say which piquet this is, and what the 100 is for | A hundred is a finish line in *piquet au cent* and a line to clear in the rubicon game. A player who confuses them plays the last deal wrong |
-
-The general lesson is in the hard-won list below. The specific one is that a
-play-test found six real problems in one partie, and the two review passes that
-preceded it found none of them, because every one was about the gap between
-the player and the screen rather than anything inside the engine.
+**The distinction that took a whole conversation to see** (`DESIGN.md` §13.2):
+*research* speed is batch and a cloud VM solves it; *interactive* speed is the
+machine thinking while a person waits, and no VM can reach it because the
+rental is in Iowa and the player is not. Three of the five approximations in
+the AI are interactive. Those are a language problem and nothing else.
 
 ## Settled decisions
 

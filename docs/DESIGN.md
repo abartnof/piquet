@@ -1056,6 +1056,120 @@ behind each. Through milestone 6 here — a playable game — is done.
 - Carrying both totals to the leaf so the partie objective can be settled
   rather than linearised (§6.4a).
 - Card art (assets already sourced by the user).
-- JavaScript/TypeScript port for browser embedding.
+- The port itself — see §13, which is now a decision rather than an aspiration.
+
+## 13. The port, and the language question
+
+Recorded in full because the reasoning is long and the decision is not made.
+
+### 13.1 What is actually required
+
+**A self-contained HTML page, well under 5 MB.** Andrew is agnostic about the
+language — he raises JavaScript only because of the packaging it allows, not
+because he wants JavaScript. A GUI should be *possible*; text-based is
+acceptable.
+
+**Size does not constrain the choice.** The engine — rules, agents, solver,
+everything but the UI — is 3,629 lines and 137 KB of source, most of it
+docstrings, plus 1,242 numbers of measured tables (~5 KB). Minified TypeScript
+would be around 60 KB; Rust compiled to wasm around 100 KB, or ~133 KB if
+base64-embedded to get a genuinely single file. **Card art will consume the
+budget; code will not.** Fifty-two images at 20 KB each is already 1 MB.
+
+### 13.2 The distinction that actually decides it
+
+Two different things get called "speed" and they have different remedies.
+
+- **Research speed** — tournaments, training runs, measurements. This is
+  batch, it is embarrassingly parallel, and **a cloud VM solves it.**
+- **Interactive speed** — the machine thinking while a person waits at the
+  table. **No VM helps**, because the rental is in Iowa and the player is not.
+  This is a *language* problem and nothing else.
+
+Conflating the two is easy and was done here for most of a conversation.
+
+### 13.3 What speed would buy, precisely
+
+Five approximations sit in the AI today. Four of them are there because
+CPython is slow, and two are **interactive**, so a VM cannot reach them:
+
+| # | Approximation | Interactive? |
+|---|---|---|
+| 1 | The solver searches only the last **8 tricks**; twelve costs 45 s | **yes** |
+| 2 | It samples **30** opponent hands, not all 165–5,005 of them | **yes** |
+| 3 | The partie objective is linearised, and that *measurably fails* (§6.4a); settling at the leaf needs the score totals in the state | **yes** |
+| 4 | Milestone 8 trains against heuristic play because solver rollouts cost 177–3,332 core-hours | no |
+| 5 | CFR (§6.3) needs millions of traversals and may be infeasible in CPython at all | no |
+
+Item 5 is **not** promised by any language choice: piquet has a great many
+information sets and CFR would likely still need an abstraction.
+
+### 13.4 The profile says this is the best case for compiling
+
+An eight-card solve visits **31,224 nodes**. Where the time goes:
+
+    _search recursion        44%   call overhead and integer arithmetic
+    _distinct                29%   pure bit fiddling
+    _bits, bit_length, _beats 13%  pure bit fiddling
+    the memo lookup           5%   dict.get
+    everything else           9%
+
+**About 86% is plain integer arithmetic strangled by interpreter overhead**,
+which is exactly what a JIT or a compiler eats. It also means §2.1's 71-bit
+memo key is a *correctness* blocker in JavaScript and not a performance one —
+restructuring it costs perhaps 10%, not 5×.
+
+### 13.5 The candidates
+
+| | 12-card exact solve | Milestone 8 (solver-from-6) | one language? |
+|---|---|---|---|
+| CPython today | 45 s | 177 core-h | ✓ |
+| **TypeScript** | ~1–2 s | ~4–9 core-h | ✓ |
+| **Rust → wasm** | ~0.2–0.5 s | ~1–2 core-h | ✓ via Leptos/Dioxus |
+
+**Every ratio above is an estimate and none was measured** — there is no Node
+and no Cargo on the development machine. That is a departure from how this
+project decides anything and it is why §13.7 exists.
+
+Rust does **not** force you back into JavaScript, which an earlier draft of
+this reasoning got wrong. Leptos, Dioxus and Yew let the UI be written in Rust
+and generate the DOM work; Dioxus can also render to a **terminal**, which
+suits "a GUI should be possible but text is fine" exactly. Pyodide is dead on
+arrival — several megabytes of runtime before any of our code arrives.
+
+### 13.6 Two costs that are easy to miss
+
+**This codebase ports to Rust unusually well.** Every `Deal` action already
+returns a new `Deal`, everything is frozen, there is no shared mutable state
+anywhere, and `Hand` is literally a `u32`. The ownership model that makes Rust
+painful will mostly not bite, because the design already obeys it. The 447
+tests are the specification.
+
+**But Rust would kill the cheap experiment**, and that is a real loss. Nearly
+everything this project has learned came from a thirty-line Python script run
+once — the miscalibrated world prior, the optimizer's curse, the partie
+linearisation failing. That loop is *why* the standing rule is "prefer
+measuring to reasoning wherever measuring is cheap". In Rust the loop gets
+slower and more ceremonious and the rule quietly stops being obeyed.
+
+The mitigation is **PyO3**: build the engine in Rust and expose it to Python.
+Then wasm serves the browser and PyO3 serves the thirty-line experiments,
+which stay thirty lines and run a hundred times faster. One engine, two front
+doors, and the throwaway analysis scripts stay throwaway.
+
+### 13.7 How to decide, rather than deciding
+
+**Port `solver.py` to Rust and measure it.** It is 355 lines, self-contained,
+and every speed claim above rests on it. A day's work, and it replaces every
+estimate in §13.5 with a number.
+
+- ~100× and the rest follows; the days are worth it.
+- ~20× and TypeScript wins on effort, and a day is the cheapest possible way
+  to have learned that.
+
+**And build the golden vectors first regardless** (§2, TODO 5). They are the
+specification that makes any rewrite verifiable, they would catch every hazard
+in §2.1 on the first run, and they are the only part of this work that cannot
+be wasted by whichever language wins.
 - Piquet au Cent (36-card pack, different game).
 - Three- and four-player variants.
