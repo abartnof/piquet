@@ -2,17 +2,21 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated after Milestone 6.
+> holds *where we are and what is left*. Last updated after Milestone 7 and
+> the first attempt at a partie objective.
 
 ## Where we are
 
-**Milestones 1–7 complete. 452 tests.** The AI can be told what a point is
-worth in a partie; told, it plays slightly worse, so it is not told by default.
+**Milestones 1–7 complete. 445 tests.**
 
 **It is playable.** `python -m piquet` sits you down against a named opponent
-for a partie of six deals, settled by the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
-solver, with styles and erraticism, and a tournament harness that rates them.
-Every decision is logged to JSONL.
+for a partie of six deals, settled by the rubicon. Four measured rungs exist
+plus an exact-endgame solver, with styles and erraticism, and two tournament
+harnesses that rate them — one over mirrored deals and one over mirrored
+parties. Every decision is logged to JSONL.
+
+The AI *can* be told what a point is worth in a partie. Told, it plays slightly
+worse, so it is not told by default — see below.
 
 ```
 piquet/
@@ -32,6 +36,7 @@ piquet/
   tournament.py    mirrored-pair duels, Bradley-Terry ratings
   inference.py     which hands the opponent can possibly hold
   solver.py        exact endgame search, and the agent that uses it
+  __main__.py      `python -m piquet`
 ```
 
 Ratings, re-measured after the second review pass and under the smoothed fit,
@@ -46,16 +51,31 @@ threat, not a curiosity.
 
 ## Next action
 
-**Teach the agents the partie.** `View.partie` exists and nothing reads it, so
-every agent still maximises points in a deal — `docs/DESIGN.md` §6.4a. `chances`
-now supplies the missing piece, and it unblocks *rubicon nerve*, the fourth
-style dimension. It is the largest remaining *correctness* gap in the AI, as
-opposed to a strength gap, and the table already shows the human the number the
-agents cannot see.
+**Undecided — three candidates, and Andrew has the compute estimate for the
+third.**
 
-After that, milestone 8, with the reconnaissance in §6.2 in hand: a regression
-rather than an argmax, and a runtime and local-vs-cloud decision agreed first.
-A few minutes on the laptop is fine; anything near half an hour goes to a VM.
+1. **Milestone 9, the training mode.** The largest unmet *product* requirement:
+   an interactive tutor that flags bad and impossible moves rather than
+   animating a tutorial. It needs no compute. `docs/DESIGN.md` §8 has been
+   corrected — the decomposed evaluation it assumed was never built — and the
+   replacement is ladder-based: rank a move by *which rung would play it*, so
+   the explanation names a skill the player can go and learn. `explain.py` is
+   still owed.
+2. **Fix the partie objective properly.** We now know what is wrong with it:
+   the search must carry both totals to the leaf and settle there instead of
+   linearising on the way down.
+3. **Milestone 8, the exchange policy.** Priced: the design of 20,000 hands ×
+   8 discards × 30 shared-world rollouts is 4.8M deal playouts, which is
+
+       heuristic rollouts    4 core-hours    7 min on 32 vCPU    ~$0.03 spot
+       solver from 6 cards 177 core-hours    5.5 h               ~$0.83–1.94
+       solver from 8 cards 3,332 core-hours  4.3 days            ~$16–36
+
+   on an n2-standard-32. Two things to do before renting anything: **test
+   PyPy** — the solver is pure-Python bitmask arithmetic and at even 10× the
+   real run fits on the laptop overnight — and **run the heuristic tier
+   locally**, seven free minutes that answer whether there is any signal at
+   all. The reconnaissance in §6.2 says there may not be.
 
 ## The partie objective: a linearisation that does not survive the cliff
 
@@ -201,38 +221,46 @@ thousands of deals and averages it out.** Worth knowing before buying compute.
 
 Ordered by how much they are needed, not by size.
 
-1. **`rubicon nerve`, the fourth style dimension**, specified in
+1. **The partie objective is linearised, and should be settled.** The search
+   collapses a position to a weighted scalar on the way down; it needs to carry
+   both totals to the leaf and compute `chances.settlement_of` there. The
+   machinery all exists — this is a change to `solver._search`'s return type
+   and to what `SolverAgent` does with it. Measured evidence that the current
+   shortcut fails is above.
+2. **`rubicon nerve`, the fourth style dimension**, specified in
    `docs/DESIGN.md` §7.1 and now finally possible to implement — `chances`
    supplies everything it needs.
-2. **The heuristic rungs read the partie in one place only.** The sink ceiling
+3. **The heuristic rungs read the partie in one place only.** The sink ceiling
    is priced in settlement, so nobody sinks a tierce that would carry them
    over the rubicon; but `_lead` and `_follow` are rules rather than an
    objective and there is nothing in them to weight. The solver is where the
    objective lives, and rungs 1–4 are partie-blind in play.
-3. **Nothing enforces style stability except `make_opponent`.** The terminal
+4. **Nothing enforces style stability except `make_opponent`.** The terminal
    draws a style once per opponent, which is right, but an agent constructed
    anywhere else still gets whatever it is handed. There is no lifecycle on the
    `Agent` protocol to hang it from.
-4. **Golden JSON vectors are promised but not produced.** `docs/DESIGN.md`
+5. **Golden JSON vectors are promised but not produced.** `docs/DESIGN.md`
    says they are emitted "from day one" as portability insurance for a future
    JavaScript port. They are not. Owed.
-5. **No replay format for a finished deal.** Needed by the tutor (reviewing a
+6. **No replay format for a finished deal.** Needed by the tutor (reviewing a
    hand afterwards), by debugging, and by the golden vectors above.
-6. **`explain.py` does not exist.** The design makes it a first-class module
-   (§5.3, §8) and nothing has been written. The event log and the `outcomes`
-   / `heard` / `seen` split were built to feed it.
-7. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
+7. **`explain.py` does not exist.** The design makes it a first-class module
+   (§5.3, §8) and nothing has been written. The event log and the `outcomes` /
+   `heard` / `seen` split were built to feed it — but §5.3's decomposed
+   evaluation, which §8 assumed, never was. The design doc now says so, and
+   points at the ladder instead.
+8. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
    leaks were closed, and the bands were fitted against the old one.
-8. **`solver.pique_is_live` is still dead code** — a documented intention with
+9. **`solver.pique_is_live` is still dead code** — a documented intention with
    no caller. Either the solver should score piques or the helper should go.
-9. **Younger's untaken talon cards.** If she leaves any she may expose them to
+10. **Younger's untaken talon cards.** If she leaves any she may expose them to
    both players after elder leads, or leave them face down. Not modelled.
-10. **Carte blanche's information timing.** Elder must announce how many cards
+11. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-11. **Documentation and citations — explicitly not a first-order concern.**
-    Andrew asked for this to be written down and then left alone, so it is
-    recorded here rather than done. Two gaps:
+12. **Documentation and citations.** *In hand.*
+    Recorded as not-first-order when it was found; Andrew has since asked for
+    it. Two gaps:
 
     - **The statistics has no bibliography.** `docs/LITERATURE.md` covers the
       piquet sources thoroughly and the statistical ones not at all, though
@@ -248,7 +276,7 @@ Ordered by how much they are needed, not by size.
       read `DESIGN.md` end to end. The docstrings are good and there are
       fourteen of them.
 
-12. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
+13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
 ## Code review findings
@@ -407,8 +435,11 @@ And three methodological ones:
   `_heard` gave elder younger's declarations before he had led. Treat every
   addition to `View` with suspicion, and ask of each field *when was this said
   aloud, and by whom*.
-- Tests: `pytest -m "not slow"` runs in ~6s for a tight loop; the full suite is
-  ~35s. The slow ones are the statistical tests, and they have caught more real
-  bugs than the unit tests, so they stay in the default run.
+- Tests: 445 of them. The full suite now takes **~94 seconds**, up from 35 —
+  the partie and `chances` tests play whole parties, and the solver ones are
+  not cheap. `pytest -m "not slow"` is the tight loop. The slow ones are the
+  statistical tests and they have caught more real bugs than the unit tests,
+  so they stay in the default run; but the full suite is no longer something
+  to run on every keystroke.
 - Re-measure `style.CALIBRATED` whenever the ladder changes. What counts as a
   near-equal option depends on how well the agent plays.

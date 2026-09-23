@@ -511,14 +511,25 @@ reached 30 before she scored anything — that is a repique, +60"), and it is
 already the per-decision training log the project wants for later analysis.
 One structure, three purposes.
 
-### 5.3 Evaluations are decomposed, not scalar
+### 5.3 Evaluations are decomposed, not scalar — *specified, never built*
 
-The solver returns a *vector* — declaration points, trick points, the cards
-bonus, pique/repique — never a single number. This costs almost nothing and
-buys explainability: "this discard costs you 2 points of point but gains 14
-in quatorze equity" is teachable; "EV −0.3" is not. A scalar evaluation
-would quietly make §8 impossible, which is why this is settled now rather
-than later.
+The intention was that the solver return a *vector* — declaration points,
+trick points, the cards bonus, pique/repique — never a single number, on the
+grounds that "this discard costs you 2 points of point but gains 14 in
+quatorze equity" is teachable where "EV −0.3" is not, and that a scalar would
+quietly make §8 impossible.
+
+**`solver.card_values` returns a scalar.** Nothing decomposes, and nothing has
+missed it, because the tutor was the only thing that was ever going to read
+the parts. So §8's foundation is not there and has to be something else; see
+the correction at the head of that section.
+
+The same shape of problem bit once more, further up. `chances.point_weights`
+collapses a whole partie position into *two* numbers, a price for a point to
+each side, and §6.4b records what happened when the solver was asked to
+optimise them: a linear price is a bad summary of a settlement with a cliff in
+it. Collapsing a structured thing to a number to make it optimisable is a
+recurring temptation in this project and it has yet to work.
 
 ## 6. The AI plan
 
@@ -656,10 +667,23 @@ loser who fails to reach 100 pays the *sum* of both scores rather than the
 
 Near that threshold the two objectives come apart. A player on 95 with one deal
 left should play quite differently from one on 130, and neither is playing to
-maximise this deal's points. Until `Deal` sits inside a `Partie` and the agents
-can see the running scores, the AI is optimising a proxy.
+maximise this deal's points.
 
-This is the strongest argument for building the partie next.
+**Built, and the first attempt at using it failed.** `Deal` now sits inside a
+`Partie`, `View.partie` carries the running scores, and `chances.point_weights`
+prices a point to each side in settlement. Feeding that price into the solver's
+search as a linear weight *lost*: nothing won, nine lost, sixty-six drawn over
+75 mirrored last deals stacked where it should have helped most. A marginal
+price is a linearisation and the settlement is violently non-linear exactly
+where the price is extreme — minus nine when a point carries her over a
+hundred, minus one once she is past it, and a single deal moves her twenty.
+
+So the diagnosis in this section is still right and the obvious remedy is
+wrong. Doing it properly means the search carrying **both totals to the leaf
+and settling there**, rather than collapsing them to a weighted scalar on the
+way down. Until then `SolverAgent(partie_aware=True)` is a flag, not a default,
+and the AI is still optimising a proxy — knowingly, and with the alternative
+measured rather than assumed.
 
 ### 6.4b Where the uncertainty lives, and what to do about it
 
@@ -838,9 +862,21 @@ around rungs 4 to 5 and grow richer up the ladder.
 
 ## 8. Training mode falls out of the engine
 
-Because the §6.1 solver already produces a decomposed evaluation for *every*
-legal action, the interactive tutor is largely a rendering problem over data
-we already have:
+**Correction, written after the fact:** this section assumed §5.3's decomposed
+evaluation existed. It does not — `solver.card_values` returns one number per
+legal card and no breakdown. The data this section says "we already have", we
+do not.
+
+The replacement is cheaper and is probably better teaching anyway. Every rung
+of the ladder is a working agent, so a move can be ranked by **which rung would
+play it**: *"a rung-2 player leads this; a rung-4 player leads that, because it
+heard your point."* That is an explanation in terms of a named skill the player
+can go and learn rather than a number they must take on trust — which is what
+§9 asks for in any case — and it costs five function calls. The rungs are
+already named for the people who worked the game out, so the tutor can say
+*Cotton would play this; Hoyle plays that*.
+
+With that substitution, the rest of the section stands:
 
 - **Impossible moves** come straight from `rules.legal_actions` — free.
 - **Bad moves** are ranked by evaluation loss and bucketed (sound / dubious
@@ -946,6 +982,10 @@ validate any future port.
 
 ## 11. Milestones
 
+Numbered as first written. `PLAN.md` holds the live list, splits some of these
+in two, and is the one to trust for status; this is kept for the reasoning
+behind each. Through milestone 6 here — a playable game — is done.
+
 1. **Cards and combinations.** Representation, plus point/sequence/set
    detection and comparison. Pure functions, heavily tested.
 2. **Rules engine and the event log.** The full phase machine including the
@@ -955,8 +995,12 @@ validate any future port.
    statistical invariants of §10 passing and the move log written from the
    very first game — not retrofitted.
 4. **Heuristic agents**, ladder levels 1–5. A round-robin Elo harness.
+   *Built as four rungs, not five: a proposed rung that kept guards and a
+   replacement that judged cards probably-good were both deleted for losing
+   to the rung beneath them.*
 5. **Exact play solver** (§6.1) and world enumeration. Ladder level 7.
-   Verify the 455 bound empirically.
+   Verify the 455 bound empirically. *Built as rung 5; the bound is confirmed
+   and tight, though only while elder takes the full five — see §4.2.*
 6. **A playable game** with a basic UI and the skill and erratic controls.
 7. **Exchange policy** (§6.2). *Runtime and cost agreed before launching.*
 8. **Training mode** (§8).
@@ -964,6 +1008,10 @@ validate any future port.
 
 ## 12. Deferred
 
+- Decomposing the solver's evaluation (§5.3), unless the tutor turns out to
+  want it after all.
+- Carrying both totals to the leaf so the partie objective can be settled
+  rather than linearised (§6.4a).
 - Card art (assets already sourced by the user).
 - JavaScript/TypeScript port for browser embedding.
 - Piquet au Cent (36-card pack, different game).
