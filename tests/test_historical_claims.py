@@ -141,3 +141,74 @@ def test_the_capot_is_not_what_carries_elder_past_thirty():
     past thirty on declarations alone, so the repique stands on its own."""
     hand = parse_hand("AS KS QS AH KH QH AD KD QD AC KC QC")
     assert declaration_score(hand) >= 30
+
+
+# --------------------------------------------------------------------------
+# Hoyle, 1744: the odds on younger's draw
+# --------------------------------------------------------------------------
+
+
+def test_hoyles_three_to_two_against_younger_saving_a_pique():
+    """"Three to two against the younger-hand's taking one Card out of three
+    to save a Pique."
+
+    Hoyle's *Short Treatise* is applied probability written before the tools
+    had names: he is computing a hypergeometric tail by hand, a century and a
+    half before anyone called it that.
+
+    Four readings are arithmetically possible and only one lands on his answer.
+    Younger draws **three** cards from the **twenty she cannot see** -- elder's
+    twelve and the eight of the talon are interchangeable to her -- and needs
+    **any one of three** named cards:
+
+        1 - C(17,3)/C(20,3) = 680/1140 subtracted from one = 0.4035
+
+    which is 1.478 to 1 against, and "three to two" is how you say that at a
+    table. The competing readings give 0.22, 5.67 and 0.66 to 1, so the
+    sentence pins down the calculation as well as the answer.
+    """
+    from fractions import Fraction
+    from math import comb
+
+    p = 1 - Fraction(comb(20 - 3, 3), comb(20, 3))
+    assert p == Fraction(23, 57)
+    odds_against = (1 - p) / p
+    assert 1.45 < float(odds_against) < 1.50, "Hoyle rounds 1.478 to three to two"
+
+    for drawn, wanted, population in ((3, 3, 8), (3, 1, 20), (5, 3, 20)):
+        other = 1 - Fraction(comb(population - wanted, drawn), comb(population, drawn))
+        assert abs(float((1 - other) / other) - 1.5) > 0.5, (
+            "no competing reading of the sentence comes near three to two"
+        )
+
+
+def test_the_engine_deals_hoyles_odds_when_you_actually_play_them():
+    """The arithmetic is one thing; that our dealing agrees with it is another.
+
+    Younger's three talon cards come off the top of a shuffled stock, so
+    whether they behave like a fair draw from the twenty she cannot see is a
+    property of `deal_from`, not of the formula.
+    """
+    import random
+
+    from piquet.cards import Hand
+    from piquet.observation import view_for
+    from piquet.rules import deal_shuffled
+
+    rng = random.Random(1744)
+    trials = saves = 0
+    for _ in range(4000):
+        deal = deal_shuffled(rng)
+        before = view_for(deal, Y)
+        # Three cards she cannot see, named before she draws.
+        wanted = Hand.of(*rng.sample(list(before.unseen), 3))
+        deal = deal.exchange(E, Hand.of(*list(deal.hand_of(E))[:5]))
+        deal = deal.exchange(Y, Hand.of(*list(deal.hand_of(Y))[:3]))
+        drew = Hand.of(*view_for(deal, Y).talon_seen)
+        trials += 1
+        saves += bool(drew & wanted)
+
+    observed = saves / trials
+    assert abs(observed - 23 / 57) < 0.025, (
+        f"observed {observed:.3f}, Hoyle's 0.4035"
+    )
