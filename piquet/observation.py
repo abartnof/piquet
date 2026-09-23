@@ -5,10 +5,12 @@ This is the most load-bearing module in the project. Agents read the game
 meaningless, and if it is too strict, a bot forgets things the rules expressly
 permit it to consult.
 
-Two asymmetries matter more than any other. Elder may look at all five of his
+Three asymmetries matter more than any other. Elder may look at all five of his
 talon cards even when he takes fewer, so he always knows five cards younger
-does not. And each player "keeps his discards by him, and may refer to them
-during play" (Cavendish), so consulting your own discards is not cheating.
+does not. If he takes fewer than five, younger draws from the top of what is
+left -- which begins inside his five -- so he also *watches her take* cards he
+has already read. And each player "keeps his discards by him, and may refer to
+them during play" (Cavendish), so consulting your own discards is not cheating.
 
 Together these are what collapse the play phase to a handful of consistent
 opponent hands -- see docs/DESIGN.md section 4.2.
@@ -54,6 +56,10 @@ class View:
     my_discards: Hand
     #: Talon cards this player has legitimately seen.
     talon_seen: tuple[Card, ...]
+    #: Talon cards this player read and then watched the opponent draw, and
+    #: which the opponent must therefore still be holding. Certain knowledge,
+    #: and the only certain knowledge of the other hand this game ever gives.
+    watched_them_take: Hand
     talon_remaining: int
     exchange_limit: int
     #: How each settled category came out. Public: the scores are called aloud.
@@ -85,7 +91,10 @@ class View:
 
         These are the cards that might be in the opponent's hand, in their
         discards, or still in the talon. Enumerating the opponent's possible
-        holdings starts here.
+        holdings starts here -- but it does not end here, because
+        `watched_them_take` is accounted for and in the opponent's hand at
+        once. Those must be *added* to every candidate rather than enumerated,
+        which is what `inference.possible_hands` does.
         """
         seen = self.hand.bits | self.my_discards.bits
         for card in self.talon_seen:
@@ -121,6 +130,43 @@ def _talon_seen(deal: Deal, player: Player) -> tuple[Card, ...]:
     if deal.phase in (Phase.ELDER_EXCHANGE, Phase.YOUNGER_EXCHANGE):
         return ()
     return deal.talon[elder_took:elder_took + younger_took]
+
+
+def _played_by(deal: Deal, player: Player) -> Hand:
+    """Every card this player has already put on the table."""
+    played = Hand.empty()
+    for trick in (*deal.tricks, deal.current_trick):
+        if trick is None:
+            continue
+        if trick.leader is player:
+            played = played | Hand.of(trick.led)
+        elif trick.followed is not None:
+            played = played | Hand.of(trick.followed)
+    return played
+
+
+def _watched_them_take(deal: Deal, player: Player) -> Hand:
+    """Talon cards this player read and then watched the opponent draw.
+
+    Only elder ever has any. He looks at all five of his whether he takes them
+    or not; if he exchanges fewer, younger draws from the top of what is left,
+    which begins inside his five. She discards *before* she draws, so a card
+    she takes in front of him cannot have been thrown away and is certainly in
+    her hand.
+
+    What comes back is what she is holding *now*, so cards she has since played
+    drop out of it.
+    """
+    if player is not Player.ELDER:
+        return Hand.empty()
+    elder_took = len(deal.discard_of(Player.ELDER))
+    younger_took = len(deal.discard_of(Player.YOUNGER))
+    overlap = deal.talon[
+        elder_took:min(ELDER_MAX_EXCHANGE, elder_took + younger_took)
+    ]
+    if not overlap:
+        return Hand.empty()
+    return Hand.of(*overlap) - _played_by(deal, Player.YOUNGER)
 
 
 def _to_act(deal: Deal, player: Player) -> bool:
@@ -169,6 +215,7 @@ def view_for(deal: Deal, player: Player) -> View:
         hand=deal.hand_of(player),
         my_discards=deal.discard_of(player),
         talon_seen=_talon_seen(deal, player),
+        watched_them_take=_watched_them_take(deal, player),
         talon_remaining=deal.talon_remaining,
         exchange_limit=deal.exchange_limit(player),
         outcomes=tuple((r.category, r.winner) for r in deal.results),

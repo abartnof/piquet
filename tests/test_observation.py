@@ -271,3 +271,53 @@ def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
 
     assert statistics.median(counts) < 60, "the collapse is what makes search cheap"
     assert min(counts) >= 1, "younger's actual hand is always among the candidates"
+
+
+# --------------------------------------------------------------------------
+# What elder watches younger take
+# --------------------------------------------------------------------------
+
+
+def test_elder_knows_the_talon_cards_he_watched_younger_take():
+    """He reads all five of his whether he takes them or not. If he takes two,
+    younger draws the third, fourth and fifth off the top of the stock -- in
+    front of him, and after she has already discarded, so she cannot have
+    thrown them away. It is the only certain knowledge of the opponent's hand
+    anyone in this game ever gets."""
+    deal = exchanged(2, 3)
+    view = view_for(deal, E)
+    assert view.watched_them_take == Hand.of(*deal.talon[2:5])
+    assert all(card in deal.hand_of(Y) for card in view.watched_them_take)
+
+
+def test_elder_watches_nothing_when_he_takes_his_whole_five():
+    deal = exchanged(5, 3)
+    assert view_for(deal, E).watched_them_take == Hand.empty()
+
+
+def test_elder_watches_nothing_she_left_in_the_talon():
+    """He takes one, she takes one: he has read five cards, she has taken the
+    second, and the third, fourth and fifth are still face down on the table.
+    He knows where all five are. Only one of them is hers."""
+    deal = exchanged(1, 1)
+    view = view_for(deal, E)
+    assert view.watched_them_take == Hand.of(deal.talon[1])
+    assert not (Hand.of(*deal.talon[2:5]) & view.unseen), "he has read them"
+
+
+def test_younger_never_watches_elder_take():
+    """Elder draws from the top of a stock she has not seen."""
+    assert view_for(exchanged(2, 3), Y).watched_them_take == Hand.empty()
+
+
+def test_a_card_stops_being_watched_once_she_has_played_it():
+    """`watched_them_take` is what she is holding now, not what she drew."""
+    deal = skip_declarations(exchanged(2, 3))
+    watched = view_for(deal, E).watched_them_take
+    assert watched
+    deal = deal.play(E, next(iter(deal.legal_plays())))
+    followed = next(iter(deal.legal_plays() & watched), None)
+    if followed is None:                       # she had none of the suit led
+        pytest.skip("she could not follow with a watched card")
+    deal = deal.play(Y, followed)
+    assert followed not in view_for(deal, E).watched_them_take

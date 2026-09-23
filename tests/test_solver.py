@@ -288,3 +288,47 @@ def test_best_card_agrees_with_card_values_for_both_seats():
                                 younger, leader, led, elder_tricks=4)
         assert values[card] == value
         assert value == (max(values.values()) if led is None else min(values.values()))
+
+
+@pytest.mark.parametrize("elder_takes", [1, 2, 3, 4, 5])
+def test_inference_never_rules_out_the_truth_however_elder_exchanges(elder_takes):
+    """Every agent built so far takes the full five, which hid this entirely.
+
+    When elder takes fewer, younger draws from the top of what is left -- which
+    starts inside the five he has read. Those cards are hers, and he watched
+    her take them, so candidates must be *built* around them rather than
+    enumerated from the cards he cannot place.
+    """
+    from piquet.cards import Hand
+    from piquet.rules import Declaration
+
+    rng = random.Random(1674)
+    for _ in range(12):
+        deal = deal_shuffled(rng)
+        deal = deal.exchange(E, Hand.of(*list(deal.hand_of(E))[:elder_takes]))
+        deal = deal.exchange(Y, Hand.of(*list(deal.hand_of(Y))[:3]))
+        while deal.to_declare is not None:
+            player = deal.to_declare
+            deal = deal.declare(
+                player,
+                Declaration.full(deal.hand_of(player), deal.declaring_category),
+            )
+        for player in (E, Y):
+            view = view_for(deal, player)
+            assert deal.hand_of(player.opponent) in possible_hands(view)
+
+
+def test_elder_taking_fewer_cards_leaves_him_less_certain_not_more():
+    """He has read seventeen cards either way, but taking fewer leaves more of
+    the talon face down -- and a face-down talon card is indistinguishable from
+    one of her discards. Knowing three of her cards does not make up for it."""
+    from piquet.cards import Hand
+
+    counts = {}
+    for elder_takes in (5, 2):
+        deal = deal_shuffled(random.Random(1674))
+        deal = deal.exchange(E, Hand.of(*list(deal.hand_of(E))[:elder_takes]))
+        deal = deal.exchange(Y, Hand.of(*list(deal.hand_of(Y))[:3]))
+        counts[elder_takes] = len(possible_hands(view_for(deal, E), use_declarations=False))
+    assert counts[5] == 455
+    assert counts[2] == 5005

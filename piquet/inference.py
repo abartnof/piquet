@@ -8,9 +8,12 @@ things down:
 
 1. **Cards accounted for.** Your hand, your discards, your talon cards, and
    everything played. What is left is the candidate pool.
-2. **Voids.** A player who failed to follow suit holds none of it, for the rest
+2. **Cards you watched them take.** If elder exchanges fewer than five, younger
+   draws off the top of cards he has already read. Those are certainly hers, so
+   they are not enumerated at all: every candidate is *built around* them.
+3. **Voids.** A player who failed to follow suit holds none of it, for the rest
    of the deal. Free, certain, and often decisive.
-3. **The declarations.** Enormously informative -- they cut the candidates by
+4. **The declarations.** Enormously informative -- they cut the candidates by
    about thirteen-fold on their own (docs/DESIGN.md §4.2).
 """
 
@@ -110,6 +113,13 @@ def possible_hands(
 ) -> list[Hand]:
     """Every hand the opponent could be holding, as far as anyone can tell.
 
+    Cards elder watched younger take are held out of the enumeration and added
+    to every candidate instead. Leaving them in the pool would be wrong twice
+    over: it would let a candidate omit a card she demonstrably holds, and --
+    because `unseen` rightly excludes cards he has placed -- it would rule out
+    her real hand altogether. Every deal in which elder took fewer than five,
+    which is every deal a human plays that way.
+
     `limit` caps the result by taking a **random sample**, not the first so
     many. `itertools.combinations` emits in a fixed order, so truncating it
     yields hands that all share the same low-indexed cards -- a systematically
@@ -123,9 +133,10 @@ def possible_hands(
     response to being lied to by omission -- and it is exactly the advantage
     sinking is bought for.
     """
-    size = opponent_hand_size(view)
-    if size == 0:
-        return [Hand.empty()]
+    known = view.watched_them_take
+    size = opponent_hand_size(view) - len(known)
+    if size <= 0:
+        return [known]
 
     pool = view.unseen
     for suit in known_voids(view):
@@ -139,7 +150,7 @@ def possible_hands(
     def build(filtered: bool) -> list[Hand]:
         found = []
         for combination in combinations(candidates, size):
-            hand = Hand.of(*combination)
+            hand = Hand.of(*combination) | known
             if filtered and not _consistent_with_declarations(hand, view, played):
                 continue
             found.append(hand)
