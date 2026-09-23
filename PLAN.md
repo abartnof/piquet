@@ -133,7 +133,7 @@ the player and the screen rather than anything inside the engine.
 |---|---|
 | Rule authority | **pagat.com** wins all conflicts; variants behind flags |
 | Game implemented | Rubicon Piquet, 32 cards, 6-deal partie |
-| Language | Python; plain serialisable state; golden JSON vectors for a future JS port |
+| Language | Python; plain serialisable state. Golden JSON vectors for a future JS port are *promised and unbuilt* — TODO 5 |
 | Scoring model | Ordered **event log**, not a running total |
 | Bonus reckoning | Law 67's **order of precedence**, for pique and repique alike |
 | Seats vs people | `Player` is a seat and swaps each deal; `Side` plays the partie |

@@ -1,8 +1,14 @@
 # Piquet — Design Document
 
-> Status: living document. Last substantive revision 2026-09-21.
+> Status: living document. Last substantive revision 2026-09-22.
 > This file is the project's memory. If the conversation context is lost,
 > this document plus `PLAN.md` should be sufficient to resume work.
+>
+> Sources live in `docs/LITERATURE.md` — the game in "Period sources", and
+> everything the engine is measured and searched with in "The mathematics",
+> which also maps each module to what it rests on. Claims in `docs/PIQUET.md`
+> that are *computed* rather than quoted are pinned to the tests that check
+> them.
 
 ## 1. What we are building
 
@@ -33,10 +39,14 @@ variants (Piquet Normand, Piquet Voleur, Piquet à Écrire).
 - **Modular design** — GUI, rules, scoring, search, and agents are separable
   so that future card games can reuse the parts.
 - **Portability kept cheap, not free**: game state is plain serializable data
-  from day one, and the test suite emits golden JSON vectors, so a future
-  JavaScript/TypeScript port is a mechanical translation that can be
-  *verified* rather than a rewrite. A browser-embeddable version is a
+  from day one, so a future JavaScript/TypeScript port is a mechanical
+  translation rather than a rewrite. A browser-embeddable version is a
   long-term aspiration.
+
+  The second half of that plan — *the test suite emits golden JSON vectors, so
+  the port can be **verified*** — is **not built**. It is owed, it is on the
+  TODO list, and the longer it is deferred the more of the engine there is to
+  pin down when someone finally writes it.
 
 ## 3. The rules, as we will implement them
 
