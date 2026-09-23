@@ -7,7 +7,7 @@
 
 ## Where we are
 
-**Milestones 1–7 complete. 445 tests.**
+**Milestones 1–7 complete. 447 tests.**
 
 **It is playable.** `python -m piquet` sits you down against a named opponent
 for a partie of six deals, settled by the rubicon. Four measured rungs exist
@@ -435,7 +435,7 @@ And three methodological ones:
   `_heard` gave elder younger's declarations before he had led. Treat every
   addition to `View` with suspicion, and ask of each field *when was this said
   aloud, and by whom*.
-- Tests: 446 of them. `pytest -m "not slow"` is the tight loop at **~16s**;
+- Tests: 447 of them. `pytest -m "not slow"` is the tight loop at **~16s**;
   the full suite is **~94s**. Both had drifted badly and the drift was one
   test: a full twelve-card solve, unmarked, taking forty-five seconds on its
   own and making the "fast" loop sixty-three. It is marked now, and a cheap
