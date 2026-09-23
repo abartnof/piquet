@@ -61,11 +61,21 @@ class Script:
 # --------------------------------------------------------------------------
 
 
-def test_a_hand_is_shown_by_suit_highest_first():
+def test_a_hand_is_shown_in_the_language_the_prompt_wants_back():
+    """The first person to sit at this table could not tell what to type. The
+    hand was drawn as "♠  K J 7" and the prompt wanted "KS", with nothing
+    anywhere to get you from one to the other. Now they are the same words."""
     hand = parse_hand("7S AS KS 9H QH AD TD KC QC 9C 8C 7C")
-    shown = render_hand(hand)
-    assert "A K 7" in shown, "spades, high to low"
+    shown = " ".join(render_hand(hand).split())
+    assert "AS KS 7S" in shown, "spades, high to low, named as you would type them"
+    assert "10D" in shown, "and the ten spelled out rather than left as T"
     assert shown.index("♠") < shown.index("♣"), "a stable suit order"
+
+
+def test_a_card_can_be_named_with_the_symbol_it_was_drawn_with():
+    """If the table draws you a spade as ♠ it should take ♠ back."""
+    assert Card.parse("K♠") == Card.parse("KS")
+    assert Card.parse("10♥") == Card.parse("TH")
 
 
 def test_a_suit_the_hand_is_void_in_is_not_drawn_as_an_empty_row():
@@ -76,8 +86,8 @@ def test_the_cards_you_may_legally_play_are_marked():
     hand = parse_hand("AS KS 9H QH AD TD KC QC")
     legal = parse_hand("AS KS")
     shown = render_hand(hand, legal)
-    assert "[A]" in shown and "[K]" in shown
-    assert "[Q]" not in shown, "clubs are not legal here"
+    assert "[AS]" in shown and "[KS]" in shown
+    assert "[QC]" not in shown, "clubs are not legal here"
 
 
 def test_your_own_combinations_are_named_for_you():
@@ -178,6 +188,16 @@ def test_the_scoreboard_tells_a_player_which_game_they_are_in():
     assert "Cavendish" in shown
     assert "18" in shown, "the distance to the rubicon"
     assert "2 in 3" in shown, "and the odds on covering it, from elder's chair"
+
+
+def test_the_table_says_which_chair_you_are_in():
+    """It changes every deal, and it is why the discard is five cards one deal
+    and three the next. A player who has not been told reads that as a bug."""
+    deal = deal_shuffled(random.Random(1674))
+    standing = Standing(mine=10, theirs=10, deals_left=4)
+    assert "you (elder)" in render_standing(view_for(deal, E, standing), "Cavendish")
+    assert "Cavendish (elder)" in render_standing(view_for(deal, Y, standing), "Cavendish")
+    assert "you (younger)" in render_standing(view_for(deal, Y, standing), "Cavendish")
 
 
 def test_a_player_already_over_the_rubicon_is_not_nagged_about_it():

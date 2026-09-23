@@ -111,7 +111,13 @@ class Card:
 
     @classmethod
     def parse(cls, text: str) -> Card:
-        """Read a card from its code. Accepts "10S" as well as "TS"."""
+        """Read a card from its code.
+
+        Forgiving on purpose, because this is what a person types. "10S" and
+        "TS" are the same card, case does not matter, and the suit may be
+        given as its **symbol** as well as its letter -- if the table drew you
+        a spade as ♠ it should accept ♠ back.
+        """
         cleaned = text.strip().upper()
         if cleaned.startswith("10"):
             cleaned = "T" + cleaned[2:]
@@ -120,12 +126,13 @@ class Card:
         rank_char, suit_char = cleaned
         if rank_char not in _RANK_CHARS:
             raise ValueError(f"not a rank in the piquet pack: {text!r}")
-        if suit_char not in _SUIT_LETTERS:
+        if suit_char in _SUIT_SYMBOLS:
+            suit = Suit(_SUIT_SYMBOLS.index(suit_char))
+        elif suit_char in _SUIT_LETTERS:
+            suit = Suit(_SUIT_LETTERS.index(suit_char))
+        else:
             raise ValueError(f"not a suit: {text!r}")
-        return cls(
-            Rank(Rank.SEVEN + _RANK_CHARS.index(rank_char)),
-            Suit(_SUIT_LETTERS.index(suit_char)),
-        )
+        return cls(Rank(Rank.SEVEN + _RANK_CHARS.index(rank_char)), suit)
 
     def __str__(self) -> str:
         return f"{self.rank.label}{self.suit.symbol}"

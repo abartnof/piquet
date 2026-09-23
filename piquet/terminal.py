@@ -45,6 +45,19 @@ __all__ = [
 #: Suits in the order a player expects to see them laid out.
 _DISPLAY_ORDER = (Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS)
 
+#: How wide a card's name is drawn, so the columns line up under the tens.
+_CELL = 5
+
+
+def _name(card: Card) -> str:
+    """What to call a card at a person, and what they may type back.
+
+    `Card.code` spells the ten "T", which is canonical for serialisation and
+    opaque to somebody meeting card codes for the first time. `Card.parse`
+    accepts "10D" and "TD" alike, so the friendlier one is free.
+    """
+    return f"{card.rank.label}{card.suit.letter}"
+
 
 # --------------------------------------------------------------------------
 # Turning state into words
@@ -53,6 +66,13 @@ _DISPLAY_ORDER = (Suit.SPADES, Suit.HEARTS, Suit.DIAMONDS, Suit.CLUBS)
 
 def render_hand(hand: Hand, legal: Optional[Hand] = None) -> str:
     """A hand laid out by suit, highest first, legal plays in brackets.
+
+    Every card is drawn as the code you would type to name it. An earlier
+    version drew the ranks alone under a suit symbol -- "♠  K J 7" -- which is
+    prettier and, the first person to sit down at it discovered, unusable:
+    the table spoke in symbols and the prompt wanted letters, and nothing
+    anywhere said how to get from one to the other. The display and the input
+    are now the same language, so there is nothing to translate.
 
     A void suit is not drawn at all: an empty row is a line of noise, and what
     you are void in is something you already know.
@@ -64,14 +84,26 @@ def render_hand(hand: Hand, legal: Optional[Hand] = None) -> str:
         ranks = hand.ranks_in(suit)
         if not ranks:
             continue
-        cells = [
-            f"[{rank.label}]"
-            if legal is not None and Card(rank, suit) in legal
-            else rank.label
-            for rank in ranks
-        ]
-        rows.append(f"  {suit.symbol}  " + " ".join(cells))
+        cells = []
+        for rank in ranks:
+            card = Card(rank, suit)
+            marked = legal is not None and card in legal
+            drawn = f"[{_name(card)}]" if marked else f" {_name(card)} "
+            cells.append(drawn.ljust(_CELL))
+        rows.append(f"  {suit.symbol} " + "".join(cells).rstrip())
     return "\n".join(rows)
+
+
+def _for_example(hand: Hand, count: int = 2) -> str:
+    """Two cards out of the player's own hand, to show the shape of an answer.
+
+    A worked example beats a description of a format, and one drawn from the
+    cards actually in front of them cannot be mistaken for a rule about which
+    cards to throw.
+    """
+    cards = list(hand)
+    picked = [cards[0], cards[-1]][:count] if len(cards) > 1 else cards[:1]
+    return " or ".join(_name(card) for card in picked)
 
 
 def render_combinations(hand: Hand) -> str:
@@ -100,26 +132,37 @@ def render_standing(view: View, opponent: str, full: bool = True) -> str:
     that because the uncertainty is over the deck and their own play, with no
     opponent model in it at all.
 
-    `full=False` drops the rubicon line. It cannot change inside a deal, so
-    saying it at every prompt is noise; the table says it once when the deal
-    opens.
+    Which chair you are in is the other thing a player cannot otherwise work
+    out. It changes every deal, and it is why the discard is sometimes five
+    cards and sometimes three -- a player who has not been told will read that
+    as the table misbehaving.
+
+    `full=False` drops the seat gloss and the rubicon line. Neither can change
+    inside a deal, so saying them at every prompt is noise; the table says
+    them once, when the deal opens.
     """
     standing = view.partie
     if standing is None:
         return ""
     deals = standing.deals_left
     plural = "" if deals == 1 else "s"
-    line = (
-        f"  you {standing.mine}  ·  {opponent} {standing.theirs}"
-        f"   ({deals} deal{plural} to play)"
-    )
-    needed = RUBICON - standing.mine
-    if full and needed > 0:
-        odds = chance_of(needed, deals, view.me is Player.ELDER)
-        line += (
-            f"\n  {needed} more to cross the rubicon — {in_words(odds)}"
+    elder = view.me is Player.ELDER
+    mine, theirs = ("elder", "younger") if elder else ("younger", "elder")
+    lines = [
+        f"  you ({mine}) {standing.mine}  ·  {opponent} ({theirs}) {standing.theirs}"
+        f"   ·  {deals} deal{plural} to play"
+    ]
+    if full:
+        lines.append(
+            "  you exchange first, up to five, and lead to the first trick"
+            if elder else
+            f"  {opponent} exchanges first and leads; you take what he leaves"
         )
-    return line
+        needed = RUBICON - standing.mine
+        if needed > 0:
+            odds = chance_of(needed, deals, elder)
+            lines.append(f"  {needed} more to cross the rubicon — {in_words(odds)}")
+    return "\n".join(lines)
 
 
 def render_trick(view: View, opponent: str) -> str:
@@ -256,9 +299,10 @@ class HumanAgent:
         self.console.write(f"  {render_combinations(view.hand)}")
         self.console.write(
             f"  name 1 to {limit} cards to throw, and draw as many back"
+            f" — like {_for_example(view.hand)}"
         )
         while True:
-            tokens = self.console.read("  discard: ").split()
+            tokens = self.console.read("  discard: ").replace(",", " ").split()
             if not 1 <= len(tokens) <= limit:
                 self.console.write(
                     f"  between 1 and {limit} cards, and at least one is compulsory"
@@ -266,8 +310,10 @@ class HumanAgent:
                 continue
             try:
                 cards = [Card.parse(token) for token in tokens]
-            except ValueError as problem:
-                self.console.write(f"  {problem}")
+            except ValueError:
+                self.console.write(
+                    f"  name each card by rank and suit, like {_for_example(view.hand)}"
+                )
                 continue
             if len(set(cards)) != len(cards):
                 self.console.write("  each card once")
@@ -305,12 +351,16 @@ class HumanAgent:
     def play(self, view: View) -> Card:
         legal = view.legal_plays
         self._show(view, legal)
+        if legal != view.hand:
+            self.console.write("  the bracketed cards are the ones you may play")
         while True:
             raw = self.console.read("  your card: ").strip()
             try:
                 card = Card.parse(raw)
             except ValueError:
-                self.console.write("  name a card, like AS or 10H")
+                self.console.write(
+                    f"  name a card by rank and suit, like {_for_example(view.hand)}"
+                )
                 continue
             if card not in view.hand:
                 self.console.write("  you do not hold that one")
