@@ -6,10 +6,10 @@
 
 ## Where we are
 
-**Milestones 1–6 complete. 389 tests. Two review passes; twelve bugs fixed.**
+**Milestones 1–7 complete. 417 tests. Two review passes; twelve bugs fixed.**
 
-A whole partie can now be played: six deals, the deal alternating, settled by
-the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
+**It is playable.** `python -m piquet` sits you down against a named opponent
+for a partie of six deals, settled by the rubicon. Four measured rungs of opponents exist, plus an exact-endgame
 solver, with styles and erraticism, and a tournament harness that rates them.
 Every decision is logged to JSONL.
 
@@ -22,6 +22,7 @@ piquet/
   scoring.py       the event log; pique and repique
   partie.py        six deals, Side vs seat, the rubicon settlement
   chances.py       the odds on reaching a total, measured and convolved
+  terminal.py      the table a person sits at; the human as an Agent
   observation.py   View — the only way an agent sees a deal
   agents.py        the Agent protocol; RandomAgent
   heuristics.py    the capability ladder, rungs 1–4
@@ -44,13 +45,21 @@ threat, not a curiosity.
 
 ## Next action
 
-**Milestone 7, the terminal UI.** The engine is now rich enough that the
-binding constraint is that nobody can play it. `chances.in_words` was written
-with the scoreboard in mind: the job of a scoreboard late in a partie is to
-tell a player *which game they are in*, and "you need eighteen — about two
-chances in three" does that where "82" does not.
+**Undecided.** The engine is complete enough to play and the remaining work
+splits three ways; the first is the one I would take.
 
-The three questions put to Andrew earlier are all resolved; see below.
+1. **Teach the agents the partie.** `View.partie` exists and nothing reads it,
+   so every agent still maximises points in a deal — `docs/DESIGN.md` §6.4a.
+   `chances` now supplies the missing piece, and it unblocks *rubicon nerve*,
+   the fourth style dimension. It is also the largest remaining correctness
+   gap in the AI, as opposed to a strength gap.
+2. **Play it and see what is annoying.** The fastest way to find out what the
+   table is missing is for Andrew to sit at it for a partie. Play-feel is a
+   design constraint here, not a finishing touch.
+3. **Milestone 8, the exchange policy** — now with reconnaissance in hand
+   saying the obvious shortcut fails, and that it wants a regression rather
+   than an argmax. Runtime and local-vs-cloud to be agreed first; anything
+   near half an hour goes to a VM.
 
 ## Settled decisions
 
@@ -80,7 +89,7 @@ The three questions put to Andrew earlier are all resolved; see below.
 - [x] 4. Heuristic ladder, styles, Elo harness with mirrored pairs
 - [x] 5. **Exact endgame solver** + inference; rung 5 (82.5%, +5.0 pts over L4)
 - [x] 6. **The partie** — six deals, alternating deal, rubicon settlement
-- [ ] 7. **Terminal UI**; skill and erratic controls; a playable game
+- [x] 7. **Terminal UI**; skill and erratic controls; a playable game
 - [ ] 8. Exchange policy — *runtime and cost agreed with Andrew first*
 - [ ] 9. Training mode
 - [ ] 10. CFR declarations
@@ -149,24 +158,28 @@ Ordered by how much they are needed, not by size.
    now; the behaviour does not. `docs/DESIGN.md` §6.4a.
 2. **`rubicon nerve`, the fourth style dimension**, specified in
    `docs/DESIGN.md` §7.1 and now finally possible to implement.
-3. **Golden JSON vectors are promised but not produced.** `docs/DESIGN.md`
+3. **Nothing enforces style stability except `make_opponent`.** The terminal
+   draws a style once per opponent, which is right, but an agent constructed
+   anywhere else still gets whatever it is handed. There is no lifecycle on the
+   `Agent` protocol to hang it from.
+4. **Golden JSON vectors are promised but not produced.** `docs/DESIGN.md`
    says they are emitted "from day one" as portability insurance for a future
    JavaScript port. They are not. Owed.
-4. **No replay format for a finished deal.** Needed by the tutor (reviewing a
+5. **No replay format for a finished deal.** Needed by the tutor (reviewing a
    hand afterwards), by debugging, and by the golden vectors above.
-5. **`explain.py` does not exist.** The design makes it a first-class module
+6. **`explain.py` does not exist.** The design makes it a first-class module
    (§5.3, §8) and nothing has been written. The event log and the `outcomes`
    / `heard` / `seen` split were built to feed it.
-6. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
+7. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
    leaks were closed, and the bands were fitted against the old one.
-7. **`solver.pique_is_live` is still dead code** — a documented intention with
+8. **`solver.pique_is_live` is still dead code** — a documented intention with
    no caller. Either the solver should score piques or the helper should go.
-8. **Younger's untaken talon cards.** If she leaves any she may expose them to
+9. **Younger's untaken talon cards.** If she leaves any she may expose them to
    both players after elder leads, or leave them face down. Not modelled.
-9. **Carte blanche's information timing.** Elder must announce how many cards
+10. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-10. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
+11. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
 ## Code review findings
@@ -256,6 +269,10 @@ it costs?* Which is exactly what CFR is for.
   because it heard your point"*. An explanation in terms of a **named skill the
   player can go and learn**, rather than an EV number, and it costs almost
   nothing.
+- **Name the odds, not the score.** The scoreboard already says "18 more to
+  cross the rubicon — about 2 in 3". The same sentence is a tutor: it tells a
+  player which of the two games they are in, and it is the only place in the
+  project where a probability is honest enough to quote.
 - **Show the opponent's habit.** Styles are meant to be stable for a whole
   partie, so the game can track what this opponent has actually done and
   surface it: *"they have concealed twice in three deals"*.
