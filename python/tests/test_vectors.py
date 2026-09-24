@@ -38,7 +38,7 @@ import pytest
 
 from piquet.cards import Card, Hand, Suit, full_deck, parse_hand
 
-VECTORS = pathlib.Path(__file__).resolve().parents[1] / "vectors"
+VECTORS = pathlib.Path(__file__).resolve().parents[2] / "vectors"
 
 
 def load(name: str) -> dict:
@@ -46,7 +46,7 @@ def load(name: str) -> dict:
     if not path.exists():
         pytest.fail(
             f"missing vector file {path.name}; generate it with "
-            f"`python tools/emit_vectors.py`"
+            f"`python tools/emit_vectors.py` from `python/`"
         )
     return json.loads(path.read_text())
 

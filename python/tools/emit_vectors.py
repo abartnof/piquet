@@ -109,7 +109,7 @@ from piquet.combos import (  # noqa: E402
     sets,
 )
 
-VECTORS = pathlib.Path(__file__).resolve().parents[1] / "vectors"
+VECTORS = pathlib.Path(__file__).resolve().parents[2] / "vectors"
 
 # Hands chosen for what they prove, not for realism. The single ace of spades
 # is the §2.1 sign-bit hazard; the full pack is the unsigned boundary at
