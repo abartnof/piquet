@@ -16,6 +16,7 @@
 #   bin/vm --status             is it running, and what is it costing
 #   bin/vm --sync               push the tree without running anything
 #   bin/vm --pull <path>        fetch a generated artefact back from the VM
+#   bin/vm --check              fmt, clippy and tests, failing loudly
 #
 # The VM's external IP is ephemeral and changes every time it is stopped and
 # started, so the SSH alias is refreshed automatically rather than pinned.
@@ -86,6 +87,22 @@ case "${1-}" in
   --down)  gcloud compute instances stop "$INSTANCE" --zone="$ZONE" --quiet
            printf 'Stopped. Only the disk bills now (~$5/month).\n'; exit 0 ;;
   --sync)  ensure_running; sync_tree; printf 'Synced.\n'; exit 0 ;;
+  --check)
+    # The whole gate in one command. Piping cargo through `tail` or `grep`
+    # hides its exit status behind the filter's, which let two clippy
+    # failures reach a commit; this keeps the status of the thing that
+    # actually matters.
+    ensure_running; sync_tree
+    for step in "cargo fmt --check" "cargo clippy --all-targets --release -- -D warnings" "cargo test --release"; do
+      printf '\n=== %s ===\n' "$step"
+      ssh "$HOST" "cd ${REMOTE_DIR} && source \$HOME/.cargo/env && $step" || {
+        printf '\nFAILED: %s\n' "$step" >&2
+        exit 1
+      }
+    done
+    printf '\nAll checks passed.\n'
+    exit 0
+    ;;
   --pull)
     # Anything the VM generates -- golden vectors, measurement output, logs --
     # has to come back, because the git repository lives on the laptop. Without
