@@ -11,8 +11,18 @@
 //! `count_ones`, and the solver's 75-bit transposition key is a `u128`.
 
 pub mod cards;
+pub mod chances;
 pub mod combos;
 pub mod declarations;
+pub(crate) mod mt19937;
+
+/// Exposed only so the golden tests can check the generator directly.
+pub mod test_support {
+    pub use crate::mt19937::MersenneTwister;
+    pub fn seeded_rng(seed: u32) -> MersenneTwister {
+        MersenneTwister::seeded(seed)
+    }
+}
 pub mod observation;
 pub mod partie;
 pub mod rules;

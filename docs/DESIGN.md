@@ -189,6 +189,26 @@ Four new ones take their place, ranked by how likely each is to actually bite.
    does `out[i + j] += x * y` in a nested loop, and floating addition is not
    associative. Port the loop literally rather than tidying it, and the same
    IEEE guarantee makes the result bit-identical.
+
+   **Measured, once `chances` was ported:** of 48 values compared across the
+   two engines — densities, odds, expected settlements and point weights —
+   **43 are bit-identical** and the rest differ by one or two ULPs, worst case
+   8.9e-16. So the guarantee holds in practice and not merely in principle.
+   The handful that differ are most likely a **fused multiply-add**: an
+   optimising Rust build may contract `a * b + c` into one instruction with a
+   single rounding, which is *more* accurate than Python's two. That is a
+   hypothesis and has not been confirmed. Either way a tolerance of 1e-14 is
+   ample, and the vectors use 1e-9.
+
+   **One deliberate exception to the no-seeds rule.** `chances._futures`
+   samples 3,000 futures behind `random.Random(1674)` — fixed, so a position
+   always values the same. §2.1 says never write a seed into a vector, and
+   that rule is about *fixtures*. Here the seed is a constant of the model, so
+   the Rust reproduces CPython's Mersenne Twister instead (`mt19937`, about
+   eighty lines, verified against CPython's own `getrandbits`). The
+   alternative was embedding roughly 200 KB of sampled pairs, against a 5 MB
+   budget that card art is going to want. This is the only place in the engine
+   that reproduces a Python RNG.
 4. **`round()` is half-to-even in Python, half-away-from-zero in Rust.**
    `round(0.5)` is `0` here and would be `1` there. One site only —
    `heuristics.py:92`, rounding a Gaussian draw — and a continuous draw lands

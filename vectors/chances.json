@@ -1,0 +1,306 @@
+{
+  "module": "chances",
+  "generator": "tools/emit_vectors.py",
+  "note": "The first module where floating point enters the engine, so the first whose vectors need a tolerance. settlement_of is integer and asserts equality; everything derived from the sampled futures is a float and asserts a tolerance. The sampling is behind a FIXED seed -- 1674, so a position always values the same -- which is the one place a port must reproduce a Python RNG rather than avoid one. rng_draws lets it check that first.",
+  "tolerance": 1e-09,
+  "cap": 120,
+  "rng_seed": 1674,
+  "rng_draws": [
+    424,
+    422,
+    177,
+    61,
+    329,
+    86,
+    191,
+    89,
+    473,
+    76,
+    244,
+    329
+  ],
+  "densities": {
+    "elder": {
+      "length": 121,
+      "sum": 0.9999999999999999,
+      "mean": 28.934249999999995,
+      "first_eight": [
+        0.0,
+        0.00165,
+        0.0037,
+        0.0083,
+        0.01235,
+        0.02165,
+        0.03395,
+        0.03505
+      ],
+      "survival_at_zero": 1.0,
+      "survival_at_thirty": 0.34675
+    },
+    "younger": {
+      "length": 121,
+      "sum": 1.0,
+      "mean": 19.407999999999998,
+      "first_eight": [
+        0.00565,
+        0.0,
+        0.0137,
+        0.0153,
+        0.04105,
+        0.05205,
+        0.051,
+        0.0503
+      ],
+      "survival_at_zero": 1.0000000000000002,
+      "survival_at_thirty": 0.17700000000000002
+    }
+  },
+  "chances": [
+    {
+      "needed": 18,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0.6734999999999997,
+      "in_words": "about 2 in 3"
+    },
+    {
+      "needed": 18,
+      "deals_left": 1,
+      "elder_first": false,
+      "chance": 0.4649999999999997,
+      "in_words": "about 1 in 2"
+    },
+    {
+      "needed": 0,
+      "deals_left": 3,
+      "elder_first": true,
+      "chance": 1.0,
+      "in_words": "all but certain"
+    },
+    {
+      "needed": -5,
+      "deals_left": 2,
+      "elder_first": true,
+      "chance": 1.0,
+      "in_words": "all but certain"
+    },
+    {
+      "needed": 40,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0.18109999999999998,
+      "in_words": "about 1 in 6"
+    },
+    {
+      "needed": 40,
+      "deals_left": 2,
+      "elder_first": true,
+      "chance": 0.5481097900000004,
+      "in_words": "about 1 in 2"
+    },
+    {
+      "needed": 100,
+      "deals_left": 6,
+      "elder_first": true,
+      "chance": 0.8348803183730826,
+      "in_words": "about 4 in 5"
+    },
+    {
+      "needed": 100,
+      "deals_left": 6,
+      "elder_first": false,
+      "chance": 0.8348803183730826,
+      "in_words": "about 4 in 5"
+    },
+    {
+      "needed": 60,
+      "deals_left": 2,
+      "elder_first": false,
+      "chance": 0.23805340999999994,
+      "in_words": "about 1 in 4"
+    },
+    {
+      "needed": 25,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0.5015999999999998,
+      "in_words": "about 1 in 2"
+    },
+    {
+      "needed": 30,
+      "deals_left": 3,
+      "elder_first": false,
+      "chance": 0.9349524333740006,
+      "in_words": "about 9 in 10"
+    },
+    {
+      "needed": 200,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0,
+      "in_words": "barely possible"
+    }
+  ],
+  "settlements": [
+    {
+      "mine": 105,
+      "theirs": 101,
+      "pays": 104
+    },
+    {
+      "mine": 101,
+      "theirs": 105,
+      "pays": -104
+    },
+    {
+      "mine": 120,
+      "theirs": 89,
+      "pays": 309
+    },
+    {
+      "mine": 51,
+      "theirs": 49,
+      "pays": 200
+    },
+    {
+      "mine": 100,
+      "theirs": 100,
+      "pays": 0
+    },
+    {
+      "mine": 99,
+      "theirs": 99,
+      "pays": 0
+    },
+    {
+      "mine": 0,
+      "theirs": 0,
+      "pays": 0
+    },
+    {
+      "mine": 150,
+      "theirs": 20,
+      "pays": 270
+    },
+    {
+      "mine": 100,
+      "theirs": 99,
+      "pays": 299
+    },
+    {
+      "mine": 99,
+      "theirs": 100,
+      "pays": -299
+    }
+  ],
+  "weights": [
+    {
+      "mine": 82,
+      "theirs": 70,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 147.029,
+      "weight_mine": 7.296444444444442,
+      "weight_theirs": -6.118444444444445
+    },
+    {
+      "mine": 82,
+      "theirs": 70,
+      "deals_left": 1,
+      "elder_first": false,
+      "expected_settlement": 34.62566666666667,
+      "weight_mine": 6.488666666666667,
+      "weight_theirs": -10.288222222222222
+    },
+    {
+      "mine": 0,
+      "theirs": 0,
+      "deals_left": 6,
+      "elder_first": true,
+      "expected_settlement": -5.23,
+      "weight_mine": 3.6242222222222225,
+      "weight_theirs": -3.297555555555556
+    },
+    {
+      "mine": 95,
+      "theirs": 95,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 41.455666666666666,
+      "weight_mine": 4.783777777777779,
+      "weight_theirs": -7.443777777777778
+    },
+    {
+      "mine": 120,
+      "theirs": 88,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 206.79966666666667,
+      "weight_mine": 2.0777777777777735,
+      "weight_theirs": -10.205999999999998
+    },
+    {
+      "mine": 120,
+      "theirs": 0,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 264.40633333333335,
+      "weight_mine": 1.0,
+      "weight_theirs": 0.6099999999999947
+    },
+    {
+      "mine": 120,
+      "theirs": 20,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 280.697,
+      "weight_mine": 1.0,
+      "weight_theirs": 0.8775555555555457
+    },
+    {
+      "mine": 120,
+      "theirs": 55,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 306.813,
+      "weight_mine": 1.0,
+      "weight_theirs": -0.19355555555555762
+    },
+    {
+      "mine": 120,
+      "theirs": 70,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 293.849,
+      "weight_mine": 1.0,
+      "weight_theirs": -5.047111111111103
+    },
+    {
+      "mine": 120,
+      "theirs": 100,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": 97.11966666666666,
+      "weight_mine": 2.2111111111111135,
+      "weight_theirs": -3.24444444444444
+    },
+    {
+      "mine": 120,
+      "theirs": 130,
+      "deals_left": 1,
+      "elder_first": true,
+      "expected_settlement": -6.980333333333333,
+      "weight_mine": 4.288888888888889,
+      "weight_theirs": -4.077777777777777
+    },
+    {
+      "mine": 60,
+      "theirs": 60,
+      "deals_left": 2,
+      "elder_first": true,
+      "expected_settlement": -2.2933333333333334,
+      "weight_mine": 7.3180000000000005,
+      "weight_theirs": -7.784
+    }
+  ]
+}

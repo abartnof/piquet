@@ -36,6 +36,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
 from piquet.observation import View, view_for  # noqa: E402
+from piquet import chances as chances_mod  # noqa: E402
 from piquet.solver import (  # noqa: E402
     CAPOT_BONUS,
     CARDS_BONUS,
@@ -1461,6 +1462,108 @@ def emit_solver() -> dict:
     }
 
 
+# (needed, deals_left, elder_first)
+CHANCE_CASES = [
+    (18, 1, True), (18, 1, False), (0, 3, True), (-5, 2, True),
+    (40, 1, True), (40, 2, True), (100, 6, True), (100, 6, False),
+    (60, 2, False), (25, 1, True), (30, 3, False), (200, 1, True),
+]
+
+# (mine, theirs) -- the settlement is integer-exact, so these assert equality
+SETTLEMENT_CASES = [
+    (105, 101), (101, 105), (120, 89), (51, 49), (100, 100),
+    (99, 99), (0, 0), (150, 20), (100, 99), (99, 100),
+]
+
+# (mine, theirs, deals_left, elder_first) -- floats, so these carry a tolerance
+WEIGHT_CASES = [
+    (82, 70, 1, True), (82, 70, 1, False), (0, 0, 6, True),
+    (95, 95, 1, True), (120, 88, 1, True), (120, 0, 1, True),
+    (120, 20, 1, True), (120, 55, 1, True), (120, 70, 1, True),
+    (120, 100, 1, True), (120, 130, 1, True), (60, 60, 2, True),
+]
+
+
+def emit_chances() -> dict:
+    densities = {}
+    for seat in (Player.ELDER, Player.YOUNGER):
+        rows = chances_mod.density(seat)
+        surv = chances_mod.survival(seat)
+        densities[seat.value] = {
+            "length": len(rows),
+            "sum": sum(rows),
+            "mean": sum(i * p for i, p in enumerate(rows)),
+            "first_eight": list(rows[:8]),
+            "survival_at_zero": surv[0],
+            "survival_at_thirty": surv[30],
+        }
+
+    chances = [
+        {
+            "needed": needed,
+            "deals_left": left,
+            "elder_first": first,
+            "chance": chances_mod.chance_of(needed, left, first),
+            "in_words": chances_mod.in_words(
+                chances_mod.chance_of(needed, left, first)
+            ),
+        }
+        for needed, left, first in CHANCE_CASES
+    ]
+
+    settlements = [
+        {"mine": mine, "theirs": theirs, "pays": chances_mod.settlement_of(mine, theirs)}
+        for mine, theirs in SETTLEMENT_CASES
+    ]
+
+    weights = []
+    for mine, theirs, left, first in WEIGHT_CASES:
+        w_mine, w_theirs = chances_mod.point_weights(mine, theirs, left, first)
+        weights.append(
+            {
+                "mine": mine,
+                "theirs": theirs,
+                "deals_left": left,
+                "elder_first": first,
+                "expected_settlement": chances_mod.expected_settlement(
+                    mine, theirs, left, first
+                ),
+                "weight_mine": w_mine,
+                "weight_theirs": w_theirs,
+            }
+        )
+
+    # The first 12 draws of the fixed-seed generator, so a port can check its
+    # own RNG before anything downstream disagrees for reasons that are hard
+    # to trace back here.
+    import random
+
+    rng = random.Random(1674)
+    draws = [rng.getrandbits(9) for _ in range(12)]
+
+    return {
+        "module": "chances",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The first module where floating point enters the engine, so the "
+            "first whose vectors need a tolerance. settlement_of is integer "
+            "and asserts equality; everything derived from the sampled "
+            "futures is a float and asserts a tolerance. The sampling is "
+            "behind a FIXED seed -- 1674, so a position always values the "
+            "same -- which is the one place a port must reproduce a Python "
+            "RNG rather than avoid one. rng_draws lets it check that first."
+        ),
+        "tolerance": 1e-9,
+        "cap": chances_mod.CAP,
+        "rng_seed": 1674,
+        "rng_draws": draws,
+        "densities": densities,
+        "chances": chances,
+        "settlements": settlements,
+        "weights": weights,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1473,6 +1576,7 @@ def main() -> int:
         ("observation", emit_observation),
         ("partie", emit_partie),
         ("solver", emit_solver),
+        ("chances", emit_chances),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

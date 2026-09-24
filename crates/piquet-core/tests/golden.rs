@@ -1211,3 +1211,196 @@ fn younger_alone_is_asked_to_answer_and_hears_only_a_shape() {
         }
     }
 }
+
+// -- chances: the first module with floating point ---------------------------
+
+use piquet_core::chances;
+
+#[test]
+fn the_fixed_seed_generator_reproduces_cpython() {
+    // Checked before anything downstream, because if this is wrong every
+    // weight below is wrong for a reason that is hard to trace back to here.
+    let vec = vectors("chances.json");
+    let mut rng = piquet_core::test_support::seeded_rng(vec["rng_seed"].as_u64().unwrap() as u32);
+    let want: Vec<u64> = vec["rng_draws"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|n| n.as_u64().unwrap())
+        .collect();
+    let got: Vec<u64> = (0..want.len())
+        .map(|_| u64::from(rng.getrandbits(9)))
+        .collect();
+    assert_eq!(got, want);
+}
+
+#[test]
+fn settlement_is_integer_and_exact() {
+    // No tolerance here: the settlement is arithmetic on two integers.
+    let vec = vectors("chances.json");
+    for case in vec["settlements"].as_array().unwrap() {
+        let mine = case["mine"].as_i64().unwrap() as i32;
+        let theirs = case["theirs"].as_i64().unwrap() as i32;
+        assert_eq!(
+            i64::from(chances::settlement_of(mine, theirs)),
+            case["pays"].as_i64().unwrap(),
+            "{mine} against {theirs}"
+        );
+    }
+}
+
+#[test]
+fn the_densities_match() {
+    let vec = vectors("chances.json");
+    let tolerance = vec["tolerance"].as_f64().unwrap();
+    for (name, seat) in [("elder", Player::Elder), ("younger", Player::Younger)] {
+        let want = &vec["densities"][name];
+        let rows = chances::density(seat);
+        assert_eq!(rows.len() as u64, want["length"].as_u64().unwrap());
+
+        let sum: f64 = rows.iter().sum();
+        assert!(
+            (sum - want["sum"].as_f64().unwrap()).abs() < tolerance,
+            "{name}: sum"
+        );
+
+        let mean: f64 = rows.iter().enumerate().map(|(i, p)| i as f64 * p).sum();
+        assert!(
+            (mean - want["mean"].as_f64().unwrap()).abs() < tolerance,
+            "{name}: mean"
+        );
+
+        let survival = chances::survival(seat);
+        assert!((survival[0] - want["survival_at_zero"].as_f64().unwrap()).abs() < tolerance);
+        assert!((survival[30] - want["survival_at_thirty"].as_f64().unwrap()).abs() < tolerance);
+    }
+}
+
+#[test]
+fn the_odds_on_reaching_a_total_match() {
+    let vec = vectors("chances.json");
+    let tolerance = vec["tolerance"].as_f64().unwrap();
+    for case in vec["chances"].as_array().unwrap() {
+        let got = chances::chance_of(
+            case["needed"].as_i64().unwrap() as i32,
+            case["deals_left"].as_u64().unwrap() as usize,
+            case["elder_first"].as_bool().unwrap(),
+        );
+        let want = case["chance"].as_f64().unwrap();
+        assert!(
+            (got - want).abs() < tolerance,
+            "{case}: got {got}, want {want}"
+        );
+        assert_eq!(chances::in_words(got), case["in_words"].as_str().unwrap());
+    }
+}
+
+#[test]
+fn what_a_point_is_worth_in_a_partie_matches() {
+    // The bridge from points in a deal to points in a partie, and the whole
+    // reason an agent has to see the standing at all.
+    let vec = vectors("chances.json");
+    let tolerance = vec["tolerance"].as_f64().unwrap();
+    for case in vec["weights"].as_array().unwrap() {
+        let mine = case["mine"].as_i64().unwrap() as i32;
+        let theirs = case["theirs"].as_i64().unwrap() as i32;
+        let left = case["deals_left"].as_u64().unwrap() as usize;
+        let first = case["elder_first"].as_bool().unwrap();
+
+        let expected = chances::expected_settlement(mine, theirs, left, first);
+        assert!(
+            (expected - case["expected_settlement"].as_f64().unwrap()).abs() < tolerance,
+            "{case}: expected settlement"
+        );
+
+        let (w_mine, w_theirs) = chances::point_weights(mine, theirs, left, first);
+        assert!(
+            (w_mine - case["weight_mine"].as_f64().unwrap()).abs() < tolerance,
+            "{case}: my weight"
+        );
+        assert!(
+            (w_theirs - case["weight_theirs"].as_f64().unwrap()).abs() < tolerance,
+            "{case}: their weight"
+        );
+    }
+}
+
+#[test]
+fn while_they_are_short_their_points_help_me() {
+    // The regime with no counterpart inside a single deal: a rubiconed loser
+    // pays the SUM, and their score is part of it.
+    let vec = vectors("chances.json");
+    let rows = vec["weights"].as_array().unwrap();
+    let at = |theirs: i64| {
+        rows.iter()
+            .find(|w| w["mine"] == 120 && w["theirs"] == theirs && w["deals_left"] == 1)
+            .map(|w| w["weight_theirs"].as_f64().unwrap())
+    };
+    let far_short = at(0).expect("a case with them on nothing");
+    let nearly_there = at(88).expect("a case with them on 88");
+    assert!(
+        far_short > 0.0,
+        "their points help me while they cannot cross"
+    );
+    assert!(nearly_there < -5.0, "and hurt sharply once they can");
+}
+/// How far apart the two languages' floats actually are.
+///
+/// Measured rather than assumed: 43 of 48 values are **bit-identical**, and
+/// the rest differ by one or two ULPs -- worst case 8.9e-16. That is what
+/// `docs/DESIGN.md` §2.2 predicts for arithmetic restricted to `+ - * /`,
+/// which IEEE 754 requires to be correctly rounded, provided the accumulation
+/// order is preserved. `convolve` is ported literally for exactly that reason.
+///
+/// The handful that differ are most likely a fused multiply-add: an optimising
+/// Rust build may contract `a * b + c` into one instruction with a single
+/// rounding, which is *more* accurate than Python's two. That is a hypothesis,
+/// not something this test establishes.
+#[test]
+fn the_two_languages_agree_to_within_an_ulp() {
+    let vec = vectors("chances.json");
+    let mut worst = 0.0f64;
+    let mut exact = 0usize;
+    let mut total = 0usize;
+
+    let mut compare = |got: f64, want: f64| {
+        total += 1;
+        if got.to_bits() == want.to_bits() {
+            exact += 1;
+        }
+        worst = worst.max((got - want).abs());
+    };
+
+    for case in vec["weights"].as_array().unwrap() {
+        let mine = case["mine"].as_i64().unwrap() as i32;
+        let theirs = case["theirs"].as_i64().unwrap() as i32;
+        let left = case["deals_left"].as_u64().unwrap() as usize;
+        let first = case["elder_first"].as_bool().unwrap();
+        let (w_mine, w_theirs) = chances::point_weights(mine, theirs, left, first);
+        compare(
+            chances::expected_settlement(mine, theirs, left, first),
+            case["expected_settlement"].as_f64().unwrap(),
+        );
+        compare(w_mine, case["weight_mine"].as_f64().unwrap());
+        compare(w_theirs, case["weight_theirs"].as_f64().unwrap());
+    }
+    for case in vec["chances"].as_array().unwrap() {
+        compare(
+            chances::chance_of(
+                case["needed"].as_i64().unwrap() as i32,
+                case["deals_left"].as_u64().unwrap() as usize,
+                case["elder_first"].as_bool().unwrap(),
+            ),
+            case["chance"].as_f64().unwrap(),
+        );
+    }
+
+    assert!(
+        worst < 1e-14,
+        "the two engines have drifted apart: worst difference {worst:e}"
+    );
+    assert!(
+        exact * 2 > total,
+        "most values should still be bit-identical, not {exact} of {total}"
+    );
+}
