@@ -76,6 +76,32 @@ cost of the move until Rust lands. It is bounded — the runs that actually hurt
 are parallel and the VM has four cores to the laptop's advantage in one, and
 the machine resizes in about a minute.
 
+### What it costs, and the safeguard on it
+
+The account runs on Google's **$300 new-customer credit, valid for 90 days**
+from September 2026. The trial does *not* auto-charge when the credit is
+exhausted — it suspends and asks for an explicit upgrade — so the real risks
+are not a surprise bill. They are the credit expiring on the **calendar**
+rather than on spend, and an instance left running over a weekend.
+
+| | |
+|---|---|
+| Instance, while running | ≈$0.13/hour |
+| Disk, always | ≈$5/month, whether or not the instance is up |
+| At ~15 hrs/week | ≈$14/month — the credit should outlast the 90 days comfortably |
+
+Two things guard it, deliberately of different kinds. A **budget on the billing
+account** (`Piquet — free trial credit`, $300) emails at 25 / 50 / 75 / 90 /
+100 % of spend and fires whether or not anyone is paying attention. And the
+spend is **checked at the start of each working session**, which Andrew asked
+for explicitly as an early warning rather than a backstop.
+
+Anything materially above the figures above means something is running that
+should not be, and it is almost always an instance nobody stopped:
+
+    bin/vm --status        # is it up, and what is it costing
+    bin/vm --down          # stop it
+
 ## Next action
 
 **The language is settled: Rust.** `docs/DESIGN.md` §13.5 ranked it first on
