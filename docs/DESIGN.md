@@ -33,7 +33,12 @@ variants (Piquet Normand, Piquet Voleur, Piquet à Écrire).
 
 ## 2. Engineering conventions
 
-- **Python** for the reference implementation.
+- **Rust** for the implementation, decided September 2026 (§13.5, and §2.2 for
+  what the port hits). Python remains the *oracle*: it is the version that
+  passes 447 tests, it generates the golden vectors, and it is not retired
+  until the Rust reproduces both them and the measured rating ladder.
+- **All development happens on a Google Cloud VM.** No toolchain on a laptop;
+  `bin/vm` syncs the tree and runs the command there. See `PLAN.md`.
 - **Test-driven development** — tests precede implementation.
 - **Atomic commits** — one logical change each.
 - **Modular design** — GUI, rules, scoring, search, and agents are separable
