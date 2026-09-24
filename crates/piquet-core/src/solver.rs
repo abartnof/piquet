@@ -425,7 +425,7 @@ use crate::heuristics::HeuristicAgent;
 use crate::inference::possible_hands;
 use crate::observation::View;
 use crate::scoring::{Category, Player};
-use crate::util::first_max_by_key;
+use crate::util::first_max_by;
 
 /// Rung 5: heuristic play early, exact play once the endgame is reachable.
 ///
@@ -445,6 +445,13 @@ pub struct SolverAgent {
     pub fallback: HeuristicAgent,
     pub exact_from: u32,
     pub max_worlds: usize,
+    /// Settle at the leaf instead of maximising points in the deal.
+    ///
+    /// The objective `docs/DESIGN.md` §6.4a says the engine ought to have.
+    /// Off by default until it is measured to win, because the previous
+    /// attempt at the same idea measured to lose and shipped off for that
+    /// reason.
+    pub partie_aware: bool,
     /// Its own name, and not the fallback's.
     ///
     /// Delegating to the fallback made it report `L4`, which is not cosmetic:
@@ -461,8 +468,17 @@ impl SolverAgent {
                 .expect("the top rung is a valid level"),
             exact_from: 8,
             max_worlds: 30,
+            partie_aware: false,
             label: "solver8".to_string(),
         }
+    }
+
+    /// Settle at the leaf. Names itself differently so a tournament cannot
+    /// merge it with the flat-objective agent.
+    pub fn settling(mut self) -> SolverAgent {
+        self.partie_aware = true;
+        self.label = format!("settle{}", self.exact_from);
+        self
     }
 
     pub fn named(mut self, name: &str) -> SolverAgent {
@@ -529,28 +545,333 @@ impl Agent for SolverAgent {
         let led = view.current_trick.map(|t| t.led.0);
         let sign: i64 = if view.me == Player::Elder { 1 } else { -1 };
 
-        let mut totals: Vec<(Card, i64)> = legal.iter().map(|c| (*c, 0i64)).collect();
+        // The settling objective needs the partie, and there may not be one:
+        // a deal played on its own has no standing, and then the two
+        // objectives coincide anyway.
+        let settling = if self.partie_aware {
+            view.partie.map(|standing| {
+                let (elder_side, younger_side) = if view.me == Player::Elder {
+                    (standing.mine, standing.theirs)
+                } else {
+                    (standing.theirs, standing.mine)
+                };
+                Settling {
+                    elder_side,
+                    younger_side,
+                    elder_so_far: view.log.total(Player::Elder),
+                    younger_so_far: view.log.total(Player::Younger),
+                    deals_left: standing.deals_left,
+                    // The seat alternates, so whoever sits elder now sits
+                    // younger in the next deal.
+                    elder_first_next: false,
+                }
+            })
+        } else {
+            None
+        };
+
+        let mut totals: Vec<(Card, f64)> = legal.iter().map(|c| (*c, 0.0)).collect();
         for opponent_hand in worlds {
             let (elder, younger) = if view.me == Player::Elder {
                 (view.hand, opponent_hand)
             } else {
                 (opponent_hand, view.hand)
             };
-            let Ok(values) = card_values(elder, younger, leader, led, elder_tricks, EVEN) else {
-                continue;
+            let values: Vec<(u8, f64)> = match &settling {
+                Some(ctx) => {
+                    match card_settlements(elder, younger, leader, led, elder_tricks, ctx) {
+                        Ok(values) => values,
+                        Err(_) => continue,
+                    }
+                }
+                None => match card_values(elder, younger, leader, led, elder_tricks, EVEN) {
+                    Ok(values) => values.into_iter().map(|(c, v)| (c, v as f64)).collect(),
+                    Err(_) => continue,
+                },
             };
             for (card, value) in values {
                 if let Some(slot) = totals.iter_mut().find(|(c, _)| c.0 == card) {
-                    slot.1 += sign * value;
+                    slot.1 += sign as f64 * value;
                 }
             }
         }
 
         // Python's `max` over the dict returns the FIRST maximum in insertion
         // order, which is `legal` order. Among equal values the lower rank
-        // wins, hence the negated rank.
-        first_max_by_key(&totals, |(card, value)| (*value, -i32::from(card.rank().0)))
-            .map(|(card, _)| *card)
-            .unwrap_or(legal[0])
+        // wins, hence the negated rank. Ordered on bits so that ties break
+        // identically to the integer path.
+        first_max_by(&totals, |(card_a, value_a), (card_b, value_b)| {
+            value_a
+                .total_cmp(value_b)
+                .then_with(|| card_b.rank().cmp(&card_a.rank()))
+        })
+        .map(|(card, _)| *card)
+        .unwrap_or(legal[0])
     }
+}
+
+// ===========================================================================
+// Settling at the leaf
+//
+// `docs/DESIGN.md` §6.4a: the objective above the deal is wrong. The search
+// maximises points *in a deal*, and the game is a partie settled by the
+// rubicon, where a loser short of a hundred pays the **sum** of both scores
+// rather than the difference. The first attempt at a remedy priced a point in
+// settlement and fed it in as a linear weight; it lost 0–9–66 over 75 mirrored
+// last deals, because a marginal price is a linearisation and the settlement
+// is violently non-linear exactly where the price is extreme.
+//
+// The remedy the document asks for is to carry both totals to the leaf and
+// settle there. That costs more than it sounds, and the reason is worth
+// writing down.
+//
+// **Play points are path-dependent.** Elder's points are
+// `(tricks he led) + (tricks he won as follower) + (1 if he won the last)`.
+// Writing E for his trick count and Q for the tricks he both led and won, that
+// comes to `1 + 2E − Q` — and Q is not recoverable from E. Two lines of play
+// reaching the same cards-remaining position can therefore have split the
+// points differently, so the accumulated pair has to sit in the memo key.
+//
+// That is what makes this expensive: positions the additive search merged are
+// now distinct. The key grows from 75 bits to 87, which a `u128` still holds,
+// but the state space multiplies. Whether the objective is worth the depth it
+// costs is a question for measurement, not for argument.
+// ===========================================================================
+
+/// Everything outside the play that the settlement depends on.
+#[derive(Clone, Copy, Debug)]
+pub struct Settling {
+    /// The partie score of whoever sits elder, before this deal.
+    pub elder_side: i32,
+    /// And of whoever sits younger.
+    pub younger_side: i32,
+    /// Points already in the log this deal, by seat: declarations, and any
+    /// play points made before the search begins.
+    pub elder_so_far: i32,
+    pub younger_so_far: i32,
+    /// Deals still to play, counting this one.
+    pub deals_left: usize,
+    /// Whether the side sitting elder now sits elder in the *next* deal.
+    /// It never does — the seat alternates — but it is carried explicitly
+    /// rather than assumed, because `expected_settlement` needs it and the
+    /// convention is easy to invert by accident.
+    pub elder_first_next: bool,
+}
+
+/// The settlement to elder's **side**, in points, at the end of the deal.
+///
+/// Known approximation, shared with the additive search: the pique and repique
+/// bonuses are ignored. They depend on Law 67's order of precedence over the
+/// whole log, which the search does not carry. `solver::pique_is_live` exists
+/// in the Python as a documented intention with no caller (`PLAN.md` TODO 9);
+/// this inherits the same gap rather than quietly pretending otherwise.
+fn settle(elder_tricks: u32, elder_pts: i32, younger_pts: i32, ctx: &Settling) -> f64 {
+    let (elder_bonus, younger_bonus) = if elder_tricks == TRICKS {
+        (CAPOT_BONUS as i32, 0)
+    } else if elder_tricks == 0 {
+        (0, CAPOT_BONUS as i32)
+    } else if elder_tricks > TRICKS / 2 {
+        (CARDS_BONUS as i32, 0)
+    } else if elder_tricks < TRICKS / 2 {
+        (0, CARDS_BONUS as i32)
+    } else {
+        (0, 0)
+    };
+
+    let elder_deal = ctx.elder_so_far + elder_pts + elder_bonus;
+    let younger_deal = ctx.younger_so_far + younger_pts + younger_bonus;
+
+    crate::chances::expected_settlement(
+        ctx.elder_side + elder_deal,
+        ctx.younger_side + younger_deal,
+        ctx.deals_left.saturating_sub(1),
+        ctx.elder_first_next,
+    )
+}
+
+#[inline]
+fn settlement_key(
+    elder: u32,
+    younger: u32,
+    leader: Seat,
+    led: i32,
+    elder_tricks: u32,
+    elder_pts: i32,
+    younger_pts: i32,
+) -> u128 {
+    memo_key(elder, younger, leader, led, elder_tricks)
+        | ((elder_pts as u128 & 0x3F) << 75)
+        | ((younger_pts as u128 & 0x3F) << 81)
+}
+
+type SettlementMemo = std::collections::HashMap<u128, f64, BuildHasherDefault<KeyHasher>>;
+
+#[allow(clippy::too_many_arguments)]
+fn search_settlement(
+    elder: u32,
+    younger: u32,
+    leader: Seat,
+    led: i32,
+    elder_tricks: u32,
+    elder_pts: i32,
+    younger_pts: i32,
+    memo: &mut SettlementMemo,
+    ctx: &Settling,
+) -> f64 {
+    if elder == 0 && younger == 0 && led == NO_CARD {
+        return settle(elder_tricks, elder_pts, younger_pts, ctx);
+    }
+
+    let key = settlement_key(
+        elder,
+        younger,
+        leader,
+        led,
+        elder_tricks,
+        elder_pts,
+        younger_pts,
+    );
+    if let Some(&cached) = memo.get(&key) {
+        return cached;
+    }
+
+    let turn: Seat = if led == NO_CARD { leader } else { 1 - leader };
+    let hand = if turn == ELDER { elder } else { younger };
+    let unplayed = elder | younger | if led == NO_CARD { 0 } else { 1u32 << led };
+    let legal_mask = legal(hand, led);
+    let maximising = turn == ELDER;
+
+    let mut options = [0u8; 12];
+    let count = distinct(legal_mask, unplayed, &mut options);
+
+    let mut best: Option<f64> = None;
+    for &option in options.iter().take(count) {
+        let card = option as i32;
+        let remaining = hand & !(1u32 << card);
+
+        let value = if led == NO_CARD {
+            // A point for every card led, whoever wins the trick.
+            let (e, y) = if turn == ELDER {
+                (elder_pts + 1, younger_pts)
+            } else {
+                (elder_pts, younger_pts + 1)
+            };
+            search_settlement(
+                if turn == ELDER { remaining } else { elder },
+                if turn == ELDER { younger } else { remaining },
+                leader,
+                card,
+                elder_tricks,
+                e,
+                y,
+                memo,
+                ctx,
+            )
+        } else {
+            let follower_wins = beats(card, led);
+            let winner: Seat = if follower_wins { turn } else { leader };
+            let next_elder = if turn == ELDER { remaining } else { elder };
+            let next_younger = if turn == ELDER { younger } else { remaining };
+            let mut gained: i32 = i32::from(follower_wins);
+            if next_elder == 0 && next_younger == 0 {
+                gained += 1; // the winner of the last trick scores two
+            }
+            let (e, y) = if winner == ELDER {
+                (elder_pts + gained, younger_pts)
+            } else {
+                (elder_pts, younger_pts + gained)
+            };
+            search_settlement(
+                next_elder,
+                next_younger,
+                winner,
+                NO_CARD,
+                elder_tricks + u32::from(winner == ELDER),
+                e,
+                y,
+                memo,
+                ctx,
+            )
+        };
+
+        best = Some(match best {
+            None => value,
+            Some(current) if maximising => current.max(value),
+            Some(current) => current.min(value),
+        });
+    }
+
+    let best = best.expect("a position with cards in it always has a legal move");
+    memo.insert(key, best);
+    best
+}
+
+/// What each legal card is worth **in settlement** to whoever is to play.
+///
+/// The partie objective, done properly: both totals carried to the leaf and
+/// settled there, rather than collapsed to a weighted scalar on the way down.
+pub fn card_settlements(
+    elder: Hand,
+    younger: Hand,
+    leader: Seat,
+    led: Option<u8>,
+    elder_tricks: u32,
+    ctx: &Settling,
+) -> Result<Vec<(u8, f64)>, String> {
+    check_position(elder, younger, leader, led)?;
+    let led_index = led.map_or(NO_CARD, i32::from);
+    let turn: Seat = if led_index == NO_CARD {
+        leader
+    } else {
+        1 - leader
+    };
+    let hand = if turn == ELDER { elder.0 } else { younger.0 };
+    let mut memo = SettlementMemo::default();
+
+    let mut out = Vec::new();
+    for card in Hand(legal(hand, led_index)).iter() {
+        let index = i32::from(card);
+        let remaining = hand & !(1u32 << index);
+        let value = if led_index == NO_CARD {
+            let (e, y) = if turn == ELDER { (1, 0) } else { (0, 1) };
+            search_settlement(
+                if turn == ELDER { remaining } else { elder.0 },
+                if turn == ELDER { younger.0 } else { remaining },
+                leader,
+                index,
+                elder_tricks,
+                e,
+                y,
+                &mut memo,
+                ctx,
+            )
+        } else {
+            let follower_wins = beats(index, led_index);
+            let winner: Seat = if follower_wins { turn } else { leader };
+            let next_elder = if turn == ELDER { remaining } else { elder.0 };
+            let next_younger = if turn == ELDER { younger.0 } else { remaining };
+            let mut gained: i32 = i32::from(follower_wins);
+            if next_elder == 0 && next_younger == 0 {
+                gained += 1;
+            }
+            let (e, y) = if winner == ELDER {
+                (gained, 0)
+            } else {
+                (0, gained)
+            };
+            search_settlement(
+                next_elder,
+                next_younger,
+                winner,
+                NO_CARD,
+                elder_tricks + u32::from(winner == ELDER),
+                e,
+                y,
+                &mut memo,
+                ctx,
+            )
+        };
+        out.push((card, value));
+    }
+    Ok(out)
 }

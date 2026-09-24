@@ -7,6 +7,7 @@
 
 use crate::agents::Agent;
 use crate::cards::Card;
+use crate::partie::{Partie, Side, DEALS_IN_PARTIE, EXTRA_DEALS};
 use crate::rng::Rng;
 use crate::rules::deal_from;
 use crate::scoring::Player;
@@ -170,4 +171,104 @@ pub fn ratings(
         .zip(strength)
         .map(|(name, value)| (name, 400.0 * (value / base).log10()))
         .collect()
+}
+
+// -- one level up: mirrored parties ------------------------------------------
+
+/// A pairing measured over whole parties, scored in settlement.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct PartieResult {
+    pub name_a: String,
+    pub name_b: String,
+    pub pairs: usize,
+    pub a_wins: usize,
+    pub b_wins: usize,
+    pub drawn: usize,
+    /// Net settlement to A, summed over both halves of every mirrored pair.
+    pub a_settlement: i32,
+}
+
+impl PartieResult {
+    pub fn a_win_rate(&self) -> f64 {
+        if self.pairs == 0 {
+            return 0.0;
+        }
+        (self.a_wins as f64 + 0.5 * self.drawn as f64) / self.pairs as f64
+    }
+
+    /// Mean settlement to A per mirrored pair.
+    pub fn margin(&self) -> f64 {
+        if self.pairs == 0 {
+            return 0.0;
+        }
+        f64::from(self.a_settlement) / self.pairs as f64
+    }
+}
+
+/// What a finished partie pays this side, signed.
+fn paid_to(partie: &Partie, side: Side) -> i32 {
+    let Some(settlement) = partie.settlement() else {
+        return 0;
+    };
+    match settlement.winner {
+        None => 0,
+        Some(winner) if winner == side => settlement.points,
+        Some(_) => -settlement.points,
+    }
+}
+
+/// Play `pairs` parties, each one twice with the two sides swapped.
+///
+/// The same mirroring as [`duel`], one level up — and it has to be one level
+/// up. **A partie objective cannot be measured in deals.** An agent that gives
+/// away a point to keep its opponent under a hundred *loses* by the deal-level
+/// yardstick and wins by the only one that pays.
+///
+/// Scored in **settlement** rather than deal points, because that is what a
+/// partie actually pays: the difference plus a hundred, or the sum plus a
+/// hundred if the loser was rubiconed.
+pub fn partie_duel(
+    agent_a: &mut dyn Agent,
+    agent_b: &mut dyn Agent,
+    pairs: usize,
+    deal_seed: u32,
+) -> Result<PartieResult, String> {
+    let mut deals = Rng::seeded(deal_seed);
+    let (mut a_wins, mut b_wins, mut drawn) = (0usize, 0usize, 0usize);
+    let mut a_settlement = 0i32;
+
+    for _ in 0..pairs {
+        // The two halves must see identical cards, so the packs for the whole
+        // partie are drawn once and replayed. A partie runs to eight deals
+        // when the sixth leaves the scores level.
+        let packs: Vec<Vec<Card>> = (0..DEALS_IN_PARTIE + EXTRA_DEALS)
+            .map(|_| {
+                let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
+                deals.shuffle(&mut pack);
+                pack
+            })
+            .collect();
+
+        let first = crate::play::play_partie(&packs, agent_a, agent_b, Side::A)?;
+        let second = crate::play::play_partie(&packs, agent_b, agent_a, Side::A)?;
+
+        // A is side A in the first and side B in the second.
+        let paid = paid_to(&first, Side::A) + paid_to(&second, Side::B);
+        a_settlement += paid;
+        match paid.cmp(&0) {
+            std::cmp::Ordering::Greater => a_wins += 1,
+            std::cmp::Ordering::Less => b_wins += 1,
+            std::cmp::Ordering::Equal => drawn += 1,
+        }
+    }
+
+    Ok(PartieResult {
+        name_a: agent_a.name().to_string(),
+        name_b: agent_b.name().to_string(),
+        pairs,
+        a_wins,
+        b_wins,
+        drawn,
+        a_settlement,
+    })
 }
