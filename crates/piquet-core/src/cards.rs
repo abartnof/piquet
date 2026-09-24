@@ -251,7 +251,9 @@ impl Hand {
         Ok(Hand(self.0 | other.0))
     }
 
-    pub fn add(self, card: Card) -> Result<Hand, String> {
+    /// Named `with_card` rather than `add`, which clippy flags as shadowing
+    /// `std::ops::Add::add` for a method that is neither addition nor total.
+    pub fn with_card(self, card: Card) -> Result<Hand, String> {
         if self.holds(card) {
             return Err(format!("already held: {}", card.code()));
         }

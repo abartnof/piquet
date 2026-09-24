@@ -160,9 +160,19 @@ Four new ones take their place, ranked by how likely each is to actually bite.
        sort_by_key(k); reverse()     CLUBS, SPADES, HEARTS   ties flipped
        sort_unstable_by(...)         CLUBS, HEARTS, SPADES   correct, by luck
 
-   So `reverse=True` must become a **reversed comparator**, never a sort
-   followed by `.reverse()`. The second line is the dangerous one precisely
-   because it is the obvious translation and it reads as correct.
+   So `reverse=True` must become a **reversed comparator** or a **reversed
+   key**, never a sort followed by `.reverse()`. Four renderings, and only one
+   of the three plausible ones is wrong:
+
+   | Form | Ties |
+   |---|---|
+   | `sort_by_key(\|a\| Reverse(k(a)))` | preserved — correct, and what clippy prefers |
+   | `sort_by(\|a, b\| k(b).cmp(&k(a)))` | preserved — also correct |
+   | `sort_by_key(k); reverse()` | **inverted** — wrong |
+   | `sort_unstable_by(..)` | unspecified — wrong by omission |
+
+   The third is the dangerous one precisely because it is the obvious
+   translation and it reads as correct.
 
    Note the third line too. `sort_unstable_by` happened to give the right
    answer on a three-element slice, which guarantees nothing — small inputs are

@@ -266,17 +266,23 @@ pub fn best_set(hand: Hand) -> Option<CardSet> {
 /// Sort descending while leaving tied elements in the order they arrived.
 ///
 /// Python's `sorted(..., reverse=True)` is **stable**: equal elements keep
-/// their original order rather than having it reversed. The obvious Rust
-/// rendering -- `sort_by_key` followed by `reverse()` -- inverts exactly those
-/// pairs, and `sort_unstable_by` makes no promise about them at all. Measured:
-/// `JH QH KH JS QS KS` holds two tierces to the king keying identically, and
-/// the wrong idiom returns spades where the oracle returns hearts.
+/// their original order rather than having it reversed. Three Rust renderings
+/// look equivalent and are not:
 ///
-/// That particular tie turns out to be unobservable downstream (see
-/// `docs/DESIGN.md` §2.2), but the ones that choose a card are not, so the
-/// discipline is kept everywhere rather than selectively.
+/// | Form | Ties |
+/// |---|---|
+/// | `sort_by_key(\|a\| Reverse(key(a)))` | preserved — correct, and what clippy prefers |
+/// | `sort_by(\|a, b\| key(b).cmp(&key(a)))` | preserved — also correct |
+/// | `sort_by_key(key); reverse()` | **inverted** — wrong, and the obvious translation |
+/// | `sort_unstable_by(..)` | unspecified — wrong by omission |
+///
+/// Measured: `JH QH KH JS QS KS` holds two tierces to the king keying
+/// identically, and the third form returns spades where the oracle returns
+/// hearts. That particular tie is unobservable downstream (`docs/DESIGN.md`
+/// §2.2), but the ties that choose a card are not, so the discipline is kept
+/// everywhere rather than selectively.
 fn sort_descending_stably<T, K: Ord>(items: &mut [T], key: impl Fn(&T) -> K) {
-    items.sort_by(|a, b| key(b).cmp(&key(a)));
+    items.sort_by_key(|a| std::cmp::Reverse(key(a)));
 }
 
 // -- comparison -------------------------------------------------------------
