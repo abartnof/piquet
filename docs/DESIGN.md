@@ -1426,6 +1426,27 @@ that needs 82,000 took it from 8.4 ms to 26.2 ms, because allocating and
 faulting in untouched pages costs more than the rehashing it avoids.
 `solver::expected_positions` is fitted to the measured counts above.
 
+**The research loop, measured separately.** The solver figures above are the
+interactive case. The batch case — the tournaments this project's method
+actually rests on — comes out lower: the standard ladder measurement, five
+agents over 500 mirrored pairs per pairing, takes **54.0 s in Python and 4.9 s
+in Rust, about 11×**. Lower because a tournament is not a tight integer loop;
+it is dominated by allocating deals and by agent bookkeeping, where Python is
+less catastrophically slow. Still worth having — a measurement that returns
+before you lose interest gets run more often, which is the whole argument for
+"prefer measuring to reasoning wherever measuring is cheap".
+
+**The parity gate is met** (`PLAN.md`). Reproducing the golden vectors shows
+the *rules* were translated; reproducing the measured ratings shows the
+*agents* still play as well as they did. The two languages draw deals from
+different generators, so ratings cannot match to the point; what has to survive
+is the ordering and the spacing, and it does:
+
+| | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|
+| Python | 335 | 776 | 816 | 863 |
+| Rust | 343 | 774 | 811 | 858 |
+
 **The golden vectors did what they were built for** (§2, TODO 5). They were
 written first, from the Python oracle, and the Rust reproduced every one of
 them on the first run — including the one that encodes a measured strategic
