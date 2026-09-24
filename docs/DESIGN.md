@@ -129,10 +129,27 @@ Four new ones take their place, ranked by how likely each is to actually bite.
    | `heuristics.py:207` | `suit_strength` | two suits equally established |
    | `solver.py:455` | `(totals[c], -c.rank)` | equal EV, equal rank |
 
-   `combos.py:210` is not hypothetical. `JH QH KH JS QS KS` holds two tierces
-   to the king, both keying `(3, 13)`, and `best_sequence` is `found[0]` — so
-   the tie decides **which suit gets declared**. Hearts wins, because hearts is
-   found first.
+   `combos.py:210` is not hypothetical: `JH QH KH JS QS KS` holds two tierces
+   to the king, both keying `(3, 13)`, and measured over 500,000 dealt hands,
+   **one hand in 68** holds a pair tied at the top.
+
+   **But frequency is not impact, and here the impact is nil.** Traced through
+   the engine: `Declaration.full` carries *every* sequence rather than only the
+   best, `score_sequences` sums them all, `CategoryResult.shown` exposes all
+   claims, an `Announcement` never names a suit — "the suit is never spoken" —
+   and `Announcement.matches` compares keys. Whichever of a tied pair comes
+   first, nothing downstream can observe the difference. An earlier draft of
+   this section claimed the tie decided which suit got declared. It does not.
+
+   So the ordering here is a **debugging** property rather than a correctness
+   one, and still worth pinning for that: a port that disagrees should say so
+   at once, rather than surfacing later as an unexplained divergence.
+
+   **The ties that can actually be observed are the ones that choose a card** —
+   `heuristics.py:108` (which card to discard), `heuristics.py:207` (which to
+   lead), `solver.py:455` (which to play). A different choice there is a
+   different move, visible at the table. Those three have *not* been measured
+   and are where the risk really sits.
 
    **The trap is not the one it appears to be.** `sorted(..., reverse=True)` is
    stable in Python: tied elements keep their original order rather than having
