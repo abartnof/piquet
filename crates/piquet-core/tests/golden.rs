@@ -1013,7 +1013,7 @@ fn observe(pack: &[piquet_core::cards::Card], elder_takes: Option<usize>) -> Vec
     let mut deal = deal_from(pack).unwrap();
     let mut out = Vec::new();
 
-    let mut capture = |deal: &Deal, out: &mut Vec<(View, Hand)>| {
+    let capture = |deal: &Deal, out: &mut Vec<(View, Hand)>| {
         for player in [Player::Elder, Player::Younger] {
             out.push((
                 view_for(deal, player, None),
