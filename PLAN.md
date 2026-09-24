@@ -7,43 +7,58 @@
 
 ## Where we are
 
-**Milestones 1–7 complete. 447 tests.**
+**Milestones 1–7 complete, and the Rust port with them. 520 Python tests, 56
+Rust.**
 
-**It is playable.** `python -m piquet` sits you down against a named opponent
-for a partie of six deals, settled by the rubicon. Four measured rungs exist
-plus an exact-endgame solver, with styles and erraticism, and two tournament
-harnesses that rate them — one over mirrored deals and one over mirrored
-parties. Every decision is logged to JSONL.
+**It is playable in Rust.** `cargo run -p piquet-cli -- --level 3` sits you
+down against a named opponent for a partie of six deals, settled by the
+rubicon. Four measured rungs plus the exact-endgame solver, with styles and
+erraticism, and a mirrored-pair tournament that rates them.
+
+```
+crates/piquet-core/src/
+  cards.rs         32-card pack; Hand as a u32
+  combos.rs        point / sequence / set detection, scoring, comparison
+  declarations.rs  the meld layer: announcing, showing, sinking
+  rules.rs         Deal as an immutable state machine
+  scoring.rs       the event log; pique and repique
+  partie.rs        six deals, Side vs seat, the rubicon settlement
+  chances.rs       the odds on reaching a total; what a point is worth
+  observation.rs   View — the only way an agent sees a deal
+  agents.rs        the Agent trait; RandomAgent
+  heuristics.rs    the capability ladder, rungs 1–4
+  style.rs         the third axis, calibrated by measurement
+  inference.rs     which hands the opponent can possibly hold
+  solver.rs        exact endgame search, and the agent that uses it
+  play.rs          running deals and parties; the move log
+  tournament.rs    mirrored-pair duels, Bradley-Terry ratings
+  mt19937.rs       CPython's generator, for the one fixed-seed model constant
+  rng.rs           the agents' own generator
+crates/piquet-cli/src/
+  main.rs          the table a person sits at; the human as an Agent
+  render.rs        drawing a hand in the language the prompt accepts
+python/            the oracle: the original, which generates the vectors
+vectors/           golden JSON, read by both languages
+```
+
+**The parity gate is met.** Both halves of it:
+
+- Every golden vector reproduces in Rust — nine modules, from the pack through
+  the solver, including three complete deals replayed transition by
+  transition and all eighty rung-against-rung games.
+- The measured ladder reproduces. 500 mirrored pairs per pairing, anchored on
+  random play: Python **L1 335, L2 776, L3 816, L4 863**; Rust **343, 774,
+  811, 858**. Ordering identical, within eight points on every rung — which is
+  all that can be asked, since the two draw deals from different generators.
+
+Speed, measured (`docs/DESIGN.md` §13.7): the exact solver is **20–54×**
+faster depending on depth, and the ladder tournament **11×** — 54.0 s to 4.9 s.
+The interactive frontier moves from eight tricks to about ten, not to twelve;
+reaching twelve is an algorithmic problem now, not a language one.
 
 The AI *can* be told what a point is worth in a partie. Told, it plays slightly
-worse, so it is not told by default — see below.
-
-```
-piquet/
-  cards.py         32-card pack; Hand as a bitmask
-  combos.py        point / sequence / set detection, scoring, comparison
-  declarations.py  the meld layer: announcing, showing, sinking
-  rules.py         Deal as an immutable state machine
-  scoring.py       the event log; pique and repique
-  partie.py        six deals, Side vs seat, the rubicon settlement
-  chances.py       the odds on reaching a total; what a point is worth
-  terminal.py      the table a person sits at; the human as an Agent
-  observation.py   View — the only way an agent sees a deal
-  agents.py        the Agent protocol; RandomAgent
-  heuristics.py    the capability ladder, rungs 1–4
-  style.py         the third axis, calibrated by measurement
-  match.py         running deals and parties; the move log
-  tournament.py    mirrored-pair duels, Bradley-Terry ratings
-  inference.py     which hands the opponent can possibly hold
-  solver.py        exact endgame search, and the agent that uses it
-  __main__.py      `python -m piquet`
-```
-
-Ratings, re-measured after the second review pass and under the smoothed fit,
-500 mirrored pairs per pairing, anchored on random play: **L1 335, L2 776,
-L3 816, L4 863.** The
-solver beats L4 by **82.5% / +5.0 points per pair** over 100 pairs — still a
-bigger jump than all the heuristic rungs above the first combined.
+worse, so `partie_aware` is off by default in the Python and is not ported at
+all — see TODO 1.
 
 Over 60 parties of rung-4 play a side averages **145** across six deals, and
 **17 of 120** sides finish short of the rubicon. The threshold is a live
@@ -104,43 +119,32 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
-**The language is settled: Rust.** `docs/DESIGN.md` §13.5 ranked it first on
-three of the four goals and second on the fourth; §2.2 now records what the
-port actually hits. PyPy and TypeScript are closed — not refuted, but
-overtaken by a decision.
+**The port is done.** What is left is what was always behind it.
 
-The order below is forced by one rule: **nothing gets ported before there is
-something to port it against.**
+1. **Milestone 9, the training mode.** The largest unmet *product* requirement
+   and it needs no compute. `docs/DESIGN.md` §8's decomposed evaluation was
+   never built; the replacement is ladder-based — rank a move by *which rung
+   would play it*, so the explanation names a skill the player can go and
+   learn. Every rung is a working agent, so this is nearly free. `explain.rs`
+   is owed.
 
-1. **Golden JSON vectors** (TODO 5). No longer merely advisable — they are the
-   specification the Rust is checked against, and the Python that passes 447
-   tests is the oracle that generates them. Write them against `deal_from`
-   with an explicit pack ordering, never a seed. Needs TODO 6 (a replay
-   format) first, because `match.write_jsonl` writes declarations as
-   unparseable English prose — `docs/DESIGN.md` §2.2.
+2. **Milestone 8, the exchange policy.** Priced in `docs/DESIGN.md` §6.2, and
+   the price just fell by an order of magnitude. Before renting anything, run
+   the heuristic tier — it answers whether there is any signal at all, and the
+   reconnaissance says there may not be.
 
-2. **The Rust workspace.** Three crates, matching the standing modularity
-   requirement that the engine, the AI and the interface be swappable:
-   `piquet-core` (cards … observation), `piquet-ai` (agents … solver),
-   `piquet-cli` (the table). `piquet-wasm` and `piquet-py` come later — the
-   second so that thirty-line experiments stay thirty lines (§13.6).
+3. **The browser build.** `piquet-wasm`, and the 5 MB single-page target the
+   language choice was made for. The engine is small; card art will use the
+   budget.
 
-3. **Port bottom-up, one module per commit**, in the order the dependency
-   graph forces: cards → scoring, style → combos → declarations → rules →
-   partie → observation → chances, agents → inference → heuristics → solver →
-   match, tournament → terminal. Tests first, then the implementation, then
-   `cargo clippy -- -D warnings`.
+4. **`piquet-py`** (PyO3), so the thirty-line experiments this project runs on
+   stay thirty lines and get the Rust engine underneath. `docs/DESIGN.md`
+   §13.6 argues this matters more than it looks: the cheap experiment is where
+   nearly everything here was learnt, and a slower loop quietly stops being
+   used.
 
-4. **The measurement §13.7 asked for** arrives free once `solver` lands:
-   benchmark the eight-trick solve (31,224 nodes) and the twelve-trick one
-   that costs 45 s in CPython. It was going to be a day's work on its own.
-
-5. **A parity gate before any Python is retired.** Every vector passes in
-   Rust, and the measured ladder — L1 335, L2 776, L3 816, L4 863, with the
-   solver at 82.5% / +5.0 points per pair over L4 — reproduces within noise.
-   Until that holds, the Python stays as the oracle.
-
-Milestones 8 and 9 are unchanged, and now sit behind the port.
+5. **Milestone 10, CFR declarations.** Still the largest unknown. Piquet has a
+   great many information sets and this would likely need an abstraction.
 
 ## Settled decisions
 
