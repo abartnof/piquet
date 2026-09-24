@@ -5,15 +5,16 @@
 //! plain -- `docs/DESIGN.md` defers the real interface and says basic graphics
 //! are acceptable until then.
 
+mod options;
 mod render;
 
 use std::io::{self, BufRead, Write};
 
+use options::understatements;
 use piquet_core::agents::Agent;
 use piquet_core::cards::{Card, Hand};
 use piquet_core::chances::{chance_of_the_rubicon, in_words};
-use piquet_core::combos::{CardSet, Point, Sequence};
-use piquet_core::declarations::{Combination, Declaration};
+use piquet_core::declarations::Declaration;
 use piquet_core::heuristics::HeuristicAgent;
 use piquet_core::observation::View;
 use piquet_core::partie::{Partie, Side};
@@ -199,75 +200,6 @@ impl Agent for HumanAgent {
             return card;
         }
     }
-}
-
-/// "Call only the tierce" -- a declaration one card short of the full one.
-///
-/// The rules give the right to understate and the engine models it correctly,
-/// so the table has to offer it or the human simply cannot sink.
-fn understatements(hand: Hand, category: Category) -> Vec<Declaration> {
-    let full = Declaration::full(hand, category);
-    if full.claims.len() < 2 && !matches!(category, Category::Point) {
-        // Nothing to drop except the whole thing, which is already offered.
-        if full.claims.len() < 2 {
-            return Vec::new();
-        }
-    }
-    let mut out = Vec::new();
-    match category {
-        Category::Point => {
-            if let Some(Combination::Point(point)) = full.best() {
-                if point.length > 1 {
-                    let ranks = hand.ranks_in(point.suit);
-                    let shorter = point.length - 1;
-                    let pips: u32 = ranks
-                        .iter()
-                        .take(shorter as usize)
-                        .map(|r| r.pip_value())
-                        .sum();
-                    out.push(Declaration {
-                        claims: vec![Combination::Point(Point {
-                            suit: point.suit,
-                            length: shorter,
-                            pip_value: pips,
-                        })],
-                    });
-                }
-            }
-        }
-        _ => {
-            // Drop the weakest claim, which is the last: they arrive best first.
-            let mut claims = full.claims.clone();
-            claims.pop();
-            if !claims.is_empty() {
-                out.push(Declaration { claims });
-            }
-            // And shorten the best one, which is the other half of sinking.
-            if let Some(Combination::Sequence(s)) = full.best() {
-                if s.length > 3 {
-                    out.push(Declaration {
-                        claims: vec![Combination::Sequence(Sequence {
-                            suit: s.suit,
-                            top: s.top,
-                            length: s.length - 1,
-                        })],
-                    });
-                }
-            }
-            if let Some(Combination::Set(s)) = full.best() {
-                if s.count == 4 {
-                    out.push(Declaration {
-                        claims: vec![Combination::Set(CardSet {
-                            rank: s.rank,
-                            count: 3,
-                        })],
-                    });
-                }
-            }
-        }
-    }
-    out.retain(|d| d.validate(hand, category).is_ok() && !d.is_empty());
-    out
 }
 
 fn make_opponent(level: u32, rng: &mut Rng, name: &str) -> Box<dyn Agent> {
