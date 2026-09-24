@@ -76,10 +76,87 @@ Two more that are not bugs but constrain the vectors themselves:
   seed. The engine already separates these: `deal_from` takes an explicit
   ordering and `deal_shuffled` is the convenience wrapper over it, so vectors
   should be written against `deal_from`.
-- **Floats entered the solver** with the partie weights. `EVEN` is integers so
-  the default path is exact, but any vector covering a weighted search is
-  comparing floating point across two languages and should assert a tolerance
-  rather than equality.
+- **Floats entered the solver** with the partie weights. `EVEN` is `(1, 1)` —
+  two Python `int`s — so the *search* is integer-exact end to end under the
+  shipped defaults, despite every type hint in `solver.py` saying `float`. The
+  claim is narrower than it reads, though. `SolverAgent` overrides only
+  `__init__`, `weights` and `play`, so it **inherits `declare()`**, and that
+  calls `point_value` at rung 4 whenever `view.partie is not None` — gated by
+  the partie, not by `partie_aware`. The sink decision therefore runs through
+  `chances.weights_for` in floating point even with the flag off. That is
+  intended, not a bug: TODO 3 prices the sink ceiling in settlement on purpose.
+  But it means a vector covering a rung-4 declaration inside a partie is
+  comparing floats and should assert a tolerance rather than equality.
+
+### 2.2 What a Rust port will actually hit
+
+The language question is settled (§13), so §2.1 has a companion: the same audit
+run against Rust instead of JavaScript.
+
+**Every hazard in §2.1 disappears.** All five are consequences of JavaScript
+having no unsigned integer type and only 53 bits of safe integer.
+
+| §2.1 hazard | In Rust |
+|---|---|
+| Ace of spades on bit 31 reads negative | `u32` is unsigned; a non-issue |
+| `~seen & 0xFFFFFFFF` does not unsign | `!seen` on a `u32` is already correct |
+| No `int.bit_count()` equivalent | `u32::count_ones()`, one instruction |
+| `bits & -bits` meets the sign bit | `bits & bits.wrapping_neg()`, verbatim |
+| A 71-bit memo key | `u128` holds it natively |
+
+Four new ones take their place, ranked by how likely each is to actually bite.
+
+1. **Sort stability — the one that matters.** Python's `sorted`, `max` and
+   `min` are stable: ties keep their original order. Rust's `sort_unstable_by`
+   is not, and it is the one a Rust programmer reaches for by default.
+
+   Eleven sites pass a sort key. Five of them key on `(c.rank, c.suit)`, which
+   is unique per card and so can never tie — they are safe either way. The six
+   that *can* tie are the ones to watch:
+
+   | Site | Key | How it ties |
+   |---|---|---|
+   | `combos.py:210` | `s.key` | tierce to the king in two different suits |
+   | `combos.py:228` | `s.key` | two sets of equal rank |
+   | `declarations.py:152` | `c.key` | same, via `max` over claims |
+   | `heuristics.py:108` | `_keep_value` | a float; equal-valued cards |
+   | `heuristics.py:207` | `suit_strength` | two suits equally established |
+   | `solver.py:455` | `(totals[c], -c.rank)` | equal EV, equal rank |
+
+   Use `sort_by`, never `sort_unstable_by`, and preserve `Hand`'s index
+   iteration order so the input order matches to begin with. Get this wrong and
+   the agent silently plays a different card; nothing else in the port changes
+   behaviour so quietly.
+2. **`ratings()` uses transcendentals.** `tournament.py:200-202` calls
+   `math.exp`, `math.log` and `math.log10`. IEEE 754 requires `+ - * /` to be
+   correctly rounded, so those port bit-for-bit; it requires nothing of `log`
+   and `exp`, which may legitimately differ in the last bit between one libm
+   and another. Any vector touching `ratings()` asserts a tolerance. Contained
+   — this is the measurement harness, not the engine.
+3. **`_convolve` accumulates floats in a fixed order.** `chances.py:101-109`
+   does `out[i + j] += x * y` in a nested loop, and floating addition is not
+   associative. Port the loop literally rather than tidying it, and the same
+   IEEE guarantee makes the result bit-identical.
+4. **`round()` is half-to-even in Python, half-away-from-zero in Rust.**
+   `round(0.5)` is `0` here and would be `1` there. One site only —
+   `heuristics.py:92`, rounding a Gaussian draw — and a continuous draw lands
+   on exactly `.5` with probability zero, so this is a difference in construct
+   rather than one that will ever be observed. Recorded for completeness, not
+   as a risk.
+
+**One thing gets easier.** `chances._futures` samples 3,000 pairs behind
+`random.Random(1674)` — a fixed seed, so its output is a deterministic function
+of constants already in the source. Rust needs neither CPython's Mersenne
+Twister nor `.choice`'s algorithm: compute the table once and embed it as a
+literal, exactly as `_PAIRS` and the count tables already are.
+
+**And one thing the golden vectors cannot reuse.** `match.write_jsonl` looks
+like a serialisation seam and is not quite one. For exchange and play it writes
+`Hand.code` / `Card.code`, which round-trip cleanly. For a declaration it
+writes `str(declaration)` — English prose like `"point of five (49), tierce to
+the queen"` — which by design never names a suit and cannot be parsed back.
+The vectors need a structured export of their own. The JSONL is a template for
+the shape, not a format to reuse.
 
 ## 3. The rules, as we will implement them
 
