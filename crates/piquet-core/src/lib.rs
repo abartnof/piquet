@@ -25,6 +25,7 @@ pub mod test_support {
     }
 }
 pub mod heuristics;
+pub mod inference;
 pub mod observation;
 pub mod partie;
 pub mod play;

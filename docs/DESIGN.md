@@ -605,6 +605,33 @@ pocket-money project, and no transition matrix will be built.
 
 ### 4.2 But the play phase is nearly perfect information
 
+**Measured, once `inference` was ported** — and the arithmetic below turns out
+to understate the asymmetry rather than the size. Tracking the candidate set
+through a scripted deal in which elder takes two:
+
+| When | Elder's candidates | Younger's |
+|---|---|---|
+| Before the exchange | 125,970 | 125,970 |
+| After both exchange | 5,005 | 91 |
+| After elder's point | 5,005 | 91 |
+| After his sequences | 5,005 | 28 |
+| After his sets | 5,005 | **1** |
+| **He leads to trick 1** | **5,005** | **1** |
+| After trick 1 | 1 | 1 |
+
+Younger narrows with every category elder declares and knows his hand exactly
+before a card is played. **Elder learns nothing at all until he has led**,
+because her declarations are withheld until then — so he leads to the first
+trick with five thousand hands still possible, against an opponent who knows
+his precisely.
+
+That is §3.4's blind first lead, quantified. It is also the strongest argument
+in the document for the information discipline in `observation`: the gap is
+entirely an artefact of *when* things are said, and an engine that leaked
+younger's declarations one phase early would erase it without changing a single
+rule. One trick later they are both down to a single hand, and everything below
+applies.
+
 Count what each player actually knows when the first card is led:
 
 - **Elder** knows his 12 cards and all 5 top talon cards — 17 identities.

@@ -38,6 +38,12 @@ from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: 
 from piquet.observation import View, view_for  # noqa: E402
 from piquet import chances as chances_mod  # noqa: E402
 from piquet.heuristics import MAX_LEVEL, HeuristicAgent  # noqa: E402
+from piquet.inference import (  # noqa: E402
+    known_voids,
+    opponent_hand_size,
+    opponent_played,
+    possible_hands,
+)
 from piquet.match import play_deal  # noqa: E402
 from piquet.style import BALANCED  # noqa: E402
 from piquet.solver import (  # noqa: E402
@@ -1646,6 +1652,90 @@ def emit_heuristics() -> dict:
     }
 
 
+def emit_inference() -> dict:
+    """Snapshot the candidate set through a deal, with elder taking two.
+
+    The count is recorded, but the assertion that matters is the invariant:
+    **the opponent's real hand must always be a candidate**. Inference that
+    rules out the truth is worse than inference that rules out nothing, and no
+    count would reveal it.
+    """
+    pack_codes = _pack_identity()
+    deal = deal_from([Card.parse(c) for c in pack_codes])
+    snapshots = []
+
+    def capture(step: int, action: str) -> None:
+        for player in (Player.ELDER, Player.YOUNGER):
+            view = view_for(deal, player)
+            if view.phase is Phase.COMPLETE:
+                continue
+            hands = possible_hands(view, limit=None)
+            actual = deal.hand_of(player.opponent)
+            snapshots.append(
+                {
+                    "step": step,
+                    "action": action,
+                    "me": player.value,
+                    "phase": view.phase.value,
+                    "opponent_hand_size": opponent_hand_size(view),
+                    "known_voids": sorted(int(s) for s in known_voids(view)),
+                    "opponent_played": opponent_played(view).code,
+                    "candidates": len(hands),
+                    "actual_is_a_candidate": actual in hands,
+                    "watched_them_take": view.watched_them_take.code,
+                }
+            )
+
+    capture(0, "deal")
+    index = 1
+    for player, take in ((Player.ELDER, 2), (Player.YOUNGER, None)):
+        limit = deal.exchange_limit(player)
+        count = take if take is not None else limit
+        deal = deal.exchange(
+            player, Hand.of(*list(deal.hand_of(player))[:count])
+        )
+        capture(index, f"{player.value} exchanges {count}")
+        index += 1
+
+    while deal.phase in (
+        Phase.DECLARE_POINT, Phase.DECLARE_SEQUENCES, Phase.DECLARE_SETS
+    ):
+        player = deal.to_declare
+        category = deal.declaring_category
+        deal = deal.declare(
+            player, Declaration.full(deal.hand_of(player), category)
+        )
+        capture(index, f"{player.value} declares {category.name.lower()}")
+        index += 1
+
+    # Only the first few tricks: the candidate set is largest early, and the
+    # enumeration is a binomial that would take minutes over a whole deal.
+    tricks = 0
+    while deal.phase is Phase.PLAY and tricks < 8:
+        player = deal.to_play
+        card = next(iter(deal.legal_plays(player)))
+        deal = deal.play(player, card)
+        if deal.current_trick is None:
+            tricks += 1
+            capture(index, f"after trick {tricks}")
+        index += 1
+
+    return {
+        "module": "inference",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Elder takes two, so he watches younger draw from inside his five "
+            "and those cards are held out of the enumeration and added to "
+            "every candidate. The invariant is that the opponent's real hand "
+            "is always among the candidates; a count alone would not show an "
+            "inference that ruled out the truth."
+        ),
+        "pack": pack_codes,
+        "elder_takes": 2,
+        "snapshots": snapshots,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1660,6 +1750,7 @@ def main() -> int:
         ("solver", emit_solver),
         ("chances", emit_chances),
         ("heuristics", emit_heuristics),
+        ("inference", emit_inference),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

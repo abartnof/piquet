@@ -1608,3 +1608,173 @@ fn the_vectors_actually_discriminate_between_rungs() {
         .collect();
     assert!(scores.len() > 5, "the rungs barely differ in outcome");
 }
+
+// -- inference ---------------------------------------------------------------
+
+use piquet_core::inference::{known_voids, opponent_hand_size, opponent_played, possible_hands};
+
+#[test]
+fn the_candidate_set_matches_and_never_excludes_the_truth() {
+    // Two assertions, and the second matters more. The count must agree with
+    // the oracle; but the *invariant* is that the opponent's real hand is
+    // always a candidate, because inference that rules out the truth is worse
+    // than inference that rules out nothing, and no count would reveal it.
+    let vec = vectors("inference.json");
+    let pack = pack_of(&vec["pack"]);
+    let elder_takes = vec["elder_takes"].as_u64().unwrap() as usize;
+    let mut rng = piquet_core::rng::Rng::seeded(1);
+
+    let mut deal = deal_from(&pack).unwrap();
+    let mut recorded = vec["snapshots"].as_array().unwrap().iter();
+
+    let check = |deal: &Deal,
+                 recorded: &mut std::slice::Iter<serde_json::Value>,
+                 rng: &mut piquet_core::rng::Rng| {
+        for player in [Player::Elder, Player::Younger] {
+            let view = view_for(deal, player, None);
+            if view.phase == Phase::Complete {
+                continue;
+            }
+            let want = recorded.next().expect("a recorded snapshot");
+            let where_ = format!("step {} {}", want["step"], want["me"]);
+
+            assert_eq!(view.me.name(), want["me"].as_str().unwrap(), "{where_}");
+            assert_eq!(
+                opponent_hand_size(&view) as u64,
+                want["opponent_hand_size"].as_u64().unwrap(),
+                "{where_}"
+            );
+            let mut voids: Vec<u64> = known_voids(&view).iter().map(|s| u64::from(s.0)).collect();
+            voids.sort_unstable();
+            let want_voids: Vec<u64> = want["known_voids"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|s| s.as_u64().unwrap())
+                .collect();
+            assert_eq!(voids, want_voids, "{where_}");
+            assert_eq!(
+                opponent_played(&view).code(),
+                want["opponent_played"].as_str().unwrap(),
+                "{where_}"
+            );
+
+            let hands = possible_hands(&view, None, true, rng);
+            assert_eq!(
+                hands.len() as u64,
+                want["candidates"].as_u64().unwrap(),
+                "{where_}: candidate count"
+            );
+            let actual = deal.hand_of(player.opponent());
+            assert!(
+                hands.contains(&actual),
+                "{where_}: inference ruled out the opponent's real hand"
+            );
+            assert!(
+                want["actual_is_a_candidate"].as_bool().unwrap(),
+                "{where_}: the oracle agrees"
+            );
+        }
+    };
+
+    check(&deal, &mut recorded, &mut rng);
+    for (player, take) in [(Player::Elder, Some(elder_takes)), (Player::Younger, None)] {
+        let limit = deal.exchange_limit(player);
+        let count = take.unwrap_or(limit);
+        let discard =
+            Hand::of(&deal.hand_of(player).cards().take(count).collect::<Vec<_>>()).unwrap();
+        deal = deal.exchange(player, discard).unwrap();
+        check(&deal, &mut recorded, &mut rng);
+    }
+    while matches!(
+        deal.phase,
+        Phase::DeclarePoint | Phase::DeclareSequences | Phase::DeclareSets
+    ) {
+        let player = deal.to_declare().unwrap();
+        let category = deal.declaring_category().unwrap();
+        deal = deal
+            .declare(player, Declaration::full(deal.hand_of(player), category))
+            .unwrap();
+        check(&deal, &mut recorded, &mut rng);
+    }
+    let mut tricks = 0;
+    while deal.phase == Phase::Play && tricks < 8 {
+        let player = deal.to_play().unwrap();
+        let card = deal.legal_plays(Some(player)).cards().next().unwrap();
+        deal = deal.play(player, card).unwrap();
+        if deal.current_trick.is_none() {
+            tricks += 1;
+            check(&deal, &mut recorded, &mut rng);
+        }
+    }
+    assert!(recorded.next().is_none(), "unconsumed snapshots");
+}
+
+/// What the candidate counts show about who knows what, and when.
+///
+/// `docs/DESIGN.md` §4.2 argues the play phase is nearly perfect information,
+/// and it is -- but not symmetrically, and the asymmetry is the more
+/// interesting half.
+///
+/// Younger hears elder's declarations as the dialogue goes along, so her
+/// candidate set collapses 125,970 → 91 → 28 → 1 before a card is played.
+/// Elder hears *nothing* until he has led to the first trick, so he sits at
+/// 5,005 through the entire dialogue and leads to the first trick with five
+/// thousand hands still possible. **That is the blind first lead, measured.**
+///
+/// One trick later they are both down to a single hand.
+#[test]
+fn elder_leads_blind_and_younger_does_not() {
+    let vec = vectors("inference.json");
+    let snapshots = vec["snapshots"].as_array().unwrap();
+    let count_at = |action: &str, me: &str| -> u64 {
+        snapshots
+            .iter()
+            .find(|s| s["action"] == action && s["me"] == me)
+            .unwrap_or_else(|| panic!("no snapshot for {action} / {me}"))["candidates"]
+            .as_u64()
+            .unwrap()
+    };
+
+    // Through the dialogue, younger narrows and elder does not.
+    let younger_narrowing: Vec<u64> = [
+        "younger exchanges 6",
+        "younger declares point",
+        "younger declares sequences",
+    ]
+    .iter()
+    .map(|action| count_at(action, "younger"))
+    .collect();
+    assert!(
+        younger_narrowing.windows(2).all(|w| w[1] <= w[0]),
+        "younger should only ever learn more: {younger_narrowing:?}"
+    );
+    assert_eq!(
+        *younger_narrowing.last().unwrap(),
+        1,
+        "by the end of the dialogue she should know his hand exactly"
+    );
+
+    let elder_at_the_lead = count_at("younger declares sets", "elder");
+    assert!(
+        elder_at_the_lead > 1000,
+        "elder should still be guessing when he leads, not {elder_at_the_lead}"
+    );
+
+    // And once he has led, her declarations arrive and he catches up at once.
+    assert_eq!(count_at("after trick 1", "elder"), 1);
+    assert_eq!(count_at("after trick 1", "younger"), 1);
+
+    // From there the play really is perfect information for both.
+    for snapshot in snapshots
+        .iter()
+        .filter(|s| s["action"].as_str().unwrap().starts_with("after trick"))
+    {
+        assert_eq!(
+            snapshot["candidates"].as_u64().unwrap(),
+            1,
+            "{}: the play should be determined",
+            snapshot["action"]
+        );
+    }
+}
