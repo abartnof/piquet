@@ -15,6 +15,7 @@
 #   bin/vm --down               stop it -- this is what keeps the bill small
 #   bin/vm --status             is it running, and what is it costing
 #   bin/vm --sync               push the tree without running anything
+#   bin/vm --pull <path>        fetch a generated artefact back from the VM
 #
 # The VM's external IP is ephemeral and changes every time it is stopped and
 # started, so the SSH alias is refreshed automatically rather than pinned.
@@ -85,6 +86,18 @@ case "${1-}" in
   --down)  gcloud compute instances stop "$INSTANCE" --zone="$ZONE" --quiet
            printf 'Stopped. Only the disk bills now (~$5/month).\n'; exit 0 ;;
   --sync)  ensure_running; sync_tree; printf 'Synced.\n'; exit 0 ;;
+  --pull)
+    # Anything the VM generates -- golden vectors, measurement output, logs --
+    # has to come back, because the git repository lives on the laptop. Without
+    # this the next --sync would simply delete it.
+    [ "$#" -ge 2 ] || die "usage: bin/vm --pull <path relative to the repo>"
+    ensure_running
+    rel=${2#/}; rel=${rel%/}
+    rsync -az "${HOST}:${REMOTE_DIR}/${rel}/" "$root/${rel}/" 2>/dev/null \
+      || rsync -az "${HOST}:${REMOTE_DIR}/${rel}" "$root/${rel}"
+    printf 'Pulled %s\n' "$rel"
+    exit 0
+    ;;
 esac
 
 ensure_running
