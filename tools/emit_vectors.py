@@ -35,6 +35,19 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
+from piquet.rules import (  # noqa: E402
+    CARDS_SCORE,
+    CAPOT_SCORE,
+    CARTE_BLANCHE_SCORE,
+    ELDER_MAX_EXCHANGE,
+    HAND_SIZE,
+    TALON_SIZE,
+    TRICKS_PER_DEAL,
+    Deal,
+    Phase,
+    Trick,
+    deal_from,
+)
 from piquet.declarations import (  # noqa: E402
     Announcement,
     CategoryResult,
@@ -741,6 +754,293 @@ def emit_declarations() -> dict:
     }
 
 
+# Packs are written out in full and never drawn from a seed: no two languages
+# share a random number generator, so `deal_from` is the only honest entry
+# point for a fixture (docs/DESIGN.md 2.1).
+def _pack_identity() -> list[str]:
+    return [c.code for c in full_deck()]
+
+
+def _pack_reversed() -> list[str]:
+    return [c.code for c in reversed(full_deck())]
+
+
+def _pack_carte_blanche() -> list[str]:
+    """Elder holds no jack, queen or king, so the deal opens with ten points.
+
+    Twenty of the thirty-two cards are non-court, so a twelve-card hand without
+    one is perfectly constructible -- it is just rare, about one hand in 1,792.
+    """
+    plain = [c for c in full_deck() if not c.rank.is_court]
+    courts = [c for c in full_deck() if c.rank.is_court]
+    ordered = plain[:HAND_SIZE] + courts + plain[HAND_SIZE:]
+    assert len(ordered) == 32
+    return [c.code for c in ordered]
+
+
+REPLAY_PACKS = [
+    ("the pack in index order", _pack_identity),
+    ("the pack reversed", _pack_reversed),
+    ("elder is dealt a carte blanche", _pack_carte_blanche),
+]
+
+
+def _state(deal: Deal) -> dict:
+    return {
+        "phase": deal.phase.value,
+        "elder_hand": deal.hand_of(Player.ELDER).code,
+        "younger_hand": deal.hand_of(Player.YOUNGER).code,
+        "talon_taken": deal.talon_taken,
+        "talon_remaining": deal.talon_remaining,
+        "elder_total": deal.log.total(Player.ELDER),
+        "younger_total": deal.log.total(Player.YOUNGER),
+        "elder_tricks": deal.tricks_won(Player.ELDER),
+        "younger_tricks": deal.tricks_won(Player.YOUNGER),
+    }
+
+
+def _script(pack_codes: list[str]) -> dict:
+    """Play a whole deal under a policy with no choices left in it.
+
+    Discard the first cards in hand order, declare everything, play the lowest
+    legal card. The policy is not good piquet -- it is not meant to be. It is
+    meant to be reproducible in any language without agreeing on a random
+    number generator or on what a good move is.
+    """
+    deal = deal_from([Card.parse(c) for c in pack_codes])
+    steps = [{"action": "deal", "after": _state(deal)}]
+
+    for player in (Player.ELDER, Player.YOUNGER):
+        limit = deal.exchange_limit(player)
+        discard = Hand.of(*list(deal.hand_of(player))[:limit])
+        deal = deal.exchange(player, discard)
+        steps.append(
+            {
+                "action": "exchange",
+                "player": player.value,
+                "discard": discard.code,
+                "after": _state(deal),
+            }
+        )
+
+    while deal.phase in (
+        Phase.DECLARE_POINT,
+        Phase.DECLARE_SEQUENCES,
+        Phase.DECLARE_SETS,
+    ):
+        category = deal.declaring_category
+        player = deal.to_declare
+        declaration = Declaration.full(deal.hand_of(player), category)
+        deal = deal.declare(player, declaration)
+        steps.append(
+            {
+                "action": "declare",
+                "player": player.value,
+                "category": category.name,
+                "says": str(declaration),
+                "after": _state(deal),
+            }
+        )
+
+    while deal.phase is Phase.PLAY:
+        player = deal.to_play
+        card = next(iter(deal.legal_plays(player)))
+        deal = deal.play(player, card)
+        steps.append(
+            {
+                "action": "play",
+                "player": player.value,
+                "card": card.code,
+                "after": _state(deal),
+            }
+        )
+
+    return {
+        "pack": pack_codes,
+        "steps": steps,
+        "final": {
+            **_state(deal),
+            "repique": deal.log.repique.value if deal.log.repique else None,
+            "pique": deal.log.pique.value if deal.log.pique else None,
+            "events": [
+                {
+                    "player": e.player.value,
+                    "amount": e.amount,
+                    "category": e.category.name,
+                    "detail": e.detail,
+                }
+                for e in deal.log
+            ],
+        },
+    }
+
+
+TRICK_CASES = [
+    ("elder", "KS", "AS", "younger"),
+    ("elder", "AS", "KS", "elder"),
+    ("elder", "7C", "AH", "elder"),
+    ("younger", "7C", "8C", "elder"),
+    ("younger", "AC", "7H", "younger"),
+]
+
+
+def emit_rules() -> dict:
+    replays = []
+    for name, build in REPLAY_PACKS:
+        replay = _script(build())
+        replay["name"] = name
+        replays.append(replay)
+
+    tricks = []
+    for leader, led, followed, winner in TRICK_CASES:
+        who = Player.ELDER if leader == "elder" else Player.YOUNGER
+        trick = Trick(who, Card.parse(led), Card.parse(followed))
+        if trick.winner.value != winner:
+            raise SystemExit(f"trick {leader} {led} {followed} -> {trick.winner.value}")
+        tricks.append(
+            {
+                "leader": leader,
+                "led": led,
+                "followed": followed,
+                "winner": winner,
+                "complete": trick.complete,
+            }
+        )
+
+    # Must follow suit if able; otherwise anything. There are no trumps, so a
+    # card of another suit never wins however high.
+    legal = []
+    deal = deal_from([Card.parse(c) for c in _pack_identity()])
+    deal = deal.exchange(Player.ELDER, Hand.of(*list(deal.hand_of(Player.ELDER))[:5]))
+    deal = deal.exchange(Player.YOUNGER, Hand.of(*list(deal.hand_of(Player.YOUNGER))[:3]))
+    while deal.phase is not Phase.PLAY:
+        player = deal.to_declare
+        deal = deal.declare(
+            player, Declaration.full(deal.hand_of(player), deal.declaring_category)
+        )
+    legal.append(
+        {
+            "situation": "leading: anything in hand",
+            "hand": deal.hand_of(Player.ELDER).code,
+            "led": None,
+            "legal": deal.legal_plays(Player.ELDER).code,
+        }
+    )
+
+    # Two following cases are needed, not one. The interesting rule is the
+    # restriction, so lead a suit younger actually holds; the void case, where
+    # anything goes, is the easy half and is recorded second.
+    elder_hand = deal.hand_of(Player.ELDER)
+    younger_hand = deal.hand_of(Player.YOUNGER)
+    shared = next(
+        (s for s in Suit if elder_hand.in_suit(s) and younger_hand.in_suit(s)), None
+    )
+    if shared is not None:
+        card = next(iter(elder_hand.in_suit(shared)))
+        after = deal.play(Player.ELDER, card)
+        legal.append(
+            {
+                "situation": "following: must follow suit when able",
+                "hand": after.hand_of(Player.YOUNGER).code,
+                "led": card.code,
+                "legal": after.legal_plays(Player.YOUNGER).code,
+            }
+        )
+
+    void = next(
+        (s for s in Suit if elder_hand.in_suit(s) and not younger_hand.in_suit(s)),
+        None,
+    )
+    if void is not None:
+        card = next(iter(elder_hand.in_suit(void)))
+        after = deal.play(Player.ELDER, card)
+        legal.append(
+            {
+                "situation": "following: void in the suit led, so anything goes",
+                "hand": after.hand_of(Player.YOUNGER).code,
+                "led": card.code,
+                "legal": after.legal_plays(Player.YOUNGER).code,
+            }
+        )
+
+    # Executed here, so a vector claiming an error cannot be committed unless
+    # it genuinely raises one -- the same discipline as every other section.
+    fresh = lambda: deal_from([Card.parse(c) for c in _pack_identity()])  # noqa: E731
+    error_ops = {
+        "a pack of thirty-one cards": lambda: deal_from(list(full_deck())[:31]),
+        "a pack with a duplicate": lambda: deal_from(
+            list(full_deck())[:31] + [full_deck()[0]]
+        ),
+        "elder exchanges nothing": lambda: fresh().exchange(
+            Player.ELDER, Hand.empty()
+        ),
+        "elder exchanges six": lambda: fresh().exchange(
+            Player.ELDER, Hand.of(*list(fresh().hand_of(Player.ELDER))[:6])
+        ),
+        "exchanging a card not held": lambda: fresh().exchange(
+            Player.ELDER, Hand.of(*list(fresh().hand_of(Player.YOUNGER))[:2])
+        ),
+        "younger exchanges out of turn": lambda: fresh().exchange(
+            Player.YOUNGER, Hand.of(*list(fresh().hand_of(Player.YOUNGER))[:2])
+        ),
+        "playing before the play": lambda: fresh().play(
+            Player.ELDER, next(iter(fresh().hand_of(Player.ELDER)))
+        ),
+        "following with the wrong suit when able": lambda: (
+            lambda d, c: d.play(Player.ELDER, c).play(
+                Player.YOUNGER,
+                next(
+                    iter(
+                        Hand(
+                            d.play(Player.ELDER, c).hand_of(Player.YOUNGER).bits
+                            & ~d.play(Player.ELDER, c)
+                            .hand_of(Player.YOUNGER)
+                            .in_suit(c.suit)
+                            .bits
+                        )
+                    )
+                ),
+            )
+        )(deal, next(iter(elder_hand.in_suit(shared)))),
+    }
+
+    errors = []
+    for name, op in error_ops.items():
+        try:
+            op()
+        except (ValueError, KeyError) as exc:
+            errors.append({"name": name, "raises": type(exc).__name__})
+        else:
+            raise SystemExit(f"rules error case {name!r} did not raise")
+
+    return {
+        "module": "rules",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The deal as a state machine, and the replay format the tutor and "
+            "any debugging session need (PLAN.md TODO 6). Each replay is a pack "
+            "written out in full plus a scripted sequence of actions -- discard "
+            "the first cards in hand order, declare everything, play the lowest "
+            "legal card. That policy is not good piquet; it is reproducible "
+            "piquet, which is the point. Never a seed."
+        ),
+        "constants": {
+            "HAND_SIZE": HAND_SIZE,
+            "TALON_SIZE": TALON_SIZE,
+            "ELDER_MAX_EXCHANGE": ELDER_MAX_EXCHANGE,
+            "CARTE_BLANCHE_SCORE": CARTE_BLANCHE_SCORE,
+            "TRICKS_PER_DEAL": TRICKS_PER_DEAL,
+            "CARDS_SCORE": CARDS_SCORE,
+            "CAPOT_SCORE": CAPOT_SCORE,
+        },
+        "phases": [p.value for p in Phase],
+        "tricks": tricks,
+        "legal_plays": legal,
+        "replays": replays,
+        "errors": errors,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -749,6 +1049,7 @@ def main() -> int:
         ("scoring", emit_scoring),
         ("style", emit_style),
         ("declarations", emit_declarations),
+        ("rules", emit_rules),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

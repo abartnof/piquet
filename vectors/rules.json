@@ -1,0 +1,2204 @@
+{
+  "module": "rules",
+  "generator": "tools/emit_vectors.py",
+  "note": "The deal as a state machine, and the replay format the tutor and any debugging session need (PLAN.md TODO 6). Each replay is a pack written out in full plus a scripted sequence of actions -- discard the first cards in hand order, declare everything, play the lowest legal card. That policy is not good piquet; it is reproducible piquet, which is the point. Never a seed.",
+  "constants": {
+    "HAND_SIZE": 12,
+    "TALON_SIZE": 8,
+    "ELDER_MAX_EXCHANGE": 5,
+    "CARTE_BLANCHE_SCORE": 10,
+    "TRICKS_PER_DEAL": 12,
+    "CARDS_SCORE": 10,
+    "CAPOT_SCORE": 40
+  },
+  "phases": [
+    "elder_exchange",
+    "younger_exchange",
+    "declare_point",
+    "declare_sequences",
+    "declare_sets",
+    "play",
+    "complete"
+  ],
+  "tricks": [
+    {
+      "leader": "elder",
+      "led": "KS",
+      "followed": "AS",
+      "winner": "younger",
+      "complete": true
+    },
+    {
+      "leader": "elder",
+      "led": "AS",
+      "followed": "KS",
+      "winner": "elder",
+      "complete": true
+    },
+    {
+      "leader": "elder",
+      "led": "7C",
+      "followed": "AH",
+      "winner": "elder",
+      "complete": true
+    },
+    {
+      "leader": "younger",
+      "led": "7C",
+      "followed": "8C",
+      "winner": "elder",
+      "complete": true
+    },
+    {
+      "leader": "younger",
+      "led": "AC",
+      "followed": "7H",
+      "winner": "younger",
+      "complete": true
+    }
+  ],
+  "legal_plays": [
+    {
+      "situation": "leading: anything in hand",
+      "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+      "led": null,
+      "legal": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS"
+    },
+    {
+      "situation": "following: must follow suit when able",
+      "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+      "led": "7D",
+      "legal": "AD"
+    },
+    {
+      "situation": "following: void in the suit led, so anything goes",
+      "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+      "led": "QC",
+      "legal": "AD 7H 8H 9H TH JH QH KH AH QS KS AS"
+    }
+  ],
+  "replays": [
+    {
+      "pack": [
+        "7C",
+        "8C",
+        "9C",
+        "TC",
+        "JC",
+        "QC",
+        "KC",
+        "AC",
+        "7D",
+        "8D",
+        "9D",
+        "TD",
+        "JD",
+        "QD",
+        "KD",
+        "AD",
+        "7H",
+        "8H",
+        "9H",
+        "TH",
+        "JH",
+        "QH",
+        "KH",
+        "AH",
+        "7S",
+        "8S",
+        "9S",
+        "TS",
+        "JS",
+        "QS",
+        "KS",
+        "AS"
+      ],
+      "steps": [
+        {
+          "action": "deal",
+          "after": {
+            "phase": "elder_exchange",
+            "elder_hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+            "younger_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+            "talon_taken": 0,
+            "talon_remaining": 8,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "elder",
+          "discard": "7C 8C 9C TC JC",
+          "after": {
+            "phase": "younger_exchange",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+            "talon_taken": 5,
+            "talon_remaining": 3,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "younger",
+          "discard": "JD QD KD",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "POINT",
+          "says": "point of 5 (44)",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "POINT",
+          "says": "point of 8 (75)",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SEQUENCES",
+          "says": "quint to the jack, quart to the ten, tierce to the ace",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SEQUENCES",
+          "says": "huitième to the ace, tierce to the ace",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SETS",
+          "says": "sunk",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SETS",
+          "says": "trio of aces",
+          "after": {
+            "phase": "play",
+            "elder_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "QC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 1,
+            "younger_total": 32,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "AD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 1,
+            "younger_total": 32,
+            "elder_tricks": 1,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "KC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 2,
+            "younger_total": 32,
+            "elder_tricks": 1,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "7H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 2,
+            "younger_total": 32,
+            "elder_tricks": 2,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "AC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "8H 9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 3,
+            "younger_total": 32,
+            "elder_tricks": 2,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "8H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 3,
+            "younger_total": 32,
+            "elder_tricks": 3,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "7D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "9H TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 4,
+            "younger_total": 32,
+            "elder_tricks": 3,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "9H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8D 9D TD 7S 8S 9S TS JS",
+            "younger_hand": "TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 4,
+            "younger_total": 32,
+            "elder_tricks": 4,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9D TD 7S 8S 9S TS JS",
+            "younger_hand": "TH JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 5,
+            "younger_total": 32,
+            "elder_tricks": 4,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "TH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9D TD 7S 8S 9S TS JS",
+            "younger_hand": "JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 5,
+            "younger_total": 32,
+            "elder_tricks": 5,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "9D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD 7S 8S 9S TS JS",
+            "younger_hand": "JH QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 6,
+            "younger_total": 32,
+            "elder_tricks": 5,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "JH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD 7S 8S 9S TS JS",
+            "younger_hand": "QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 6,
+            "younger_total": 32,
+            "elder_tricks": 6,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "7S 8S 9S TS JS",
+            "younger_hand": "QH KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 7,
+            "younger_total": 32,
+            "elder_tricks": 6,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "7S 8S 9S TS JS",
+            "younger_hand": "KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 7,
+            "younger_total": 32,
+            "elder_tricks": 7,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "7S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8S 9S TS JS",
+            "younger_hand": "KH AH QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 32,
+            "elder_tricks": 7,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8S 9S TS JS",
+            "younger_hand": "KH AH KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 33,
+            "elder_tricks": 7,
+            "younger_tricks": 1
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8S 9S TS JS",
+            "younger_hand": "AH KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 34,
+            "elder_tricks": 7,
+            "younger_tricks": 1
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9S TS JS",
+            "younger_hand": "AH KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 34,
+            "elder_tricks": 7,
+            "younger_tricks": 2
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "AH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9S TS JS",
+            "younger_hand": "KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 35,
+            "elder_tricks": 7,
+            "younger_tricks": 2
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "9S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TS JS",
+            "younger_hand": "KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 35,
+            "elder_tricks": 7,
+            "younger_tricks": 3
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TS JS",
+            "younger_hand": "AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 36,
+            "elder_tricks": 7,
+            "younger_tricks": 3
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JS",
+            "younger_hand": "AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 36,
+            "elder_tricks": 7,
+            "younger_tricks": 4
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "AS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JS",
+            "younger_hand": "",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 8,
+            "younger_total": 37,
+            "elder_tricks": 7,
+            "younger_tricks": 4
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "JS",
+          "after": {
+            "phase": "complete",
+            "elder_hand": "",
+            "younger_hand": "",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 18,
+            "younger_total": 98,
+            "elder_tricks": 7,
+            "younger_tricks": 5
+          }
+        }
+      ],
+      "final": {
+        "phase": "complete",
+        "elder_hand": "",
+        "younger_hand": "",
+        "talon_taken": 8,
+        "talon_remaining": 0,
+        "elder_total": 18,
+        "younger_total": 98,
+        "elder_tricks": 7,
+        "younger_tricks": 5,
+        "repique": "younger",
+        "pique": null,
+        "events": [
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♣"
+          },
+          {
+            "player": "younger",
+            "amount": 8,
+            "category": "POINT",
+            "detail": "point of 8 (75)"
+          },
+          {
+            "player": "younger",
+            "amount": 21,
+            "category": "SEQUENCES",
+            "detail": "huitième to the ace, tierce to the ace"
+          },
+          {
+            "player": "younger",
+            "amount": 3,
+            "category": "SETS",
+            "detail": "trio of aces"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 7♦"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 8♦"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 9♦"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 10♦"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 7♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "wins with Q♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♥"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♥"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "last trick"
+          },
+          {
+            "player": "elder",
+            "amount": 10,
+            "category": "CARDS",
+            "detail": "the cards"
+          },
+          {
+            "player": "younger",
+            "amount": 60,
+            "category": "BONUS",
+            "detail": "repique"
+          }
+        ]
+      },
+      "name": "the pack in index order"
+    },
+    {
+      "pack": [
+        "AS",
+        "KS",
+        "QS",
+        "JS",
+        "TS",
+        "9S",
+        "8S",
+        "7S",
+        "AH",
+        "KH",
+        "QH",
+        "JH",
+        "TH",
+        "9H",
+        "8H",
+        "7H",
+        "AD",
+        "KD",
+        "QD",
+        "JD",
+        "TD",
+        "9D",
+        "8D",
+        "7D",
+        "AC",
+        "KC",
+        "QC",
+        "JC",
+        "TC",
+        "9C",
+        "8C",
+        "7C"
+      ],
+      "steps": [
+        {
+          "action": "deal",
+          "after": {
+            "phase": "elder_exchange",
+            "elder_hand": "JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+            "younger_hand": "7D 8D 9D TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 0,
+            "talon_remaining": 8,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "elder",
+          "discard": "JH QH KH AH 7S",
+          "after": {
+            "phase": "younger_exchange",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7D 8D 9D TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 5,
+            "talon_remaining": 3,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "younger",
+          "discard": "7D 8D 9D",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "POINT",
+          "says": "point of 7 (68)",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 0,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "POINT",
+          "says": "point of 5 (51)",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 7,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SEQUENCES",
+          "says": "septième to the ace, quint to the ace",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 7,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SEQUENCES",
+          "says": "quint to the ace, quart to the ten, tierce to the nine",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 39,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SETS",
+          "says": "sunk",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 39,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SETS",
+          "says": "sunk",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TC JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 39,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "7C 8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 40,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "7C",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JC QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 40,
+            "younger_total": 0,
+            "elder_tricks": 1,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "JC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "8C 9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 41,
+            "younger_total": 0,
+            "elder_tricks": 1,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "8C",
+          "after": {
+            "phase": "play",
+            "elder_hand": "QC KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 41,
+            "younger_total": 0,
+            "elder_tricks": 2,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "QC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "9C TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 42,
+            "younger_total": 0,
+            "elder_tricks": 2,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "9C",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KC AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 42,
+            "younger_total": 0,
+            "elder_tricks": 3,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "KC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "TD JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 43,
+            "younger_total": 0,
+            "elder_tricks": 3,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "TD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AC 8S 9S TS JS QS KS AS",
+            "younger_hand": "JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 43,
+            "younger_total": 0,
+            "elder_tricks": 4,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "AC",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8S 9S TS JS QS KS AS",
+            "younger_hand": "JD QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 44,
+            "younger_total": 0,
+            "elder_tricks": 4,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "JD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8S 9S TS JS QS KS AS",
+            "younger_hand": "QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 44,
+            "younger_total": 0,
+            "elder_tricks": 5,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9S TS JS QS KS AS",
+            "younger_hand": "QD KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 45,
+            "younger_total": 0,
+            "elder_tricks": 5,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9S TS JS QS KS AS",
+            "younger_hand": "KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 45,
+            "younger_total": 0,
+            "elder_tricks": 6,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "9S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TS JS QS KS AS",
+            "younger_hand": "KD AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 46,
+            "younger_total": 0,
+            "elder_tricks": 6,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TS JS QS KS AS",
+            "younger_hand": "AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 46,
+            "younger_total": 0,
+            "elder_tricks": 7,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JS QS KS AS",
+            "younger_hand": "AD 7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 47,
+            "younger_total": 0,
+            "elder_tricks": 7,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "AD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "JS QS KS AS",
+            "younger_hand": "7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 47,
+            "younger_total": 0,
+            "elder_tricks": 8,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "JS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "QS KS AS",
+            "younger_hand": "7H 8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 48,
+            "younger_total": 0,
+            "elder_tricks": 8,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "7H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "QS KS AS",
+            "younger_hand": "8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 48,
+            "younger_total": 0,
+            "elder_tricks": 9,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "QS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KS AS",
+            "younger_hand": "8H 9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 49,
+            "younger_total": 0,
+            "elder_tricks": 9,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "8H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "KS AS",
+            "younger_hand": "9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 49,
+            "younger_total": 0,
+            "elder_tricks": 10,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "KS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AS",
+            "younger_hand": "9H TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 50,
+            "younger_total": 0,
+            "elder_tricks": 10,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "9H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AS",
+            "younger_hand": "TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 50,
+            "younger_total": 0,
+            "elder_tricks": 11,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "AS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "",
+            "younger_hand": "TH",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 51,
+            "younger_total": 0,
+            "elder_tricks": 11,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "TH",
+          "after": {
+            "phase": "complete",
+            "elder_hand": "",
+            "younger_hand": "",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 152,
+            "younger_total": 0,
+            "elder_tricks": 12,
+            "younger_tricks": 0
+          }
+        }
+      ],
+      "final": {
+        "phase": "complete",
+        "elder_hand": "",
+        "younger_hand": "",
+        "talon_taken": 8,
+        "talon_remaining": 0,
+        "elder_total": 152,
+        "younger_total": 0,
+        "elder_tricks": 12,
+        "younger_tricks": 0,
+        "repique": "elder",
+        "pique": null,
+        "events": [
+          {
+            "player": "elder",
+            "amount": 7,
+            "category": "POINT",
+            "detail": "point of 7 (68)"
+          },
+          {
+            "player": "elder",
+            "amount": 32,
+            "category": "SEQUENCES",
+            "detail": "septième to the ace, quint to the ace"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 10♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads J♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♣"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 8♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 9♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 10♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads J♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♠"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "last trick"
+          },
+          {
+            "player": "elder",
+            "amount": 40,
+            "category": "CARDS",
+            "detail": "capot"
+          },
+          {
+            "player": "elder",
+            "amount": 60,
+            "category": "BONUS",
+            "detail": "repique"
+          }
+        ]
+      },
+      "name": "the pack reversed"
+    },
+    {
+      "pack": [
+        "7C",
+        "8C",
+        "9C",
+        "TC",
+        "AC",
+        "7D",
+        "8D",
+        "9D",
+        "TD",
+        "AD",
+        "7H",
+        "8H",
+        "JC",
+        "QC",
+        "KC",
+        "JD",
+        "QD",
+        "KD",
+        "JH",
+        "QH",
+        "KH",
+        "JS",
+        "QS",
+        "KS",
+        "9H",
+        "TH",
+        "AH",
+        "7S",
+        "8S",
+        "9S",
+        "TS",
+        "AS"
+      ],
+      "steps": [
+        {
+          "action": "deal",
+          "after": {
+            "phase": "elder_exchange",
+            "elder_hand": "7C 8C 9C TC AC 7D 8D 9D TD AD 7H 8H",
+            "younger_hand": "JC QC KC JD QD KD JH QH KH JS QS KS",
+            "talon_taken": 0,
+            "talon_remaining": 8,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "elder",
+          "discard": "7C 8C 9C TC AC",
+          "after": {
+            "phase": "younger_exchange",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JC QC KC JD QD KD JH QH KH JS QS KS",
+            "talon_taken": 5,
+            "talon_remaining": 3,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "exchange",
+          "player": "younger",
+          "discard": "JC QC KC",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "POINT",
+          "says": "point of 5 (45)",
+          "after": {
+            "phase": "declare_point",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "POINT",
+          "says": "point of 6 (60)",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SEQUENCES",
+          "says": "quart to the ten, quart to the ten",
+          "after": {
+            "phase": "declare_sequences",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SEQUENCES",
+          "says": "sixième to the ace, tierce to the king, tierce to the king",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "elder",
+          "category": "SETS",
+          "says": "sunk",
+          "after": {
+            "phase": "declare_sets",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "declare",
+          "player": "younger",
+          "category": "SETS",
+          "says": "trio of kings, trio of queens, trio of jacks",
+          "after": {
+            "phase": "play",
+            "elder_hand": "7D 8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 10,
+            "younger_total": 0,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "7D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JD QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 37,
+            "elder_tricks": 0,
+            "younger_tricks": 0
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "JD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "QD KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 38,
+            "elder_tricks": 0,
+            "younger_tricks": 1
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "8D 9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 39,
+            "elder_tricks": 0,
+            "younger_tricks": 1
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "KD JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 39,
+            "elder_tricks": 0,
+            "younger_tricks": 2
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "9D TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 40,
+            "elder_tricks": 0,
+            "younger_tricks": 2
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "9D",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "JH QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 40,
+            "elder_tricks": 0,
+            "younger_tricks": 3
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "JH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 7H 8H 9H TH AH 7S 8S",
+            "younger_hand": "QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 41,
+            "elder_tricks": 0,
+            "younger_tricks": 3
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "7H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 8H 9H TH AH 7S 8S",
+            "younger_hand": "QH KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 41,
+            "elder_tricks": 0,
+            "younger_tricks": 4
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 8H 9H TH AH 7S 8S",
+            "younger_hand": "KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 42,
+            "elder_tricks": 0,
+            "younger_tricks": 4
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 9H TH AH 7S 8S",
+            "younger_hand": "KH 9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 42,
+            "elder_tricks": 0,
+            "younger_tricks": 5
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD 9H TH AH 7S 8S",
+            "younger_hand": "9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 43,
+            "elder_tricks": 0,
+            "younger_tricks": 5
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "9H",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH 7S 8S",
+            "younger_hand": "9S TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 43,
+            "elder_tricks": 0,
+            "younger_tricks": 6
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "9S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH 7S 8S",
+            "younger_hand": "TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 44,
+            "elder_tricks": 0,
+            "younger_tricks": 6
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "7S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH 8S",
+            "younger_hand": "TS JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 44,
+            "elder_tricks": 0,
+            "younger_tricks": 7
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "TS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH 8S",
+            "younger_hand": "JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 45,
+            "elder_tricks": 0,
+            "younger_tricks": 7
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "8S",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH",
+            "younger_hand": "JS QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 45,
+            "elder_tricks": 0,
+            "younger_tricks": 8
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "JS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TD AD TH AH",
+            "younger_hand": "QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 46,
+            "elder_tricks": 0,
+            "younger_tricks": 8
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AD TH AH",
+            "younger_hand": "QS KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 46,
+            "elder_tricks": 0,
+            "younger_tricks": 9
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "QS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AD TH AH",
+            "younger_hand": "KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 47,
+            "elder_tricks": 0,
+            "younger_tricks": 9
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "AD",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TH AH",
+            "younger_hand": "KS AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 47,
+            "elder_tricks": 0,
+            "younger_tricks": 10
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "KS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "TH AH",
+            "younger_hand": "AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 48,
+            "elder_tricks": 0,
+            "younger_tricks": 10
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "TH",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AH",
+            "younger_hand": "AS",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 48,
+            "elder_tricks": 0,
+            "younger_tricks": 11
+          }
+        },
+        {
+          "action": "play",
+          "player": "younger",
+          "card": "AS",
+          "after": {
+            "phase": "play",
+            "elder_hand": "AH",
+            "younger_hand": "",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 49,
+            "elder_tricks": 0,
+            "younger_tricks": 11
+          }
+        },
+        {
+          "action": "play",
+          "player": "elder",
+          "card": "AH",
+          "after": {
+            "phase": "complete",
+            "elder_hand": "",
+            "younger_hand": "",
+            "talon_taken": 8,
+            "talon_remaining": 0,
+            "elder_total": 11,
+            "younger_total": 90,
+            "elder_tricks": 0,
+            "younger_tricks": 12
+          }
+        }
+      ],
+      "final": {
+        "phase": "complete",
+        "elder_hand": "",
+        "younger_hand": "",
+        "talon_taken": 8,
+        "talon_remaining": 0,
+        "elder_total": 11,
+        "younger_total": 90,
+        "elder_tricks": 0,
+        "younger_tricks": 12,
+        "repique": null,
+        "pique": null,
+        "events": [
+          {
+            "player": "elder",
+            "amount": 10,
+            "category": "CARTE_BLANCHE",
+            "detail": "carte blanche"
+          },
+          {
+            "player": "elder",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 7♦"
+          },
+          {
+            "player": "younger",
+            "amount": 6,
+            "category": "POINT",
+            "detail": "point of 6 (60)"
+          },
+          {
+            "player": "younger",
+            "amount": 22,
+            "category": "SEQUENCES",
+            "detail": "sixième to the ace, tierce to the king, tierce to the king"
+          },
+          {
+            "player": "younger",
+            "amount": 9,
+            "category": "SETS",
+            "detail": "trio of kings, trio of queens, trio of jacks"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "wins with J♦"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♦"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♦"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads J♥"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♥"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♥"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 9♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads 10♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads J♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads Q♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads K♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "leads A♠"
+          },
+          {
+            "player": "younger",
+            "amount": 1,
+            "category": "PLAY",
+            "detail": "last trick"
+          },
+          {
+            "player": "younger",
+            "amount": 40,
+            "category": "CARDS",
+            "detail": "capot"
+          }
+        ]
+      },
+      "name": "elder is dealt a carte blanche"
+    }
+  ],
+  "errors": [
+    {
+      "name": "a pack of thirty-one cards",
+      "raises": "ValueError"
+    },
+    {
+      "name": "a pack with a duplicate",
+      "raises": "ValueError"
+    },
+    {
+      "name": "elder exchanges nothing",
+      "raises": "ValueError"
+    },
+    {
+      "name": "elder exchanges six",
+      "raises": "ValueError"
+    },
+    {
+      "name": "exchanging a card not held",
+      "raises": "ValueError"
+    },
+    {
+      "name": "younger exchanges out of turn",
+      "raises": "ValueError"
+    },
+    {
+      "name": "playing before the play",
+      "raises": "ValueError"
+    },
+    {
+      "name": "following with the wrong suit when able",
+      "raises": "ValueError"
+    }
+  ]
+}

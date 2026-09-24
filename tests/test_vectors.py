@@ -672,3 +672,188 @@ def test_remaining_vector_files_are_self_describing(styvec, dvec):
         assert styvec[section], f"style section {section!r} is empty"
     for section in ("dialogue", "matches", "validate"):
         assert dvec[section], f"declarations section {section!r} is empty"
+
+
+# ===========================================================================
+# rules -- the deal as a state machine, and the replay format
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def rvec() -> dict:
+    return load("rules")
+
+
+def test_rules_constants(rvec):
+    import piquet.rules as rules
+
+    for name, value in rvec["constants"].items():
+        assert getattr(rules, name) == value, name
+
+
+def test_phases_are_named_and_ordered_as_recorded(rvec):
+    from piquet.rules import Phase
+
+    assert [p.value for p in Phase] == rvec["phases"]
+
+
+def test_the_higher_card_of_the_suit_led_takes_the_trick(rvec):
+    """There are no trumps, so a card of another suit never wins, however high.
+
+    `7C` beaten by `AH` is still elder's trick. This is the rule newcomers
+    most reliably get wrong, and it is one line in the engine.
+    """
+    from piquet.cards import Card
+    from piquet.rules import Trick
+    from piquet.scoring import Player
+
+    players = {"elder": Player.ELDER, "younger": Player.YOUNGER}
+    for case in rvec["tricks"]:
+        trick = Trick(
+            players[case["leader"]],
+            Card.parse(case["led"]),
+            Card.parse(case["followed"]),
+        )
+        assert trick.complete is case["complete"]
+        assert trick.winner.value == case["winner"], case
+
+
+def test_an_incomplete_trick_has_no_winner():
+    from piquet.cards import Card
+    from piquet.rules import Trick
+    from piquet.scoring import Player
+
+    trick = Trick(Player.ELDER, Card.parse("AS"))
+    assert not trick.complete
+    with pytest.raises(ValueError):
+        trick.winner
+
+
+def _replay(pack_codes, steps):
+    """Drive a deal through a recorded script, yielding (step, deal) as it goes.
+
+    This is the replay format PLAN.md TODO 6 asks for. It is written against
+    `deal_from` and an explicit pack, never a seed, because no two languages
+    share a random number generator.
+    """
+    from piquet.cards import Card, Hand
+    from piquet.rules import deal_from
+    from piquet.declarations import Declaration
+    from piquet.scoring import Category, Player
+
+    players = {"elder": Player.ELDER, "younger": Player.YOUNGER}
+    deal = deal_from([Card.parse(c) for c in pack_codes])
+
+    for step in steps:
+        if step["action"] == "deal":
+            pass
+        elif step["action"] == "exchange":
+            deal = deal.exchange(
+                players[step["player"]], parse_hand(step["discard"])
+            )
+        elif step["action"] == "declare":
+            player = players[step["player"]]
+            deal = deal.declare(
+                player,
+                Declaration.full(deal.hand_of(player), Category[step["category"]]),
+            )
+        elif step["action"] == "play":
+            deal = deal.play(players[step["player"]], Card.parse(step["card"]))
+        else:
+            raise AssertionError(f"unknown action {step['action']!r}")
+        yield step, deal
+
+
+def _state_of(deal) -> dict:
+    from piquet.scoring import Player
+
+    return {
+        "phase": deal.phase.value,
+        "elder_hand": deal.hand_of(Player.ELDER).code,
+        "younger_hand": deal.hand_of(Player.YOUNGER).code,
+        "talon_taken": deal.talon_taken,
+        "talon_remaining": deal.talon_remaining,
+        "elder_total": deal.log.total(Player.ELDER),
+        "younger_total": deal.log.total(Player.YOUNGER),
+        "elder_tricks": deal.tricks_won(Player.ELDER),
+        "younger_tricks": deal.tricks_won(Player.YOUNGER),
+    }
+
+
+def test_every_replay_reproduces_its_recorded_states(rvec):
+    """The whole engine, end to end, checked at every single step.
+
+    A divergence anywhere -- a mis-dealt talon, an exchange taking from the
+    wrong end of the stock, a declaration scoring in the wrong category, a
+    trick going to the wrong player -- shows up at the step it happened rather
+    than as a wrong number at the end.
+    """
+    for replay in rvec["replays"]:
+        for i, (step, deal) in enumerate(_replay(replay["pack"], replay["steps"])):
+            assert _state_of(deal) == step["after"], (
+                f"{replay['name']}: diverged at step {i} ({step['action']})"
+            )
+
+
+def test_every_replay_finishes_and_settles(rvec):
+    from piquet.scoring import Player
+
+    for replay in rvec["replays"]:
+        deal = None
+        for _, deal in _replay(replay["pack"], replay["steps"]):
+            pass
+        final = replay["final"]
+        assert deal.phase.value == "complete", replay["name"]
+        assert _state_of(deal) == {k: final[k] for k in _state_of(deal)}
+        assert (deal.log.repique.value if deal.log.repique else None) == final["repique"]
+        assert (deal.log.pique.value if deal.log.pique else None) == final["pique"]
+        assert [
+            {
+                "player": e.player.value,
+                "amount": e.amount,
+                "category": e.category.name,
+                "detail": e.detail,
+            }
+            for e in deal.log
+        ] == final["events"]
+
+
+def test_all_twelve_tricks_are_accounted_for(rvec):
+    from piquet.rules import TRICKS_PER_DEAL
+
+    for replay in rvec["replays"]:
+        final = replay["final"]
+        assert final["elder_tricks"] + final["younger_tricks"] == TRICKS_PER_DEAL
+
+
+def test_carte_blanche_is_logged_before_anything_else(rvec):
+    """Announced as soon as it is noticed, which is also where Law 67 puts it."""
+    for replay in rvec["replays"]:
+        events = replay["final"]["events"]
+        blanche = [i for i, e in enumerate(events) if e["category"] == "CARTE_BLANCHE"]
+        if blanche:
+            assert blanche == [0], replay["name"]
+
+
+def test_legal_plays_follow_suit_when_able(rvec):
+    for case in rvec["legal_plays"]:
+        hand, legal = parse_hand(case["hand"]), parse_hand(case["legal"])
+        assert (legal - hand).bits == 0, "a legal play must be in hand"
+        if case["led"] is None:
+            assert legal.bits == hand.bits, "the leader may lead anything"
+            continue
+        from piquet.cards import Card
+
+        led_suit = Card.parse(case["led"]).suit
+        in_suit = hand.in_suit(led_suit)
+        if in_suit:
+            assert legal.bits == in_suit.bits, "must follow suit when able"
+        else:
+            assert legal.bits == hand.bits, "void: anything goes"
+
+
+def test_rules_vector_file_is_self_describing(rvec):
+    assert rvec["module"] == "rules"
+    for section in ("constants", "phases", "tricks", "legal_plays", "replays", "errors"):
+        assert rvec[section], f"section {section!r} is empty"
+    assert len(rvec["errors"]) >= 7
