@@ -25,6 +25,8 @@ pub mod test_support {
 }
 pub mod observation;
 pub mod partie;
+pub mod rng;
 pub mod rules;
 pub mod scoring;
 pub mod solver;
+pub mod style;

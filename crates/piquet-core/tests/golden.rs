@@ -1404,3 +1404,97 @@ fn the_two_languages_agree_to_within_an_ulp() {
         "most values should still be bit-identical, not {exact} of {total}"
     );
 }
+
+// -- style ------------------------------------------------------------------
+
+use piquet_core::style::{Style, BALANCED, CALIBRATED};
+
+#[test]
+fn the_calibrated_bands_are_the_measured_ones() {
+    // Fitted, not chosen, and load-bearing: each band is narrow enough that an
+    // extreme setting costs under about a point a deal, which is what stops
+    // style becoming a second skill dial.
+    let vec = vectors("style.json");
+    let want = vec["calibrated"].as_object().unwrap();
+    assert_eq!(CALIBRATED.len(), want.len());
+    for (name, low, high) in CALIBRATED {
+        let bounds = want[name].as_array().unwrap();
+        assert_eq!(low, bounds[0].as_f64().unwrap(), "{name}");
+        assert_eq!(high, bounds[1].as_f64().unwrap(), "{name}");
+    }
+}
+
+#[test]
+fn the_balanced_style_is_neutral() {
+    let vec = vectors("style.json");
+    let want = &vec["balanced"];
+    assert_eq!(
+        BALANCED.discard_boldness,
+        want["discard_boldness"].as_f64().unwrap()
+    );
+    assert_eq!(BALANCED.sinking, want["sinking"].as_f64().unwrap());
+    assert_eq!(
+        BALANCED.guard_retention,
+        want["guard_retention"].as_f64().unwrap()
+    );
+}
+
+#[test]
+fn styles_describe_themselves_relative_to_their_band() {
+    // Read against the raw 0-to-1 scale every opponent would be "even-handed".
+    let vec = vectors("style.json");
+    for case in vec["styles"].as_array().unwrap() {
+        let style = Style::new(
+            case["discard_boldness"].as_f64().unwrap(),
+            case["sinking"].as_f64().unwrap(),
+            case["guard_retention"].as_f64().unwrap(),
+        )
+        .unwrap();
+        assert_eq!(
+            style.describe(),
+            case["describe"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn a_style_outside_zero_to_one_is_refused() {
+    let vec = vectors("style.json");
+    for case in vec["errors"].as_array().unwrap() {
+        let fields = case["fields"].as_object().unwrap();
+        let get = |name: &str, fallback: f64| {
+            fields
+                .get(name)
+                .and_then(|v| v.as_f64())
+                .unwrap_or(fallback)
+        };
+        assert!(
+            Style::new(
+                get("discard_boldness", 0.5),
+                get("sinking", 0.0),
+                get("guard_retention", 0.5)
+            )
+            .is_err(),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn a_drawn_style_lands_inside_its_bands() {
+    // The draw itself cannot match Python's -- `uniform` is a different
+    // algorithm on a different stream -- but the bands it respects must.
+    let mut rng = piquet_core::rng::Rng::seeded(1674);
+    for _ in 0..200 {
+        let style = Style::random(&mut rng);
+        for (name, low, high) in CALIBRATED {
+            let value = match name {
+                "discard_boldness" => style.discard_boldness,
+                "sinking" => style.sinking,
+                _ => style.guard_retention,
+            };
+            assert!((low..=high).contains(&value), "{name} drew {value}");
+        }
+    }
+}
