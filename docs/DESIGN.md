@@ -1119,23 +1119,49 @@ which is exactly what a JIT or a compiler eats. It also means §2.1's 71-bit
 memo key is a *correctness* blocker in JavaScript and not a performance one —
 restructuring it costs perhaps 10%, not 5×.
 
-### 13.5 The candidates
+### 13.5 The candidates, ranked against the four goals
 
-| | 12-card exact solve | Milestone 8 (solver-from-6) | one language? |
-|---|---|---|---|
-| CPython today | 45 s | 177 core-h | ✓ |
-| **TypeScript** | ~1–2 s | ~4–9 core-h | ✓ |
-| **Rust → wasm** | ~0.2–0.5 s | ~1–2 core-h | ✓ via Leptos/Dioxus |
+Andrew's four goals, in his words: **quick training**, a **smart game**, a
+**fast game**, a **GUI**. Two things have to be said before the table is
+readable.
 
-**Every ratio above is an estimate and none was measured** — there is no Node
-and no Cargo on the development machine. That is a departure from how this
-project decides anything and it is why §13.7 exists.
+**Goals 2 and 3 are the same axis.** The game is *already* fast — but only
+because `SolverAgent.exact_from` caps the search at eight tricks. Nobody needs
+to buy responsiveness; it is already paid for. What a faster language buys is
+**smart without giving up fast**, by moving that cap. Read every row as how
+far the frontier moves.
 
-Rust does **not** force you back into JavaScript, which an earlier draft of
-this reasoning got wrong. Leptos, Dioxus and Yew let the UI be written in Rust
-and generate the DOM work; Dioxus can also render to a **terminal**, which
-suits "a GUI should be possible but text is fine" exactly. Pyodide is dead on
-arrival — several megabytes of runtime before any of our code arrives.
+**The 5 MB budget is a hard gate on goal 4.** Any language that must ship its
+own runtime into the browser loses before a line of our code arrives. That
+eliminates CPython (Pyodide is several MB), PyPy, and C#/Blazor outright —
+though all three remain usable for goals 1–3 as research or desktop languages.
+
+Ranking 1 = best. **Every speed figure below is an estimate.** There is no
+Node, Cargo, PyPy or dotnet on the development machine, so none of this was
+measured, which is why §13.7 is a decision procedure and not a decision.
+
+| Language | 1. Quick training | 2. Smart game | 3. Fast game | 4. GUI in HTML | Cost to get there |
+|---|---|---|---|---|---|
+| **Rust** → wasm (+PyO3) | **1** — ~1–2 core-h | **1** — 12-card solve ~0.3 s; CFR most plausible | **1** | **2** — Leptos/Dioxus; Dioxus also renders to a terminal | days: full rewrite |
+| **TypeScript** | 3 — ~4–9 core-h | 2 — 12-card solve ~1–2 s | 2 | **1** — native DOM, zero payload, Node for a TUI | days: full rewrite |
+| **PyPy** | **2** — ~4–18 core-h | 4 — *desktop only* | — | ✗ **gated out** | **hours: no rewrite** |
+| **CPython** (today) | 6 — 177 core-h | 6 — 8 tricks, 30 worlds, linearised partie, CFR doubtful | 5 | ✗ **gated out** | none |
+| **Go / TinyGo** | 4 | 3 | 3 | 4 — `syscall/js` is clunky; TinyGo fixes size, not ergonomics | days |
+| **C# / Blazor** | 5 | 3 | 4 | ✗ **gated out** — multi-MB runtime | days |
+
+**Rust wins three of four and is second on the fourth**, and the column it
+loses is the one where "second" means *you write Rust and a framework
+generates the DOM* rather than *you write the DOM language yourself*. That is
+not a large loss.
+
+**PyPy is the anomaly, and the reason not to decide in a hurry.** It is the
+only row whose cost is measured in hours rather than days, because it runs the
+code that already exists. It can never ship in a browser, so it is worthless
+for goal 4 — but it may hand over goal 1 outright, this week, with no
+commitment to anything.
+
+**CPython loses every column except "you already have it"**, which is not
+nothing: 447 tests and a playable game exist in it today.
 
 ### 13.6 Two costs that are easy to miss
 

@@ -51,7 +51,10 @@ threat, not a curiosity.
 
 ## Next action
 
-Four candidates. The first two are cheap and unblock everything else.
+Five candidates. The first three are cheap and unblock everything else.
+`docs/DESIGN.md` §13.5 ranks every language option against Andrew's four
+goals — quick training, a smart game, a fast game, a GUI — and §13.2 has the
+distinction the whole question turns on.
 
 1. **Golden JSON vectors** (TODO 5). The specification that makes any rewrite
    verifiable, and the only work here that *cannot be wasted* whichever
@@ -62,19 +65,25 @@ Four candidates. The first two are cheap and unblock everything else.
    Write them against `deal_from`, never against a seed: no two languages
    share a random number generator.
 
-2. **Port `solver.py` to Rust and measure it** — 355 lines, self-contained,
+2. **Try PyPy first — hours, not days.** It runs the code that already
+   exists, so it is the only option whose cost is measured in hours, and it
+   may hand over goal 1 (quick training) outright with no commitment to any
+   rewrite. It can never ship in a browser, which is exactly why it does not
+   compete with the decision below.
+
+3. **Port `solver.py` to Rust and measure it** — 355 lines, self-contained,
    and every speed estimate in `docs/DESIGN.md` §13 rests on it. A day's work,
    and it turns those estimates into a number. ~100× and Rust is worth the
    rewrite; ~20× and TypeScript wins on effort, and a day is the cheapest way
    to have found that out.
 
-3. **Milestone 9, the training mode.** The largest unmet *product* requirement
+4. **Milestone 9, the training mode.** The largest unmet *product* requirement
    and it needs no compute. `docs/DESIGN.md` §8 is corrected — the decomposed
    evaluation it assumed was never built — and the replacement is
    ladder-based: rank a move by *which rung would play it*, so the explanation
    names a skill the player can go and learn. `explain.py` is owed.
 
-4. **Milestone 8, the exchange policy.** Priced, and the price depends on the
+5. **Milestone 8, the exchange policy.** Priced, and the price depends on the
    language decision. In CPython: 4.8M deal playouts is 4 core-hours with
    heuristic rollouts, 177 with solver-from-6, 3,332 with solver-from-8 — about
    $0.03, $0.83–1.94 and $16–36 respectively on an n2-standard-32 Spot
