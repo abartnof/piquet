@@ -999,3 +999,215 @@ fn an_invalid_deal_or_move_is_refused() {
     let first = deal.hand_of(Player::Elder).cards().next().unwrap();
     assert!(deal.play(Player::Elder, first).is_err(), "before the play");
 }
+
+// -- observation: what each player is allowed to know ------------------------
+
+use piquet_core::observation::{view_for, View};
+
+/// Re-derive the scripted deal, yielding both players' views at each step.
+///
+/// Mirrors `tools/emit_vectors.py`. The policy is deterministic, so
+/// re-deriving it here also checks that it is genuinely reproducible rather
+/// than merely recorded.
+fn observe(pack: &[piquet_core::cards::Card], elder_takes: Option<usize>) -> Vec<(View, Hand)> {
+    let mut deal = deal_from(pack).unwrap();
+    let mut out = Vec::new();
+
+    let mut capture = |deal: &Deal, out: &mut Vec<(View, Hand)>| {
+        for player in [Player::Elder, Player::Younger] {
+            out.push((
+                view_for(deal, player, None),
+                deal.hand_of(player.opponent()),
+            ));
+        }
+    };
+
+    capture(&deal, &mut out);
+    for player in [Player::Elder, Player::Younger] {
+        let limit = deal.exchange_limit(player);
+        let take = match (player, elder_takes) {
+            (Player::Elder, Some(n)) => n,
+            _ => limit,
+        };
+        let discard =
+            Hand::of(&deal.hand_of(player).cards().take(take).collect::<Vec<_>>()).unwrap();
+        deal = deal.exchange(player, discard).unwrap();
+        capture(&deal, &mut out);
+    }
+    while matches!(
+        deal.phase,
+        Phase::DeclarePoint | Phase::DeclareSequences | Phase::DeclareSets
+    ) {
+        let player = deal.to_declare().unwrap();
+        let category = deal.declaring_category().unwrap();
+        let declaration = Declaration::full(deal.hand_of(player), category);
+        deal = deal.declare(player, declaration).unwrap();
+        capture(&deal, &mut out);
+    }
+    while deal.phase == Phase::Play {
+        let player = deal.to_play().unwrap();
+        let card = deal.legal_plays(Some(player)).cards().next().unwrap();
+        deal = deal.play(player, card).unwrap();
+        capture(&deal, &mut out);
+    }
+    out
+}
+
+#[test]
+fn every_view_reproduces_field_for_field() {
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        let observed = observe(&pack, elder_takes);
+        let recorded = run["snapshots"].as_array().unwrap();
+        assert_eq!(observed.len(), recorded.len(), "{}", run["name"]);
+
+        for ((view, _), want) in observed.iter().zip(recorded) {
+            let where_ = format!("{}: step {} {}", run["name"], want["step"], want["me"]);
+            assert_eq!(view.me.name(), want["me"].as_str().unwrap(), "{where_}");
+            assert_eq!(
+                view.phase.value(),
+                want["phase"].as_str().unwrap(),
+                "{where_}"
+            );
+            assert_eq!(view.hand.code(), want["hand"].as_str().unwrap(), "{where_}");
+            assert_eq!(
+                view.my_discards.code(),
+                want["my_discards"].as_str().unwrap(),
+                "{where_}"
+            );
+            let talon: Vec<String> = view.talon_seen.iter().map(|c| c.code()).collect();
+            let want_talon: Vec<&str> = want["talon_seen"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_str().unwrap())
+                .collect();
+            assert_eq!(talon, want_talon, "{where_}");
+            assert_eq!(
+                view.watched_them_take.code(),
+                want["watched_them_take"].as_str().unwrap(),
+                "{where_}"
+            );
+            assert_eq!(
+                view.unseen().code(),
+                want["unseen"].as_str().unwrap(),
+                "{where_}: unseen"
+            );
+            assert_eq!(
+                view.legal_plays.code(),
+                want["legal_plays"].as_str().unwrap(),
+                "{where_}"
+            );
+            assert_eq!(view.to_act, want["to_act"].as_bool().unwrap(), "{where_}");
+            assert_eq!(
+                view.tricks.len() as u64,
+                want["tricks_played"].as_u64().unwrap(),
+                "{where_}"
+            );
+        }
+    }
+}
+
+#[test]
+fn no_view_ever_accounts_for_the_opponents_hand() {
+    // The invariant the whole module exists to maintain. A view that leaks
+    // fails this immediately, whatever its fields say.
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        for (view, opponent_hand) in observe(&pack, elder_takes) {
+            let leaked = Hand(opponent_hand.0 & !view.unseen().0 & !view.watched_them_take.0);
+            assert_eq!(
+                leaked.0,
+                0,
+                "{}: {} at {} can account for {} of the opponent's hand",
+                run["name"],
+                view.me.name(),
+                view.phase.value(),
+                leaked.code()
+            );
+        }
+    }
+}
+
+#[test]
+fn elder_hears_nothing_from_younger_until_he_has_led() {
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        for (view, _) in observe(&pack, elder_takes) {
+            if view.me != Player::Elder {
+                continue;
+            }
+            if view.tricks.is_empty() && view.current_trick.is_none() {
+                assert!(view.heard.is_empty(), "younger has not spoken yet");
+                assert!(view.seen.is_empty(), "and has shown nothing");
+            }
+        }
+    }
+}
+
+#[test]
+fn only_elder_watches_a_draw_and_the_set_only_shrinks() {
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    let mut ever_watched = false;
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        let mut previous: Option<Hand> = None;
+        for (view, opponent_hand) in observe(&pack, elder_takes) {
+            if view.me == Player::Younger {
+                assert_eq!(view.watched_them_take.0, 0, "only elder watches a draw");
+                continue;
+            }
+            let watched = view.watched_them_take;
+            if !watched.is_empty() {
+                ever_watched = true;
+            }
+            assert_eq!(
+                watched.without(opponent_hand).0,
+                0,
+                "a watched card must really be in her hand"
+            );
+            // Monotonic only once the exchange is over: before that it goes
+            // from empty to populated, which is the draw happening.
+            if matches!(view.phase, Phase::ElderExchange | Phase::YoungerExchange) {
+                continue;
+            }
+            if let Some(before) = previous {
+                assert_eq!(
+                    watched.without(before).0,
+                    0,
+                    "once dealt, the watched set may shrink, never grow"
+                );
+            }
+            previous = Some(watched);
+        }
+    }
+    assert!(
+        ever_watched,
+        "no run leaves elder watching younger draw, so this tests nothing"
+    );
+}
+
+#[test]
+fn younger_alone_is_asked_to_answer_and_hears_only_a_shape() {
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        for (view, _) in observe(&pack, elder_takes) {
+            if let Some(announcement) = view.awaiting_answer {
+                assert_eq!(view.me, Player::Younger, "only younger answers");
+                assert!(
+                    announcement.tiebreak.is_none(),
+                    "she hears the shape, never the tie-break"
+                );
+            }
+        }
+    }
+}

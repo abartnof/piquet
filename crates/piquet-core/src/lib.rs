@@ -13,6 +13,7 @@
 pub mod cards;
 pub mod combos;
 pub mod declarations;
+pub mod observation;
 pub mod partie;
 pub mod rules;
 pub mod scoring;
