@@ -238,6 +238,35 @@ Which validates §6.2's architecture and kills the shortcut: **selecting an
 argmax over rollouts amplifies noise; fitting a regression pools across
 thousands of deals and averages it out.** Worth knowing before buying compute.
 
+## What the port left behind
+
+Found by auditing the Rust against the Python's public API and the two test
+suites against the vectors. Recorded rather than fixed, because each is a
+deliberate call rather than an oversight — but they are all real, and a reader
+should not have to rediscover them.
+
+- **`tournament.partie_duel` and `PartieResult` are not ported.** This is the
+  most significant of them. `PLAN.md` already says a deal-level harness is
+  *structurally blind* to a partie objective, so mirrored **parties** are the
+  correct instrument for anything about the rubicon. The Rust has mirrored
+  deals only. Anything that measures a partie-aware agent needs this first.
+- **`round_robin` and `format_table` are not ported.** The round-robin loop is
+  inlined in `bin/ladder.rs`, so it works but is not reusable.
+- **Colour is not ported.** `terminal.Palette` and `detect_palette` do ANSI
+  colour when the stream supports it; `piquet-cli` is plain throughout.
+- **`chances::density` and `survival` take no custom table.** The Python
+  accepts one, with the docstring inviting you to "measure your own and pass
+  it as `table`" — which is exactly what a stronger ladder would want, since
+  the measured histogram is a statement about *rung-4* play.
+- **`solver.partie_aware` is not ported**, deliberately: it measured worse
+  than the flat objective and ships off. See TODO 1, which wants the objective
+  settled at the leaf rather than linearised on the way down.
+- **The interactive half of the CLI is untested.** The pure renderers have
+  tests — including the one that matters, that every card drawn parses back as
+  a card you could type — but `HumanAgent`'s prompts and re-prompts do not.
+  The Python has 43 terminal tests; the Rust has 8, and they cover a narrower
+  thing. A `Console`-style seam would make the rest testable.
+
 ## TODO — things owed that are not yet built
 
 Ordered by how much they are needed, not by size.

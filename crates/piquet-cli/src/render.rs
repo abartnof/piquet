@@ -77,7 +77,13 @@ pub fn combinations(held: Hand) -> String {
     for held_set in sets(held) {
         parts.push(format!("{} of {}s", held_set.name(), held_set.rank.name()));
     }
-    if is_carte_blanche(held) {
+    // Guarded on non-empty. `is_carte_blanche` is vacuously true of a hand
+    // with no cards in it -- correct as a predicate, nonsense at a table --
+    // and this is display code, so guarding here diverges from nothing. The
+    // Python's own renderer does not mention carte blanche at all, which is a
+    // gap rather than a precedent: it is worth ten points and a player has to
+    // be told they have it.
+    if !held.is_empty() && is_carte_blanche(held) {
         parts.push("carte blanche — no court card at all".to_string());
     }
     if parts.is_empty() {
@@ -140,4 +146,94 @@ pub fn trick(view: &View, my_name: &str, their_name: &str) -> Option<String> {
         their_name
     };
     Some(format!("    {who} led {}", trick.led.code()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use piquet_core::cards::parse_card;
+
+    /// The rule the whole module exists for, as a test rather than a comment.
+    ///
+    /// The Python learnt it the hard way: a hand drawn as `♠ K J 7` is
+    /// prettier and unusable, because the prompt wanted `KS` and nothing said
+    /// how to get from one to the other. Every token drawn here must parse
+    /// back as the card it names.
+    #[test]
+    fn every_card_drawn_is_a_card_you_could_type() {
+        let held = Hand::parse("AS KS JS TS KH QH 9H 8H KD 8D 7D KC").unwrap();
+        let drawn = hand(held, None);
+        let mut found = 0;
+        for token in drawn.split_whitespace() {
+            let token = token.trim_matches(|c| c == '[' || c == ']');
+            // Suit symbols label the rows; everything else must be a card.
+            if token.chars().count() <= 1 {
+                continue;
+            }
+            parse_card(token)
+                .unwrap_or_else(|e| panic!("drew {token:?}, which does not parse: {e}"));
+            found += 1;
+        }
+        assert_eq!(found, 12, "every card in the hand is drawn exactly once");
+    }
+
+    #[test]
+    fn all_four_suits_are_always_drawn_and_a_void_is_a_dash() {
+        // Four fixed rows keep the layout still, so the eye learns where
+        // hearts live instead of re-finding them every trick -- and a void is
+        // a fact you act on, because it is what lets you throw anything.
+        let held = Hand::parse("AS KS QS").unwrap();
+        let drawn = hand(held, None);
+        assert_eq!(drawn.lines().count(), 4, "one row per suit, always");
+        assert_eq!(
+            drawn.matches('—').count(),
+            3,
+            "the three voids are drawn as dashes"
+        );
+    }
+
+    #[test]
+    fn legal_plays_are_bracketed_and_nothing_else_is() {
+        let held = Hand::parse("AS KS 7H 8H").unwrap();
+        let legal = Hand::parse("7H 8H").unwrap();
+        let drawn = hand(held, Some(legal));
+        assert!(drawn.contains("[7H]") && drawn.contains("[8H]"));
+        assert!(!drawn.contains("[AS]") && !drawn.contains("[KS]"));
+    }
+
+    #[test]
+    fn nothing_is_bracketed_when_nothing_is_narrowed() {
+        // Marking every card when every card is legal is noise that teaches
+        // the eye to ignore the brackets.
+        let held = Hand::parse("AS KS 7H").unwrap();
+        assert!(!hand(held, Some(held)).contains('['));
+    }
+
+    #[test]
+    fn combinations_name_what_the_hand_is_worth() {
+        let held = Hand::parse("AC KC QC JC TC AD AH AS").unwrap();
+        let described = combinations(held);
+        assert!(described.contains("point of 5"), "{described}");
+        assert!(described.contains("quint"), "{described}");
+        assert!(described.contains("quatorze of aces"), "{described}");
+    }
+
+    #[test]
+    fn a_carte_blanche_is_announced_as_such() {
+        let held = Hand::parse("AS TS 9S 8S 7S AH TH 9H").unwrap();
+        assert!(combinations(held).contains("carte blanche"));
+    }
+
+    #[test]
+    fn an_empty_hand_says_so_rather_than_drawing_nothing() {
+        assert_eq!(combinations(Hand::EMPTY), "nothing to call");
+    }
+
+    #[test]
+    fn the_example_offered_by_a_prompt_is_one_of_your_own_cards() {
+        let held = Hand::parse("KH QH 9H").unwrap();
+        let example = for_example(held);
+        let card = parse_card(&example).expect("the example must parse");
+        assert!(held.contains(card), "the example must be a card you hold");
+    }
 }
