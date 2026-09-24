@@ -10,6 +10,7 @@
 //! integer. None of them survive here: a hand is a `u32`, popcount is
 //! `count_ones`, and the solver's 75-bit transposition key is a `u128`.
 
+pub mod agents;
 pub mod cards;
 pub mod chances;
 pub mod combos;
@@ -23,10 +24,13 @@ pub mod test_support {
         MersenneTwister::seeded(seed)
     }
 }
+pub mod heuristics;
 pub mod observation;
 pub mod partie;
+pub mod play;
 pub mod rng;
 pub mod rules;
 pub mod scoring;
 pub mod solver;
 pub mod style;
+pub(crate) mod util;

@@ -1498,3 +1498,113 @@ fn a_drawn_style_lands_inside_its_bands() {
         }
     }
 }
+
+// -- heuristics: the ladder itself -------------------------------------------
+
+use piquet_core::heuristics::HeuristicAgent;
+use piquet_core::play::play_pack;
+
+#[test]
+fn the_ladder_makes_exactly_the_recorded_decisions() {
+    // An agent's own draws are the one thing golden vectors cannot check --
+    // no two languages share a generator. But a HeuristicAgent with
+    // erraticism 0 and the BALANCED style never draws at all for a decision:
+    // `rung` returns the level directly and the sinking roll cannot fire at
+    // probability zero. So the whole AI is comparable exactly, and a port that
+    // reproduces the rules but gets these wrong has a strategy bug no other
+    // vector would catch.
+    let vec = vectors("heuristics.json");
+    let packs = vec["packs"].as_object().unwrap();
+
+    for game in vec["games"].as_array().unwrap() {
+        let pack_name = game["pack"].as_str().unwrap();
+        let pack = pack_of(&packs[pack_name]);
+        let elder_level = game["elder_level"].as_u64().unwrap() as u32;
+        let younger_level = game["younger_level"].as_u64().unwrap() as u32;
+
+        // The seeds are irrelevant: neither agent draws.
+        let mut elder = HeuristicAgent::new(elder_level, 1).unwrap();
+        let mut younger = HeuristicAgent::new(younger_level, 2).unwrap();
+
+        let (deal, _) = play_pack(&pack, &mut elder, &mut younger, None).unwrap();
+        let where_ = format!("{pack_name}: L{elder_level} against L{younger_level}");
+
+        assert_eq!(
+            i64::from(deal.log.total(Player::Elder)),
+            game["elder_score"].as_i64().unwrap(),
+            "{where_}: elder's score"
+        );
+        assert_eq!(
+            i64::from(deal.log.total(Player::Younger)),
+            game["younger_score"].as_i64().unwrap(),
+            "{where_}: younger's score"
+        );
+        assert_eq!(
+            deal.tricks_won(Player::Elder) as u64,
+            game["elder_tricks"].as_u64().unwrap(),
+            "{where_}: tricks"
+        );
+
+        // Every card, in the order it was played -- the strongest of these
+        // assertions, because it fails on the first decision that differs
+        // rather than on a score that happens to come out the same.
+        let led: Vec<String> = deal.tricks.iter().map(|t| t.led.code()).collect();
+        let followed: Vec<String> = deal
+            .tricks
+            .iter()
+            .map(|t| t.followed.expect("a finished trick").code())
+            .collect();
+        let played: Vec<String> = led.into_iter().chain(followed).collect();
+        let want: Vec<&str> = game["cards_played"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c.as_str().unwrap())
+            .collect();
+        assert_eq!(played, want, "{where_}: the cards played");
+
+        let events: Vec<serde_json::Value> = deal
+            .log
+            .events
+            .iter()
+            .map(|e| {
+                serde_json::json!({
+                    "player": e.player.name(),
+                    "amount": e.amount,
+                    "category": e.category.name(),
+                })
+            })
+            .collect();
+        assert_eq!(
+            serde_json::Value::Array(events),
+            game["events"],
+            "{where_}: the event log"
+        );
+    }
+}
+
+#[test]
+fn the_vectors_actually_discriminate_between_rungs() {
+    // Index order and its reverse deal whole suits to one player, so most
+    // plays are forced and the ladder barely shows. If these numbers collapse,
+    // the test above is passing on packs that cannot tell a rung-1 agent from
+    // a rung-4 one.
+    let vec = vectors("heuristics.json");
+    let games = vec["games"].as_array().unwrap();
+    let sequences: std::collections::HashSet<String> = games
+        .iter()
+        .map(|g| g["cards_played"].to_string())
+        .collect();
+    assert!(
+        sequences.len() > games.len() / 4,
+        "only {} distinct card sequences across {} games",
+        sequences.len(),
+        games.len()
+    );
+
+    let scores: std::collections::HashSet<i64> = games
+        .iter()
+        .map(|g| g["elder_score"].as_i64().unwrap())
+        .collect();
+    assert!(scores.len() > 5, "the rungs barely differ in outcome");
+}

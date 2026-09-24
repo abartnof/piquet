@@ -37,6 +37,9 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
 from piquet.observation import View, view_for  # noqa: E402
 from piquet import chances as chances_mod  # noqa: E402
+from piquet.heuristics import MAX_LEVEL, HeuristicAgent  # noqa: E402
+from piquet.match import play_deal  # noqa: E402
+from piquet.style import BALANCED  # noqa: E402
 from piquet.solver import (  # noqa: E402
     CAPOT_BONUS,
     CARDS_BONUS,
@@ -1564,6 +1567,85 @@ def emit_chances() -> dict:
     }
 
 
+def emit_heuristics() -> dict:
+    """Pin every decision the ladder makes, for each rung against each rung.
+
+    A `HeuristicAgent` with erraticism 0 and the BALANCED style is **fully
+    deterministic**: `_rung` returns the level without drawing, and the sinking
+    roll can never fire because the probability is zero. So the whole AI is
+    comparable across languages exactly, which is otherwise impossible -- an
+    agent's own draws are the one thing golden vectors cannot check.
+    """
+    # Index order and its reverse deal whole suits to one player, so most
+    # plays are forced and younger's rung barely shows. A multiplicative
+    # permutation of the indices mixes the suits properly while staying
+    # written-down rather than seeded -- `stride` is coprime with 32, so each
+    # one is a genuine permutation of the pack.
+    packs = {
+        "the pack in index order": _pack_identity(),
+        "the pack reversed": _pack_reversed(),
+    }
+    for stride in (7, 11, 13):
+        deck = full_deck()
+        packs[f"the pack taken every {stride}th card"] = [
+            deck[(i * stride) % 32].code for i in range(32)
+        ]
+
+    games = []
+    for pack_name, pack_codes in packs.items():
+        for elder_level in range(1, MAX_LEVEL + 1):
+            for younger_level in range(1, MAX_LEVEL + 1):
+                elder = HeuristicAgent(
+                    level=elder_level, style=BALANCED, erraticism=0.0,
+                    name=f"L{elder_level}",
+                )
+                younger = HeuristicAgent(
+                    level=younger_level, style=BALANCED, erraticism=0.0,
+                    name=f"L{younger_level}",
+                )
+                deal = deal_from([Card.parse(c) for c in pack_codes])
+                finished, _ = play_deal(elder, younger, deal=deal)
+                games.append(
+                    {
+                        "pack": pack_name,
+                        "elder_level": elder_level,
+                        "younger_level": younger_level,
+                        "elder_score": finished.log.total(Player.ELDER),
+                        "younger_score": finished.log.total(Player.YOUNGER),
+                        "elder_tricks": finished.tricks_won(Player.ELDER),
+                        "cards_played": [
+                            t.led.code for t in finished.tricks
+                        ] + [
+                            t.followed.code for t in finished.tricks
+                        ],
+                        "events": [
+                            {
+                                "player": e.player.value,
+                                "amount": e.amount,
+                                "category": e.category.name,
+                            }
+                            for e in finished.log
+                        ],
+                    }
+                )
+
+    return {
+        "module": "heuristics",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Every decision the capability ladder makes, rung against rung, "
+            "on two packs. Deterministic because erraticism is zero and the "
+            "BALANCED style never sinks, which is what makes the AI itself "
+            "comparable across two languages rather than only the rules "
+            "beneath it. A port that reproduces the rules and gets these wrong "
+            "has a strategy bug, which no other vector would catch."
+        ),
+        "packs": packs,
+        "max_level": MAX_LEVEL,
+        "games": games,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1577,6 +1659,7 @@ def main() -> int:
         ("partie", emit_partie),
         ("solver", emit_solver),
         ("chances", emit_chances),
+        ("heuristics", emit_heuristics),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")
