@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+#
+# Run a command on the Piquet development VM.
+#
+# Development for this project happens on Google Cloud. Nothing here is built,
+# tested or measured on a laptop -- there is no Rust toolchain on the laptop at
+# all. This wrapper exists so that fact costs nothing to honour: it pushes the
+# working tree to the VM and runs the command there, which means the code that
+# gets tested is always the code you just edited, and a local copy can never
+# quietly drift from the one under test.
+#
+#   bin/vm cargo test           run a command in the repository on the VM
+#   bin/vm                      open an interactive shell there
+#   bin/vm --up                 start the VM
+#   bin/vm --down               stop it -- this is what keeps the bill small
+#   bin/vm --status             is it running, and what is it costing
+#   bin/vm --sync               push the tree without running anything
+#
+# The VM's external IP is ephemeral and changes every time it is stopped and
+# started, so the SSH alias is refreshed automatically rather than pinned.
+
+set -euo pipefail
+
+INSTANCE=piquet-dev
+ZONE=us-west1-b
+REMOTE_DIR=piquet
+HOST="${INSTANCE}.${ZONE}.abartnof-piquet"
+
+root=$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)
+
+die() { printf '%s\n' "$*" >&2; exit 1; }
+
+state() {
+  gcloud compute instances describe "$INSTANCE" --zone="$ZONE" \
+    --format='value(status)' 2>/dev/null || echo UNKNOWN
+}
+
+# Bring the instance up if it is stopped, then make sure the SSH alias points
+# at whatever address it came back on.
+ensure_running() {
+  local s; s=$(state)
+  case "$s" in
+    RUNNING) ;;
+    TERMINATED|SUSPENDED|STOPPED)
+      printf 'VM is %s; starting it...\n' "$s" >&2
+      gcloud compute instances start "$INSTANCE" --zone="$ZONE" --quiet >/dev/null
+      gcloud compute config-ssh --quiet >/dev/null
+      ;;
+    UNKNOWN) die "Cannot reach the instance. Is gcloud authenticated?" ;;
+    *) die "VM is in an unexpected state: $s" ;;
+  esac
+  # Cheap liveness probe; if the alias is stale, rewrite it and try once more.
+  if ! ssh -o ConnectTimeout=8 -o BatchMode=yes "$HOST" true 2>/dev/null; then
+    gcloud compute config-ssh --quiet >/dev/null
+    ssh -o ConnectTimeout=15 -o BatchMode=yes "$HOST" true 2>/dev/null \
+      || die "VM is running but SSH will not connect."
+  fi
+}
+
+# Build artefacts and virtualenvs live on the VM and must survive the sync, so
+# --delete is paired with excludes rather than used bare.
+sync_tree() {
+  rsync -az --delete \
+    --exclude='.git/' \
+    --exclude='target/' \
+    --exclude='.venv/' \
+    --exclude='__pycache__/' \
+    --exclude='.pytest_cache/' \
+    --exclude='.DS_Store' \
+    --exclude='*.pyc' \
+    --exclude='logs/' \
+    "$root/" "${HOST}:${REMOTE_DIR}/"
+}
+
+case "${1-}" in
+  --status)
+    s=$(state)
+    printf 'piquet-dev: %s\n' "$s"
+    [ "$s" = RUNNING ] && printf 'Costing ~$0.13/hour. Stop it with: bin/vm --down\n'
+    exit 0
+    ;;
+  --up)    gcloud compute instances start "$INSTANCE" --zone="$ZONE" --quiet
+           gcloud compute config-ssh --quiet >/dev/null
+           printf 'Started.\n'; exit 0 ;;
+  --down)  gcloud compute instances stop "$INSTANCE" --zone="$ZONE" --quiet
+           printf 'Stopped. Only the disk bills now (~$5/month).\n'; exit 0 ;;
+  --sync)  ensure_running; sync_tree; printf 'Synced.\n'; exit 0 ;;
+esac
+
+ensure_running
+sync_tree
+
+if [ "$#" -eq 0 ]; then
+  exec ssh -t "$HOST" "cd ${REMOTE_DIR} && exec \$SHELL -l"
+fi
+
+# Forward a tty only when we have one, so that interactive programs -- the game
+# itself, above all -- work, without warning on every scripted run. Written as
+# two branches rather than an optional flag because macOS still ships bash 3.2,
+# where an empty array expansion trips `set -u`.
+remote="cd ${REMOTE_DIR} && source \$HOME/.cargo/env 2>/dev/null; $(printf '%q ' "$@")"
+if [ -t 0 ]; then
+  exec ssh -t "$HOST" "$remote"
+else
+  exec ssh "$HOST" "$remote"
+fi
