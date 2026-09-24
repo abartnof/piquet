@@ -194,3 +194,162 @@ def test_vector_file_is_self_describing(vec):
     assert vec["generator"] == "tools/emit_vectors.py"
     for section in ("pack", "parse", "hands", "suits", "set_ops", "errors"):
         assert vec[section], f"section {section!r} is empty"
+
+
+# ===========================================================================
+# combos
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def cvec() -> dict:
+    return load("combos")
+
+
+def test_holdings_detect_point_sequences_and_sets(cvec):
+    from piquet.combos import (
+        best_point,
+        is_carte_blanche,
+        score_sequences,
+        score_sets,
+        sequences,
+        sets,
+    )
+
+    for case in cvec["holdings"]:
+        hand = parse_hand(case["hand"])
+
+        point = best_point(hand)
+        if case["best_point"] is None:
+            assert point is None
+        else:
+            expected = case["best_point"]
+            assert int(point.suit) == expected["suit"]
+            assert point.length == expected["length"]
+            assert point.pip_value == expected["pip_value"]
+            assert point.score == expected["score"]
+            assert list(point.key) == expected["key"]
+
+        found = sequences(hand)
+        assert len(found) == len(case["sequences"])
+        for got, want in zip(found, case["sequences"]):
+            assert int(got.suit) == want["suit"]
+            assert int(got.top) == want["top"]
+            assert got.length == want["length"]
+            assert got.score == want["score"]
+            assert got.name == want["name"]
+
+        held = sets(hand)
+        assert len(held) == len(case["sets"])
+        for got, want in zip(held, case["sets"]):
+            assert int(got.rank) == want["rank"]
+            assert got.count == want["count"]
+            assert got.score == want["score"]
+
+        assert score_sequences(hand) == case["score_sequences"]
+        assert score_sets(hand) == case["score_sets"]
+        assert is_carte_blanche(hand) is case["carte_blanche"]
+
+
+def test_sequence_scoring_is_a_formula_not_a_table(cvec):
+    """`docs/DESIGN.md` §3.8: the historical 3, 4, 15, 16, 17, 18 is a formula.
+
+    Three and four score their length; from five the bonus of ten applies. A
+    port that transcribes the numbers instead of the rule will be right about
+    every sequence that exists and wrong about the reasoning, which matters
+    because the tutor explains the rule to a learner.
+    """
+    from piquet.combos import Sequence
+    from piquet.cards import Rank, Suit
+
+    for case in cvec["sequence_scores"]:
+        made = Sequence(suit=Suit.CLUBS, top=Rank.ACE, length=case["length"])
+        assert made.score == case["score"]
+
+    table = {c["length"]: c["score"] for c in cvec["sequence_scores"]}
+    assert table == {3: 3, 4: 4, 5: 15, 6: 16, 7: 17, 8: 18}
+
+
+def test_set_scoring(cvec):
+    from piquet.combos import CardSet
+    from piquet.cards import Rank
+
+    for case in cvec["set_scores"]:
+        assert CardSet(rank=Rank.ACE, count=case["count"]).score == case["score"]
+
+
+def test_tied_sequences_keep_the_order_a_stable_sort_gives(cvec):
+    """The §2.2 hazard, pinned as data rather than left as a warning.
+
+    Two tierces to the king key identically at `(3, 13)`. Python's
+    `sorted(..., reverse=True)` is stable, so the one found first -- the lower
+    suit index -- stays first, and `best_sequence` is `found[0]`. A port that
+    renders `reverse=True` as a sort followed by `.reverse()` inverts exactly
+    these pairs and declares the other suit.
+    """
+    from piquet.combos import best_sequence, sequences
+
+    for case in cvec["ties"]:
+        hand = parse_hand(case["hand"])
+        found = sequences(hand)
+        assert [list(q.key) for q in found] == case["keys"]
+        assert [
+            {"suit": int(q.suit), "top": int(q.top)} for q in found
+        ] == case["order"]
+        assert int(best_sequence(hand).suit) == case["best_suit"]
+
+        # The case is only doing its job while the keys genuinely collide.
+        keys = [tuple(k) for k in case["keys"]]
+        assert len(keys) != len(set(keys)), (
+            f"{case['hand']!r} no longer produces a tie, so it no longer tests "
+            f"sort stability; replace it with a hand that does"
+        )
+
+
+def test_comparisons_between_holdings(cvec):
+    from piquet.combos import (
+        best_point,
+        best_sequence,
+        best_set,
+        compare_point,
+        compare_sequence,
+        compare_set,
+    )
+
+    for case in cvec["comparisons"]:
+        a, b = parse_hand(case["left"]), parse_hand(case["right"])
+        assert compare_point(best_point(a), best_point(b)).value == case["point"]
+        assert (
+            compare_sequence(best_sequence(a), best_sequence(b)).value
+            == case["sequence"]
+        )
+        assert compare_set(best_set(a), best_set(b)).value == case["set"]
+
+
+def test_understated_claims_are_supported_or_not(cvec):
+    """Sinking depends on this: a smaller claim must still be true of the hand."""
+    from piquet.cards import Rank, Suit
+    from piquet.combos import CardSet, Point, Sequence
+
+    for case in cvec["support"]:
+        hand, claim = parse_hand(case["hand"]), case["claim"]
+        if case["kind"] == "point":
+            obj = Point(Suit(claim["suit"]), claim["length"], claim["pip_value"])
+        elif case["kind"] == "sequence":
+            obj = Sequence(Suit(claim["suit"]), Rank(claim["top"]), claim["length"])
+        else:
+            obj = CardSet(Rank(claim["rank"]), claim["count"])
+        assert obj.is_supported_by(hand) is case["supported"]
+
+
+def test_combos_vector_file_is_self_describing(cvec):
+    assert cvec["module"] == "combos"
+    for section in (
+        "holdings",
+        "sequence_scores",
+        "set_scores",
+        "ties",
+        "comparisons",
+        "support",
+    ):
+        assert cvec[section], f"section {section!r} is empty"

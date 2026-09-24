@@ -1,0 +1,606 @@
+{
+  "module": "combos",
+  "generator": "tools/emit_vectors.py",
+  "note": "Point, sequence and set: detection, ordering, scoring and comparison. Sequence and set scores are formulas rather than tables (docs/DESIGN.md 3.8), and the `ties` section pins an ordering that only a stable sort reproduces.",
+  "holdings": [
+    {
+      "hand": "",
+      "best_point": null,
+      "sequences": [],
+      "sets": [],
+      "score_sequences": 0,
+      "score_sets": 0,
+      "carte_blanche": true
+    },
+    {
+      "hand": "AS KS QS JS TS 9S 8S 7S",
+      "best_point": {
+        "suit": 3,
+        "length": 8,
+        "pip_value": 75,
+        "score": 8,
+        "key": [
+          8,
+          75
+        ]
+      },
+      "sequences": [
+        {
+          "suit": 3,
+          "top": 14,
+          "length": 8,
+          "score": 18,
+          "name": "huitième",
+          "key": [
+            8,
+            14
+          ]
+        }
+      ],
+      "sets": [],
+      "score_sequences": 18,
+      "score_sets": 0,
+      "carte_blanche": false
+    },
+    {
+      "hand": "AC KD QH JS TC 9D 8H 7S",
+      "best_point": {
+        "suit": 0,
+        "length": 2,
+        "pip_value": 21,
+        "score": 2,
+        "key": [
+          2,
+          21
+        ]
+      },
+      "sequences": [],
+      "sets": [],
+      "score_sequences": 0,
+      "score_sets": 0,
+      "carte_blanche": false
+    },
+    {
+      "hand": "JH QH KH JS QS KS",
+      "best_point": {
+        "suit": 2,
+        "length": 3,
+        "pip_value": 30,
+        "score": 3,
+        "key": [
+          3,
+          30
+        ]
+      },
+      "sequences": [
+        {
+          "suit": 2,
+          "top": 13,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            13
+          ]
+        },
+        {
+          "suit": 3,
+          "top": 13,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            13
+          ]
+        }
+      ],
+      "sets": [],
+      "score_sequences": 6,
+      "score_sets": 0,
+      "carte_blanche": false
+    },
+    {
+      "hand": "AC KC QC 9C 8C 7C",
+      "best_point": {
+        "suit": 0,
+        "length": 6,
+        "pip_value": 55,
+        "score": 6,
+        "key": [
+          6,
+          55
+        ]
+      },
+      "sequences": [
+        {
+          "suit": 0,
+          "top": 14,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            14
+          ]
+        },
+        {
+          "suit": 0,
+          "top": 9,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            9
+          ]
+        }
+      ],
+      "sets": [],
+      "score_sequences": 6,
+      "score_sets": 0,
+      "carte_blanche": false
+    },
+    {
+      "hand": "AC AD AH AS KC KD KH KS QC QD QH",
+      "best_point": {
+        "suit": 0,
+        "length": 3,
+        "pip_value": 31,
+        "score": 3,
+        "key": [
+          3,
+          31
+        ]
+      },
+      "sequences": [
+        {
+          "suit": 0,
+          "top": 14,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            14
+          ]
+        },
+        {
+          "suit": 1,
+          "top": 14,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            14
+          ]
+        },
+        {
+          "suit": 2,
+          "top": 14,
+          "length": 3,
+          "score": 3,
+          "name": "tierce",
+          "key": [
+            3,
+            14
+          ]
+        }
+      ],
+      "sets": [
+        {
+          "rank": 14,
+          "count": 4,
+          "score": 14,
+          "name": "quatorze",
+          "key": [
+            4,
+            14
+          ]
+        },
+        {
+          "rank": 13,
+          "count": 4,
+          "score": 14,
+          "name": "quatorze",
+          "key": [
+            4,
+            13
+          ]
+        },
+        {
+          "rank": 12,
+          "count": 3,
+          "score": 3,
+          "name": "trio",
+          "key": [
+            3,
+            12
+          ]
+        }
+      ],
+      "score_sequences": 9,
+      "score_sets": 31,
+      "carte_blanche": false
+    },
+    {
+      "hand": "TC TD TH TS 9C 9D 9H 9S",
+      "best_point": {
+        "suit": 0,
+        "length": 2,
+        "pip_value": 19,
+        "score": 2,
+        "key": [
+          2,
+          19
+        ]
+      },
+      "sequences": [],
+      "sets": [
+        {
+          "rank": 10,
+          "count": 4,
+          "score": 14,
+          "name": "quatorze",
+          "key": [
+            4,
+            10
+          ]
+        }
+      ],
+      "score_sequences": 0,
+      "score_sets": 14,
+      "carte_blanche": true
+    },
+    {
+      "hand": "AC AD TH TS 9C 8D 7H 9S",
+      "best_point": {
+        "suit": 0,
+        "length": 2,
+        "pip_value": 20,
+        "score": 2,
+        "key": [
+          2,
+          20
+        ]
+      },
+      "sequences": [],
+      "sets": [],
+      "score_sequences": 0,
+      "score_sets": 0,
+      "carte_blanche": true
+    },
+    {
+      "hand": "AC KC QC JC TC 9C 8C 7C AD KD QD JD",
+      "best_point": {
+        "suit": 0,
+        "length": 8,
+        "pip_value": 75,
+        "score": 8,
+        "key": [
+          8,
+          75
+        ]
+      },
+      "sequences": [
+        {
+          "suit": 0,
+          "top": 14,
+          "length": 8,
+          "score": 18,
+          "name": "huitième",
+          "key": [
+            8,
+            14
+          ]
+        },
+        {
+          "suit": 1,
+          "top": 14,
+          "length": 4,
+          "score": 4,
+          "name": "quart",
+          "key": [
+            4,
+            14
+          ]
+        }
+      ],
+      "sets": [],
+      "score_sequences": 22,
+      "score_sets": 0,
+      "carte_blanche": false
+    }
+  ],
+  "sequence_scores": [
+    {
+      "length": 3,
+      "score": 3
+    },
+    {
+      "length": 4,
+      "score": 4
+    },
+    {
+      "length": 5,
+      "score": 15
+    },
+    {
+      "length": 6,
+      "score": 16
+    },
+    {
+      "length": 7,
+      "score": 17
+    },
+    {
+      "length": 8,
+      "score": 18
+    }
+  ],
+  "set_scores": [
+    {
+      "count": 3,
+      "score": 3
+    },
+    {
+      "count": 4,
+      "score": 14
+    }
+  ],
+  "ties": [
+    {
+      "hand": "JH QH KH JS QS KS",
+      "note": "equal keys; order is decided by a STABLE sort",
+      "keys": [
+        [
+          3,
+          13
+        ],
+        [
+          3,
+          13
+        ]
+      ],
+      "order": [
+        {
+          "suit": 2,
+          "top": 13
+        },
+        {
+          "suit": 3,
+          "top": 13
+        }
+      ],
+      "best_suit": 2
+    },
+    {
+      "hand": "9C TC JC 9D TD JD",
+      "note": "equal keys; order is decided by a STABLE sort",
+      "keys": [
+        [
+          3,
+          11
+        ],
+        [
+          3,
+          11
+        ]
+      ],
+      "order": [
+        {
+          "suit": 0,
+          "top": 11
+        },
+        {
+          "suit": 1,
+          "top": 11
+        }
+      ],
+      "best_suit": 0
+    },
+    {
+      "hand": "AC KC QC AD KD QD",
+      "note": "equal keys; order is decided by a STABLE sort",
+      "keys": [
+        [
+          3,
+          14
+        ],
+        [
+          3,
+          14
+        ]
+      ],
+      "order": [
+        {
+          "suit": 0,
+          "top": 14
+        },
+        {
+          "suit": 1,
+          "top": 14
+        }
+      ],
+      "best_suit": 0
+    }
+  ],
+  "comparisons": [
+    {
+      "left": "AC KC QC JC TC",
+      "right": "AD KD QD JD 9D",
+      "point": "better",
+      "sequence": "better",
+      "set": "equal"
+    },
+    {
+      "left": "AC KC QC JC TC",
+      "right": "AD KD QD JD TD",
+      "point": "equal",
+      "sequence": "equal",
+      "set": "equal"
+    },
+    {
+      "left": "AC KC QC",
+      "right": "AD KD QD JD",
+      "point": "worse",
+      "sequence": "worse",
+      "set": "equal"
+    },
+    {
+      "left": "",
+      "right": "AD KD QD",
+      "point": "worse",
+      "sequence": "worse",
+      "set": "equal"
+    },
+    {
+      "left": "",
+      "right": "",
+      "point": "equal",
+      "sequence": "equal",
+      "set": "equal"
+    },
+    {
+      "left": "AC AD AH AS",
+      "right": "KC KD KH KS",
+      "point": "better",
+      "sequence": "equal",
+      "set": "better"
+    },
+    {
+      "left": "AC AD AH",
+      "right": "KC KD KH KS",
+      "point": "better",
+      "sequence": "equal",
+      "set": "worse"
+    },
+    {
+      "left": "TC TD TH TS",
+      "right": "AC AD AH",
+      "point": "worse",
+      "sequence": "equal",
+      "set": "better"
+    }
+  ],
+  "support": [
+    {
+      "kind": "point",
+      "hand": "AC KC QC JC TC",
+      "claim": {
+        "suit": 0,
+        "length": 5,
+        "pip_value": 51
+      },
+      "supported": true
+    },
+    {
+      "kind": "point",
+      "hand": "AC KC QC JC TC",
+      "claim": {
+        "suit": 0,
+        "length": 4,
+        "pip_value": 41
+      },
+      "supported": true
+    },
+    {
+      "kind": "point",
+      "hand": "AC KC QC JC TC",
+      "claim": {
+        "suit": 0,
+        "length": 4,
+        "pip_value": 40
+      },
+      "supported": false
+    },
+    {
+      "kind": "point",
+      "hand": "AC KC QC JC TC",
+      "claim": {
+        "suit": 1,
+        "length": 3,
+        "pip_value": 30
+      },
+      "supported": false
+    },
+    {
+      "kind": "sequence",
+      "hand": "AC KC QC JC",
+      "claim": {
+        "suit": 0,
+        "top": 14,
+        "length": 4
+      },
+      "supported": true
+    },
+    {
+      "kind": "sequence",
+      "hand": "AC KC QC JC",
+      "claim": {
+        "suit": 0,
+        "top": 13,
+        "length": 3
+      },
+      "supported": true
+    },
+    {
+      "kind": "sequence",
+      "hand": "AC KC QC JC",
+      "claim": {
+        "suit": 0,
+        "top": 14,
+        "length": 5
+      },
+      "supported": false
+    },
+    {
+      "kind": "sequence",
+      "hand": "AC KC QC JC",
+      "claim": {
+        "suit": 0,
+        "top": 14,
+        "length": 2
+      },
+      "supported": false
+    },
+    {
+      "kind": "set",
+      "hand": "AC AD AH AS",
+      "claim": {
+        "rank": 14,
+        "count": 4
+      },
+      "supported": true
+    },
+    {
+      "kind": "set",
+      "hand": "AC AD AH AS",
+      "claim": {
+        "rank": 14,
+        "count": 3
+      },
+      "supported": true
+    },
+    {
+      "kind": "set",
+      "hand": "AC AD AH",
+      "claim": {
+        "rank": 14,
+        "count": 4
+      },
+      "supported": false
+    },
+    {
+      "kind": "set",
+      "hand": "9C 9D 9H 9S",
+      "claim": {
+        "rank": 9,
+        "count": 4
+      },
+      "supported": false
+    }
+  ]
+}

@@ -35,6 +35,19 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
+from piquet.combos import (  # noqa: E402
+    best_point,
+    best_sequence,
+    best_set,
+    compare_point,
+    compare_sequence,
+    compare_set,
+    is_carte_blanche,
+    score_sequences,
+    score_sets,
+    sequences,
+    sets,
+)
 
 VECTORS = pathlib.Path(__file__).resolve().parents[1] / "vectors"
 
@@ -178,9 +191,179 @@ def emit_cards() -> dict:
     }
 
 
+# Hands chosen to exercise the rules rather than to look like real deals.
+COMBO_HANDS = [
+    "",
+    "AS KS QS JS TS 9S 8S 7S",
+    "AC KD QH JS TC 9D 8H 7S",
+    "JH QH KH JS QS KS",
+    "AC KC QC 9C 8C 7C",
+    "AC AD AH AS KC KD KH KS QC QD QH",
+    "TC TD TH TS 9C 9D 9H 9S",
+    "AC AD TH TS 9C 8D 7H 9S",
+    "AC KC QC JC TC 9C 8C 7C AD KD QD JD",
+]
+
+# Two tierces to the king, both keying (3, 13). Which one `best_sequence`
+# returns is decided purely by sort stability, so it is pinned deliberately.
+TIE_HANDS = [
+    "JH QH KH JS QS KS",
+    "9C TC JC 9D TD JD",
+    "AC KC QC AD KD QD",
+]
+
+COMPARE_PAIRS = [
+    ("AC KC QC JC TC", "AD KD QD JD 9D"),
+    ("AC KC QC JC TC", "AD KD QD JD TD"),
+    ("AC KC QC", "AD KD QD JD"),
+    ("", "AD KD QD"),
+    ("", ""),
+    ("AC AD AH AS", "KC KD KH KS"),
+    ("AC AD AH", "KC KD KH KS"),
+    ("TC TD TH TS", "AC AD AH"),
+]
+
+# Understatement -- the mechanism behind sinking. A claim smaller than what is
+# held must still be supported by the hand.
+SUPPORT_CASES = [
+    ("point", "AC KC QC JC TC", {"suit": 0, "length": 5, "pip_value": 51}, True),
+    ("point", "AC KC QC JC TC", {"suit": 0, "length": 4, "pip_value": 41}, True),
+    ("point", "AC KC QC JC TC", {"suit": 0, "length": 4, "pip_value": 40}, False),
+    ("point", "AC KC QC JC TC", {"suit": 1, "length": 3, "pip_value": 30}, False),
+    ("sequence", "AC KC QC JC", {"suit": 0, "top": 14, "length": 4}, True),
+    ("sequence", "AC KC QC JC", {"suit": 0, "top": 13, "length": 3}, True),
+    ("sequence", "AC KC QC JC", {"suit": 0, "top": 14, "length": 5}, False),
+    ("sequence", "AC KC QC JC", {"suit": 0, "top": 14, "length": 2}, False),
+    ("set", "AC AD AH AS", {"rank": 14, "count": 4}, True),
+    ("set", "AC AD AH AS", {"rank": 14, "count": 3}, True),
+    ("set", "AC AD AH", {"rank": 14, "count": 4}, False),
+    ("set", "9C 9D 9H 9S", {"rank": 9, "count": 4}, False),
+]
+
+
+def _point(p) -> dict | None:
+    if p is None:
+        return None
+    return {
+        "suit": int(p.suit),
+        "length": p.length,
+        "pip_value": p.pip_value,
+        "score": p.score,
+        "key": list(p.key),
+    }
+
+
+def _sequence(q) -> dict:
+    return {
+        "suit": int(q.suit),
+        "top": int(q.top),
+        "length": q.length,
+        "score": q.score,
+        "name": q.name,
+        "key": list(q.key),
+    }
+
+
+def _set(c) -> dict:
+    return {
+        "rank": int(c.rank),
+        "count": c.count,
+        "score": c.score,
+        "name": c.name,
+        "key": list(c.key),
+    }
+
+
+def emit_combos() -> dict:
+    from piquet.combos import CardSet, Point, Sequence
+
+    holdings = []
+    for code in COMBO_HANDS:
+        hand = parse_hand(code)
+        holdings.append(
+            {
+                "hand": code,
+                "best_point": _point(best_point(hand)),
+                "sequences": [_sequence(q) for q in sequences(hand)],
+                "sets": [_set(c) for c in sets(hand)],
+                "score_sequences": score_sequences(hand),
+                "score_sets": score_sets(hand),
+                "carte_blanche": is_carte_blanche(hand),
+            }
+        )
+
+    # docs/DESIGN.md 3.8: the historical table 3, 4, 15, 16, 17, 18 is a
+    # formula, not an arbitrary list. Pinned so a port cannot transcribe it.
+    sequence_scores = [
+        {"length": n, "score": Sequence(suit=Suit.CLUBS, top=Rank.ACE, length=n).score}
+        for n in range(3, 9)
+    ]
+    set_scores = [
+        {"count": n, "score": CardSet(rank=Rank.ACE, count=n).score} for n in (3, 4)
+    ]
+
+    ties = []
+    for code in TIE_HANDS:
+        hand = parse_hand(code)
+        found = sequences(hand)
+        ties.append(
+            {
+                "hand": code,
+                "note": "equal keys; order is decided by a STABLE sort",
+                "keys": [list(q.key) for q in found],
+                "order": [{"suit": int(q.suit), "top": int(q.top)} for q in found],
+                "best_suit": int(best_sequence(hand).suit),
+            }
+        )
+
+    comparisons = []
+    for left, right in COMPARE_PAIRS:
+        a, b = parse_hand(left), parse_hand(right)
+        comparisons.append(
+            {
+                "left": left,
+                "right": right,
+                "point": compare_point(best_point(a), best_point(b)).value,
+                "sequence": compare_sequence(best_sequence(a), best_sequence(b)).value,
+                "set": compare_set(best_set(a), best_set(b)).value,
+            }
+        )
+
+    support = []
+    for kind, code, claim, expected in SUPPORT_CASES:
+        hand = parse_hand(code)
+        if kind == "point":
+            obj = Point(Suit(claim["suit"]), claim["length"], claim["pip_value"])
+        elif kind == "sequence":
+            obj = Sequence(Suit(claim["suit"]), Rank(claim["top"]), claim["length"])
+        else:
+            obj = CardSet(Rank(claim["rank"]), claim["count"])
+        actual = obj.is_supported_by(hand)
+        if actual != expected:
+            raise SystemExit(f"support case wrong: {kind} {code} {claim} -> {actual}")
+        support.append({"kind": kind, "hand": code, "claim": claim, "supported": actual})
+
+    return {
+        "module": "combos",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Point, sequence and set: detection, ordering, scoring and "
+            "comparison. Sequence and set scores are formulas rather than "
+            "tables (docs/DESIGN.md 3.8), and the `ties` section pins an "
+            "ordering that only a stable sort reproduces."
+        ),
+        "holdings": holdings,
+        "sequence_scores": sequence_scores,
+        "set_scores": set_scores,
+        "ties": ties,
+        "comparisons": comparisons,
+        "support": support,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
-    for name, build in (("cards", emit_cards),):
+    for name, build in (("cards", emit_cards), ("combos", emit_combos)):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")
         print(f"wrote {path.relative_to(VECTORS.parent)}")
