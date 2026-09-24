@@ -384,3 +384,128 @@ pub fn card_values(
     }
     Ok(out)
 }
+
+// -- the agent that uses it --------------------------------------------------
+
+use crate::agents::Agent;
+use crate::cards::Card;
+use crate::declarations::Declaration;
+use crate::heuristics::HeuristicAgent;
+use crate::inference::possible_hands;
+use crate::observation::View;
+use crate::scoring::{Category, Player};
+use crate::util::first_max_by_key;
+
+/// Rung 5: heuristic play early, exact play once the endgame is reachable.
+///
+/// The cap is the whole design. Solving from twelve cards costs seconds even
+/// in Rust (`docs/DESIGN.md` §13.7), and a decision samples `max_worlds`
+/// opponent hands rather than one, so the cost per move is that many solves.
+/// Eight is what the Python shipped; the measured figures put the interactive
+/// frontier at about ten.
+///
+/// `partie_aware` is **not implemented here**. In the Python it weights the
+/// search by what a point is worth in settlement, and it measured *worse* than
+/// the flat objective, so it ships off by default -- see `PLAN.md` TODO 1,
+/// which wants the objective settled at the leaf instead of linearised on the
+/// way down. Porting a flag that is known to lose would have meant making the
+/// search generic over its weight type for no gain.
+pub struct SolverAgent {
+    pub fallback: HeuristicAgent,
+    pub exact_from: u32,
+    pub max_worlds: usize,
+}
+
+impl SolverAgent {
+    pub fn new(seed: u32) -> SolverAgent {
+        SolverAgent {
+            fallback: HeuristicAgent::new(crate::heuristics::MAX_LEVEL, seed)
+                .expect("the top rung is a valid level"),
+            exact_from: 8,
+            max_worlds: 30,
+        }
+    }
+
+    pub fn from_depth(mut self, cards: u32) -> SolverAgent {
+        self.exact_from = cards;
+        self
+    }
+
+    pub fn worlds(mut self, worlds: usize) -> SolverAgent {
+        self.max_worlds = worlds;
+        self
+    }
+}
+
+impl Agent for SolverAgent {
+    fn name(&self) -> &str {
+        self.fallback.name()
+    }
+
+    fn exchange(&mut self, view: &View) -> Hand {
+        self.fallback.exchange(view)
+    }
+
+    fn declare(&mut self, view: &View, category: Category) -> Declaration {
+        self.fallback.declare(view, category)
+    }
+
+    fn play(&mut self, view: &View) -> Card {
+        let legal: Vec<Card> = view.legal_plays.cards().collect();
+        if legal.len() == 1 {
+            return legal[0];
+        }
+        if view.hand.len() > self.exact_from {
+            return self.fallback.play(view);
+        }
+
+        let worlds = possible_hands(view, Some(self.max_worlds), true, &mut self.fallback.rng);
+        if worlds.is_empty() {
+            return self.fallback.play(view);
+        }
+
+        let elder_tricks = view
+            .tricks
+            .iter()
+            .filter(|t| t.winner().is_ok_and(|w| w == Player::Elder))
+            .count() as u32;
+        let i_lead = view.current_trick.is_none();
+        let leader = if i_lead {
+            if view.me == Player::Elder {
+                ELDER
+            } else {
+                YOUNGER
+            }
+        } else if view.opponent() == Player::Elder {
+            ELDER
+        } else {
+            YOUNGER
+        };
+        let led = view.current_trick.map(|t| t.led.0);
+        let sign: i64 = if view.me == Player::Elder { 1 } else { -1 };
+
+        let mut totals: Vec<(Card, i64)> = legal.iter().map(|c| (*c, 0i64)).collect();
+        for opponent_hand in worlds {
+            let (elder, younger) = if view.me == Player::Elder {
+                (view.hand, opponent_hand)
+            } else {
+                (opponent_hand, view.hand)
+            };
+            let Ok(values) = card_values(elder, younger, leader, led, elder_tricks, EVEN) else {
+                continue;
+            };
+            for (card, value) in values {
+                if let Some(slot) = totals.iter_mut().find(|(c, _)| c.0 == card) {
+                    slot.1 += sign * value;
+                }
+            }
+        }
+
+        // Python's `max` over the dict returns the FIRST maximum in insertion
+        // order, which is `legal` order. Among equal values the lower rank
+        // wins, hence the negated rank.
+        first_max_by_key(&totals, |(card, value)| (*value, -i32::from(card.rank().0)))
+            .map(|(card, _)| *card)
+            .unwrap_or(legal[0])
+    }
+}

@@ -1778,3 +1778,60 @@ fn elder_leads_blind_and_younger_does_not() {
         );
     }
 }
+
+// -- the solver agent --------------------------------------------------------
+
+use piquet_core::solver::SolverAgent;
+
+#[test]
+fn the_solver_agent_plays_the_recorded_cards() {
+    // Rung five samples opponent hands, which would normally put it beyond
+    // what a golden vector can check -- no two languages share a generator.
+    // But inference narrows to a single candidate by the endgame, so
+    // `max_worlds` never actually samples and the agent is deterministic.
+    let vec = vectors("solver.json");
+    for game in vec["agent_games"].as_array().unwrap() {
+        let pack = pack_of(&game["pack_codes"]);
+        let solver_is_elder = game["solver_seat"] == "elder";
+
+        let mut solver = SolverAgent::new(1);
+        let mut ladder = HeuristicAgent::new(4, 2).unwrap().named("L4");
+        let (deal, _) = if solver_is_elder {
+            play_pack(&pack, &mut solver, &mut ladder, None).unwrap()
+        } else {
+            play_pack(&pack, &mut ladder, &mut solver, None).unwrap()
+        };
+
+        let where_ = format!("{}: solver as {}", game["pack"], game["solver_seat"]);
+        assert_eq!(
+            i64::from(deal.log.total(Player::Elder)),
+            game["elder_score"].as_i64().unwrap(),
+            "{where_}: elder's score"
+        );
+        assert_eq!(
+            i64::from(deal.log.total(Player::Younger)),
+            game["younger_score"].as_i64().unwrap(),
+            "{where_}: younger's score"
+        );
+        assert_eq!(
+            deal.tricks_won(Player::Elder) as u64,
+            game["elder_tricks"].as_u64().unwrap(),
+            "{where_}: tricks"
+        );
+
+        let led: Vec<String> = deal.tricks.iter().map(|t| t.led.code()).collect();
+        let followed: Vec<String> = deal
+            .tricks
+            .iter()
+            .map(|t| t.followed.expect("a finished trick").code())
+            .collect();
+        let played: Vec<String> = led.into_iter().chain(followed).collect();
+        let want: Vec<&str> = game["cards_played"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|c| c.as_str().unwrap())
+            .collect();
+        assert_eq!(played, want, "{where_}: the cards played");
+    }
+}

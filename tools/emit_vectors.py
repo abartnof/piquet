@@ -47,6 +47,7 @@ from piquet.inference import (  # noqa: E402
 from piquet.match import play_deal  # noqa: E402
 from piquet.style import BALANCED  # noqa: E402
 from piquet.solver import (  # noqa: E402
+    SolverAgent,
     CAPOT_BONUS,
     CARDS_BONUS,
     EVEN,
@@ -1442,6 +1443,42 @@ def emit_solver() -> dict:
             }
         )
 
+    # Rung 5 against rung 4, both deterministic. The solver samples opponent
+    # hands, which would normally put it beyond what a golden vector can
+    # check -- but inference narrows to a single candidate by the endgame, so
+    # `max_worlds` never actually samples and the agent is deterministic after
+    # all. Recorded on two packs in both seats.
+    agent_games = []
+    for pack_name, build in (
+        ("the pack in index order", _pack_identity),
+        ("the pack taken every 7th card", None),
+    ):
+        if build is None:
+            deck = full_deck()
+            pack_codes = [deck[(i * 7) % 32].code for i in range(32)]
+        else:
+            pack_codes = build()
+        for solver_seat in ("elder", "younger"):
+            solver = SolverAgent(erraticism=0.0, name="solver8")
+            ladder = HeuristicAgent(level=4, erraticism=0.0, name="L4")
+            elder, younger = (
+                (solver, ladder) if solver_seat == "elder" else (ladder, solver)
+            )
+            deal = deal_from([Card.parse(c) for c in pack_codes])
+            finished, _ = play_deal(elder, younger, deal=deal)
+            agent_games.append(
+                {
+                    "pack": pack_name,
+                    "pack_codes": pack_codes,
+                    "solver_seat": solver_seat,
+                    "elder_score": finished.log.total(Player.ELDER),
+                    "younger_score": finished.log.total(Player.YOUNGER),
+                    "elder_tricks": finished.tricks_won(Player.ELDER),
+                    "cards_played": [t.led.code for t in finished.tricks]
+                    + [t.followed.code for t in finished.tricks],
+                }
+            )
+
     return {
         "module": "solver",
         "generator": "tools/emit_vectors.py",
@@ -1460,6 +1497,7 @@ def emit_solver() -> dict:
             "EVEN": list(EVEN),
         },
         "positions": positions,
+        "agent_games": agent_games,
         "memo_key": {
             "layout": (
                 "elder | younger<<32 | leader<<64 | (led+1)<<65 | tricks<<71; "
