@@ -11,4 +11,6 @@
 //! `count_ones`, and the solver's 75-bit transposition key is a `u128`.
 
 pub mod cards;
+pub mod combos;
+pub mod scoring;
 pub mod solver;

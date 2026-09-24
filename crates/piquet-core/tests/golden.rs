@@ -219,3 +219,320 @@ fn an_impossible_position_is_refused() {
     )
     .is_err());
 }
+
+// -- combos -----------------------------------------------------------------
+
+use piquet_core::cards::{Rank, Suit};
+use piquet_core::combos::{
+    best_point, best_sequence, best_set, compare_point, compare_sequence, compare_set,
+    is_carte_blanche, score_sequences, score_sets, sequences, sets, CardSet, Point, Sequence,
+};
+
+#[test]
+fn holdings_detect_point_sequences_and_sets() {
+    let vec = vectors("combos.json");
+    for case in vec["holdings"].as_array().unwrap() {
+        let hand = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let where_ = case["hand"].as_str().unwrap();
+
+        match (best_point(hand), case["best_point"].as_object()) {
+            (None, None) => {}
+            (Some(point), Some(want)) => {
+                assert_eq!(
+                    u64::from(point.suit.0),
+                    want["suit"].as_u64().unwrap(),
+                    "{where_}"
+                );
+                assert_eq!(u64::from(point.length), want["length"].as_u64().unwrap());
+                assert_eq!(
+                    u64::from(point.pip_value),
+                    want["pip_value"].as_u64().unwrap()
+                );
+                assert_eq!(u64::from(point.score()), want["score"].as_u64().unwrap());
+            }
+            _ => panic!("{where_}: point presence disagrees with the oracle"),
+        }
+
+        let found = sequences(hand);
+        let want = case["sequences"].as_array().unwrap();
+        assert_eq!(found.len(), want.len(), "{where_}: sequence count");
+        for (got, want) in found.iter().zip(want) {
+            assert_eq!(
+                u64::from(got.suit.0),
+                want["suit"].as_u64().unwrap(),
+                "{where_}"
+            );
+            assert_eq!(
+                u64::from(got.top.0),
+                want["top"].as_u64().unwrap(),
+                "{where_}"
+            );
+            assert_eq!(u64::from(got.length), want["length"].as_u64().unwrap());
+            assert_eq!(u64::from(got.score()), want["score"].as_u64().unwrap());
+            assert_eq!(got.name(), want["name"].as_str().unwrap());
+        }
+
+        let held = sets(hand);
+        let want = case["sets"].as_array().unwrap();
+        assert_eq!(held.len(), want.len(), "{where_}: set count");
+        for (got, want) in held.iter().zip(want) {
+            assert_eq!(u64::from(got.rank.0), want["rank"].as_u64().unwrap());
+            assert_eq!(u64::from(got.count), want["count"].as_u64().unwrap());
+            assert_eq!(u64::from(got.score()), want["score"].as_u64().unwrap());
+        }
+
+        assert_eq!(
+            u64::from(score_sequences(hand)),
+            case["score_sequences"].as_u64().unwrap(),
+            "{where_}"
+        );
+        assert_eq!(
+            u64::from(score_sets(hand)),
+            case["score_sets"].as_u64().unwrap(),
+            "{where_}"
+        );
+        assert_eq!(
+            is_carte_blanche(hand),
+            case["carte_blanche"].as_bool().unwrap(),
+            "{where_}"
+        );
+    }
+}
+
+#[test]
+fn the_sequence_score_is_a_formula_not_a_table() {
+    let vec = vectors("combos.json");
+    for case in vec["sequence_scores"].as_array().unwrap() {
+        let length = case["length"].as_u64().unwrap() as u32;
+        let made = Sequence {
+            suit: Suit::CLUBS,
+            top: Rank::ACE,
+            length,
+        };
+        assert_eq!(u64::from(made.score()), case["score"].as_u64().unwrap());
+    }
+}
+
+#[test]
+fn tied_sequences_keep_the_order_a_stable_sort_gives() {
+    // The §2.2 hazard, and the reason `sort_descending_stably` exists. Two
+    // tierces to the king key identically; `sort_by_key(..).reverse()` would
+    // return the other one.
+    let vec = vectors("combos.json");
+    for case in vec["ties"].as_array().unwrap() {
+        let hand = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let found = sequences(hand);
+
+        let keys: Vec<Vec<u64>> = case["keys"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|k| {
+                k.as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|n| n.as_u64().unwrap())
+                    .collect()
+            })
+            .collect();
+        let got: Vec<Vec<u64>> = found
+            .iter()
+            .map(|s| vec![u64::from(s.length), u64::from(s.top.0)])
+            .collect();
+        assert_eq!(got, keys, "{}", case["hand"]);
+
+        let order = case["order"].as_array().unwrap();
+        for (got, want) in found.iter().zip(order) {
+            assert_eq!(u64::from(got.suit.0), want["suit"].as_u64().unwrap());
+            assert_eq!(u64::from(got.top.0), want["top"].as_u64().unwrap());
+        }
+        assert_eq!(
+            u64::from(best_sequence(hand).unwrap().suit.0),
+            case["best_suit"].as_u64().unwrap(),
+            "the tie decides which sequence is best"
+        );
+    }
+}
+
+#[test]
+fn comparisons_between_holdings() {
+    let vec = vectors("combos.json");
+    for case in vec["comparisons"].as_array().unwrap() {
+        let a = Hand::parse(case["left"].as_str().unwrap()).unwrap();
+        let b = Hand::parse(case["right"].as_str().unwrap()).unwrap();
+        assert_eq!(
+            compare_point(best_point(a), best_point(b)).value(),
+            case["point"].as_str().unwrap()
+        );
+        assert_eq!(
+            compare_sequence(best_sequence(a), best_sequence(b)).value(),
+            case["sequence"].as_str().unwrap()
+        );
+        assert_eq!(
+            compare_set(best_set(a), best_set(b)).value(),
+            case["set"].as_str().unwrap()
+        );
+    }
+}
+
+#[test]
+fn understated_claims_are_supported_or_not() {
+    let vec = vectors("combos.json");
+    for case in vec["support"].as_array().unwrap() {
+        let hand = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let claim = &case["claim"];
+        let supported = match case["kind"].as_str().unwrap() {
+            "point" => Point {
+                suit: Suit(claim["suit"].as_u64().unwrap() as u8),
+                length: claim["length"].as_u64().unwrap() as u32,
+                pip_value: claim["pip_value"].as_u64().unwrap() as u32,
+            }
+            .is_supported_by(hand),
+            "sequence" => Sequence {
+                suit: Suit(claim["suit"].as_u64().unwrap() as u8),
+                top: Rank(claim["top"].as_u64().unwrap() as u8),
+                length: claim["length"].as_u64().unwrap() as u32,
+            }
+            .is_supported_by(hand),
+            _ => CardSet {
+                rank: Rank(claim["rank"].as_u64().unwrap() as u8),
+                count: claim["count"].as_u64().unwrap() as u32,
+            }
+            .is_supported_by(hand),
+        };
+        assert_eq!(supported, case["supported"].as_bool().unwrap(), "{case}");
+    }
+}
+
+// -- scoring ----------------------------------------------------------------
+
+use piquet_core::scoring::{Category, Player, ScoreLog, DECLARATION_CATEGORIES, PIQUE_CATEGORIES};
+
+fn category_named(name: &str) -> Category {
+    Category::ALL
+        .into_iter()
+        .find(|c| c.name() == name)
+        .unwrap_or_else(|| panic!("unknown category {name}"))
+}
+
+fn rebuild_log(events: &serde_json::Value) -> ScoreLog {
+    let mut log = ScoreLog::new();
+    for event in events.as_array().unwrap() {
+        let row = event.as_array().unwrap();
+        let player = if row[0] == "elder" {
+            Player::Elder
+        } else {
+            Player::Younger
+        };
+        log = log
+            .record(
+                player,
+                row[1].as_i64().unwrap() as i32,
+                category_named(row[2].as_str().unwrap()),
+                row[3].as_str().unwrap(),
+            )
+            .unwrap();
+    }
+    log
+}
+
+#[test]
+fn category_values_are_the_reckoning_order() {
+    let vec = vectors("scoring.json");
+    for case in vec["categories"].as_array().unwrap() {
+        let category = category_named(case["name"].as_str().unwrap());
+        assert_eq!(category as u64, case["value"].as_u64().unwrap());
+    }
+}
+
+#[test]
+fn the_two_bonuses_read_different_category_sets() {
+    let vec = vectors("scoring.json");
+    let declaration: Vec<&str> = DECLARATION_CATEGORIES.iter().map(|c| c.name()).collect();
+    let pique: Vec<&str> = PIQUE_CATEGORIES.iter().map(|c| c.name()).collect();
+    let want_declaration: Vec<&str> = vec["declaration_categories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap())
+        .collect();
+    let want_pique: Vec<&str> = vec["pique_categories"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| c.as_str().unwrap())
+        .collect();
+    assert_eq!(declaration, want_declaration);
+    assert_eq!(pique, want_pique);
+    assert!(
+        !pique.contains(&"CARDS"),
+        "a capot does not count to a pique"
+    );
+}
+
+#[test]
+fn every_logged_case_reckons_as_recorded() {
+    let vec = vectors("scoring.json");
+    for case in vec["cases"].as_array().unwrap() {
+        let log = rebuild_log(&case["events"]);
+        let where_ = case["name"].as_str().unwrap();
+
+        assert_eq!(
+            i64::from(log.total(Player::Elder)),
+            case["totals"]["elder"].as_i64().unwrap(),
+            "{where_}"
+        );
+        assert_eq!(
+            i64::from(log.total(Player::Younger)),
+            case["totals"]["younger"].as_i64().unwrap(),
+            "{where_}"
+        );
+
+        let repique = log.repique().map(|p| p.name());
+        let pique = log.pique().map(|p| p.name());
+        assert_eq!(repique, case["repique"].as_str(), "{where_}: repique");
+        assert_eq!(pique, case["pique"].as_str(), "{where_}: pique");
+        assert!(
+            !(repique.is_some() && pique.is_some()),
+            "a player scores one bonus or the other, never both"
+        );
+
+        let settled = log.with_bonuses();
+        assert_eq!(
+            i64::from(settled.total(Player::Elder)),
+            case["totals_after_bonuses"]["elder"].as_i64().unwrap(),
+            "{where_}"
+        );
+        assert_eq!(
+            i64::from(settled.total(Player::Younger)),
+            case["totals_after_bonuses"]["younger"].as_i64().unwrap(),
+            "{where_}"
+        );
+        assert_eq!(
+            settled.with_bonuses().len(),
+            settled.len(),
+            "{where_}: with_bonuses must be idempotent"
+        );
+    }
+}
+
+#[test]
+fn younger_can_never_pique() {
+    // Not stipulated anywhere: it falls out of the precedence order.
+    let vec = vectors("scoring.json");
+    for case in vec["cases"].as_array().unwrap() {
+        let log = rebuild_log(&case["events"]);
+        assert_ne!(log.pique().map(|p| p.name()), Some("younger"));
+    }
+}
+
+#[test]
+fn a_score_must_be_positive() {
+    let vec = vectors("scoring.json");
+    for case in vec["errors"].as_array().unwrap() {
+        let amount = case["amount"].as_i64().unwrap() as i32;
+        assert!(ScoreLog::new()
+            .record(Player::Elder, amount, Category::Point, "")
+            .is_err());
+    }
+}
