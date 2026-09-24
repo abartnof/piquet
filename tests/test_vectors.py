@@ -1197,3 +1197,161 @@ def test_partie_vector_file_is_self_describing(pvec):
     assert pvec["module"] == "partie"
     for section in ("constants", "cases", "alternation", "errors"):
         assert pvec[section], f"section {section!r} is empty"
+
+
+# ===========================================================================
+# solver -- exact endgame search
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def solvec() -> dict:
+    return load("solver")
+
+
+def _position(case):
+    from piquet.cards import Card
+    from piquet.scoring import Player
+
+    return (
+        parse_hand(case["elder"]),
+        parse_hand(case["younger"]),
+        Player.ELDER if case["leader"] == "elder" else Player.YOUNGER,
+        Card.parse(case["led"]) if case["led"] else None,
+        case["elder_tricks"],
+    )
+
+
+def test_solver_constants(solvec):
+    import piquet.solver as solver
+
+    assert solver.TRICKS == solvec["constants"]["TRICKS"]
+    assert solver.CARDS_BONUS == solvec["constants"]["CARDS_BONUS"]
+    assert solver.CAPOT_BONUS == solvec["constants"]["CAPOT_BONUS"]
+    assert list(solver.EVEN) == solvec["constants"]["EVEN"]
+
+
+def test_the_default_path_is_integer_exact(solvec):
+    """`EVEN` is `(1, 1)` -- two ints -- so no fraction is ever produced.
+
+    Every type hint in `solver.py` says `float`, and Python's numeric tower
+    quietly accepts either. A port must decide deliberately: `f64` is exact
+    here by construction, but `i64` makes the exactness a fact about the type
+    rather than an argument about the values.
+    """
+    from piquet.solver import solve
+
+    for case in solvec["positions"]:
+        value = solve(*_position(case))
+        assert value == int(value), case["name"]
+        assert isinstance(value, int) or value.is_integer()
+
+
+def test_every_position_solves_to_its_recorded_value(solvec):
+    """Values are elder-minus-younger: positive favours elder."""
+    from piquet.solver import solve
+
+    for case in solvec["positions"]:
+        assert solve(*_position(case)) == case["value"], case["name"]
+
+
+def test_the_cards_and_the_capot_are_scored_at_the_right_thresholds(solvec):
+    """Ten for the cards, forty for a capot, nothing at six each.
+
+    The capot cases are the ones worth having: they differ from the ordinary
+    last trick by thirty points, and only in the running trick count.
+    """
+    by_name = {c["name"]: c for c in solvec["positions"]}
+    ordinary = by_name["the last trick, elder holds the master"]
+    capot = by_name["the last trick decides a capot"]
+    level = by_name["six each, nothing in it"]
+
+    assert capot["value"] - ordinary["value"] == 30, "forty for a capot, not ten"
+    assert ordinary["value"] - level["value"] == 10, "ten for the cards"
+
+
+def test_ducking_beats_cashing(solvec):
+    """A measured lesson, pinned as data.
+
+    `PLAN.md` records this among the beliefs the engine overturned: cashing an
+    ace looks right and is not, because the ace takes the *last* trick, which
+    is worth two. A port that reproduces every other value and gets this one
+    wrong has a real strategic bug, not a rounding difference.
+    """
+    case = next(
+        c for c in solvec["positions"] if c["name"].endswith("ducking beats cashing")
+    )
+    values = {c["card"]: c["value"] for c in case["card_values"]}
+    assert values["7S"] > values["AS"], "ducking must beat cashing"
+    assert case["best_card"] == "7S"
+
+
+def test_the_chosen_card_is_one_of_the_best(solvec):
+    from piquet.solver import best_card, card_values
+
+    for case in solvec["positions"]:
+        position = _position(case)
+        chosen, value = best_card(*position)
+        assert chosen.code == case["best_card"], case["name"]
+        assert value == case["best_value"], case["name"]
+
+        values = {c.code: v for c, v in card_values(*position).items()}
+        assert values == {c["card"]: c["value"] for c in case["card_values"]}, (
+            case["name"]
+        )
+        assert values[chosen.code] == max(values.values()) or values[
+            chosen.code
+        ] == min(values.values()), "the chosen card must be optimal for whoever acts"
+
+
+def test_the_transposition_key_needs_more_than_a_double(solvec):
+    """§2.1's worst hazard, pinned.
+
+    The key packs two hands, a leader, a led card and a trick count into one
+    integer with shifts up to 71, so it occupies 75 bits. JavaScript cannot
+    build it with bitwise operators at all -- those top out at 32 -- and a
+    double holds only 53 bits of integer exactly. Rust puts it in a `u128`.
+
+    These are the one place in the vectors where a number travels as a string,
+    for exactly that reason.
+    """
+    for case in solvec["memo_key"]["cases"]:
+        key = (
+            case["elder_bits"]
+            | (case["younger_bits"] << 32)
+            | (case["leader"] << 64)
+            | ((case["led_index"] + 1) << 65)
+            | (case["elder_tricks"] << 71)
+        )
+        assert str(key) == case["key"]
+        assert key.bit_length() == case["bit_length"]
+        assert key > 2**53, "otherwise this case is not testing the hazard"
+    assert max(c["bit_length"] for c in solvec["memo_key"]["cases"]) > 64, (
+        "no case exceeds 64 bits, so none of them needs a u128"
+    )
+
+
+def test_an_impossible_position_is_refused(solvec):
+    """One subtraction, and the alternative is undebuggable.
+
+    Given inconsistent hands the search runs a player out of cards, finds no
+    legal move and returns `None`, which surfaces as a `TypeError` several
+    frames deep in the recursion.
+    """
+    from piquet.cards import Card
+    from piquet.scoring import Player
+    from piquet.solver import solve
+
+    assert len(solvec["errors"]) >= 2
+    with pytest.raises(ValueError):
+        solve(parse_hand("AS KS"), parse_hand("QS"), Player.ELDER, None, 0)
+    with pytest.raises(ValueError):
+        solve(
+            parse_hand("AS KS"), parse_hand("QS JS"), Player.ELDER, Card.parse("7S"), 0
+        )
+
+
+def test_solver_vector_file_is_self_describing(solvec):
+    assert solvec["module"] == "solver"
+    for section in ("constants", "positions", "memo_key", "errors"):
+        assert solvec[section], f"section {section!r} is empty"

@@ -1,0 +1,353 @@
+{
+  "module": "solver",
+  "generator": "tools/emit_vectors.py",
+  "note": "Exact endgame search. Under the default EVEN weights -- a pair of Python ints -- the whole recursion is integer arithmetic end to end, despite every type hint saying float, so these values are exact and a port may use i64. Values are elder-minus-younger: positive favours elder. The memo_key section pins the layout of the transposition key, which needs 75 bits.",
+  "constants": {
+    "TRICKS": 12,
+    "CARDS_BONUS": 10,
+    "CAPOT_BONUS": 40,
+    "EVEN": [
+      1,
+      1
+    ]
+  },
+  "positions": [
+    {
+      "name": "the last trick, elder holds the master",
+      "elder": "AS",
+      "younger": "KS",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 6,
+      "value": 12,
+      "best_card": "AS",
+      "best_value": 12,
+      "card_values": [
+        {
+          "card": "AS",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "name": "the last trick, elder is beaten",
+      "elder": "KS",
+      "younger": "AS",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 6,
+      "value": -1,
+      "best_card": "KS",
+      "best_value": -1,
+      "card_values": [
+        {
+          "card": "KS",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "name": "the last trick decides a capot",
+      "elder": "AS",
+      "younger": "KS",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 11,
+      "value": 42,
+      "best_card": "AS",
+      "best_value": 42,
+      "card_values": [
+        {
+          "card": "AS",
+          "value": 42
+        }
+      ]
+    },
+    {
+      "name": "the last trick decides a capot against him",
+      "elder": "KS",
+      "younger": "AS",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 0,
+      "value": -41,
+      "best_card": "KS",
+      "best_value": -41,
+      "card_values": [
+        {
+          "card": "KS",
+          "value": -41
+        }
+      ]
+    },
+    {
+      "name": "six each, nothing in it",
+      "elder": "AS",
+      "younger": "KS",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 5,
+      "value": 2,
+      "best_card": "AS",
+      "best_value": 2,
+      "card_values": [
+        {
+          "card": "AS",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "name": "younger leads the last",
+      "elder": "AS",
+      "younger": "KS",
+      "leader": "younger",
+      "led": null,
+      "elder_tricks": 6,
+      "value": 11,
+      "best_card": "KS",
+      "best_value": 11,
+      "card_values": [
+        {
+          "card": "KS",
+          "value": 11
+        }
+      ]
+    },
+    {
+      "name": "two tricks left, ducking beats cashing",
+      "elder": "AS 7S",
+      "younger": "KS 8S",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 5,
+      "value": 1,
+      "best_card": "7S",
+      "best_value": 1,
+      "card_values": [
+        {
+          "card": "7S",
+          "value": 1
+        },
+        {
+          "card": "AS",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "name": "two tricks left, across two suits",
+      "elder": "AS 7H",
+      "younger": "KS 8H",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 5,
+      "value": 1,
+      "best_card": "7H",
+      "best_value": 1,
+      "card_values": [
+        {
+          "card": "7H",
+          "value": 1
+        },
+        {
+          "card": "AS",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "name": "two tricks left, elder is void",
+      "elder": "AC KC",
+      "younger": "AD KD",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 5,
+      "value": 13,
+      "best_card": "KC",
+      "best_value": 13,
+      "card_values": [
+        {
+          "card": "AC",
+          "value": 13
+        },
+        {
+          "card": "KC",
+          "value": 13
+        }
+      ]
+    },
+    {
+      "name": "three tricks left",
+      "elder": "AS KS QS",
+      "younger": "JS TS 9S",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 4,
+      "value": 14,
+      "best_card": "QS",
+      "best_value": 14,
+      "card_values": [
+        {
+          "card": "AS",
+          "value": 14
+        },
+        {
+          "card": "KS",
+          "value": 14
+        },
+        {
+          "card": "QS",
+          "value": 14
+        }
+      ]
+    },
+    {
+      "name": "three tricks, split suits",
+      "elder": "AS KS 7H",
+      "younger": "QS JS 8H",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 4,
+      "value": 2,
+      "best_card": "7H",
+      "best_value": 2,
+      "card_values": [
+        {
+          "card": "7H",
+          "value": 2
+        },
+        {
+          "card": "AS",
+          "value": 2
+        },
+        {
+          "card": "KS",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "name": "mid-trick: younger must follow",
+      "elder": "KS",
+      "younger": "AS QS",
+      "leader": "elder",
+      "led": "7S",
+      "elder_tricks": 5,
+      "value": -13,
+      "best_card": "QS",
+      "best_value": -13,
+      "card_values": [
+        {
+          "card": "AS",
+          "value": 0
+        },
+        {
+          "card": "QS",
+          "value": -13
+        }
+      ]
+    },
+    {
+      "name": "mid-trick: younger is void and may discard",
+      "elder": "KS",
+      "younger": "AH QH",
+      "leader": "elder",
+      "led": "7S",
+      "elder_tricks": 5,
+      "value": 12,
+      "best_card": "QH",
+      "best_value": 12,
+      "card_values": [
+        {
+          "card": "AH",
+          "value": 12
+        },
+        {
+          "card": "QH",
+          "value": 12
+        }
+      ]
+    },
+    {
+      "name": "four tricks left",
+      "elder": "AS KS 7H 8H",
+      "younger": "QS JS 9H TH",
+      "leader": "elder",
+      "led": null,
+      "elder_tricks": 3,
+      "value": -9,
+      "best_card": "7H",
+      "best_value": -9,
+      "card_values": [
+        {
+          "card": "7H",
+          "value": -9
+        },
+        {
+          "card": "8H",
+          "value": -9
+        },
+        {
+          "card": "AS",
+          "value": -10
+        },
+        {
+          "card": "KS",
+          "value": -10
+        }
+      ]
+    }
+  ],
+  "memo_key": {
+    "layout": "elder | younger<<32 | leader<<64 | (led+1)<<65 | tricks<<71; led is -1 when nothing has been led, so the field is 0",
+    "cases": [
+      {
+        "elder_bits": 2147483648,
+        "younger_bits": 1073741824,
+        "leader": 0,
+        "led_index": -1,
+        "elder_tricks": 6,
+        "key": "14171711134629510512640",
+        "bit_length": 74
+      },
+      {
+        "elder_bits": 2147483648,
+        "younger_bits": 1073741824,
+        "leader": 1,
+        "led_index": -1,
+        "elder_tricks": 6,
+        "key": "14190157878703220064256",
+        "bit_length": 74
+      },
+      {
+        "elder_bits": 2147483649,
+        "younger_bits": 1073741826,
+        "leader": 0,
+        "led_index": 0,
+        "elder_tricks": 12,
+        "key": "28375704071394455191553",
+        "bit_length": 75
+      },
+      {
+        "elder_bits": 4095,
+        "younger_bits": 0,
+        "leader": 0,
+        "led_index": 31,
+        "elder_tricks": 11,
+        "key": "27153607276500459982847",
+        "bit_length": 75
+      }
+    ]
+  },
+  "errors": [
+    {
+      "name": "hands of unequal length with nothing led",
+      "raises": "ValueError"
+    },
+    {
+      "name": "leader not short after leading",
+      "raises": "ValueError"
+    }
+  ]
+}

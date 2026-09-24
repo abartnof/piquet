@@ -36,6 +36,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
 from piquet.observation import View, view_for  # noqa: E402
+from piquet.solver import (  # noqa: E402
+    CAPOT_BONUS,
+    CARDS_BONUS,
+    EVEN,
+    TRICKS,
+    best_card,
+    card_values,
+    solve,
+)
 from piquet.partie import (  # noqa: E402
     DEALS_IN_PARTIE,
     EXTRA_DEALS,
@@ -1311,6 +1320,147 @@ def emit_partie() -> dict:
     }
 
 
+# (elder hand, younger hand, leader, card already led, elder's tricks so far).
+# Positions must be consistent: equal hands at the start of a trick, and the
+# leader one card short once he has led. Elder's trick count is the running
+# total, because the ten for the cards and the forty for a capot are decided
+# against the full twelve.
+SOLVER_POSITIONS = [
+    ("the last trick, elder holds the master", "AS", "KS", "elder", None, 6),
+    ("the last trick, elder is beaten", "KS", "AS", "elder", None, 6),
+    ("the last trick decides a capot", "AS", "KS", "elder", None, 11),
+    ("the last trick decides a capot against him", "KS", "AS", "elder", None, 0),
+    ("six each, nothing in it", "AS", "KS", "elder", None, 5),
+    ("younger leads the last", "AS", "KS", "younger", None, 6),
+    ("two tricks left, ducking beats cashing", "AS 7S", "KS 8S", "elder", None, 5),
+    ("two tricks left, across two suits", "AS 7H", "KS 8H", "elder", None, 5),
+    ("two tricks left, elder is void", "AC KC", "AD KD", "elder", None, 5),
+    ("three tricks left", "AS KS QS", "JS TS 9S", "elder", None, 4),
+    ("three tricks, split suits", "AS KS 7H", "QS JS 8H", "elder", None, 4),
+    ("mid-trick: younger must follow", "KS", "AS QS", "elder", "7S", 5),
+    ("mid-trick: younger is void and may discard", "KS", "AH QH", "elder", "7S", 5),
+    ("four tricks left", "AS KS 7H 8H", "QS JS 9H TH", "elder", None, 3),
+]
+
+BAD_POSITIONS = [
+    ("hands of unequal length with nothing led", "AS KS", "QS", "elder", None, 0),
+    ("leader not short after leading", "AS KS", "QS JS", "elder", "7S", 0),
+]
+
+
+def emit_solver() -> dict:
+    positions = []
+    for name, elder_code, younger_code, leader_name, led_code, tricks in SOLVER_POSITIONS:
+        elder, younger = parse_hand(elder_code), parse_hand(younger_code)
+        leader = Player.ELDER if leader_name == "elder" else Player.YOUNGER
+        led = Card.parse(led_code) if led_code else None
+
+        value = solve(elder, younger, leader, led, tricks)
+        chosen, chosen_value = best_card(elder, younger, leader, led, tricks)
+        values = card_values(elder, younger, leader, led, tricks)
+
+        # EVEN is a pair of Python ints, so the default path never produces a
+        # fraction despite every type hint saying float. A port may use i64.
+        if value != int(value):
+            raise SystemExit(f"{name}: default path produced a fraction {value}")
+
+        positions.append(
+            {
+                "name": name,
+                "elder": elder_code,
+                "younger": younger_code,
+                "leader": leader_name,
+                "led": led_code,
+                "elder_tricks": tricks,
+                "value": int(value),
+                "best_card": chosen.code,
+                "best_value": int(chosen_value),
+                "card_values": sorted(
+                    ({"card": c.code, "value": int(v)} for c, v in values.items()),
+                    key=lambda e: e["card"],
+                ),
+            }
+        )
+
+    errors = []
+    for name, elder_code, younger_code, leader_name, led_code, tricks in BAD_POSITIONS:
+        leader = Player.ELDER if leader_name == "elder" else Player.YOUNGER
+        try:
+            solve(
+                parse_hand(elder_code),
+                parse_hand(younger_code),
+                leader,
+                Card.parse(led_code) if led_code else None,
+                tricks,
+            )
+        except ValueError:
+            errors.append({"name": name, "raises": "ValueError"})
+        else:
+            raise SystemExit(f"solver position {name!r} did not raise")
+
+    # docs/DESIGN.md 2.1 singles this out: the transposition key packs two
+    # hands, a leader, a led card and a trick count into one integer with
+    # shifts up to 71, so it needs 75 bits. JavaScript cannot build it with
+    # bitwise operators at all; Rust holds it in a u128. Keys are written as
+    # decimal STRINGS because they exceed the 2**53 a JSON double represents
+    # exactly -- the one place these vectors break their own number rule.
+    keys = []
+    for elder_code, younger_code, leader_i, led_i, tricks in [
+        ("AS", "KS", 0, -1, 6),
+        ("AS", "KS", 1, -1, 6),
+        ("AS 7C", "KS 8C", 0, 0, 12),
+        (" ".join(c.code for c in full_deck()[:12]), "", 0, 31, 11),
+    ]:
+        elder_bits = parse_hand(elder_code).bits
+        younger_bits = parse_hand(younger_code).bits
+        key = (
+            elder_bits
+            | (younger_bits << 32)
+            | (leader_i << 64)
+            | ((led_i + 1) << 65)
+            | (tricks << 71)
+        )
+        keys.append(
+            {
+                "elder_bits": elder_bits,
+                "younger_bits": younger_bits,
+                "leader": leader_i,
+                "led_index": led_i,
+                "elder_tricks": tricks,
+                "key": str(key),
+                "bit_length": key.bit_length(),
+            }
+        )
+
+    return {
+        "module": "solver",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Exact endgame search. Under the default EVEN weights -- a pair of "
+            "Python ints -- the whole recursion is integer arithmetic end to "
+            "end, despite every type hint saying float, so these values are "
+            "exact and a port may use i64. Values are elder-minus-younger: "
+            "positive favours elder. The memo_key section pins the layout of "
+            "the transposition key, which needs 75 bits."
+        ),
+        "constants": {
+            "TRICKS": TRICKS,
+            "CARDS_BONUS": CARDS_BONUS,
+            "CAPOT_BONUS": CAPOT_BONUS,
+            "EVEN": list(EVEN),
+        },
+        "positions": positions,
+        "memo_key": {
+            "layout": (
+                "elder | younger<<32 | leader<<64 | (led+1)<<65 | tricks<<71; "
+                "led is -1 when nothing has been led, so the field is 0"
+            ),
+            "cases": keys,
+        },
+        "errors": errors,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1322,6 +1472,7 @@ def main() -> int:
         ("rules", emit_rules),
         ("observation", emit_observation),
         ("partie", emit_partie),
+        ("solver", emit_solver),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")
