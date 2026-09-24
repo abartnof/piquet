@@ -1302,19 +1302,77 @@ Then wasm serves the browser and PyO3 serves the thirty-line experiments,
 which stay thirty lines and run a hundred times faster. One engine, two front
 doors, and the throwaway analysis scripts stay throwaway.
 
-### 13.7 How to decide, rather than deciding
+### 13.7 Measured
 
-**Port `solver.py` to Rust and measure it.** It is 355 lines, self-contained,
-and every speed claim above rests on it. A day's work, and it replaces every
-estimate in §13.5 with a number.
+The solver is ported and timed. Same positions in both languages — alternate
+cards off the pack, n each — on the development VM, `cargo build --release`
+against CPython 3.11. Both languages agree on every value, which is the golden
+vectors doing their job.
 
-- ~100× and the rest follows; the days are worth it.
-- ~20× and TypeScript wins on effort, and a day is the cheapest possible way
-  to have learned that.
+| Tricks | Python | Rust | Speed-up | Positions memoised |
+|---|---|---|---|---|
+| 6 | 14.4 ms | 0.27 ms | **54×** | 4,175 |
+| 7 | 71.4 ms | 1.33 ms | **54×** | 18,562 |
+| 8 | 376 ms | 8.43 ms | **45×** | 82,468 |
+| 9 | 860 ms | 20.4 ms | **42×** | 187,295 |
+| 10 | 3.26 s | 116 ms | **28×** | 682,430 |
+| 11 | 13.9 s | 558 ms | **25×** | 2,738,867 |
+| 12 | 61.6 s | 3.05 s | **20×** | 11,284,122 |
 
-**And build the golden vectors first regardless** (§2, TODO 5). They are the
-specification that makes any rewrite verifiable, they would catch every hazard
-in §2.1 on the first run, and they are the only part of this work that cannot
-be wasted by whichever language wins.
+**Against §13.7's own thresholds this is the disappointing end of the range.**
+It said ~100× and the rewrite pays for itself, ~20× and TypeScript wins on
+effort. At the depth that matters most it is 20×. The language is settled
+regardless, and the port is worth having for the four goals in §13.5 rather
+than for this number alone — but the number should be recorded as it came out,
+not as it was hoped.
+
+**The shape matters more than the headline.** The advantage *falls* as the
+search deepens, from 54× to 20×. That is not a porting defect, it is the
+bottleneck moving. A shallow search is bounded by interpreter overhead, which
+is exactly what compiling removes. A deep one is bounded by a transposition
+table of eleven million entries that fits in no cache, and **memory latency is
+the same in both languages**. Compiling cannot buy back a cache miss.
+
+**So a faster language does not reach twelve tricks.** Recall that a single
+decision solves `max_worlds = 30` sampled opponent hands, so the cost per move
+is thirty solves, not one:
+
+| Cap | Per move, Rust | Playable? |
+|---|---|---|
+| 8 tricks | 0.25 s | yes — this is today's cap |
+| 9 tricks | 0.61 s | yes |
+| 10 tricks | 3.5 s | borderline |
+| 11 tricks | 17 s | no |
+| 12 tricks | 92 s | no |
+
+**The interactive frontier moves from eight tricks to about ten, not to
+twelve.** Two more tricks of exact play is a real gain and worth having. It is
+not the transformation §13.3 imagined when it listed the eight-trick cap as a
+thing a faster language would simply remove.
+
+Two caveats, both in the same direction and roughly cancelling: these are VM
+numbers and the VM is about 2× slower per core than the laptop, while wasm
+typically runs somewhat slower than native. A player's browser should land near
+this table rather than far from it.
+
+**What would actually reach twelve is algorithmic, not linguistic.** Alpha-beta
+with properly tagged bounds — exact, lower, upper — which §6.1 declined on the
+grounds that the table alone was fast enough; a tighter state encoding, since
+11.3 million entries at a u128 key is most of the cost; or a fixed-size
+replacement table instead of an unbounded map. Those are the levers now, and
+none of them is about the language.
+
+**One incidental measurement, because it was larger than expected.** Sizing the
+transposition table up front is worth about 2.3× at eight tricks, and getting
+it *wrong in either direction* costs: reserving a million entries for a search
+that needs 82,000 took it from 8.4 ms to 26.2 ms, because allocating and
+faulting in untouched pages costs more than the rehashing it avoids.
+`solver::expected_positions` is fitted to the measured counts above.
+
+**The golden vectors did what they were built for** (§2, TODO 5). They were
+written first, from the Python oracle, and the Rust reproduced every one of
+them on the first run — including the one that encodes a measured strategic
+lesson rather than a rule, where ducking beats cashing an ace. Checking a port
+is now a test run rather than a code review.
 - Piquet au Cent (36-card pack, different game).
 - Three- and four-player variants.
