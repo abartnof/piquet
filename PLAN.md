@@ -2,8 +2,8 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated after Milestone 7 and
-> the first attempt at a partie objective.
+> holds *where we are and what is left*. Last updated when development moved
+> to Google Cloud and the language was settled on Rust.
 
 ## Where we are
 
@@ -49,54 +49,72 @@ Over 60 parties of rung-4 play a side averages **145** across six deals, and
 **17 of 120** sides finish short of the rubicon. The threshold is a live
 threat, not a curiosity.
 
+## Where the work happens
+
+**All development is on Google Cloud.** Nothing is built, tested or measured on
+a laptop, and there is no Rust toolchain on one.
+
+| | |
+|---|---|
+| Project / zone | `abartnof-piquet`, `us-west1-b` |
+| Instance | `piquet-dev`, e2-standard-4 (4 vCPU, 16 GB), Debian 12 |
+| Disk | 50 GB, `autoDelete: False` — it survives the instance being deleted |
+| Toolchain | Rust 1.98.1 with clippy, rustfmt, rust-analyzer; Python 3.11.2, pytest 9.1.1 |
+
+`bin/vm` is the whole interface. It syncs the working tree and runs the command
+there, starting the instance if it is stopped and refreshing the SSH alias,
+whose address changes on every stop-start cycle.
+
+    bin/vm cargo test
+    bin/vm .venv/bin/pytest -q
+    bin/vm --down          # stop it; this is what keeps the bill small
+
+**Measured on arrival**, and worth knowing before it surprises someone: the
+full suite takes **188 s** on the VM against ~94 s on the laptop, and the fast
+loop **42 s** against ~16 s. The VM is 2× slower per core. That is the honest
+cost of the move until Rust lands. It is bounded — the runs that actually hurt
+are parallel and the VM has four cores to the laptop's advantage in one, and
+the machine resizes in about a minute.
+
 ## Next action
 
-Five candidates. The first three are cheap and unblock everything else.
-`docs/DESIGN.md` §13.5 ranks every language option against Andrew's four
-goals — quick training, a smart game, a fast game, a GUI — and §13.2 has the
-distinction the whole question turns on.
+**The language is settled: Rust.** `docs/DESIGN.md` §13.5 ranked it first on
+three of the four goals and second on the fourth; §2.2 now records what the
+port actually hits. PyPy and TypeScript are closed — not refuted, but
+overtaken by a decision.
 
-1. **Golden JSON vectors** (TODO 5). The specification that makes any rewrite
-   verifiable, and the only work here that *cannot be wasted* whichever
-   language wins. They would catch all five porting hazards in
-   `docs/DESIGN.md` §2.1 on the first run — including the one where the ace of
-   spades sits on bit 31 and reads as negative in JavaScript, and the one where
-   the solver's 71-bit memo key cannot be built with JS operators at all.
-   Write them against `deal_from`, never against a seed: no two languages
-   share a random number generator.
+The order below is forced by one rule: **nothing gets ported before there is
+something to port it against.**
 
-2. **Try PyPy first — hours, not days.** It runs the code that already
-   exists, so it is the only option whose cost is measured in hours, and it
-   may hand over goal 1 (quick training) outright with no commitment to any
-   rewrite. It can never ship in a browser, which is exactly why it does not
-   compete with the decision below.
+1. **Golden JSON vectors** (TODO 5). No longer merely advisable — they are the
+   specification the Rust is checked against, and the Python that passes 447
+   tests is the oracle that generates them. Write them against `deal_from`
+   with an explicit pack ordering, never a seed. Needs TODO 6 (a replay
+   format) first, because `match.write_jsonl` writes declarations as
+   unparseable English prose — `docs/DESIGN.md` §2.2.
 
-3. **Port `solver.py` to Rust and measure it** — 355 lines, self-contained,
-   and every speed estimate in `docs/DESIGN.md` §13 rests on it. A day's work,
-   and it turns those estimates into a number. ~100× and Rust is worth the
-   rewrite; ~20× and TypeScript wins on effort, and a day is the cheapest way
-   to have found that out.
+2. **The Rust workspace.** Three crates, matching the standing modularity
+   requirement that the engine, the AI and the interface be swappable:
+   `piquet-core` (cards … observation), `piquet-ai` (agents … solver),
+   `piquet-cli` (the table). `piquet-wasm` and `piquet-py` come later — the
+   second so that thirty-line experiments stay thirty lines (§13.6).
 
-4. **Milestone 9, the training mode.** The largest unmet *product* requirement
-   and it needs no compute. `docs/DESIGN.md` §8 is corrected — the decomposed
-   evaluation it assumed was never built — and the replacement is
-   ladder-based: rank a move by *which rung would play it*, so the explanation
-   names a skill the player can go and learn. `explain.py` is owed.
+3. **Port bottom-up, one module per commit**, in the order the dependency
+   graph forces: cards → scoring, style → combos → declarations → rules →
+   partie → observation → chances, agents → inference → heuristics → solver →
+   match, tournament → terminal. Tests first, then the implementation, then
+   `cargo clippy -- -D warnings`.
 
-5. **Milestone 8, the exchange policy.** Priced, and the price depends on the
-   language decision. In CPython: 4.8M deal playouts is 4 core-hours with
-   heuristic rollouts, 177 with solver-from-6, 3,332 with solver-from-8 — about
-   $0.03, $0.83–1.94 and $16–36 respectively on an n2-standard-32 Spot
-   instance. Before renting anything: **try PyPy** (20 minutes, no rewrite, and
-   it may put the real run on the laptop overnight) and **run the heuristic
-   tier locally** (7 free minutes, and it answers whether there is any signal
-   at all — the reconnaissance in §6.2 says there may not be).
+4. **The measurement §13.7 asked for** arrives free once `solver` lands:
+   benchmark the eight-trick solve (31,224 nodes) and the twelve-trick one
+   that costs 45 s in CPython. It was going to be a day's work on its own.
 
-**The distinction that took a whole conversation to see** (`DESIGN.md` §13.2):
-*research* speed is batch and a cloud VM solves it; *interactive* speed is the
-machine thinking while a person waits, and no VM can reach it because the
-rental is in Iowa and the player is not. Three of the five approximations in
-the AI are interactive. Those are a language problem and nothing else.
+5. **A parity gate before any Python is retired.** Every vector passes in
+   Rust, and the measured ladder — L1 335, L2 776, L3 816, L4 863, with the
+   solver at 82.5% / +5.0 points per pair over L4 — reproduces within noise.
+   Until that holds, the Python stays as the oracle.
+
+Milestones 8 and 9 are unchanged, and now sit behind the port.
 
 ## Settled decisions
 
@@ -104,7 +122,9 @@ the AI are interactive. Those are a language problem and nothing else.
 |---|---|
 | Rule authority | **pagat.com** wins all conflicts; variants behind flags |
 | Game implemented | Rubicon Piquet, 32 cards, 6-deal partie |
-| Language | Python; plain serialisable state. Golden JSON vectors for a future JS port are *promised and unbuilt* — TODO 5 |
+| Language | **Rust**, decided September 2026 — `docs/DESIGN.md` §13.5 ranked it first on three of the four goals, §2.2 audits what the port hits. Python stays as the oracle until parity |
+| Where it runs | **Google Cloud only.** No toolchain on a laptop; `bin/vm` is the interface |
+| Transport | `github.com/abartnof/piquet`, private. The 2017 attempt survives as `piquet-2017` |
 | Scoring model | Ordered **event log**, not a running total |
 | Bonus reckoning | Law 67's **order of precedence**, for pique and repique alike |
 | Seats vs people | `Player` is a seat and swaps each deal; `Side` plays the partie |
