@@ -271,12 +271,31 @@ should not have to rediscover them.
 
 Ordered by how much they are needed, not by size.
 
-1. **The partie objective is linearised, and should be settled.** The search
-   collapses a position to a weighted scalar on the way down; it needs to carry
-   both totals to the leaf and compute `chances.settlement_of` there. The
-   machinery all exists — this is a change to `solver._search`'s return type
-   and to what `SolverAgent` does with it. Measured evidence that the current
-   shortcut fails is above.
+1. **The partie objective — built, measured, not yet a default.** The search
+   now carries both totals to the leaf and settles there
+   (`solver::card_settlements`), which is what `docs/DESIGN.md` §6.4a asked
+   for. It costs only **1.6× at eight tricks**, far less than the state-space
+   argument suggests, because the reachable point splits at a position are
+   tightly constrained.
+
+   Over **720 mirrored last deals** it wins 249, loses 46, draws 425 — against
+   the linear-weight attempt's 0–9–66. But the net settlement is **−4.49 ±
+   3.48**, which is 1.3 sigma and therefore nothing. It wins often by little
+   and loses rarely by a lot.
+
+   **Next, and in this order.** Both are hypotheses, neither measured:
+
+   - Teach the search the **pique and repique** bonuses. It ignores them, an
+     approximation inherited from the additive version, and a missed repique
+     is sixty points — the size of the losses swamping the wins. `pique_is_live`
+     (TODO 9) is the unused helper that exists for this.
+   - Raise **`max_worlds`** above thirty and see whether the loss tail shrinks.
+     The flat objective averages a near-linear quantity and forgives a thin
+     sample; this one does not.
+
+   Judge any of it on `tournament::partie_duel`, not on deals. The baseline is
+   in "Where we are".
+
 2. **`rubicon nerve`, the fourth style dimension**, specified in
    `docs/DESIGN.md` §7.1 and now finally possible to implement — `chances`
    supplies everything it needs.

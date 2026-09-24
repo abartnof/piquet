@@ -900,9 +900,51 @@ hundred, minus one once she is past it, and a single deal moves her twenty.
 So the diagnosis in this section is still right and the obvious remedy is
 wrong. Doing it properly means the search carrying **both totals to the leaf
 and settling there**, rather than collapsing them to a weighted scalar on the
-way down. Until then `SolverAgent(partie_aware=True)` is a flag, not a default,
-and the AI is still optimising a proxy — knowingly, and with the alternative
-measured rather than assumed.
+way down.
+
+**Built, and measured. Promising, and not proven.** `solver::card_settlements`
+carries the accumulated point pair to the leaf and computes the settlement
+there. Two things had to be established first.
+
+*What it costs.* Play points are path-dependent: elder's come to `1 + 2E − Q`,
+where `E` is his trick count and `Q` the tricks he both led and won, and `Q`
+cannot be recovered from `E`. So the accumulated pair belongs in the memo key,
+and positions the additive search merges are now distinct. That sounds
+expensive and is not: **1.6× at eight tricks**, because the reachable point
+splits at a given position are far more constrained than the worst case. The
+key grows from 75 bits to 87, which a `u128` still holds.
+
+*Whether it plays better.* Measured over **720 mirrored last deals**, stacked
+at six standings where the objective should matter most, against the flat
+objective on identical cards:
+
+| | Won | Lost | Drawn | Net settlement per deal |
+|---|---|---|---|---|
+| Settling at the leaf | **249** | **46** | 425 | **−4.49 ± 3.48** |
+| The linear-weight attempt | 0 | 9 | 66 | — |
+
+**The two columns disagree, and the disagreement is the finding.** By deals, it
+is a rout: settling wins more than five times as often as it loses, where the
+previous attempt never won a single deal. By the thing that actually pays, it
+is **indistinguishable from zero and trending slightly negative** — 1.3 sigma,
+which is nothing.
+
+That shape has a reading: it wins *often* by small amounts and loses *rarely*
+by large ones. Near the rubicon that is exactly what one would expect from a
+residual error, because a mistake there costs the sum rather than the
+difference. Two candidate causes, neither measured:
+
+- **The search ignores pique and repique**, an approximation it inherits from
+  the additive version. A missed repique is sixty points, which is the size of
+  the losses that are swamping the wins.
+- **Thirty sampled opponent worlds may be too few** for an objective this
+  non-linear. The flat objective averages a near-linear quantity over them and
+  is forgiving of a thin sample; this one is not.
+
+So `partie_aware` stays a flag rather than a default — but it is now a flag
+worth pursuing rather than one that was tried and failed. The mirrored-parties
+harness (`tournament::partie_duel`) exists now, which is what any further
+attempt has to be judged on.
 
 ### 6.4b Where the uncertainty lives, and what to do about it
 
