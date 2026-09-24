@@ -119,32 +119,46 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
-**The port is done.** What is left is what was always behind it.
+**Where we left off.** The Rust port is complete and both halves of the parity
+gate are met. The current line of work is the partie objective (TODO 1): the
+search now settles at the leaf, it costs only 1.6×, and over 720 mirrored last
+deals it wins 249 to 46 — but the net settlement is 1.3 sigma from zero. It
+wins often by little and loses rarely by a lot.
 
-1. **Milestone 9, the training mode.** The largest unmet *product* requirement
-   and it needs no compute. `docs/DESIGN.md` §8's decomposed evaluation was
-   never built; the replacement is ladder-based — rank a move by *which rung
-   would play it*, so the explanation names a skill the player can go and
-   learn. Every rung is a working agent, so this is nearly free. `explain.rs`
+**Pick up here.** Two hypotheses for the loss tail, neither measured, in the
+order worth trying:
+
+1. **Teach the search pique and repique.** It ignores them, and a missed
+   repique is sixty points — the size of the losses swamping the wins.
+   `pique_is_live` (TODO 9) is the unused helper that exists for exactly this,
+   so two owed things close together.
+2. **Raise `max_worlds` above thirty** and see whether the tail shrinks. Cheap
+   to try; the flat objective forgives a thin sample and this one may not.
+
+Judge either on `bin/settle` (mirrored last deals, stacked) and on
+`bin/parties` (whole mirrored parties), never on deal points.
+
+Then, in rough order of value:
+
+3. **Milestone 9, the training mode.** The largest unmet *product* requirement
+   and it needs no compute. Ladder-based: rank a move by *which rung would
+   play it*, so the explanation names a skill the player can go and learn.
+   Every rung is already a working agent, so it is nearly free. `explain.rs`
    is owed.
 
-2. **Milestone 8, the exchange policy.** Priced in `docs/DESIGN.md` §6.2, and
-   the price just fell by an order of magnitude. Before renting anything, run
-   the heuristic tier — it answers whether there is any signal at all, and the
-   reconnaissance says there may not be.
+4. **The browser build.** `piquet-wasm`, and the 5 MB single-page target the
+   language choice was made for. Low risk — the engine has no dependencies and
+   nothing needs threads at the eight-trick cap.
 
-3. **The browser build.** `piquet-wasm`, and the 5 MB single-page target the
-   language choice was made for. The engine is small; card art will use the
-   budget.
+5. **Milestone 8, the exchange policy.** The only item that would spend money,
+   and the price fell by an order of magnitude with the port. Run the
+   heuristic tier first: it is free now, and answers whether there is any
+   signal at all.
 
-4. **`piquet-py`** (PyO3), so the thirty-line experiments this project runs on
-   stay thirty lines and get the Rust engine underneath. `docs/DESIGN.md`
-   §13.6 argues this matters more than it looks: the cheap experiment is where
-   nearly everything here was learnt, and a slower loop quietly stops being
-   used.
+6. **`piquet-py`** (PyO3), so the thirty-line experiments this project runs on
+   stay thirty lines with the Rust engine underneath.
 
-5. **Milestone 10, CFR declarations.** Still the largest unknown. Piquet has a
-   great many information sets and this would likely need an abstraction.
+7. **Milestone 10, CFR declarations.** Still the largest unknown.
 
 ## Settled decisions
 
