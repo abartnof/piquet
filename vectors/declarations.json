@@ -1,0 +1,616 @@
+{
+  "module": "declarations",
+  "generator": "tools/emit_vectors.py",
+  "note": "The dialogue layer, and the information discipline that goes with it. The suit is never spoken; a tie-break is spoken only when the shapes match, and only by elder; and a declaration that was beaten scores nothing and is never shown -- so the loser of a category gives away its shape but not its cards.",
+  "dialogue": [
+    {
+      "category": "POINT",
+      "elder_hand": "AC KC QC JC TC 9C 8C 7C",
+      "younger_hand": "AD KD QD JD TD 9D 8D",
+      "elder_sinks": false,
+      "elder_declares": "point of 8 (75)",
+      "elder_score_if_won": 8,
+      "younger_score_if_won": 7,
+      "comparison": "better",
+      "response": "good",
+      "winner": "elder",
+      "shapes_match": false,
+      "announced": {
+        "elder": {
+          "category": "POINT",
+          "primary": 8,
+          "tiebreak": null,
+          "spoken": "point of 8"
+        },
+        "younger": {
+          "category": "POINT",
+          "primary": 7,
+          "tiebreak": null,
+          "spoken": "point of 7"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "point",
+            "suit": 0,
+            "length": 8,
+            "pip_value": 75,
+            "score": 8,
+            "key": [
+              8,
+              75
+            ]
+          }
+        ],
+        "younger": []
+      }
+    },
+    {
+      "category": "POINT",
+      "elder_hand": "AC KC QC JC TC",
+      "younger_hand": "AD KD QD JD TD",
+      "elder_sinks": false,
+      "elder_declares": "point of 5 (51)",
+      "elder_score_if_won": 5,
+      "younger_score_if_won": 5,
+      "comparison": "equal",
+      "response": "equal",
+      "winner": null,
+      "shapes_match": true,
+      "announced": {
+        "elder": {
+          "category": "POINT",
+          "primary": 5,
+          "tiebreak": 51,
+          "spoken": "point of 5"
+        },
+        "younger": {
+          "category": "POINT",
+          "primary": 5,
+          "tiebreak": null,
+          "spoken": "point of 5"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "point",
+            "suit": 0,
+            "length": 5,
+            "pip_value": 51,
+            "score": 5,
+            "key": [
+              5,
+              51
+            ]
+          }
+        ],
+        "younger": [
+          {
+            "kind": "point",
+            "suit": 1,
+            "length": 5,
+            "pip_value": 51,
+            "score": 5,
+            "key": [
+              5,
+              51
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "category": "POINT",
+      "elder_hand": "AC KC QC JC TC",
+      "younger_hand": "AD KD QD JD 9D",
+      "elder_sinks": false,
+      "elder_declares": "point of 5 (51)",
+      "elder_score_if_won": 5,
+      "younger_score_if_won": 5,
+      "comparison": "better",
+      "response": "good",
+      "winner": "elder",
+      "shapes_match": true,
+      "announced": {
+        "elder": {
+          "category": "POINT",
+          "primary": 5,
+          "tiebreak": 51,
+          "spoken": "point of 5"
+        },
+        "younger": {
+          "category": "POINT",
+          "primary": 5,
+          "tiebreak": null,
+          "spoken": "point of 5"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "point",
+            "suit": 0,
+            "length": 5,
+            "pip_value": 51,
+            "score": 5,
+            "key": [
+              5,
+              51
+            ]
+          }
+        ],
+        "younger": []
+      }
+    },
+    {
+      "category": "SEQUENCES",
+      "elder_hand": "AC KC QC JC",
+      "younger_hand": "AD KD QD",
+      "elder_sinks": false,
+      "elder_declares": "quart to the ace",
+      "elder_score_if_won": 4,
+      "younger_score_if_won": 3,
+      "comparison": "better",
+      "response": "good",
+      "winner": "elder",
+      "shapes_match": false,
+      "announced": {
+        "elder": {
+          "category": "SEQUENCES",
+          "primary": 4,
+          "tiebreak": null,
+          "spoken": "quart"
+        },
+        "younger": {
+          "category": "SEQUENCES",
+          "primary": 3,
+          "tiebreak": null,
+          "spoken": "tierce"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "sequence",
+            "suit": 0,
+            "top": 14,
+            "length": 4,
+            "score": 4,
+            "name": "quart",
+            "key": [
+              4,
+              14
+            ]
+          }
+        ],
+        "younger": []
+      }
+    },
+    {
+      "category": "SEQUENCES",
+      "elder_hand": "AC KC QC",
+      "younger_hand": "AD KD QD",
+      "elder_sinks": false,
+      "elder_declares": "tierce to the ace",
+      "elder_score_if_won": 3,
+      "younger_score_if_won": 3,
+      "comparison": "equal",
+      "response": "equal",
+      "winner": null,
+      "shapes_match": true,
+      "announced": {
+        "elder": {
+          "category": "SEQUENCES",
+          "primary": 3,
+          "tiebreak": 14,
+          "spoken": "tierce"
+        },
+        "younger": {
+          "category": "SEQUENCES",
+          "primary": 3,
+          "tiebreak": null,
+          "spoken": "tierce"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "sequence",
+            "suit": 0,
+            "top": 14,
+            "length": 3,
+            "score": 3,
+            "name": "tierce",
+            "key": [
+              3,
+              14
+            ]
+          }
+        ],
+        "younger": [
+          {
+            "kind": "sequence",
+            "suit": 1,
+            "top": 14,
+            "length": 3,
+            "score": 3,
+            "name": "tierce",
+            "key": [
+              3,
+              14
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "category": "SETS",
+      "elder_hand": "AC AD AH AS",
+      "younger_hand": "KC KD KH KS",
+      "elder_sinks": false,
+      "elder_declares": "quatorze of aces",
+      "elder_score_if_won": 14,
+      "younger_score_if_won": 14,
+      "comparison": "better",
+      "response": "good",
+      "winner": "elder",
+      "shapes_match": true,
+      "announced": {
+        "elder": {
+          "category": "SETS",
+          "primary": 4,
+          "tiebreak": 14,
+          "spoken": "quatorze"
+        },
+        "younger": {
+          "category": "SETS",
+          "primary": 4,
+          "tiebreak": null,
+          "spoken": "quatorze"
+        }
+      },
+      "shown": {
+        "elder": [
+          {
+            "kind": "set",
+            "rank": 14,
+            "count": 4,
+            "score": 14,
+            "name": "quatorze",
+            "key": [
+              4,
+              14
+            ]
+          }
+        ],
+        "younger": []
+      }
+    },
+    {
+      "category": "SETS",
+      "elder_hand": "AC AD AH",
+      "younger_hand": "KC KD KH KS",
+      "elder_sinks": false,
+      "elder_declares": "trio of aces",
+      "elder_score_if_won": 3,
+      "younger_score_if_won": 14,
+      "comparison": "worse",
+      "response": "not good",
+      "winner": "younger",
+      "shapes_match": false,
+      "announced": {
+        "elder": {
+          "category": "SETS",
+          "primary": 3,
+          "tiebreak": null,
+          "spoken": "trio"
+        },
+        "younger": {
+          "category": "SETS",
+          "primary": 4,
+          "tiebreak": null,
+          "spoken": "quatorze"
+        }
+      },
+      "shown": {
+        "elder": [],
+        "younger": [
+          {
+            "kind": "set",
+            "rank": 13,
+            "count": 4,
+            "score": 14,
+            "name": "quatorze",
+            "key": [
+              4,
+              13
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "category": "SEQUENCES",
+      "elder_hand": "7C 8C 9C",
+      "younger_hand": "AD KD QD JD",
+      "elder_sinks": false,
+      "elder_declares": "tierce to the nine",
+      "elder_score_if_won": 3,
+      "younger_score_if_won": 4,
+      "comparison": "worse",
+      "response": "not good",
+      "winner": "younger",
+      "shapes_match": false,
+      "announced": {
+        "elder": {
+          "category": "SEQUENCES",
+          "primary": 3,
+          "tiebreak": null,
+          "spoken": "tierce"
+        },
+        "younger": {
+          "category": "SEQUENCES",
+          "primary": 4,
+          "tiebreak": null,
+          "spoken": "quart"
+        }
+      },
+      "shown": {
+        "elder": [],
+        "younger": [
+          {
+            "kind": "sequence",
+            "suit": 1,
+            "top": 14,
+            "length": 4,
+            "score": 4,
+            "name": "quart",
+            "key": [
+              4,
+              14
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "category": "SEQUENCES",
+      "elder_hand": "AC KC QC JC",
+      "younger_hand": "AD KD QD",
+      "elder_sinks": true,
+      "elder_declares": "sunk",
+      "elder_score_if_won": 0,
+      "younger_score_if_won": 3,
+      "comparison": "worse",
+      "response": "not good",
+      "winner": "younger",
+      "shapes_match": false,
+      "announced": {
+        "elder": null,
+        "younger": {
+          "category": "SEQUENCES",
+          "primary": 3,
+          "tiebreak": null,
+          "spoken": "tierce"
+        }
+      },
+      "shown": {
+        "elder": [],
+        "younger": [
+          {
+            "kind": "sequence",
+            "suit": 1,
+            "top": 14,
+            "length": 3,
+            "score": 3,
+            "name": "tierce",
+            "key": [
+              3,
+              14
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "matches": [
+    {
+      "announcement": {
+        "category": "POINT",
+        "primary": 5,
+        "tiebreak": 51
+      },
+      "hand": "AC KC QC JC TC",
+      "matches": true
+    },
+    {
+      "announcement": {
+        "category": "POINT",
+        "primary": 5,
+        "tiebreak": 51
+      },
+      "hand": "AS KS QS JS TS",
+      "matches": true
+    },
+    {
+      "announcement": {
+        "category": "POINT",
+        "primary": 5,
+        "tiebreak": 50
+      },
+      "hand": "AC KC QC JC TC",
+      "matches": false
+    },
+    {
+      "announcement": {
+        "category": "POINT",
+        "primary": 5,
+        "tiebreak": null
+      },
+      "hand": "AS KS QS JS TS",
+      "matches": true
+    },
+    {
+      "announcement": {
+        "category": "POINT",
+        "primary": 4,
+        "tiebreak": null
+      },
+      "hand": "AC KC QC JC TC",
+      "matches": false
+    },
+    {
+      "announcement": {
+        "category": "SEQUENCES",
+        "primary": 3,
+        "tiebreak": 13
+      },
+      "hand": "JH QH KH",
+      "matches": true
+    },
+    {
+      "announcement": {
+        "category": "SEQUENCES",
+        "primary": 3,
+        "tiebreak": 13
+      },
+      "hand": "JS QS KS",
+      "matches": true
+    }
+  ],
+  "validate": [
+    {
+      "name": "wrong category",
+      "hand": "AC KC QC JC TC",
+      "category": "POINT",
+      "claims": [
+        {
+          "kind": "sequence",
+          "suit": 0,
+          "top": 14,
+          "length": 5,
+          "score": 15,
+          "name": "quint",
+          "key": [
+            5,
+            14
+          ]
+        }
+      ],
+      "raises": "ValueError"
+    },
+    {
+      "name": "not held",
+      "hand": "AC KC QC JC TC",
+      "category": "POINT",
+      "claims": [
+        {
+          "kind": "point",
+          "suit": 1,
+          "length": 3,
+          "pip_value": 30,
+          "score": 3,
+          "key": [
+            3,
+            30
+          ]
+        }
+      ],
+      "raises": "ValueError"
+    },
+    {
+      "name": "two points",
+      "hand": "AC KC QC JC TC",
+      "category": "POINT",
+      "claims": [
+        {
+          "kind": "point",
+          "suit": 0,
+          "length": 5,
+          "pip_value": 51,
+          "score": 5,
+          "key": [
+            5,
+            51
+          ]
+        },
+        {
+          "kind": "point",
+          "suit": 0,
+          "length": 4,
+          "pip_value": 41,
+          "score": 4,
+          "key": [
+            4,
+            41
+          ]
+        }
+      ],
+      "raises": "ValueError"
+    },
+    {
+      "name": "overlapping sequences",
+      "hand": "AC KC QC JC TC",
+      "category": "SEQUENCES",
+      "claims": [
+        {
+          "kind": "sequence",
+          "suit": 0,
+          "top": 14,
+          "length": 5,
+          "score": 15,
+          "name": "quint",
+          "key": [
+            5,
+            14
+          ]
+        },
+        {
+          "kind": "sequence",
+          "suit": 0,
+          "top": 13,
+          "length": 4,
+          "score": 4,
+          "name": "quart",
+          "key": [
+            4,
+            13
+          ]
+        }
+      ],
+      "raises": "ValueError"
+    },
+    {
+      "name": "two sets of one rank",
+      "hand": "AC AD AH AS",
+      "category": "SETS",
+      "claims": [
+        {
+          "kind": "set",
+          "rank": 14,
+          "count": 4,
+          "score": 14,
+          "name": "quatorze",
+          "key": [
+            4,
+            14
+          ]
+        },
+        {
+          "kind": "set",
+          "rank": 14,
+          "count": 3,
+          "score": 3,
+          "name": "trio",
+          "key": [
+            3,
+            14
+          ]
+        }
+      ],
+      "raises": "ValueError"
+    }
+  ]
+}

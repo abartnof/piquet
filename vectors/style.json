@@ -1,0 +1,82 @@
+{
+  "module": "style",
+  "generator": "tools/emit_vectors.py",
+  "note": "The third axis, orthogonal to skill and erraticism. The CALIBRATED bands are measured, not chosen: each is narrow enough that an extreme setting costs under about a point a deal, which is what keeps style from becoming a skill dial. Re-measure them whenever the ladder moves. `describe` reads a style RELATIVE to its band, because on the raw 0-1 scale every opponent would read as neutral.",
+  "calibrated": {
+    "discard_boldness": [
+      0.35,
+      0.65
+    ],
+    "guard_retention": [
+      0.35,
+      0.65
+    ],
+    "sinking": [
+      0.0,
+      0.1
+    ]
+  },
+  "balanced": {
+    "discard_boldness": 0.5,
+    "sinking": 0.0,
+    "guard_retention": 0.5
+  },
+  "styles": [
+    {
+      "discard_boldness": 0.5,
+      "sinking": 0.0,
+      "guard_retention": 0.5,
+      "describe": "even-handed · declares everything · balanced"
+    },
+    {
+      "discard_boldness": 0.36,
+      "sinking": 0.01,
+      "guard_retention": 0.36,
+      "describe": "cautious discarder · declares everything · runs its suits"
+    },
+    {
+      "discard_boldness": 0.64,
+      "sinking": 0.09,
+      "guard_retention": 0.64,
+      "describe": "bold discarder · conceals what it can · hoards guards"
+    },
+    {
+      "discard_boldness": 0.4,
+      "sinking": 0.05,
+      "guard_retention": 0.6,
+      "describe": "cautious discarder · occasionally conceals · hoards guards"
+    },
+    {
+      "discard_boldness": 0.6,
+      "sinking": 0.02,
+      "guard_retention": 0.4,
+      "describe": "bold discarder · declares everything · runs its suits"
+    }
+  ],
+  "errors": [
+    {
+      "fields": {
+        "discard_boldness": -0.1
+      },
+      "raises": "ValueError"
+    },
+    {
+      "fields": {
+        "discard_boldness": 1.1
+      },
+      "raises": "ValueError"
+    },
+    {
+      "fields": {
+        "sinking": 2.0
+      },
+      "raises": "ValueError"
+    },
+    {
+      "fields": {
+        "guard_retention": -0.0001
+      },
+      "raises": "ValueError"
+    }
+  ]
+}

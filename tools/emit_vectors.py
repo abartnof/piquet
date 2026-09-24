@@ -35,6 +35,13 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
+from piquet.declarations import (  # noqa: E402
+    Announcement,
+    CategoryResult,
+    Declaration,
+    compare_in,
+)
+from piquet.style import BALANCED, CALIBRATED, Style  # noqa: E402
 from piquet.scoring import (  # noqa: E402
     DECLARATION_CATEGORIES,
     PIQUE_BONUS,
@@ -515,12 +522,233 @@ def emit_scoring() -> dict:
     }
 
 
+# Styles chosen to sit unambiguously inside a band rather than on its edge.
+# `describe` divides by the calibrated span, so an exact boundary value is a
+# float comparison across two languages -- precisely the thing 2.1 says to
+# avoid pinning. The bands themselves are recorded instead, so a port can check
+# its own arithmetic against them.
+STYLE_CASES = [
+    {"discard_boldness": 0.50, "sinking": 0.00, "guard_retention": 0.50},
+    {"discard_boldness": 0.36, "sinking": 0.01, "guard_retention": 0.36},
+    {"discard_boldness": 0.64, "sinking": 0.09, "guard_retention": 0.64},
+    {"discard_boldness": 0.40, "sinking": 0.05, "guard_retention": 0.60},
+    {"discard_boldness": 0.60, "sinking": 0.02, "guard_retention": 0.40},
+]
+
+BAD_STYLES = [
+    {"discard_boldness": -0.1},
+    {"discard_boldness": 1.1},
+    {"sinking": 2.0},
+    {"guard_retention": -0.0001},
+]
+
+# elder hand, younger hand, category
+DIALOGUE_CASES = [
+    ("AC KC QC JC TC 9C 8C 7C", "AD KD QD JD TD 9D 8D", "POINT"),
+    ("AC KC QC JC TC", "AD KD QD JD TD", "POINT"),
+    ("AC KC QC JC TC", "AD KD QD JD 9D", "POINT"),
+    ("AC KC QC JC", "AD KD QD", "SEQUENCES"),
+    ("AC KC QC", "AD KD QD", "SEQUENCES"),
+    ("AC AD AH AS", "KC KD KH KS", "SETS"),
+    ("AC AD AH", "KC KD KH KS", "SETS"),
+    ("7C 8C 9C", "AD KD QD JD", "SEQUENCES"),
+    # Elder sinks: announces nothing at all, conceding the category to buy
+    # silence. Younger still wins it, so she announces and shows normally --
+    # which is the part that is easy to get wrong by hand.
+    ("AC KC QC JC", "AD KD QD", "SEQUENCES", "sink"),
+]
+
+VALIDATE_CASES = [
+    ("wrong category", "AC KC QC JC TC", "POINT", "sequence"),
+    ("not held", "AC KC QC JC TC", "POINT", "unheld_point"),
+    ("two points", "AC KC QC JC TC", "POINT", "two_points"),
+    ("overlapping sequences", "AC KC QC JC TC", "SEQUENCES", "overlap"),
+    ("two sets of one rank", "AC AD AH AS", "SETS", "duplicate_rank"),
+]
+
+
+def emit_style() -> dict:
+    styles = []
+    for fields in STYLE_CASES:
+        st = Style(**fields)
+        styles.append({**fields, "describe": st.describe()})
+
+    errors = []
+    for fields in BAD_STYLES:
+        try:
+            Style(**fields)
+        except ValueError:
+            errors.append({"fields": fields, "raises": "ValueError"})
+        else:
+            raise SystemExit(f"Style({fields}) did not raise")
+
+    return {
+        "module": "style",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The third axis, orthogonal to skill and erraticism. The CALIBRATED "
+            "bands are measured, not chosen: each is narrow enough that an "
+            "extreme setting costs under about a point a deal, which is what "
+            "keeps style from becoming a skill dial. Re-measure them whenever "
+            "the ladder moves. `describe` reads a style RELATIVE to its band, "
+            "because on the raw 0-1 scale every opponent would read as neutral."
+        ),
+        "calibrated": {k: list(v) for k, v in CALIBRATED.items()},
+        "balanced": {
+            "discard_boldness": BALANCED.discard_boldness,
+            "sinking": BALANCED.sinking,
+            "guard_retention": BALANCED.guard_retention,
+        },
+        "styles": styles,
+        "errors": errors,
+    }
+
+
+def _claim(obj) -> dict:
+    from piquet.combos import CardSet, Point, Sequence
+
+    if isinstance(obj, Point):
+        return {"kind": "point", **_point(obj)}
+    if isinstance(obj, Sequence):
+        return {"kind": "sequence", **_sequence(obj)}
+    if isinstance(obj, CardSet):
+        return {"kind": "set", **_set(obj)}
+    raise TypeError(obj)
+
+
+def _announcement(a) -> dict | None:
+    if a is None:
+        return None
+    return {
+        "category": a.category.name,
+        "primary": a.primary,
+        "tiebreak": a.tiebreak,
+        "spoken": str(a),
+    }
+
+
+def emit_declarations() -> dict:
+    from piquet.combos import CardSet, Point, Sequence
+    from piquet.cards import Rank as R, Suit as S
+
+    dialogue = []
+    for case in DIALOGUE_CASES:
+        elder_code, younger_code, cat_name = case[:3]
+        elder_sinks = len(case) > 3 and case[3] == "sink"
+        category = Category[cat_name]
+        eh, yh = parse_hand(elder_code), parse_hand(younger_code)
+        ed = Declaration.sink() if elder_sinks else Declaration.full(eh, category)
+        yd = Declaration.full(yh, category)
+        ed.validate(eh, category)
+        yd.validate(yh, category)
+        comparison = compare_in(category, ed.best, yd.best)
+        result = CategoryResult(category, ed, yd, comparison)
+
+        dialogue.append(
+            {
+                "category": cat_name,
+                "elder_hand": elder_code,
+                "younger_hand": younger_code,
+                "elder_sinks": elder_sinks,
+                "elder_declares": str(ed),
+                "elder_score_if_won": ed.score,
+                "younger_score_if_won": yd.score,
+                "comparison": comparison.value,
+                "response": result.response,
+                "winner": result.winner.value if result.winner else None,
+                "shapes_match": result.shapes_match,
+                # The information discipline: what each side actually learns.
+                "announced": {
+                    "elder": _announcement(result.announcement_of(Player.ELDER)),
+                    "younger": _announcement(result.announcement_of(Player.YOUNGER)),
+                },
+                "shown": {
+                    "elder": [_claim(c) for c in result.shown(Player.ELDER)],
+                    "younger": [_claim(c) for c in result.shown(Player.YOUNGER)],
+                },
+            }
+        )
+
+    # `matches` reads only the sort key, and an announcement carries no suit.
+    match_cases = []
+    for primary, tiebreak, hand_code, cat_name in [
+        (5, 51, "AC KC QC JC TC", "POINT"),
+        (5, 51, "AS KS QS JS TS", "POINT"),
+        (5, 50, "AC KC QC JC TC", "POINT"),
+        (5, None, "AS KS QS JS TS", "POINT"),
+        (4, None, "AC KC QC JC TC", "POINT"),
+        (3, 13, "JH QH KH", "SEQUENCES"),
+        (3, 13, "JS QS KS", "SEQUENCES"),
+    ]:
+        category = Category[cat_name]
+        announcement = Announcement(category, primary, tiebreak)
+        best = Declaration.full(parse_hand(hand_code), category).best
+        match_cases.append(
+            {
+                "announcement": {
+                    "category": cat_name,
+                    "primary": primary,
+                    "tiebreak": tiebreak,
+                },
+                "hand": hand_code,
+                "matches": announcement.matches(best),
+            }
+        )
+
+    builders = {
+        "sequence": lambda: (Sequence(S.CLUBS, R.ACE, 5),),
+        "unheld_point": lambda: (Point(S.DIAMONDS, 3, 30),),
+        "two_points": lambda: (Point(S.CLUBS, 5, 51), Point(S.CLUBS, 4, 41)),
+        "overlap": lambda: (
+            Sequence(S.CLUBS, R.ACE, 5),
+            Sequence(S.CLUBS, R.KING, 4),
+        ),
+        "duplicate_rank": lambda: (CardSet(R.ACE, 4), CardSet(R.ACE, 3)),
+    }
+    validate = []
+    for name, hand_code, cat_name, builder in VALIDATE_CASES:
+        category = Category[cat_name]
+        declaration = Declaration(builders[builder]())
+        try:
+            declaration.validate(parse_hand(hand_code), category)
+        except ValueError:
+            pass
+        else:
+            raise SystemExit(f"validate case {name!r} did not raise")
+        validate.append(
+            {
+                "name": name,
+                "hand": hand_code,
+                "category": cat_name,
+                "claims": [_claim(c) for c in declaration.claims],
+                "raises": "ValueError",
+            }
+        )
+
+    return {
+        "module": "declarations",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The dialogue layer, and the information discipline that goes with "
+            "it. The suit is never spoken; a tie-break is spoken only when the "
+            "shapes match, and only by elder; and a declaration that was beaten "
+            "scores nothing and is never shown -- so the loser of a category "
+            "gives away its shape but not its cards."
+        ),
+        "dialogue": dialogue,
+        "matches": match_cases,
+        "validate": validate,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
         ("cards", emit_cards),
         ("combos", emit_combos),
         ("scoring", emit_scoring),
+        ("style", emit_style),
+        ("declarations", emit_declarations),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

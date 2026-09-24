@@ -485,3 +485,190 @@ def test_scoring_vector_file_is_self_describing(svec):
     assert svec["module"] == "scoring"
     for section in ("categories", "cases", "errors", "constants"):
         assert svec[section], f"section {section!r} is empty"
+
+
+# ===========================================================================
+# style
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def styvec() -> dict:
+    return load("style")
+
+
+def test_calibrated_bands_are_the_measured_ones(styvec):
+    """These numbers were fitted, not chosen, and they are load-bearing.
+
+    Each band is narrow enough that an extreme setting costs under about a
+    point a deal, which is what stops style becoming a second skill dial. They
+    want re-measuring whenever the ladder moves, so pinning them here makes a
+    silent drift impossible.
+    """
+    from piquet.style import CALIBRATED
+
+    assert {k: list(v) for k, v in CALIBRATED.items()} == styvec["calibrated"]
+
+
+def test_the_balanced_style_is_neutral(styvec):
+    from piquet.style import BALANCED
+
+    assert BALANCED.discard_boldness == styvec["balanced"]["discard_boldness"]
+    assert BALANCED.sinking == styvec["balanced"]["sinking"]
+    assert BALANCED.guard_retention == styvec["balanced"]["guard_retention"]
+
+
+def test_styles_describe_themselves_relative_to_the_band(styvec):
+    """Read against the raw 0-to-1 scale every opponent would be "even-handed".
+
+    The bands are deliberately narrow, so `describe` divides by the calibrated
+    span instead. What a player needs to know is whether this opponent is
+    bolder than the others they might meet, not where it sits in the abstract.
+    """
+    from piquet.style import Style
+
+    for case in styvec["styles"]:
+        fields = {k: v for k, v in case.items() if k != "describe"}
+        assert Style(**fields).describe() == case["describe"]
+
+
+def test_a_style_outside_zero_to_one_is_refused(styvec):
+    from piquet.style import Style
+
+    for case in styvec["errors"]:
+        with pytest.raises(ValueError):
+            Style(**case["fields"])
+
+
+# ===========================================================================
+# declarations
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def dvec() -> dict:
+    return load("declarations")
+
+
+def _result(case):
+    from piquet.declarations import CategoryResult, Declaration, compare_in
+    from piquet.scoring import Category
+
+    category = Category[case["category"]]
+    eh = parse_hand(case["elder_hand"])
+    yh = parse_hand(case["younger_hand"])
+    ed = Declaration.sink() if case["elder_sinks"] else Declaration.full(eh, category)
+    yd = Declaration.full(yh, category)
+    return category, CategoryResult(category, ed, yd, compare_in(category, ed.best, yd.best))
+
+
+def test_the_dialogue_resolves_as_recorded(dvec):
+    for case in dvec["dialogue"]:
+        _, result = _result(case)
+        where = f"{case['category']} {case['elder_hand']!r} vs {case['younger_hand']!r}"
+        assert result.comparison.value == case["comparison"], where
+        got_winner = result.winner.value if result.winner else None
+        assert got_winner == case["winner"], where
+        assert result.shapes_match == case["shapes_match"], where
+
+
+def test_the_suit_is_never_spoken(dvec):
+    """An announcement is a sort key stripped of its suit, and often of more.
+
+    This is the discipline that `observation` has broken three times in this
+    project's history, so it is pinned at the source rather than only where it
+    is consumed.
+    """
+    from piquet.scoring import Player
+
+    for case in dvec["dialogue"]:
+        _, result = _result(case)
+        for who, player in (("elder", Player.ELDER), ("younger", Player.YOUNGER)):
+            want = case["announced"][who]
+            got = result.announcement_of(player)
+            if want is None:
+                assert got is None, case["category"]
+                continue
+            assert got.category.name == want["category"]
+            assert got.primary == want["primary"]
+            assert got.tiebreak == want["tiebreak"]
+            assert str(got) == want["spoken"]
+            assert "spade" not in str(got).lower()
+            assert "club" not in str(got).lower()
+
+
+def test_a_tiebreak_is_spoken_only_when_the_shapes_match(dvec):
+    """And only by elder. Younger answers his number rather than naming hers.
+
+    "Point of five." "Equal." "Making forty-nine." "Good." -- the tie-break is
+    asked for, never volunteered, which was itself a corrected overclaim in
+    this project's history.
+    """
+    for case in dvec["dialogue"]:
+        elder = case["announced"]["elder"]
+        younger = case["announced"]["younger"]
+        if elder is not None and elder["tiebreak"] is not None:
+            assert case["shapes_match"], case["category"]
+        if younger is not None:
+            assert younger["tiebreak"] is None, (
+                "younger never volunteers a tie-break"
+            )
+
+
+def test_a_beaten_declaration_is_never_shown(dvec):
+    """The loser of a category gives away its shape but not its cards."""
+    from piquet.scoring import Player
+
+    for case in dvec["dialogue"]:
+        _, result = _result(case)
+        for who, player in (("elder", Player.ELDER), ("younger", Player.YOUNGER)):
+            shown = result.shown(player)
+            assert len(shown) == len(case["shown"][who]), case["category"]
+            if case["winner"] is not None and case["winner"] != who:
+                assert shown == (), "a beaten declaration must not be shown"
+
+
+def test_matches_reads_the_key_and_nothing_else(dvec):
+    """Which is why two holdings of the same shape are indistinguishable.
+
+    A hand of five clubs and a hand of five spades worth the same pips answer
+    to the same announcement, because the announcement never named a suit.
+    """
+    from piquet.declarations import Announcement, Declaration
+    from piquet.scoring import Category
+
+    for case in dvec["matches"]:
+        spec = case["announcement"]
+        category = Category[spec["category"]]
+        announcement = Announcement(category, spec["primary"], spec["tiebreak"])
+        best = Declaration.full(parse_hand(case["hand"]), category).best
+        assert announcement.matches(best) is case["matches"], case
+
+
+def test_invalid_declarations_are_refused(dvec):
+    """Claims must be of the right kind, genuinely held, and non-overlapping."""
+    from piquet.cards import Rank, Suit
+    from piquet.combos import CardSet, Point, Sequence
+    from piquet.declarations import Declaration
+    from piquet.scoring import Category
+
+    def rebuild(claim):
+        if claim["kind"] == "point":
+            return Point(Suit(claim["suit"]), claim["length"], claim["pip_value"])
+        if claim["kind"] == "sequence":
+            return Sequence(Suit(claim["suit"]), Rank(claim["top"]), claim["length"])
+        return CardSet(Rank(claim["rank"]), claim["count"])
+
+    for case in dvec["validate"]:
+        declaration = Declaration(tuple(rebuild(c) for c in case["claims"]))
+        with pytest.raises(ValueError):
+            declaration.validate(parse_hand(case["hand"]), Category[case["category"]])
+
+
+def test_remaining_vector_files_are_self_describing(styvec, dvec):
+    assert styvec["module"] == "style"
+    assert dvec["module"] == "declarations"
+    for section in ("calibrated", "balanced", "styles", "errors"):
+        assert styvec[section], f"style section {section!r} is empty"
+    for section in ("dialogue", "matches", "validate"):
+        assert dvec[section], f"declarations section {section!r} is empty"
