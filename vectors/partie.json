@@ -1,0 +1,858 @@
+{
+  "module": "partie",
+  "generator": "tools/emit_vectors.py",
+  "note": "Six deals, the alternating deal, and the rubicon. The guard is on the LOSER's score, not the winner's: a loser short of a hundred is rubiconed even if the winner fell short too, so two players who crawl to 60 and 40 settle for 200. This is the clause that makes maximising points in a deal different from playing well.",
+  "constants": {
+    "DEALS_IN_PARTIE": 6,
+    "EXTRA_DEALS": 2,
+    "RUBICON": 100,
+    "PARTIE_BONUS": 100
+  },
+  "cases": [
+    {
+      "name": "both over the rubicon: the difference, plus a hundred",
+      "deals": [
+        [
+          17,
+          18
+        ],
+        [
+          18,
+          17
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          16,
+          18
+        ],
+        [
+          17,
+          17
+        ]
+      ],
+      "extra": [],
+      "progress": [
+        {
+          "deal_number": 1,
+          "elder_is": "B",
+          "deals_left": 6,
+          "standing": {
+            "mine": 0,
+            "theirs": 0,
+            "deals_left": 6,
+            "number": 1,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            18
+          ]
+        },
+        {
+          "deal_number": 2,
+          "elder_is": "A",
+          "deals_left": 5,
+          "standing": {
+            "mine": 18,
+            "theirs": 17,
+            "deals_left": 5,
+            "number": 2,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            18,
+            17
+          ]
+        },
+        {
+          "deal_number": 3,
+          "elder_is": "B",
+          "deals_left": 4,
+          "standing": {
+            "mine": 34,
+            "theirs": 36,
+            "deals_left": 4,
+            "number": 3,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            17
+          ]
+        },
+        {
+          "deal_number": 4,
+          "elder_is": "A",
+          "deals_left": 3,
+          "standing": {
+            "mine": 53,
+            "theirs": 51,
+            "deals_left": 3,
+            "number": 4,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            17
+          ]
+        },
+        {
+          "deal_number": 5,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 68,
+            "theirs": 70,
+            "deals_left": 2,
+            "number": 5,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            16,
+            18
+          ]
+        },
+        {
+          "deal_number": 6,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 88,
+            "theirs": 84,
+            "deals_left": 1,
+            "number": 6,
+            "is_last_deal": true,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            17
+          ]
+        }
+      ],
+      "complete": true,
+      "deals_played": 6,
+      "totals": {
+        "A": 105,
+        "B": 101
+      },
+      "settlement": {
+        "winner": "A",
+        "points": 104,
+        "rubicon": false
+      }
+    },
+    {
+      "name": "the loser is rubiconed: the sum, plus a hundred",
+      "deals": [
+        [
+          15,
+          20
+        ],
+        [
+          20,
+          15
+        ],
+        [
+          15,
+          20
+        ],
+        [
+          20,
+          15
+        ],
+        [
+          14,
+          20
+        ],
+        [
+          20,
+          15
+        ]
+      ],
+      "extra": [],
+      "progress": [
+        {
+          "deal_number": 1,
+          "elder_is": "B",
+          "deals_left": 6,
+          "standing": {
+            "mine": 0,
+            "theirs": 0,
+            "deals_left": 6,
+            "number": 1,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            15,
+            20
+          ]
+        },
+        {
+          "deal_number": 2,
+          "elder_is": "A",
+          "deals_left": 5,
+          "standing": {
+            "mine": 20,
+            "theirs": 15,
+            "deals_left": 5,
+            "number": 2,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            20,
+            15
+          ]
+        },
+        {
+          "deal_number": 3,
+          "elder_is": "B",
+          "deals_left": 4,
+          "standing": {
+            "mine": 30,
+            "theirs": 40,
+            "deals_left": 4,
+            "number": 3,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            15,
+            20
+          ]
+        },
+        {
+          "deal_number": 4,
+          "elder_is": "A",
+          "deals_left": 3,
+          "standing": {
+            "mine": 60,
+            "theirs": 45,
+            "deals_left": 3,
+            "number": 4,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            20,
+            15
+          ]
+        },
+        {
+          "deal_number": 5,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 60,
+            "theirs": 80,
+            "deals_left": 2,
+            "number": 5,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            14,
+            20
+          ]
+        },
+        {
+          "deal_number": 6,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 100,
+            "theirs": 74,
+            "deals_left": 1,
+            "number": 6,
+            "is_last_deal": true,
+            "short_of_the_rubicon": false
+          },
+          "scores_entered": [
+            20,
+            15
+          ]
+        }
+      ],
+      "complete": true,
+      "deals_played": 6,
+      "totals": {
+        "A": 120,
+        "B": 89
+      },
+      "settlement": {
+        "winner": "A",
+        "points": 309,
+        "rubicon": true
+      }
+    },
+    {
+      "name": "the winner is short too, and the loser is still rubiconed",
+      "deals": [
+        [
+          10,
+          7
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          10,
+          6
+        ],
+        [
+          10,
+          7
+        ],
+        [
+          10,
+          6
+        ]
+      ],
+      "extra": [],
+      "progress": [
+        {
+          "deal_number": 1,
+          "elder_is": "B",
+          "deals_left": 6,
+          "standing": {
+            "mine": 0,
+            "theirs": 0,
+            "deals_left": 6,
+            "number": 1,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            7
+          ]
+        },
+        {
+          "deal_number": 2,
+          "elder_is": "A",
+          "deals_left": 5,
+          "standing": {
+            "mine": 7,
+            "theirs": 10,
+            "deals_left": 5,
+            "number": 2,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            7
+          ]
+        },
+        {
+          "deal_number": 3,
+          "elder_is": "B",
+          "deals_left": 4,
+          "standing": {
+            "mine": 17,
+            "theirs": 17,
+            "deals_left": 4,
+            "number": 3,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            7
+          ]
+        },
+        {
+          "deal_number": 4,
+          "elder_is": "A",
+          "deals_left": 3,
+          "standing": {
+            "mine": 24,
+            "theirs": 27,
+            "deals_left": 3,
+            "number": 4,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            6
+          ]
+        },
+        {
+          "deal_number": 5,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 33,
+            "theirs": 34,
+            "deals_left": 2,
+            "number": 5,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            7
+          ]
+        },
+        {
+          "deal_number": 6,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 41,
+            "theirs": 43,
+            "deals_left": 1,
+            "number": 6,
+            "is_last_deal": true,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            10,
+            6
+          ]
+        }
+      ],
+      "complete": true,
+      "deals_played": 6,
+      "totals": {
+        "A": 51,
+        "B": 49
+      },
+      "settlement": {
+        "winner": "A",
+        "points": 200,
+        "rubicon": true
+      }
+    },
+    {
+      "name": "level after six, so two more are played -- both of them",
+      "deals": [
+        [
+          20,
+          20
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          14,
+          14
+        ]
+      ],
+      "extra": [
+        [
+          25,
+          10
+        ],
+        [
+          5,
+          5
+        ]
+      ],
+      "progress": [
+        {
+          "deal_number": 1,
+          "elder_is": "B",
+          "deals_left": 6,
+          "standing": {
+            "mine": 0,
+            "theirs": 0,
+            "deals_left": 6,
+            "number": 1,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            20,
+            20
+          ]
+        },
+        {
+          "deal_number": 2,
+          "elder_is": "A",
+          "deals_left": 5,
+          "standing": {
+            "mine": 20,
+            "theirs": 20,
+            "deals_left": 5,
+            "number": 2,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            15,
+            15
+          ]
+        },
+        {
+          "deal_number": 3,
+          "elder_is": "B",
+          "deals_left": 4,
+          "standing": {
+            "mine": 35,
+            "theirs": 35,
+            "deals_left": 4,
+            "number": 3,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            18,
+            18
+          ]
+        },
+        {
+          "deal_number": 4,
+          "elder_is": "A",
+          "deals_left": 3,
+          "standing": {
+            "mine": 53,
+            "theirs": 53,
+            "deals_left": 3,
+            "number": 4,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            17
+          ]
+        },
+        {
+          "deal_number": 5,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 70,
+            "theirs": 70,
+            "deals_left": 2,
+            "number": 5,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            16,
+            16
+          ]
+        },
+        {
+          "deal_number": 6,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 86,
+            "theirs": 86,
+            "deals_left": 1,
+            "number": 6,
+            "is_last_deal": true,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            14,
+            14
+          ]
+        },
+        {
+          "deal_number": 7,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 100,
+            "theirs": 100,
+            "deals_left": 2,
+            "number": 7,
+            "is_last_deal": false,
+            "short_of_the_rubicon": false
+          },
+          "scores_entered": [
+            25,
+            10
+          ]
+        },
+        {
+          "deal_number": 8,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 110,
+            "theirs": 125,
+            "deals_left": 1,
+            "number": 8,
+            "is_last_deal": true,
+            "short_of_the_rubicon": false
+          },
+          "scores_entered": [
+            5,
+            5
+          ]
+        }
+      ],
+      "complete": true,
+      "deals_played": 8,
+      "totals": {
+        "A": 115,
+        "B": 130
+      },
+      "settlement": {
+        "winner": "B",
+        "points": 115,
+        "rubicon": false
+      }
+    },
+    {
+      "name": "level after eight as well, so the partie is drawn",
+      "deals": [
+        [
+          20,
+          20
+        ],
+        [
+          15,
+          15
+        ],
+        [
+          18,
+          18
+        ],
+        [
+          17,
+          17
+        ],
+        [
+          16,
+          16
+        ],
+        [
+          14,
+          14
+        ]
+      ],
+      "extra": [
+        [
+          10,
+          10
+        ],
+        [
+          12,
+          12
+        ]
+      ],
+      "progress": [
+        {
+          "deal_number": 1,
+          "elder_is": "B",
+          "deals_left": 6,
+          "standing": {
+            "mine": 0,
+            "theirs": 0,
+            "deals_left": 6,
+            "number": 1,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            20,
+            20
+          ]
+        },
+        {
+          "deal_number": 2,
+          "elder_is": "A",
+          "deals_left": 5,
+          "standing": {
+            "mine": 20,
+            "theirs": 20,
+            "deals_left": 5,
+            "number": 2,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            15,
+            15
+          ]
+        },
+        {
+          "deal_number": 3,
+          "elder_is": "B",
+          "deals_left": 4,
+          "standing": {
+            "mine": 35,
+            "theirs": 35,
+            "deals_left": 4,
+            "number": 3,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            18,
+            18
+          ]
+        },
+        {
+          "deal_number": 4,
+          "elder_is": "A",
+          "deals_left": 3,
+          "standing": {
+            "mine": 53,
+            "theirs": 53,
+            "deals_left": 3,
+            "number": 4,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            17,
+            17
+          ]
+        },
+        {
+          "deal_number": 5,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 70,
+            "theirs": 70,
+            "deals_left": 2,
+            "number": 5,
+            "is_last_deal": false,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            16,
+            16
+          ]
+        },
+        {
+          "deal_number": 6,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 86,
+            "theirs": 86,
+            "deals_left": 1,
+            "number": 6,
+            "is_last_deal": true,
+            "short_of_the_rubicon": true
+          },
+          "scores_entered": [
+            14,
+            14
+          ]
+        },
+        {
+          "deal_number": 7,
+          "elder_is": "B",
+          "deals_left": 2,
+          "standing": {
+            "mine": 100,
+            "theirs": 100,
+            "deals_left": 2,
+            "number": 7,
+            "is_last_deal": false,
+            "short_of_the_rubicon": false
+          },
+          "scores_entered": [
+            10,
+            10
+          ]
+        },
+        {
+          "deal_number": 8,
+          "elder_is": "A",
+          "deals_left": 1,
+          "standing": {
+            "mine": 110,
+            "theirs": 110,
+            "deals_left": 1,
+            "number": 8,
+            "is_last_deal": true,
+            "short_of_the_rubicon": false
+          },
+          "scores_entered": [
+            12,
+            12
+          ]
+        }
+      ],
+      "complete": true,
+      "deals_played": 8,
+      "totals": {
+        "A": 122,
+        "B": 122
+      },
+      "settlement": {
+        "winner": null,
+        "points": 0,
+        "rubicon": false
+      }
+    }
+  ],
+  "alternation": [
+    {
+      "opening_dealer": "A",
+      "elder_by_deal": [
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A"
+      ]
+    },
+    {
+      "opening_dealer": "B",
+      "elder_by_deal": [
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B",
+        "A",
+        "B"
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "name": "recording into a settled partie",
+      "raises": "ValueError"
+    }
+  ]
+}

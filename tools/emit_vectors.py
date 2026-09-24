@@ -36,6 +36,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
 from piquet.observation import View, view_for  # noqa: E402
+from piquet.partie import (  # noqa: E402
+    DEALS_IN_PARTIE,
+    EXTRA_DEALS,
+    PARTIE_BONUS,
+    RUBICON,
+    Partie,
+    Side,
+    Standing,
+)
 from piquet.rules import (  # noqa: E402
     CARDS_SCORE,
     CAPOT_SCORE,
@@ -1178,6 +1187,130 @@ def emit_observation() -> dict:
     }
 
 
+# Score sheets, in seat order (elder, younger) per deal -- which is all a
+# period account of a game ever gives you. The first two are the docstring's
+# own worked examples, and they are the whole argument for the rubicon
+# mattering: a closer game pays nearly three times as much.
+PARTIE_CASES = [
+    {
+        "name": "both over the rubicon: the difference, plus a hundred",
+        "deals": [[17, 18], [18, 17], [17, 17], [17, 17], [16, 18], [17, 17]],
+    },
+    {
+        "name": "the loser is rubiconed: the sum, plus a hundred",
+        "deals": [[15, 20], [20, 15], [15, 20], [20, 15], [14, 20], [20, 15]],
+    },
+    {
+        "name": "the winner is short too, and the loser is still rubiconed",
+        "deals": [[10, 7], [10, 7], [10, 7], [10, 6], [10, 7], [10, 6]],
+    },
+    {
+        "name": "level after six, so two more are played -- both of them",
+        "deals": [[20, 20], [15, 15], [18, 18], [17, 17], [16, 16], [14, 14]],
+        "extra": [[25, 10], [5, 5]],
+    },
+    {
+        "name": "level after eight as well, so the partie is drawn",
+        "deals": [[20, 20], [15, 15], [18, 18], [17, 17], [16, 16], [14, 14]],
+        "extra": [[10, 10], [12, 12]],
+    },
+]
+
+
+def emit_partie() -> dict:
+    cases = []
+    for spec in PARTIE_CASES:
+        partie = Partie(opening_dealer=Side.A)
+        progress = []
+        for elder, younger in spec["deals"] + spec.get("extra", []):
+            standing = partie.standing
+            progress.append(
+                {
+                    "deal_number": partie.number,
+                    "elder_is": partie.elder.name,
+                    "deals_left": partie.deals_left,
+                    "standing": {
+                        "mine": standing.mine,
+                        "theirs": standing.theirs,
+                        "deals_left": standing.deals_left,
+                        "number": standing.number,
+                        "is_last_deal": standing.is_last_deal,
+                        "short_of_the_rubicon": standing.short_of_the_rubicon,
+                    },
+                    "scores_entered": [elder, younger],
+                }
+            )
+            partie = partie.record_scores(elder, younger)
+
+        settlement = partie.settlement
+        totals = partie.totals
+        cases.append(
+            {
+                "name": spec["name"],
+                "deals": spec["deals"],
+                "extra": spec.get("extra", []),
+                "progress": progress,
+                "complete": partie.complete,
+                "deals_played": len(partie.outcomes),
+                "totals": {"A": totals[0], "B": totals[1]},
+                "settlement": {
+                    "winner": (
+                        None if settlement.winner is None else settlement.winner.name
+                    ),
+                    "points": settlement.points,
+                    "rubicon": settlement.rubicon,
+                },
+            }
+        )
+
+    # The seat alternates every deal, and a side plays the whole partie. The
+    # two get confused exactly once, and expensively.
+    alternation = []
+    for opening in (Side.A, Side.B):
+        partie = Partie(opening_dealer=opening)
+        alternation.append(
+            {
+                "opening_dealer": opening.name,
+                "elder_by_deal": [
+                    partie.elder_in(n).name
+                    for n in range(1, DEALS_IN_PARTIE + EXTRA_DEALS + 1)
+                ],
+            }
+        )
+
+    errors = []
+    finished = Partie(opening_dealer=Side.A)
+    for elder, younger in PARTIE_CASES[0]["deals"]:
+        finished = finished.record_scores(elder, younger)
+    try:
+        finished.record_scores(1, 1)
+    except ValueError:
+        errors.append({"name": "recording into a settled partie", "raises": "ValueError"})
+    else:
+        raise SystemExit("recording into a settled partie did not raise")
+
+    return {
+        "module": "partie",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Six deals, the alternating deal, and the rubicon. The guard is on "
+            "the LOSER's score, not the winner's: a loser short of a hundred is "
+            "rubiconed even if the winner fell short too, so two players who "
+            "crawl to 60 and 40 settle for 200. This is the clause that makes "
+            "maximising points in a deal different from playing well."
+        ),
+        "constants": {
+            "DEALS_IN_PARTIE": DEALS_IN_PARTIE,
+            "EXTRA_DEALS": EXTRA_DEALS,
+            "RUBICON": RUBICON,
+            "PARTIE_BONUS": PARTIE_BONUS,
+        },
+        "cases": cases,
+        "alternation": alternation,
+        "errors": errors,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1188,6 +1321,7 @@ def main() -> int:
         ("declarations", emit_declarations),
         ("rules", emit_rules),
         ("observation", emit_observation),
+        ("partie", emit_partie),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

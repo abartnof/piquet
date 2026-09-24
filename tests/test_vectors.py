@@ -1045,3 +1045,155 @@ def test_observation_vector_file_is_self_describing(ovec):
     assert len(ovec["runs"]) >= 2
     for run in ovec["runs"]:
         assert run["snapshots"], run["name"]
+
+
+# ===========================================================================
+# partie -- six deals, the alternating deal, and the rubicon
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def pvec() -> dict:
+    return load("partie")
+
+
+def _play_sheet(deals):
+    from piquet.partie import Partie, Side
+
+    partie = Partie(opening_dealer=Side.A)
+    for elder, younger in deals:
+        partie = partie.record_scores(elder, younger)
+    return partie
+
+
+def test_partie_constants(pvec):
+    import piquet.partie as partie
+
+    for name, value in pvec["constants"].items():
+        assert getattr(partie, name) == value, name
+
+
+def test_the_rubicon_decides_which_arithmetic_applies(pvec):
+    """The guard is on the LOSER's score, not the winner's.
+
+    A loser short of a hundred pays the *sum* plus a hundred, even when the
+    winner fell short too -- so two players who crawl to 60 and 40 settle for
+    200. That single clause is why maximising points in a deal is not the same
+    thing as playing well: 105 to 101 pays 104, and a closer-looking 97 to 89
+    pays nearly three times as much.
+    """
+    from piquet.partie import PARTIE_BONUS, RUBICON
+
+    for case in pvec["cases"]:
+        partie = _play_sheet(case["deals"] + case["extra"])
+        settlement = partie.settlement
+        want = case["settlement"]
+
+        got_winner = None if settlement.winner is None else settlement.winner.name
+        assert got_winner == want["winner"], case["name"]
+        assert settlement.points == want["points"], case["name"]
+        assert settlement.rubicon == want["rubicon"], case["name"]
+
+        first, second = partie.totals
+        assert {"A": first, "B": second} == case["totals"], case["name"]
+
+        if settlement.winner is None:
+            continue
+        high, low = max(first, second), min(first, second)
+        if low < RUBICON:
+            assert settlement.points == high + low + PARTIE_BONUS
+        else:
+            assert settlement.points == high - low + PARTIE_BONUS
+
+
+def test_a_winner_is_compared_with_is_none_not_truthiness(pvec):
+    """`Side.A` is 0, and therefore falsy.
+
+    The engine compares sides with `is` everywhere and is unaffected. The first
+    draft of the vector generator did not, and quietly reported a drawn partie
+    that in fact had a winner -- so this is pinned rather than left to be
+    rediscovered by whoever next writes tooling against these types.
+    """
+    from piquet.partie import Side
+
+    assert int(Side.A) == 0
+    assert not bool(Side.A), "the trap itself"
+    assert bool(Side.B)
+
+    for case in pvec["cases"]:
+        settlement = _play_sheet(case["deals"] + case["extra"]).settlement
+        if case["settlement"]["winner"] == "A":
+            assert settlement.winner is not None
+            assert settlement.winner is Side.A
+
+
+def test_a_level_partie_plays_two_more_deals_and_both_of_them(pvec):
+    """Each player deals one, so neither gains the seat by breaking the tie."""
+    from piquet.partie import DEALS_IN_PARTIE, EXTRA_DEALS
+
+    for case in pvec["cases"]:
+        if not case["extra"]:
+            continue
+        after_six = _play_sheet(case["deals"])
+        assert after_six.totals[0] == after_six.totals[1], case["name"]
+        assert not after_six.complete
+        assert after_six.deals_left == EXTRA_DEALS
+
+        after_seven = _play_sheet(case["deals"] + case["extra"][:1])
+        assert not after_seven.complete, "the second extra deal is played too"
+
+        full = _play_sheet(case["deals"] + case["extra"])
+        assert full.complete
+        assert len(full.outcomes) == DEALS_IN_PARTIE + EXTRA_DEALS
+
+
+def test_the_seat_alternates_and_the_side_does_not(pvec):
+    """`Player` is a chair and changes hands; `Side` is a person and does not.
+
+    The two get confused exactly once, and expensively, because the rubicon is
+    reckoned over a person's six deals rather than over a chair.
+    """
+    from piquet.partie import Partie, Side
+
+    for case in pvec["alternation"]:
+        partie = Partie(opening_dealer=Side[case["opening_dealer"]])
+        got = [
+            partie.elder_in(n).name for n in range(1, len(case["elder_by_deal"]) + 1)
+        ]
+        assert got == case["elder_by_deal"]
+        assert got[0] != case["opening_dealer"], "the dealer is not elder"
+        for a, b in zip(got, got[1:]):
+            assert a != b, "the seat alternates every deal"
+
+
+def test_the_progress_of_each_partie_matches(pvec):
+    for case in pvec["cases"]:
+        partie = _play_sheet([])
+        for step in case["progress"]:
+            standing = partie.standing
+            assert partie.number == step["deal_number"], case["name"]
+            assert partie.elder.name == step["elder_is"], case["name"]
+            assert partie.deals_left == step["deals_left"], case["name"]
+            assert standing.mine == step["standing"]["mine"]
+            assert standing.theirs == step["standing"]["theirs"]
+            assert standing.is_last_deal == step["standing"]["is_last_deal"]
+            assert (
+                standing.short_of_the_rubicon
+                == step["standing"]["short_of_the_rubicon"]
+            )
+            elder, younger = step["scores_entered"]
+            partie = partie.record_scores(elder, younger)
+
+
+def test_a_settled_partie_takes_no_more_deals(pvec):
+    for case in pvec["cases"]:
+        partie = _play_sheet(case["deals"] + case["extra"])
+        assert partie.complete
+        with pytest.raises(ValueError):
+            partie.record_scores(1, 1)
+
+
+def test_partie_vector_file_is_self_describing(pvec):
+    assert pvec["module"] == "partie"
+    for section in ("constants", "cases", "alternation", "errors"):
+        assert pvec[section], f"section {section!r} is empty"
