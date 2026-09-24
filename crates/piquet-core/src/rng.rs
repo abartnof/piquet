@@ -72,6 +72,14 @@ impl Rng {
         pool
     }
 
+    /// Shuffle in place, by Fisher-Yates.
+    pub fn shuffle<T>(&mut self, items: &mut [T]) {
+        for i in (1..items.len()).rev() {
+            let j = self.below(i + 1);
+            items.swap(i, j);
+        }
+    }
+
     /// A normal deviate, by the Marsaglia polar method.
     pub fn gauss(&mut self, mean: f64, deviation: f64) -> f64 {
         if let Some(spare) = self.spare_normal.take() {

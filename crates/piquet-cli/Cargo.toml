@@ -1,0 +1,13 @@
+[package]
+name = "piquet-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "A table you can sit down at: Piquet against a named opponent."
+
+[[bin]]
+name = "piquet"
+path = "src/main.rs"
+
+[dependencies]
+piquet-core = { path = "../piquet-core" }

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/piquet-core"]
+members = ["crates/piquet-core", "crates/piquet-cli"]
 
 [workspace.package]
 version = "0.1.0"
