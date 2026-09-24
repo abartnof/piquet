@@ -12,6 +12,7 @@ pub const RANK_ACE: u8 = 14;
 
 const RANK_CHARS: [u8; 8] = *b"789TJQKA";
 const SUIT_LETTERS: [u8; 4] = *b"CDHS";
+const SUIT_SYMBOLS: [char; 4] = ['♣', '♦', '♥', '♠'];
 
 /// A rank, carried as its piquet value: seven is 7, ace is 14.
 ///
@@ -69,6 +70,15 @@ impl Rank {
         self.0 - RANK_SEVEN
     }
 
+    /// How the rank is written for a reader: the ten spelled in full.
+    pub fn label(self) -> String {
+        if self == Rank::TEN {
+            "10".to_string()
+        } else {
+            (RANK_CHARS[self.offset() as usize] as char).to_string()
+        }
+    }
+
     pub fn name(self) -> &'static str {
         match self.0 {
             7 => "seven",
@@ -103,6 +113,10 @@ impl Suit {
     pub fn letter(self) -> char {
         SUIT_LETTERS[self.0 as usize] as char
     }
+
+    pub fn symbol(self) -> char {
+        SUIT_SYMBOLS[self.0 as usize]
+    }
 }
 
 /// A card, stored as its index in `0..32`.
@@ -135,6 +149,16 @@ impl Card {
 
     pub fn parse(text: &str) -> Result<Card, String> {
         parse_card(text).map(Card)
+    }
+
+    /// How a card is written for a reader, e.g. `10♦`.
+    ///
+    /// Distinct from `code`, which is the two-character ASCII form used for
+    /// serialisation. Both appear in the engine: the log's detail strings use
+    /// this one, and the golden vectors record them, so a port that renders it
+    /// differently fails on the first replay.
+    pub fn display(self) -> String {
+        format!("{}{}", self.rank().label(), self.suit().symbol())
     }
 }
 

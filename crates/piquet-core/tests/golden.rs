@@ -774,3 +774,228 @@ fn a_settled_partie_takes_no_more_deals() {
         assert!(partie.record_scores(1, 1).is_err());
     }
 }
+
+// -- rules: the whole engine, replayed ---------------------------------------
+
+use piquet_core::rules::{deal_from, Deal, Phase, Trick, TRICKS_PER_DEAL};
+
+fn state_of(deal: &Deal) -> serde_json::Value {
+    serde_json::json!({
+        "phase": deal.phase.value(),
+        "elder_hand": deal.hand_of(Player::Elder).code(),
+        "younger_hand": deal.hand_of(Player::Younger).code(),
+        "talon_taken": deal.talon_taken,
+        "talon_remaining": deal.talon_remaining(),
+        "elder_total": deal.log.total(Player::Elder),
+        "younger_total": deal.log.total(Player::Younger),
+        "elder_tricks": deal.tricks_won(Player::Elder),
+        "younger_tricks": deal.tricks_won(Player::Younger),
+    })
+}
+
+fn pack_of(codes: &serde_json::Value) -> Vec<piquet_core::cards::Card> {
+    codes
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|c| piquet_core::cards::Card::parse(c.as_str().unwrap()).unwrap())
+        .collect()
+}
+
+#[test]
+fn every_replay_reproduces_its_recorded_states() {
+    // A divergence anywhere -- a mis-dealt talon, an exchange taking from the
+    // wrong end of the stock, a declaration scoring in the wrong category, a
+    // trick going to the wrong player -- shows up at the step it happened
+    // rather than as a wrong number at the end.
+    let vec = vectors("rules.json");
+    for replay in vec["replays"].as_array().unwrap() {
+        let name = replay["name"].as_str().unwrap();
+        let mut deal = deal_from(&pack_of(&replay["pack"])).unwrap();
+
+        for (i, step) in replay["steps"].as_array().unwrap().iter().enumerate() {
+            match step["action"].as_str().unwrap() {
+                "deal" => {}
+                "exchange" => {
+                    let player = if step["player"] == "elder" {
+                        Player::Elder
+                    } else {
+                        Player::Younger
+                    };
+                    let discard = Hand::parse(step["discard"].as_str().unwrap()).unwrap();
+                    deal = deal.exchange(player, discard).unwrap();
+                }
+                "declare" => {
+                    let player = if step["player"] == "elder" {
+                        Player::Elder
+                    } else {
+                        Player::Younger
+                    };
+                    let category = category_named(step["category"].as_str().unwrap());
+                    let declaration = Declaration::full(deal.hand_of(player), category);
+                    deal = deal.declare(player, declaration).unwrap();
+                }
+                "play" => {
+                    let player = if step["player"] == "elder" {
+                        Player::Elder
+                    } else {
+                        Player::Younger
+                    };
+                    let card =
+                        piquet_core::cards::Card::parse(step["card"].as_str().unwrap()).unwrap();
+                    deal = deal.play(player, card).unwrap();
+                }
+                other => panic!("unknown action {other}"),
+            }
+            assert_eq!(
+                state_of(&deal),
+                step["after"],
+                "{name}: diverged at step {i} ({})",
+                step["action"]
+            );
+        }
+
+        let final_ = &replay["final"];
+        assert_eq!(deal.phase, Phase::Complete, "{name}");
+        assert_eq!(
+            deal.log.repique().map(|p| p.name()),
+            final_["repique"].as_str(),
+            "{name}"
+        );
+        assert_eq!(
+            deal.log.pique().map(|p| p.name()),
+            final_["pique"].as_str(),
+            "{name}"
+        );
+
+        let events: Vec<serde_json::Value> = deal
+            .log
+            .events
+            .iter()
+            .map(|e| {
+                serde_json::json!({
+                    "player": e.player.name(),
+                    "amount": e.amount,
+                    "category": e.category.name(),
+                    "detail": e.detail,
+                })
+            })
+            .collect();
+        assert_eq!(
+            serde_json::Value::Array(events),
+            final_["events"],
+            "{name}: the event log"
+        );
+
+        assert_eq!(
+            deal.tricks_won(Player::Elder) + deal.tricks_won(Player::Younger),
+            TRICKS_PER_DEAL
+        );
+    }
+}
+
+#[test]
+fn the_higher_card_of_the_suit_led_takes_the_trick() {
+    // There are no trumps, so a card of another suit never wins however high.
+    let vec = vectors("rules.json");
+    for case in vec["tricks"].as_array().unwrap() {
+        let trick = Trick {
+            leader: if case["leader"] == "elder" {
+                Player::Elder
+            } else {
+                Player::Younger
+            },
+            led: piquet_core::cards::Card::parse(case["led"].as_str().unwrap()).unwrap(),
+            followed: Some(
+                piquet_core::cards::Card::parse(case["followed"].as_str().unwrap()).unwrap(),
+            ),
+        };
+        assert_eq!(trick.complete(), case["complete"].as_bool().unwrap());
+        assert_eq!(
+            trick.winner().unwrap().name(),
+            case["winner"].as_str().unwrap(),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn an_unfinished_trick_has_no_winner() {
+    let trick = Trick {
+        leader: Player::Elder,
+        led: piquet_core::cards::Card::parse("AS").unwrap(),
+        followed: None,
+    };
+    assert!(!trick.complete());
+    assert!(trick.winner().is_err());
+}
+
+#[test]
+fn rules_constants_agree() {
+    let vec = vectors("rules.json");
+    let constants = &vec["constants"];
+    assert_eq!(
+        constants["HAND_SIZE"].as_u64().unwrap() as usize,
+        piquet_core::rules::HAND_SIZE
+    );
+    assert_eq!(
+        constants["ELDER_MAX_EXCHANGE"].as_u64().unwrap() as usize,
+        piquet_core::rules::ELDER_MAX_EXCHANGE
+    );
+    assert_eq!(
+        constants["CAPOT_SCORE"].as_i64().unwrap() as i32,
+        piquet_core::rules::CAPOT_SCORE
+    );
+    let phases: Vec<&str> = Phase::ALL.iter().map(|p| p.value()).collect();
+    let want: Vec<&str> = vec["phases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|p| p.as_str().unwrap())
+        .collect();
+    assert_eq!(phases, want);
+}
+
+#[test]
+fn an_invalid_deal_or_move_is_refused() {
+    use piquet_core::cards::Card;
+    let pack: Vec<Card> = (0u8..32).map(Card).collect();
+    assert!(deal_from(&pack[..31]).is_err(), "thirty-one cards");
+
+    let mut duplicated = pack[..31].to_vec();
+    duplicated.push(pack[0]);
+    assert!(deal_from(&duplicated).is_err(), "a duplicate");
+
+    let deal = deal_from(&pack).unwrap();
+    assert!(
+        deal.exchange(Player::Elder, Hand::EMPTY).is_err(),
+        "elder must discard at least one"
+    );
+    let six = Hand::of(
+        &deal
+            .hand_of(Player::Elder)
+            .cards()
+            .take(6)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+    assert!(
+        deal.exchange(Player::Elder, six).is_err(),
+        "elder may take five"
+    );
+    let hers = Hand::of(
+        &deal
+            .hand_of(Player::Younger)
+            .cards()
+            .take(2)
+            .collect::<Vec<_>>(),
+    )
+    .unwrap();
+    assert!(
+        deal.exchange(Player::Elder, hers).is_err(),
+        "a card not held"
+    );
+    assert!(deal.exchange(Player::Younger, hers).is_err(), "out of turn");
+    let first = deal.hand_of(Player::Elder).cards().next().unwrap();
+    assert!(deal.play(Player::Elder, first).is_err(), "before the play");
+}
