@@ -1,0 +1,426 @@
+{
+  "module": "scoring",
+  "generator": "tools/emit_vectors.py",
+  "note": "The event log, and Law 67's order of precedence. Category values ARE the reckoning order, so a port must keep the numbers, not merely the names. The events in each case are listed in the order they were entered, which is not the order they reckon in.",
+  "constants": {
+    "PIQUE_THRESHOLD": 30,
+    "PIQUE_BONUS": 30,
+    "REPIQUE_BONUS": 60
+  },
+  "categories": [
+    {
+      "name": "CARTE_BLANCHE",
+      "value": 1
+    },
+    {
+      "name": "POINT",
+      "value": 2
+    },
+    {
+      "name": "SEQUENCES",
+      "value": 3
+    },
+    {
+      "name": "SETS",
+      "value": 4
+    },
+    {
+      "name": "PLAY",
+      "value": 5
+    },
+    {
+      "name": "CARDS",
+      "value": 6
+    },
+    {
+      "name": "BONUS",
+      "value": 7
+    }
+  ],
+  "declaration_categories": [
+    "CARTE_BLANCHE",
+    "POINT",
+    "SEQUENCES",
+    "SETS"
+  ],
+  "pique_categories": [
+    "CARTE_BLANCHE",
+    "POINT",
+    "SEQUENCES",
+    "SETS",
+    "PLAY"
+  ],
+  "cases": [
+    {
+      "name": "elder repique, exactly thirty in hand",
+      "events": [
+        [
+          "elder",
+          10,
+          "CARTE_BLANCHE",
+          "carte blanche"
+        ],
+        [
+          "elder",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "elder",
+          15,
+          "SEQUENCES",
+          "quint"
+        ]
+      ],
+      "totals": {
+        "elder": 30,
+        "younger": 0
+      },
+      "by_category": {
+        "elder": {
+          "CARTE_BLANCHE": 10,
+          "POINT": 5,
+          "SEQUENCES": 15
+        },
+        "younger": {}
+      },
+      "repique": "elder",
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 90,
+        "younger": 0
+      }
+    },
+    {
+      "name": "twenty-nine in hand is not a repique, but reaches a pique",
+      "events": [
+        [
+          "elder",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "elder",
+          21,
+          "SEQUENCES",
+          "quint and tierce"
+        ],
+        [
+          "elder",
+          3,
+          "SETS",
+          "trio of kings"
+        ],
+        [
+          "elder",
+          1,
+          "PLAY",
+          "leading"
+        ]
+      ],
+      "totals": {
+        "elder": 30,
+        "younger": 0
+      },
+      "by_category": {
+        "elder": {
+          "POINT": 5,
+          "SEQUENCES": 21,
+          "SETS": 3,
+          "PLAY": 1
+        },
+        "younger": {}
+      },
+      "repique": null,
+      "pique": "elder",
+      "totals_after_bonuses": {
+        "elder": 60,
+        "younger": 0
+      }
+    },
+    {
+      "name": "elder pique, made in hand and play",
+      "events": [
+        [
+          "elder",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "elder",
+          15,
+          "SEQUENCES",
+          "quint"
+        ],
+        [
+          "elder",
+          3,
+          "SETS",
+          "trio"
+        ],
+        [
+          "elder",
+          7,
+          "PLAY",
+          "tricks"
+        ]
+      ],
+      "totals": {
+        "elder": 30,
+        "younger": 0
+      },
+      "by_category": {
+        "elder": {
+          "POINT": 5,
+          "SEQUENCES": 15,
+          "SETS": 3,
+          "PLAY": 7
+        },
+        "younger": {}
+      },
+      "repique": null,
+      "pique": "elder",
+      "totals_after_bonuses": {
+        "elder": 60,
+        "younger": 0
+      }
+    },
+    {
+      "name": "younger repiques; elder leading first is category V and cannot block her",
+      "events": [
+        [
+          "elder",
+          1,
+          "PLAY",
+          "leading to the first trick"
+        ],
+        [
+          "younger",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "younger",
+          17,
+          "SEQUENCES",
+          "septieme"
+        ],
+        [
+          "younger",
+          14,
+          "SETS",
+          "quatorze of aces"
+        ]
+      ],
+      "totals": {
+        "elder": 1,
+        "younger": 36
+      },
+      "by_category": {
+        "elder": {
+          "PLAY": 1
+        },
+        "younger": {
+          "POINT": 5,
+          "SEQUENCES": 17,
+          "SETS": 14
+        }
+      },
+      "repique": "younger",
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 1,
+        "younger": 96
+      }
+    },
+    {
+      "name": "younger cannot pique: elder's lead reckons before her play",
+      "events": [
+        [
+          "younger",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "younger",
+          15,
+          "SEQUENCES",
+          "quint"
+        ],
+        [
+          "younger",
+          3,
+          "SETS",
+          "trio"
+        ],
+        [
+          "elder",
+          1,
+          "PLAY",
+          "leading to the first trick"
+        ],
+        [
+          "younger",
+          7,
+          "PLAY",
+          "tricks"
+        ]
+      ],
+      "totals": {
+        "elder": 1,
+        "younger": 30
+      },
+      "by_category": {
+        "elder": {
+          "PLAY": 1
+        },
+        "younger": {
+          "POINT": 5,
+          "SEQUENCES": 15,
+          "SETS": 3,
+          "PLAY": 7
+        }
+      },
+      "repique": null,
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 1,
+        "younger": 30
+      }
+    },
+    {
+      "name": "a capot does not count towards a pique (Cavendish, law 69)",
+      "events": [
+        [
+          "elder",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "elder",
+          17,
+          "SEQUENCES",
+          "septieme"
+        ],
+        [
+          "elder",
+          3,
+          "SETS",
+          "trio"
+        ],
+        [
+          "elder",
+          4,
+          "PLAY",
+          "tricks"
+        ],
+        [
+          "elder",
+          40,
+          "CARDS",
+          "capot"
+        ]
+      ],
+      "totals": {
+        "elder": 69,
+        "younger": 0
+      },
+      "by_category": {
+        "elder": {
+          "POINT": 5,
+          "SEQUENCES": 17,
+          "SETS": 3,
+          "PLAY": 4,
+          "CARDS": 40
+        },
+        "younger": {}
+      },
+      "repique": null,
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 69,
+        "younger": 0
+      }
+    },
+    {
+      "name": "both players reckon, so neither bonus is available",
+      "events": [
+        [
+          "elder",
+          5,
+          "POINT",
+          "point of five"
+        ],
+        [
+          "younger",
+          4,
+          "SEQUENCES",
+          "quart"
+        ],
+        [
+          "elder",
+          30,
+          "SETS",
+          "two quatorzes"
+        ]
+      ],
+      "totals": {
+        "elder": 35,
+        "younger": 4
+      },
+      "by_category": {
+        "elder": {
+          "POINT": 5,
+          "SETS": 30
+        },
+        "younger": {
+          "SEQUENCES": 4
+        }
+      },
+      "repique": null,
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 35,
+        "younger": 4
+      }
+    },
+    {
+      "name": "an empty log scores nothing and awards nothing",
+      "events": [],
+      "totals": {
+        "elder": 0,
+        "younger": 0
+      },
+      "by_category": {
+        "elder": {},
+        "younger": {}
+      },
+      "repique": null,
+      "pique": null,
+      "totals_after_bonuses": {
+        "elder": 0,
+        "younger": 0
+      }
+    }
+  ],
+  "errors": [
+    {
+      "amount": 0,
+      "raises": "ValueError"
+    },
+    {
+      "amount": -1,
+      "raises": "ValueError"
+    },
+    {
+      "amount": -30,
+      "raises": "ValueError"
+    }
+  ]
+}

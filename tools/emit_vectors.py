@@ -35,6 +35,16 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
+from piquet.scoring import (  # noqa: E402
+    DECLARATION_CATEGORIES,
+    PIQUE_BONUS,
+    PIQUE_CATEGORIES,
+    PIQUE_THRESHOLD,
+    REPIQUE_BONUS,
+    Category,
+    Player,
+    ScoreLog,
+)
 from piquet.combos import (  # noqa: E402
     best_point,
     best_sequence,
@@ -361,9 +371,157 @@ def emit_combos() -> dict:
     }
 
 
+# Each case is a log written as [player, amount, category, detail], in the
+# order the events were entered -- which is deliberately *not* the order they
+# reckon in. Younger's declarations are entered only once elder has led to the
+# first trick, yet they reckon in categories II-IV, ahead of his play. Getting
+# those two orders confused awarded a pique that was not due in one deal in
+# 250, which is why these cases exist at all.
+SCORE_CASES = [
+    {
+        "name": "elder repique, exactly thirty in hand",
+        "events": [
+            ["elder", 10, "CARTE_BLANCHE", "carte blanche"],
+            ["elder", 5, "POINT", "point of five"],
+            ["elder", 15, "SEQUENCES", "quint"],
+        ],
+    },
+    {
+        "name": "twenty-nine in hand is not a repique, but reaches a pique",
+        "events": [
+            ["elder", 5, "POINT", "point of five"],
+            ["elder", 21, "SEQUENCES", "quint and tierce"],
+            ["elder", 3, "SETS", "trio of kings"],
+            ["elder", 1, "PLAY", "leading"],
+        ],
+    },
+    {
+        "name": "elder pique, made in hand and play",
+        "events": [
+            ["elder", 5, "POINT", "point of five"],
+            ["elder", 15, "SEQUENCES", "quint"],
+            ["elder", 3, "SETS", "trio"],
+            ["elder", 7, "PLAY", "tricks"],
+        ],
+    },
+    {
+        "name": "younger repiques; elder leading first is category V and cannot block her",
+        "events": [
+            ["elder", 1, "PLAY", "leading to the first trick"],
+            ["younger", 5, "POINT", "point of five"],
+            ["younger", 17, "SEQUENCES", "septieme"],
+            ["younger", 14, "SETS", "quatorze of aces"],
+        ],
+    },
+    {
+        "name": "younger cannot pique: elder's lead reckons before her play",
+        "events": [
+            ["younger", 5, "POINT", "point of five"],
+            ["younger", 15, "SEQUENCES", "quint"],
+            ["younger", 3, "SETS", "trio"],
+            ["elder", 1, "PLAY", "leading to the first trick"],
+            ["younger", 7, "PLAY", "tricks"],
+        ],
+    },
+    {
+        "name": "a capot does not count towards a pique (Cavendish, law 69)",
+        "events": [
+            ["elder", 5, "POINT", "point of five"],
+            ["elder", 17, "SEQUENCES", "septieme"],
+            ["elder", 3, "SETS", "trio"],
+            ["elder", 4, "PLAY", "tricks"],
+            ["elder", 40, "CARDS", "capot"],
+        ],
+    },
+    {
+        "name": "both players reckon, so neither bonus is available",
+        "events": [
+            ["elder", 5, "POINT", "point of five"],
+            ["younger", 4, "SEQUENCES", "quart"],
+            ["elder", 30, "SETS", "two quatorzes"],
+        ],
+    },
+    {
+        "name": "an empty log scores nothing and awards nothing",
+        "events": [],
+    },
+]
+
+BAD_SCORES = [0, -1, -30]
+
+
+def emit_scoring() -> dict:
+    players = {"elder": Player.ELDER, "younger": Player.YOUNGER}
+
+    cases = []
+    for case in SCORE_CASES:
+        log = ScoreLog()
+        for who, amount, category, detail in case["events"]:
+            log = log.record(players[who], amount, Category[category], detail)
+
+        settled = log.with_bonuses()
+        if len(settled.with_bonuses()) != len(settled):
+            raise SystemExit(f"with_bonuses is not idempotent for {case['name']!r}")
+
+        cases.append(
+            {
+                "name": case["name"],
+                "events": case["events"],
+                "totals": {
+                    "elder": log.total(Player.ELDER),
+                    "younger": log.total(Player.YOUNGER),
+                },
+                "by_category": {
+                    who: {c.name: n for c, n in log.by_category(p).items()}
+                    for who, p in players.items()
+                },
+                "repique": log.repique.value if log.repique else None,
+                "pique": log.pique.value if log.pique else None,
+                "totals_after_bonuses": {
+                    "elder": settled.total(Player.ELDER),
+                    "younger": settled.total(Player.YOUNGER),
+                },
+            }
+        )
+
+    errors = []
+    for amount in BAD_SCORES:
+        try:
+            ScoreLog().record(Player.ELDER, amount, Category.POINT)
+        except ValueError:
+            errors.append({"amount": amount, "raises": "ValueError"})
+        else:
+            raise SystemExit(f"recording {amount} did not raise")
+
+    return {
+        "module": "scoring",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The event log, and Law 67's order of precedence. Category values "
+            "ARE the reckoning order, so a port must keep the numbers, not "
+            "merely the names. The events in each case are listed in the order "
+            "they were entered, which is not the order they reckon in."
+        ),
+        "constants": {
+            "PIQUE_THRESHOLD": PIQUE_THRESHOLD,
+            "PIQUE_BONUS": PIQUE_BONUS,
+            "REPIQUE_BONUS": REPIQUE_BONUS,
+        },
+        "categories": [{"name": c.name, "value": int(c)} for c in Category],
+        "declaration_categories": [c.name for c in DECLARATION_CATEGORIES],
+        "pique_categories": [c.name for c in PIQUE_CATEGORIES],
+        "cases": cases,
+        "errors": errors,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
-    for name, build in (("cards", emit_cards), ("combos", emit_combos)):
+    for name, build in (
+        ("cards", emit_cards),
+        ("combos", emit_combos),
+        ("scoring", emit_scoring),
+    ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")
         print(f"wrote {path.relative_to(VECTORS.parent)}")

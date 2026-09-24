@@ -353,3 +353,135 @@ def test_combos_vector_file_is_self_describing(cvec):
         "support",
     ):
         assert cvec[section], f"section {section!r} is empty"
+
+
+# ===========================================================================
+# scoring
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def svec() -> dict:
+    return load("scoring")
+
+
+def _rebuild(events: list) -> object:
+    from piquet.scoring import Category, Player, ScoreLog
+
+    players = {"elder": Player.ELDER, "younger": Player.YOUNGER}
+    log = ScoreLog()
+    for who, amount, category, detail in events:
+        log = log.record(players[who], amount, Category[category], detail)
+    return log
+
+
+def test_category_values_are_the_reckoning_order(svec):
+    """Law 67's precedence is carried by the integers, not by the names.
+
+    A port is free to rename these, but `CARTE_BLANCHE` must be 1 and `PLAY`
+    must be 5, because both bonuses are derived by walking the categories in
+    numeric order. Renumbering them silently changes which bonus is awarded.
+    """
+    from piquet.scoring import Category
+
+    for case in svec["categories"]:
+        assert int(Category[case["name"]]) == case["value"]
+    values = [c["value"] for c in svec["categories"]]
+    assert values == sorted(values), "the listing must be in precedence order"
+
+
+def test_the_two_bonuses_read_different_category_sets(svec):
+    """Repique is "in his hand alone"; pique is "in hand and play".
+
+    The difference is exactly one category, and the cards are excluded from
+    both -- "a capot reckons after points made in play; and, therefore, does
+    not count toward a pique" (Cavendish, Law 69).
+    """
+    from piquet.scoring import DECLARATION_CATEGORIES, PIQUE_CATEGORIES
+
+    assert [c.name for c in DECLARATION_CATEGORIES] == svec["declaration_categories"]
+    assert [c.name for c in PIQUE_CATEGORIES] == svec["pique_categories"]
+    assert set(svec["pique_categories"]) - set(svec["declaration_categories"]) == {
+        "PLAY"
+    }
+    assert "CARDS" not in svec["pique_categories"]
+
+
+def test_constants(svec):
+    from piquet.scoring import PIQUE_BONUS, PIQUE_THRESHOLD, REPIQUE_BONUS
+
+    assert svec["constants"] == {
+        "PIQUE_THRESHOLD": PIQUE_THRESHOLD,
+        "PIQUE_BONUS": PIQUE_BONUS,
+        "REPIQUE_BONUS": REPIQUE_BONUS,
+    }
+
+
+def test_every_logged_case_reckons_as_recorded(svec):
+    from piquet.scoring import Player
+
+    for case in svec["cases"]:
+        log = _rebuild(case["events"])
+        where = case["name"]
+
+        assert log.total(Player.ELDER) == case["totals"]["elder"], where
+        assert log.total(Player.YOUNGER) == case["totals"]["younger"], where
+
+        for who, player in (("elder", Player.ELDER), ("younger", Player.YOUNGER)):
+            got = {c.name: n for c, n in log.by_category(player).items()}
+            assert got == case["by_category"][who], where
+
+        got_repique = log.repique.value if log.repique else None
+        got_pique = log.pique.value if log.pique else None
+        assert got_repique == case["repique"], where
+        assert got_pique == case["pique"], where
+
+        settled = log.with_bonuses()
+        assert settled.total(Player.ELDER) == case["totals_after_bonuses"]["elder"], where
+        assert (
+            settled.total(Player.YOUNGER) == case["totals_after_bonuses"]["younger"]
+        ), where
+
+
+def test_a_player_never_scores_both_bonuses(svec):
+    for case in svec["cases"]:
+        assert not (case["repique"] and case["pique"]), case["name"]
+
+
+def test_younger_cannot_pique(svec):
+    """Not stipulated anywhere -- it falls out of the precedence order.
+
+    Younger's declarations are categories I-IV. If they reach thirty while
+    elder is silent she has a *repique*. To need points made in play she must
+    be short after declaring, and by then the first entry in category V is
+    elder's point for leading to the first trick -- so he has reckoned, and the
+    window is shut.
+    """
+    for case in svec["cases"]:
+        assert case["pique"] != "younger", case["name"]
+
+
+def test_with_bonuses_is_idempotent(svec):
+    for case in svec["cases"]:
+        log = _rebuild(case["events"])
+        once = log.with_bonuses()
+        assert len(once.with_bonuses()) == len(once), case["name"]
+
+
+def test_a_score_must_be_positive(svec):
+    """An equality scores for neither player and is recorded by logging nothing.
+
+    A zero would look exactly like the adversary having reckoned something,
+    which silently breaks both bonuses -- so it is refused rather than ignored.
+    """
+    from piquet.scoring import Category, Player, ScoreLog
+
+    for case in svec["errors"]:
+        with pytest.raises(ValueError):
+            ScoreLog().record(Player.ELDER, case["amount"], Category.POINT)
+
+
+def test_scoring_vector_file_is_self_describing(svec):
+    assert svec["module"] == "scoring"
+    for section in ("categories", "cases", "errors", "constants"):
+        assert svec[section], f"section {section!r} is empty"
