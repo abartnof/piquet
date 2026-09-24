@@ -536,3 +536,241 @@ fn a_score_must_be_positive() {
             .is_err());
     }
 }
+
+// -- declarations -----------------------------------------------------------
+
+use piquet_core::declarations::{compare_in, Announcement, CategoryResult, Declaration};
+
+fn build_result(case: &serde_json::Value) -> CategoryResult {
+    let category = category_named(case["category"].as_str().unwrap());
+    let elder_hand = Hand::parse(case["elder_hand"].as_str().unwrap()).unwrap();
+    let younger_hand = Hand::parse(case["younger_hand"].as_str().unwrap()).unwrap();
+    let elder = if case["elder_sinks"].as_bool().unwrap_or(false) {
+        Declaration::sink()
+    } else {
+        Declaration::full(elder_hand, category)
+    };
+    let younger = Declaration::full(younger_hand, category);
+    elder.validate(elder_hand, category).unwrap();
+    younger.validate(younger_hand, category).unwrap();
+    let comparison = compare_in(category, elder.best(), younger.best());
+    CategoryResult {
+        category,
+        elder,
+        younger,
+        comparison,
+    }
+}
+
+#[test]
+fn the_dialogue_resolves_as_recorded() {
+    let vec = vectors("declarations.json");
+    for case in vec["dialogue"].as_array().unwrap() {
+        let result = build_result(case);
+        assert_eq!(
+            result.comparison.value(),
+            case["comparison"].as_str().unwrap(),
+            "{case}"
+        );
+        assert_eq!(
+            result.winner().map(|p| p.name()),
+            case["winner"].as_str(),
+            "{case}"
+        );
+        assert_eq!(
+            result.shapes_match(),
+            case["shapes_match"].as_bool().unwrap(),
+            "{case}"
+        );
+        assert_eq!(
+            result.elder.describe(),
+            case["elder_declares"].as_str().unwrap()
+        );
+        assert_eq!(
+            u64::from(result.elder.score()),
+            case["elder_score_if_won"].as_u64().unwrap()
+        );
+    }
+}
+
+#[test]
+fn the_suit_is_never_spoken_and_a_tiebreak_rarely_is() {
+    let vec = vectors("declarations.json");
+    for case in vec["dialogue"].as_array().unwrap() {
+        let result = build_result(case);
+        for (name, player) in [("elder", Player::Elder), ("younger", Player::Younger)] {
+            let got = result.announcement_of(player);
+            let want = &case["announced"][name];
+            match (got, want.as_object()) {
+                (None, None) => {}
+                (Some(a), Some(w)) => {
+                    assert_eq!(a.category.name(), w["category"].as_str().unwrap());
+                    assert_eq!(u64::from(a.primary), w["primary"].as_u64().unwrap());
+                    assert_eq!(a.tiebreak.map(u64::from), w["tiebreak"].as_u64());
+                    assert_eq!(a.spoken(), w["spoken"].as_str().unwrap());
+                    let said = a.spoken().to_lowercase();
+                    assert!(!said.contains("spade") && !said.contains("club"));
+                }
+                _ => panic!("announcement presence disagrees: {case}"),
+            }
+        }
+        // Younger never volunteers a tie-break.
+        if let Some(a) = result.announcement_of(Player::Younger) {
+            assert!(a.tiebreak.is_none());
+        }
+    }
+}
+
+#[test]
+fn a_beaten_declaration_is_never_shown() {
+    let vec = vectors("declarations.json");
+    for case in vec["dialogue"].as_array().unwrap() {
+        let result = build_result(case);
+        for (name, player) in [("elder", Player::Elder), ("younger", Player::Younger)] {
+            let shown = result.shown(player);
+            let want = case["shown"][name].as_array().unwrap();
+            assert_eq!(shown.len(), want.len(), "{case}");
+            if let Some(winner) = case["winner"].as_str() {
+                if winner != name {
+                    assert!(shown.is_empty(), "a beaten declaration must not be shown");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn matches_reads_the_key_and_nothing_else() {
+    let vec = vectors("declarations.json");
+    for case in vec["matches"].as_array().unwrap() {
+        let spec = &case["announcement"];
+        let category = category_named(spec["category"].as_str().unwrap());
+        let announcement = Announcement {
+            category,
+            primary: spec["primary"].as_u64().unwrap() as u32,
+            tiebreak: spec["tiebreak"].as_u64().map(|t| t as u32),
+        };
+        let hand = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let best = Declaration::full(hand, category).best();
+        assert_eq!(
+            announcement.matches(best),
+            case["matches"].as_bool().unwrap(),
+            "{case}"
+        );
+    }
+}
+
+// -- partie -----------------------------------------------------------------
+
+use piquet_core::partie::{Partie, Side, PARTIE_BONUS, RUBICON};
+
+fn play_sheet(deals: &serde_json::Value, extra: &serde_json::Value) -> Partie {
+    let mut partie = Partie::new(Side::A);
+    for source in [deals, extra] {
+        for row in source.as_array().unwrap() {
+            let pair = row.as_array().unwrap();
+            partie = partie
+                .record_scores(
+                    pair[0].as_i64().unwrap() as i32,
+                    pair[1].as_i64().unwrap() as i32,
+                )
+                .unwrap();
+        }
+    }
+    partie
+}
+
+#[test]
+fn the_rubicon_decides_which_arithmetic_applies() {
+    let vec = vectors("partie.json");
+    for case in vec["cases"].as_array().unwrap() {
+        let partie = play_sheet(&case["deals"], &case["extra"]);
+        let settlement = partie.settlement().expect("a complete partie settles");
+        let want = &case["settlement"];
+
+        assert_eq!(
+            settlement.winner.map(|s| s.name()),
+            want["winner"].as_str(),
+            "{}",
+            case["name"]
+        );
+        assert_eq!(
+            i64::from(settlement.points),
+            want["points"].as_i64().unwrap(),
+            "{}",
+            case["name"]
+        );
+        assert_eq!(settlement.rubicon, want["rubicon"].as_bool().unwrap());
+
+        let (first, second) = partie.totals();
+        assert_eq!(i64::from(first), case["totals"]["A"].as_i64().unwrap());
+        assert_eq!(i64::from(second), case["totals"]["B"].as_i64().unwrap());
+
+        if settlement.winner.is_some() {
+            let high = first.max(second);
+            let low = first.min(second);
+            let expected = if low < RUBICON {
+                high + low + PARTIE_BONUS
+            } else {
+                high - low + PARTIE_BONUS
+            };
+            assert_eq!(settlement.points, expected);
+        }
+    }
+}
+
+#[test]
+fn a_level_partie_plays_two_more_deals_and_both_of_them() {
+    let vec = vectors("partie.json");
+    let empty = serde_json::json!([]);
+    for case in vec["cases"].as_array().unwrap() {
+        if case["extra"].as_array().unwrap().is_empty() {
+            continue;
+        }
+        let after_six = play_sheet(&case["deals"], &empty);
+        let (a, b) = after_six.totals();
+        assert_eq!(a, b, "{}", case["name"]);
+        assert!(!after_six.complete());
+
+        let first_extra = serde_json::json!([case["extra"][0]]);
+        let after_seven = play_sheet(&case["deals"], &first_extra);
+        assert!(
+            !after_seven.complete(),
+            "the second extra deal is played too"
+        );
+    }
+}
+
+#[test]
+fn the_seat_alternates_and_the_side_does_not() {
+    let vec = vectors("partie.json");
+    for case in vec["alternation"].as_array().unwrap() {
+        let opening = if case["opening_dealer"] == "A" {
+            Side::A
+        } else {
+            Side::B
+        };
+        let partie = Partie::new(opening);
+        let want: Vec<&str> = case["elder_by_deal"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|s| s.as_str().unwrap())
+            .collect();
+        let got: Vec<&str> = (1..=want.len())
+            .map(|n| partie.elder_in(n).name())
+            .collect();
+        assert_eq!(got, want);
+        assert_ne!(got[0], case["opening_dealer"].as_str().unwrap());
+    }
+}
+
+#[test]
+fn a_settled_partie_takes_no_more_deals() {
+    let vec = vectors("partie.json");
+    for case in vec["cases"].as_array().unwrap() {
+        let partie = play_sheet(&case["deals"], &case["extra"]);
+        assert!(partie.complete());
+        assert!(partie.record_scores(1, 1).is_err());
+    }
+}

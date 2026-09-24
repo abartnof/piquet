@@ -12,5 +12,7 @@
 
 pub mod cards;
 pub mod combos;
+pub mod declarations;
+pub mod partie;
 pub mod scoring;
 pub mod solver;
