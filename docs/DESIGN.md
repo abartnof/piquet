@@ -115,23 +115,43 @@ Four new ones take their place, ranked by how likely each is to actually bite.
    `min` are stable: ties keep their original order. Rust's `sort_unstable_by`
    is not, and it is the one a Rust programmer reaches for by default.
 
-   Eleven sites pass a sort key. Five of them key on `(c.rank, c.suit)`, which
-   is unique per card and so can never tie — they are safe either way. The six
-   that *can* tie are the ones to watch:
+   Eleven sites pass a sort key. Five key on `(c.rank, c.suit)`, unique per
+   card and so incapable of tying. `combos.py:228` cannot tie either: `sets()`
+   emits at most one entry per rank and keys on `(count, rank)`, so a tie would
+   need two entries of one rank — six cards of it, and only four exist. That
+   leaves five:
 
    | Site | Key | How it ties |
    |---|---|---|
    | `combos.py:210` | `s.key` | tierce to the king in two different suits |
-   | `combos.py:228` | `s.key` | two sets of equal rank |
    | `declarations.py:152` | `c.key` | same, via `max` over claims |
    | `heuristics.py:108` | `_keep_value` | a float; equal-valued cards |
    | `heuristics.py:207` | `suit_strength` | two suits equally established |
    | `solver.py:455` | `(totals[c], -c.rank)` | equal EV, equal rank |
 
-   Use `sort_by`, never `sort_unstable_by`, and preserve `Hand`'s index
-   iteration order so the input order matches to begin with. Get this wrong and
-   the agent silently plays a different card; nothing else in the port changes
-   behaviour so quietly.
+   `combos.py:210` is not hypothetical. `JH QH KH JS QS KS` holds two tierces
+   to the king, both keying `(3, 13)`, and `best_sequence` is `found[0]` — so
+   the tie decides **which suit gets declared**. Hearts wins, because hearts is
+   found first.
+
+   **The trap is not the one it appears to be.** `sorted(..., reverse=True)` is
+   stable in Python: tied elements keep their original order rather than having
+   it reversed. Measured, running the three candidate idioms over the same
+   input as above:
+
+       sort_by(|x, y| y.cmp(x))      CLUBS, HEARTS, SPADES   correct
+       sort_by_key(k); reverse()     CLUBS, SPADES, HEARTS   ties flipped
+       sort_unstable_by(...)         CLUBS, HEARTS, SPADES   correct, by luck
+
+   So `reverse=True` must become a **reversed comparator**, never a sort
+   followed by `.reverse()`. The second line is the dangerous one precisely
+   because it is the obvious translation and it reads as correct.
+
+   Note the third line too. `sort_unstable_by` happened to give the right
+   answer on a three-element slice, which guarantees nothing — small inputs are
+   exactly where an unstable sort is most likely to look fine. These defects do
+   not announce themselves in a unit test; they surface as an agent declaring
+   the wrong suit every so often.
 2. **`ratings()` uses transcendentals.** `tournament.py:200-202` calls
    `math.exp`, `math.log` and `math.log10`. IEEE 754 requires `+ - * /` to be
    correctly rounded, so those port bit-for-bit; it requires nothing of `log`
