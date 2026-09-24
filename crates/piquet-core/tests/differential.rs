@@ -43,6 +43,7 @@ fn the_two_engines_agree_over_a_large_corpus() {
     };
 
     let mut deals = 0usize;
+    let mut skipped = 0usize;
     let mut divergences: Vec<String> = Vec::new();
 
     for (line_number, line) in text.lines().enumerate() {
@@ -51,6 +52,17 @@ fn the_two_engines_agree_over_a_large_corpus() {
         }
         let case: serde_json::Value =
             serde_json::from_str(line).expect("each line is one played deal");
+
+        // When the candidate set outgrows `max_worlds` the solver takes a
+        // RANDOM SAMPLE of it, and at that point the two engines part company
+        // legitimately: §2.1 settles that no two languages share a generator.
+        // Such deals are skipped rather than compared loosely, because a
+        // tolerant comparison here would hide the divergences that *are*
+        // bugs.
+        if case["sampled"].as_bool().unwrap_or(false) {
+            skipped += 1;
+            continue;
+        }
 
         let pack: Vec<Card> = case["pack"]
             .as_array()
@@ -155,7 +167,11 @@ fn the_two_engines_agree_over_a_large_corpus() {
         deals += 1;
     }
 
-    eprintln!("compared {deals} deals against the oracle");
+    eprintln!(
+        "compared {deals} deals against the oracle; skipped {skipped} where the \
+         solver sampled and the two generators legitimately part company"
+    );
+    assert!(deals > 0, "every deal was skipped; nothing was compared");
     assert!(
         divergences.is_empty(),
         "{} of {deals} deals diverged:\n\n{}",

@@ -1784,8 +1784,15 @@ use piquet_core::solver::SolverAgent;
 fn the_solver_agent_plays_the_recorded_cards() {
     // Rung five samples opponent hands, which would normally put it beyond
     // what a golden vector can check -- no two languages share a generator.
-    // But inference narrows to a single candidate by the endgame, so
-    // `max_worlds` never actually samples and the agent is deterministic.
+    //
+    // These four packs happen to keep the candidate set inside `max_worlds`
+    // all the way down, so no sample is ever taken and the agent is
+    // deterministic. That is a property of the packs and NOT of the solver: a
+    // differential run over 150 random deals found two where the set reached
+    // 35 against a limit of 30, and the two engines then chose differently and
+    // correctly. The vector generator now asserts the constraint rather than
+    // relying on it, so a later pack cannot silently emit a case nothing can
+    // satisfy.
     let vec = vectors("solver.json");
     for game in vec["agent_games"].as_array().unwrap() {
         let pack = pack_of(&game["pack_codes"]);

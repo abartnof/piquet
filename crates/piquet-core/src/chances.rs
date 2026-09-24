@@ -19,7 +19,7 @@
 use std::sync::OnceLock;
 
 use crate::mt19937::MersenneTwister;
-use crate::partie::{Partie, Side, Standing, PARTIE_BONUS, RUBICON};
+use crate::partie::{Partie, Side, Standing, DEALS_IN_PARTIE, EXTRA_DEALS, PARTIE_BONUS, RUBICON};
 use crate::scoring::Player;
 
 /// The top bucket; everything above it is folded in.
@@ -235,12 +235,28 @@ pub fn in_words(p: f64) -> String {
 ///
 /// The seed is fixed so that a position always values the same, which is what
 /// makes this reproducible across languages at all. See `mt19937`.
+/// The longest a partie can run: six deals, plus the two played on a tie.
+const MOST_DEALS: usize = DEALS_IN_PARTIE + EXTRA_DEALS;
+
 fn futures(deals_left: usize, elder_first: bool) -> &'static [(i32, i32)] {
     /// One sampled future per draw, cached per (deals_left, elder_first).
     type FutureCache = Vec<OnceLock<Vec<(i32, i32)>>>;
     static CACHE: OnceLock<FutureCache> = OnceLock::new();
-    let cache = CACHE.get_or_init(|| (0..20).map(|_| OnceLock::new()).collect());
-    let slot = deals_left.min(9) * 2 + usize::from(elder_first);
+
+    // Asserted rather than clamped. An earlier version took
+    // `deals_left.min(9)` as the cache slot while computing with the
+    // *unclamped* value, so two different horizons shared one entry and the
+    // second silently received the first one's distribution. Unreachable --
+    // a partie is at most eight deals -- but a wrong answer is a worse
+    // failure than a loud one, and the clamp turned the former into the
+    // latter.
+    assert!(
+        deals_left <= MOST_DEALS,
+        "a partie runs at most {MOST_DEALS} deals; asked for {deals_left}"
+    );
+
+    let cache = CACHE.get_or_init(|| ((0..=MOST_DEALS * 2 + 1).map(|_| OnceLock::new())).collect());
+    let slot = deals_left * 2 + usize::from(elder_first);
     cache[slot].get_or_init(|| {
         let pairs: Vec<(i32, i32)> = PAIRS
             .as_chunks::<2>()
@@ -337,4 +353,47 @@ pub fn point_weights(mine: i32, theirs: i32, deals_left: usize, elder_first: boo
 /// `point_weights` read straight off a player's `Standing`.
 pub fn weights_for(standing: Standing, elder: bool) -> (f64, f64) {
     point_weights(standing.mine, standing.theirs, standing.deals_left, elder)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Every horizon a partie can present must get its own distribution.
+    ///
+    /// The bug this guards against was invisible: the values were plausible,
+    /// merely computed for the wrong number of deals.
+    #[test]
+    fn each_horizon_is_cached_separately() {
+        let mut seen: Vec<(usize, bool, i64)> = Vec::new();
+        for deals_left in 1..=MOST_DEALS {
+            for elder_first in [true, false] {
+                let sampled = futures(deals_left, elder_first);
+                assert_eq!(sampled.len(), DRAWS);
+                let total: i64 = sampled.iter().map(|(mine, _)| i64::from(*mine)).sum();
+                seen.push((deals_left, elder_first, total));
+            }
+        }
+        // More deals left means more points expected, so the totals must be
+        // strictly increasing with the horizon -- which they cannot be if two
+        // horizons share an entry.
+        for pair in seen.chunks(2) {
+            let elder_first = pair[0].2;
+            assert!(elder_first > 0);
+        }
+        for window in seen.chunks(2).collect::<Vec<_>>().windows(2) {
+            assert!(
+                window[1][0].2 > window[0][0].2,
+                "a longer horizon scored no more: {:?} then {:?}",
+                window[0][0],
+                window[1][0]
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "a partie runs at most")]
+    fn an_impossible_horizon_is_refused_rather_than_aliased() {
+        futures(MOST_DEALS + 1, true);
+    }
 }

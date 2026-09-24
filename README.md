@@ -62,6 +62,22 @@ bin/vm --sync && ssh piquet-dev ... cd piquet/python && ../.venv/bin/pytest
 python tools/emit_vectors.py      # regenerate the golden vectors
 ```
 
+There is also a **differential harness**, which is a different instrument from
+the vectors. The vectors are a specification: a handful of positions chosen
+because somebody could say why they mattered. This is the other kind of check
+— thousands of deals nobody chose, whose job is to find the divergence no one
+thought to write a case for.
+
+```
+python tools/differential.py 20000 > /tmp/corpus.jsonl   # the oracle plays
+cargo test --release --test differential                 # the Rust replays
+```
+
+The corpus is regenerable and deliberately not committed. Deals where the
+solver had to sample its opponent-hand candidates are marked and skipped: past
+`max_worlds` it takes a *random* sample, and there the two engines part company
+legitimately, because no two languages share a generator.
+
 Regenerate the vectors only when the engine's behaviour changes *on purpose*,
 and then read the diff. A changed vector is either a deliberate rule change or
 a regression, and the tests exist to make sure the difference is never silent.

@@ -1359,6 +1359,38 @@ BAD_POSITIONS = [
 ]
 
 
+def _assert_no_sampling(deal, solver, ladder, solver_seat: str) -> None:
+    """Refuse to emit a solver vector the Rust could never reproduce."""
+    from piquet.inference import possible_hands as _all_hands
+
+    seat = Player.ELDER if solver_seat == "elder" else Player.YOUNGER
+    agents = {seat: solver, seat.opponent: ladder}
+    probe = deal
+    for player in (Player.ELDER, Player.YOUNGER):
+        probe = probe.exchange(player, agents[player].exchange(view_for(probe, player)))
+    while probe.to_declare is not None:
+        player = probe.to_declare
+        probe = probe.declare(
+            player,
+            agents[player].declare(view_for(probe, player), probe.declaring_category),
+        )
+    while probe.phase is Phase.PLAY:
+        player = probe.to_play
+        view = view_for(probe, player)
+        if (
+            player is seat
+            and len(view.hand) <= solver.exact_from
+            and len(view.legal_plays) > 1
+        ):
+            candidates = len(_all_hands(view, limit=None))
+            if candidates > solver.max_worlds:
+                raise SystemExit(
+                    f"solver vector would sample: {candidates} candidates "
+                    f"against max_worlds={solver.max_worlds}. Pick another pack."
+                )
+        probe = probe.play(player, agents[player].play(view))
+
+
 def emit_solver() -> dict:
     positions = []
     for name, elder_code, younger_code, leader_name, led_code, tricks in SOLVER_POSITIONS:
@@ -1445,9 +1477,11 @@ def emit_solver() -> dict:
 
     # Rung 5 against rung 4, both deterministic. The solver samples opponent
     # hands, which would normally put it beyond what a golden vector can
-    # check -- but inference narrows to a single candidate by the endgame, so
-    # `max_worlds` never actually samples and the agent is deterministic after
-    # all. Recorded on two packs in both seats.
+    # check. These packs happen to keep the candidate set inside max_worlds
+    # the whole way down, so no sample is taken and the agent is deterministic
+    # -- a property of the PACKS and not of the solver, which is why
+    # _assert_no_sampling checks it rather than trusting it. Over 150 random
+    # deals the set reached 35 against a limit of 30 in fourteen of them.
     agent_games = []
     for pack_name, build in (
         ("the pack in index order", _pack_identity),
@@ -1465,6 +1499,13 @@ def emit_solver() -> dict:
                 (solver, ladder) if solver_seat == "elder" else (ladder, solver)
             )
             deal = deal_from([Card.parse(c) for c in pack_codes])
+            # A solver game is only comparable across languages while the
+            # candidate set stays within max_worlds: past that it takes a
+            # RANDOM SAMPLE and the two engines legitimately diverge. The four
+            # packs here happen to stay inside it -- one reaches 24 against a
+            # limit of 30 -- so the constraint is asserted rather than assumed,
+            # or a later pack would silently emit a vector nothing can satisfy.
+            _assert_no_sampling(deal, solver, ladder, solver_seat)
             finished, _ = play_deal(elder, younger, deal=deal)
             agent_games.append(
                 {

@@ -32,7 +32,38 @@ from piquet.match import play_deal
 from piquet.rules import deal_from
 from piquet.scoring import Player
 from piquet.solver import SolverAgent
+import piquet.inference as inference_module
+import piquet.solver as solver_module
 from piquet.style import BALANCED
+
+
+#: Set while a deal is played if `possible_hands` ever had to truncate.
+#:
+#: When the candidate set is larger than `max_worlds` the solver takes a
+#: RANDOM SAMPLE of it, and at that point the two languages part company
+#: legitimately -- section 2.1 says no two languages share a generator. Deals
+#: where it happens cannot be compared move for move, so they are marked here
+#: and skipped there, rather than tolerated with a fuzzy comparison.
+_sampled = {"any": False}
+_unlimited = inference_module.possible_hands
+
+
+def _watching(view, limit=None, use_declarations=True, rng=None):
+    """`possible_hands`, noting when the limit actually bites.
+
+    `possible_hands` enumerates in full and then samples, so computing the
+    unlimited set costs nothing extra.
+    """
+    import random as _random
+
+    hands = _unlimited(view, limit=None, use_declarations=use_declarations, rng=rng)
+    if limit is not None and len(hands) > limit:
+        _sampled["any"] = True
+        return (rng or _random).sample(hands, limit)
+    return hands
+
+
+solver_module.possible_hands = _watching
 
 
 def main() -> int:
@@ -58,6 +89,7 @@ def main() -> int:
         else:
             elder = HeuristicAgent(level=elder_level, style=BALANCED, erraticism=0.0)
         younger = HeuristicAgent(level=younger_level, style=BALANCED, erraticism=0.0)
+        _sampled["any"] = False
         deal, _ = play_deal(elder, younger, deal=deal_from(cards))
 
         print(
@@ -65,6 +97,7 @@ def main() -> int:
                 {
                     "pack": [c.code for c in cards],
                     "elder_level": elder_level,
+                    "sampled": _sampled["any"],
                     "younger_level": younger_level,
                     "elder_score": deal.log.total(Player.ELDER),
                     "younger_score": deal.log.total(Player.YOUNGER),
