@@ -12,3 +12,4 @@ venv/
 logs/
 data/runs/
 *.parquet
+target/

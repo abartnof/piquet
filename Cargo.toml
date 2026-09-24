@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["crates/piquet-core"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+# isolate_lowest_one stabilised here. This ships as one page built from a
+# pinned toolchain, so MSRV portability buys nothing and clarity buys a little.
+rust-version = "1.97"
+
+[profile.release]
+lto = true
+codegen-units = 1

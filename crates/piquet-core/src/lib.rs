@@ -1,0 +1,14 @@
+//! The Piquet rules engine.
+//!
+//! A port of the Python implementation under `python/`, which remains the
+//! oracle: it is the version that passes the full test suite, it generates the
+//! golden vectors in `vectors/`, and it is not retired until this crate
+//! reproduces both them and the measured rating ladder.
+//!
+//! Every hazard catalogued in `docs/DESIGN.md` §2.1 was a consequence of
+//! JavaScript having no unsigned integer type and only 53 bits of safe
+//! integer. None of them survive here: a hand is a `u32`, popcount is
+//! `count_ones`, and the solver's 75-bit transposition key is a `u128`.
+
+pub mod cards;
+pub mod solver;

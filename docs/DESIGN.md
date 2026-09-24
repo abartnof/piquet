@@ -106,7 +106,7 @@ having no unsigned integer type and only 53 bits of safe integer.
 | Ace of spades on bit 31 reads negative | `u32` is unsigned; a non-issue |
 | `~seen & 0xFFFFFFFF` does not unsign | `!seen` on a `u32` is already correct |
 | No `int.bit_count()` equivalent | `u32::count_ones()`, one instruction |
-| `bits & -bits` meets the sign bit | `u32::isolate_lowest_one()` — a named method for exactly this; clippy rejects the hand-rolled form |
+| `bits & -bits` meets the sign bit | `u32::isolate_lowest_one()` — a named method for exactly this. Clippy rejects the hand-rolled `bits & bits.wrapping_neg()` in its favour, but *only* when the crate's MSRV is at least 1.97, where it stabilised; below that the manual form is what clippy accepts |
 | A 71-bit memo key | `u128` holds it natively |
 
 Four new ones take their place, ranked by how likely each is to actually bite.
