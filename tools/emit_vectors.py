@@ -35,6 +35,7 @@ import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
 from piquet.cards import Card, Hand, Rank, Suit, full_deck, parse_hand  # noqa: E402
+from piquet.observation import View, view_for  # noqa: E402
 from piquet.rules import (  # noqa: E402
     CARDS_SCORE,
     CAPOT_SCORE,
@@ -1041,6 +1042,142 @@ def emit_rules() -> dict:
     }
 
 
+def _view(v: View) -> dict:
+    """A view, flattened. Only the fields a leak could hide in."""
+    return {
+        "me": v.me.value,
+        "phase": v.phase.value,
+        "hand": v.hand.code,
+        "my_discards": v.my_discards.code,
+        "talon_seen": [c.code for c in v.talon_seen],
+        "watched_them_take": v.watched_them_take.code,
+        "talon_remaining": v.talon_remaining,
+        "exchange_limit": v.exchange_limit,
+        "unseen": v.unseen.code,
+        "outcomes": [[c.name, p.value if p else None] for c, p in v.outcomes],
+        "heard": [
+            {"category": a.category.name, "primary": a.primary, "tiebreak": a.tiebreak}
+            for a in v.heard
+        ],
+        "seen": [str(c) for c in v.seen],
+        "awaiting_answer": (
+            None
+            if v.awaiting_answer is None
+            else {
+                "category": v.awaiting_answer.category.name,
+                "primary": v.awaiting_answer.primary,
+                "tiebreak": v.awaiting_answer.tiebreak,
+            }
+        ),
+        "legal_plays": v.legal_plays.code,
+        "to_act": v.to_act,
+        "tricks_played": len(v.tricks),
+    }
+
+
+def _observe(pack_codes: list[str], elder_takes: int | None) -> list[dict]:
+    """Snapshot both players' views at every step of one scripted deal.
+
+    The vectors record the fields, but the *tests* check an invariant, which is
+    the part that actually protects anything: every card of the opponent's hand
+    that the viewer does not legitimately know about must lie inside `unseen`.
+    A view that leaks fails that immediately, whatever its fields say.
+    """
+    deal = deal_from([Card.parse(c) for c in pack_codes])
+    snapshots = []
+
+    def capture(index: int, action: str) -> None:
+        for player in (Player.ELDER, Player.YOUNGER):
+            view = view_for(deal, player)
+            opponent_hand = deal.hand_of(player.opponent)
+            # The oracle's own knowledge, recorded so a test can check the
+            # invariant. It is emphatically NOT part of the view.
+            leaked = Hand(
+                opponent_hand.bits
+                & ~view.unseen.bits
+                & ~view.watched_them_take.bits
+            )
+            snapshots.append(
+                {
+                    "step": index,
+                    "action": action,
+                    **_view(view),
+                    "oracle_opponent_hand": opponent_hand.code,
+                    "opponent_cards_not_accounted_for": leaked.code,
+                }
+            )
+
+    capture(0, "deal")
+    index = 1
+    for player in (Player.ELDER, Player.YOUNGER):
+        limit = deal.exchange_limit(player)
+        take = limit if (player is Player.YOUNGER or elder_takes is None) else elder_takes
+        deal = deal.exchange(
+            player, Hand.of(*list(deal.hand_of(player))[:take])
+        )
+        capture(index, f"{player.value} exchanges {take}")
+        index += 1
+
+    while deal.phase in (
+        Phase.DECLARE_POINT,
+        Phase.DECLARE_SEQUENCES,
+        Phase.DECLARE_SETS,
+    ):
+        category = deal.declaring_category
+        player = deal.to_declare
+        deal = deal.declare(
+            player, Declaration.full(deal.hand_of(player), category)
+        )
+        capture(index, f"{player.value} declares {category.name.lower()}")
+        index += 1
+
+    while deal.phase is Phase.PLAY:
+        player = deal.to_play
+        card = next(iter(deal.legal_plays(player)))
+        deal = deal.play(player, card)
+        capture(index, f"{player.value} plays {card.code}")
+        index += 1
+
+    return snapshots
+
+
+def emit_observation() -> dict:
+    pack_codes = _pack_identity()
+    return {
+        "module": "observation",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The most load-bearing module in the project: agents read the game "
+            "ONLY through a View. `oracle_opponent_hand` is the generator's own "
+            "knowledge, recorded so a test can assert the invariant -- it is "
+            "not part of any view, and no port should expose it. Three "
+            "asymmetries matter: elder reads all five of his talon cards even "
+            "when he takes fewer; he therefore watches younger draw cards he "
+            "has already read; and each player may consult their own discards."
+        ),
+        "pack": pack_codes,
+        "runs": [
+            {
+                "name": "elder takes all five, so he watches her take nothing",
+                "elder_takes": None,
+                "snapshots": _observe(pack_codes, None),
+            },
+            {
+                "name": "elder takes two, so younger draws from inside his five",
+                "note": (
+                    "The asymmetry that matters most. Elder reads all five "
+                    "whether he takes them or not; younger discards before she "
+                    "draws, so a card she takes in front of him cannot have "
+                    "been thrown away and is certainly in her hand. This is the "
+                    "only certain knowledge of the other hand the game gives."
+                ),
+                "elder_takes": 2,
+                "snapshots": _observe(pack_codes, 2),
+            },
+        ],
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1050,6 +1187,7 @@ def main() -> int:
         ("style", emit_style),
         ("declarations", emit_declarations),
         ("rules", emit_rules),
+        ("observation", emit_observation),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

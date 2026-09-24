@@ -1,0 +1,6705 @@
+{
+  "module": "observation",
+  "generator": "tools/emit_vectors.py",
+  "note": "The most load-bearing module in the project: agents read the game ONLY through a View. `oracle_opponent_hand` is the generator's own knowledge, recorded so a test can assert the invariant -- it is not part of any view, and no port should expose it. Three asymmetries matter: elder reads all five of his talon cards even when he takes fewer; he therefore watches younger draw cards he has already read; and each player may consult their own discards.",
+  "pack": [
+    "7C",
+    "8C",
+    "9C",
+    "TC",
+    "JC",
+    "QC",
+    "KC",
+    "AC",
+    "7D",
+    "8D",
+    "9D",
+    "TD",
+    "JD",
+    "QD",
+    "KD",
+    "AD",
+    "7H",
+    "8H",
+    "9H",
+    "TH",
+    "JH",
+    "QH",
+    "KH",
+    "AH",
+    "7S",
+    "8S",
+    "9S",
+    "TS",
+    "JS",
+    "QS",
+    "KS",
+    "AS"
+  ],
+  "runs": [
+    {
+      "name": "elder takes all five, so he watches her take nothing",
+      "elder_takes": null,
+      "snapshots": [
+        {
+          "step": 0,
+          "action": "deal",
+          "me": "elder",
+          "phase": "elder_exchange",
+          "hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 8,
+          "exchange_limit": 5,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 0,
+          "action": "deal",
+          "me": "younger",
+          "phase": "elder_exchange",
+          "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 8,
+          "exchange_limit": 8,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 1,
+          "action": "elder exchanges 5",
+          "me": "elder",
+          "phase": "younger_exchange",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 3,
+          "exchange_limit": 3,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 1,
+          "action": "elder exchanges 5",
+          "me": "younger",
+          "phase": "younger_exchange",
+          "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 3,
+          "exchange_limit": 3,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 2,
+          "action": "younger exchanges 3",
+          "me": "elder",
+          "phase": "declare_point",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 2,
+          "action": "younger exchanges 3",
+          "me": "younger",
+          "phase": "declare_point",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 3,
+          "action": "elder declares point",
+          "me": "elder",
+          "phase": "declare_point",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 3,
+          "action": "elder declares point",
+          "me": "younger",
+          "phase": "declare_point",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": {
+            "category": "POINT",
+            "primary": 5,
+            "tiebreak": null
+          },
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 4,
+          "action": "younger declares point",
+          "me": "elder",
+          "phase": "declare_sequences",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 4,
+          "action": "younger declares point",
+          "me": "younger",
+          "phase": "declare_sequences",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 5,
+          "action": "elder declares sequences",
+          "me": "elder",
+          "phase": "declare_sequences",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 5,
+          "action": "elder declares sequences",
+          "me": "younger",
+          "phase": "declare_sequences",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": {
+            "category": "SEQUENCES",
+            "primary": 5,
+            "tiebreak": null
+          },
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 6,
+          "action": "younger declares sequences",
+          "me": "elder",
+          "phase": "declare_sets",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 6,
+          "action": "younger declares sequences",
+          "me": "younger",
+          "phase": "declare_sets",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 7,
+          "action": "elder declares sets",
+          "me": "elder",
+          "phase": "declare_sets",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 7,
+          "action": "elder declares sets",
+          "me": "younger",
+          "phase": "declare_sets",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 8,
+          "action": "younger declares sets",
+          "me": "elder",
+          "phase": "play",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 8,
+          "action": "younger declares sets",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 9,
+          "action": "elder plays QC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 9,
+          "action": "elder plays QC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 10,
+          "action": "younger plays AD",
+          "me": "elder",
+          "phase": "play",
+          "hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 10,
+          "action": "younger plays AD",
+          "me": "younger",
+          "phase": "play",
+          "hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 11,
+          "action": "elder plays KC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 11,
+          "action": "elder plays KC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "7H 8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "7H 8H 9H TH JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 12,
+          "action": "younger plays 7H",
+          "me": "elder",
+          "phase": "play",
+          "hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 12,
+          "action": "younger plays 7H",
+          "me": "younger",
+          "phase": "play",
+          "hand": "8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "AC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 13,
+          "action": "elder plays AC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "8H 9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 13,
+          "action": "elder plays AC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "8H 9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "8H 9H TH JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 14,
+          "action": "younger plays 8H",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "7D 8D 9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 14,
+          "action": "younger plays 8H",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 7D 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "7D 8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 15,
+          "action": "elder plays 7D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "9H TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 15,
+          "action": "elder plays 7D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9H TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "9H TH JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 16,
+          "action": "younger plays 9H",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8D 9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "8D 9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 16,
+          "action": "younger plays 9H",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 8D 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "8D 9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 17,
+          "action": "elder plays 8D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "TH JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 17,
+          "action": "elder plays 8D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TH JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "TH JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 18,
+          "action": "younger plays TH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9D TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "9D TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 18,
+          "action": "younger plays TH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 9D TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "9D TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 19,
+          "action": "elder plays 9D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "JH QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 19,
+          "action": "elder plays 9D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JH QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "JH QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 20,
+          "action": "younger plays JH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TD 7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TD 7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 20,
+          "action": "younger plays JH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC TD 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "TD 7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 21,
+          "action": "elder plays TD",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "QH KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 21,
+          "action": "elder plays TD",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QH KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "QH KH AH QS KS AS",
+          "to_act": true,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 22,
+          "action": "younger plays QH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7S 8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "7S 8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 22,
+          "action": "younger plays QH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 7S 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "7S 8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 23,
+          "action": "elder plays 7S",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "KH AH QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 23,
+          "action": "elder plays 7S",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KH AH QS KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "QS KS AS",
+          "to_act": true,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 24,
+          "action": "younger plays QS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD KH AH KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "KH AH KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 24,
+          "action": "younger plays QS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KH AH KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "KH AH KS AS",
+          "to_act": true,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 25,
+          "action": "younger plays KH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S 9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AH KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "8S 9S TS JS",
+          "to_act": true,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "AH KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 25,
+          "action": "younger plays KH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AH KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 8S 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "8S 9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 26,
+          "action": "elder plays 8S",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AH KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "AH KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 26,
+          "action": "elder plays 8S",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AH KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "AH KS AS",
+          "to_act": true,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 27,
+          "action": "younger plays AH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9S TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "9S TS JS",
+          "to_act": true,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 27,
+          "action": "younger plays AH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC 9S TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "9S TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 28,
+          "action": "elder plays 9S",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 28,
+          "action": "elder plays 9S",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KS AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "KS AS",
+          "to_act": true,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 29,
+          "action": "younger plays KS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TS JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TS JS",
+          "to_act": true,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 29,
+          "action": "younger plays KS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC TS JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "TS JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 30,
+          "action": "elder plays TS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 30,
+          "action": "elder plays TS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AS",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "AS",
+          "to_act": true,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 31,
+          "action": "younger plays AS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "JS",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "JS",
+          "to_act": true,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 31,
+          "action": "younger plays AS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC JS",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "JS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 32,
+          "action": "elder plays JS",
+          "me": "elder",
+          "phase": "complete",
+          "hand": "",
+          "my_discards": "7C 8C 9C TC JC",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 8 (75)",
+            "huitième to the ace",
+            "tierce to the ace",
+            "trio of aces"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 12,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 32,
+          "action": "elder plays JS",
+          "me": "younger",
+          "phase": "complete",
+          "hand": "",
+          "my_discards": "JD QD KD",
+          "talon_seen": [
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC",
+          "outcomes": [
+            [
+              "POINT",
+              "younger"
+            ],
+            [
+              "SEQUENCES",
+              "younger"
+            ],
+            [
+              "SETS",
+              "younger"
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 12,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        }
+      ]
+    },
+    {
+      "name": "elder takes two, so younger draws from inside his five",
+      "note": "The asymmetry that matters most. Elder reads all five whether he takes them or not; younger discards before she draws, so a card she takes in front of him cannot have been thrown away and is certainly in her hand. This is the only certain knowledge of the other hand the game gives.",
+      "elder_takes": 2,
+      "snapshots": [
+        {
+          "step": 0,
+          "action": "deal",
+          "me": "elder",
+          "phase": "elder_exchange",
+          "hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 8,
+          "exchange_limit": 5,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 0,
+          "action": "deal",
+          "me": "younger",
+          "phase": "elder_exchange",
+          "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 8,
+          "exchange_limit": 8,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 1,
+          "action": "elder exchanges 2",
+          "me": "elder",
+          "phase": "younger_exchange",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 6,
+          "exchange_limit": 5,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 1,
+          "action": "elder exchanges 2",
+          "me": "younger",
+          "phase": "younger_exchange",
+          "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+          "my_discards": "",
+          "talon_seen": [],
+          "watched_them_take": "",
+          "talon_remaining": 6,
+          "exchange_limit": 6,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 2,
+          "action": "younger exchanges 6",
+          "me": "elder",
+          "phase": "declare_point",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 2,
+          "action": "younger exchanges 6",
+          "me": "younger",
+          "phase": "declare_point",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 3,
+          "action": "elder declares point",
+          "me": "elder",
+          "phase": "declare_point",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 3,
+          "action": "elder declares point",
+          "me": "younger",
+          "phase": "declare_point",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": {
+            "category": "POINT",
+            "primary": 6,
+            "tiebreak": null
+          },
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 4,
+          "action": "younger declares point",
+          "me": "elder",
+          "phase": "declare_sequences",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 4,
+          "action": "younger declares point",
+          "me": "younger",
+          "phase": "declare_sequences",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            }
+          ],
+          "seen": [
+            "point of 6 (60)"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 5,
+          "action": "elder declares sequences",
+          "me": "elder",
+          "phase": "declare_sequences",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 5,
+          "action": "elder declares sequences",
+          "me": "younger",
+          "phase": "declare_sequences",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            }
+          ],
+          "seen": [
+            "point of 6 (60)"
+          ],
+          "awaiting_answer": {
+            "category": "SEQUENCES",
+            "primary": 6,
+            "tiebreak": null
+          },
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 6,
+          "action": "younger declares sequences",
+          "me": "elder",
+          "phase": "declare_sets",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 6,
+          "action": "younger declares sequences",
+          "me": "younger",
+          "phase": "declare_sets",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 7,
+          "action": "elder declares sets",
+          "me": "elder",
+          "phase": "declare_sets",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 7,
+          "action": "elder declares sets",
+          "me": "younger",
+          "phase": "declare_sets",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 8,
+          "action": "younger declares sets",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [],
+          "seen": [],
+          "awaiting_answer": null,
+          "legal_plays": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 8,
+          "action": "younger declares sets",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 9,
+          "action": "elder plays 9C",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 9,
+          "action": "elder plays 9C",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "9H TH JH QH KH AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 0,
+          "oracle_opponent_hand": "TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 10,
+          "action": "younger plays 9H",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 10,
+          "action": "younger plays 9H",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "TC JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 11,
+          "action": "elder plays TC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H TH JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "TH JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 11,
+          "action": "elder plays TC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TH JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TH JH QH KH AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 1,
+          "oracle_opponent_hand": "JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 12,
+          "action": "younger plays TH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 12,
+          "action": "younger plays TH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "JC QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 13,
+          "action": "elder plays JC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H JH QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "JH QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 13,
+          "action": "elder plays JC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JH QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "JH QH KH AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 2,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 14,
+          "action": "younger plays JH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "QC KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "QC KC AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 14,
+          "action": "younger plays JH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C QC KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "QC KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 15,
+          "action": "elder plays QC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QH KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "QH KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 15,
+          "action": "elder plays QC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QH KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "QH KH AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 3,
+          "oracle_opponent_hand": "KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 16,
+          "action": "younger plays QH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "KC AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "KC AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 16,
+          "action": "younger plays QH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C KC AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "KC AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 17,
+          "action": "elder plays KC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H KH AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "KH AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 17,
+          "action": "elder plays KC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KH AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "KH AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 4,
+          "oracle_opponent_hand": "AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 18,
+          "action": "younger plays KH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "AC 7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "AC 7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 18,
+          "action": "younger plays KH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C AC 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "AC 7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 19,
+          "action": "elder plays AC",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H AH QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "AH 9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 19,
+          "action": "elder plays AC",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AH 9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "AH 9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 5,
+          "oracle_opponent_hand": "7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 20,
+          "action": "younger plays AH",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7D 8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "7D 8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 20,
+          "action": "younger plays AH",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 7D 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "7D 8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 21,
+          "action": "elder plays 7D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "9S TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "9S TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 21,
+          "action": "elder plays 7D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "9S TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "9S TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 6,
+          "oracle_opponent_hand": "8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 22,
+          "action": "younger plays 9S",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8D 9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "8D 9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 22,
+          "action": "younger plays 9S",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 8D 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "8D 9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 23,
+          "action": "elder plays 8D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "TS JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "TS JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 23,
+          "action": "elder plays 8D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "TS JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TS JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 7,
+          "oracle_opponent_hand": "9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 24,
+          "action": "younger plays TS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "9D TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "9D TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 24,
+          "action": "younger plays TS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 9D TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "9D TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 25,
+          "action": "elder plays 9D",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "JS",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "JS QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 25,
+          "action": "elder plays 9D",
+          "me": "younger",
+          "phase": "play",
+          "hand": "JS QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "JS QS KS AS",
+          "to_act": true,
+          "tricks_played": 8,
+          "oracle_opponent_hand": "TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 26,
+          "action": "younger plays JS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "TD 7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "TD 7S 8S",
+          "to_act": true,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 26,
+          "action": "younger plays JS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C TD 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "TD 7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 27,
+          "action": "elder plays TD",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H QS KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "QS KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 27,
+          "action": "elder plays TD",
+          "me": "younger",
+          "phase": "play",
+          "hand": "QS KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "QS KS AS",
+          "to_act": true,
+          "tricks_played": 9,
+          "oracle_opponent_hand": "7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 28,
+          "action": "younger plays QS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "7S 8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "7S 8S",
+          "to_act": true,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 28,
+          "action": "younger plays QS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 7S 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "7S 8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 29,
+          "action": "elder plays 7S",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H KS AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "KS AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 29,
+          "action": "elder plays 7S",
+          "me": "younger",
+          "phase": "play",
+          "hand": "KS AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "KS AS",
+          "to_act": true,
+          "tricks_played": 10,
+          "oracle_opponent_hand": "8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 30,
+          "action": "younger plays KS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H AS",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "AS",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 30,
+          "action": "younger plays KS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "AS",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "AS",
+          "to_act": true,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 31,
+          "action": "younger plays AS",
+          "me": "elder",
+          "phase": "play",
+          "hand": "8S",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "8S",
+          "to_act": true,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 31,
+          "action": "younger plays AS",
+          "me": "younger",
+          "phase": "play",
+          "hand": "",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C 8S",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 11,
+          "oracle_opponent_hand": "8S",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 32,
+          "action": "elder plays 8S",
+          "me": "elder",
+          "phase": "complete",
+          "hand": "",
+          "my_discards": "7C 8C",
+          "talon_seen": [
+            "7S",
+            "8S",
+            "9S",
+            "TS",
+            "JS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "JD QD KD AD 7H 8H",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "sixième to the ace"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 12,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        },
+        {
+          "step": 32,
+          "action": "elder plays 8S",
+          "me": "younger",
+          "phase": "complete",
+          "hand": "",
+          "my_discards": "JD QD KD AD 7H 8H",
+          "talon_seen": [
+            "9S",
+            "TS",
+            "JS",
+            "QS",
+            "KS",
+            "AS"
+          ],
+          "watched_them_take": "",
+          "talon_remaining": 0,
+          "exchange_limit": 0,
+          "unseen": "7C 8C",
+          "outcomes": [
+            [
+              "POINT",
+              null
+            ],
+            [
+              "SEQUENCES",
+              null
+            ],
+            [
+              "SETS",
+              null
+            ]
+          ],
+          "heard": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
+          "seen": [
+            "point of 6 (60)",
+            "sixième to the ace",
+            "quart to the ten"
+          ],
+          "awaiting_answer": null,
+          "legal_plays": "",
+          "to_act": false,
+          "tricks_played": 12,
+          "oracle_opponent_hand": "",
+          "opponent_cards_not_accounted_for": ""
+        }
+      ]
+    }
+  ]
+}

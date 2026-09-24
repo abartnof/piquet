@@ -857,3 +857,191 @@ def test_rules_vector_file_is_self_describing(rvec):
     for section in ("constants", "phases", "tricks", "legal_plays", "replays", "errors"):
         assert rvec[section], f"section {section!r} is empty"
     assert len(rvec["errors"]) >= 7
+
+
+# ===========================================================================
+# observation -- what each player is allowed to know
+# ===========================================================================
+
+
+@pytest.fixture(scope="module")
+def ovec() -> dict:
+    return load("observation")
+
+
+def _observe(pack_codes, elder_takes):
+    """Re-derive the scripted deal, yielding both players' views at each step.
+
+    Mirrors `tools/emit_vectors.py`. The policy is deterministic, so
+    re-deriving it here also checks that it is genuinely reproducible rather
+    than merely recorded.
+    """
+    from piquet.cards import Card, Hand
+    from piquet.declarations import Declaration
+    from piquet.observation import view_for
+    from piquet.rules import Phase, deal_from
+    from piquet.scoring import Player
+
+    deal = deal_from([Card.parse(c) for c in pack_codes])
+
+    def both():
+        return [(p, view_for(deal, p), deal.hand_of(p.opponent))
+                for p in (Player.ELDER, Player.YOUNGER)]
+
+    yield both()
+    for player in (Player.ELDER, Player.YOUNGER):
+        limit = deal.exchange_limit(player)
+        take = limit if (player is Player.YOUNGER or elder_takes is None) else elder_takes
+        deal = deal.exchange(player, Hand.of(*list(deal.hand_of(player))[:take]))
+        yield both()
+
+    while deal.phase in (
+        Phase.DECLARE_POINT, Phase.DECLARE_SEQUENCES, Phase.DECLARE_SETS
+    ):
+        player = deal.to_declare
+        deal = deal.declare(
+            player, Declaration.full(deal.hand_of(player), deal.declaring_category)
+        )
+        yield both()
+
+    while deal.phase is Phase.PLAY:
+        player = deal.to_play
+        deal = deal.play(player, next(iter(deal.legal_plays(player))))
+        yield both()
+
+
+def _flat(view):
+    return {
+        "me": view.me.value,
+        "phase": view.phase.value,
+        "hand": view.hand.code,
+        "my_discards": view.my_discards.code,
+        "talon_seen": [c.code for c in view.talon_seen],
+        "watched_them_take": view.watched_them_take.code,
+        "talon_remaining": view.talon_remaining,
+        "exchange_limit": view.exchange_limit,
+        "unseen": view.unseen.code,
+        "legal_plays": view.legal_plays.code,
+        "to_act": view.to_act,
+        "tricks_played": len(view.tricks),
+    }
+
+
+def test_every_view_reproduces_field_for_field(ovec):
+    for run in ovec["runs"]:
+        recorded = iter(run["snapshots"])
+        for group in _observe(ovec["pack"], run["elder_takes"]):
+            for _, view, _ in group:
+                want = next(recorded)
+                got = _flat(view)
+                assert got == {k: want[k] for k in got}, (
+                    f"{run['name']}: step {want['step']} {want['me']}"
+                )
+
+
+def test_no_view_ever_accounts_for_the_opponents_hand(ovec):
+    """The invariant the whole module exists to maintain.
+
+    Every card of the opponent's hand must either be inside `unseen` -- that
+    is, unaccounted for -- or be one this player legitimately watched them
+    take. Anything else means the view has handed over information the table
+    never gave, and every strength measurement taken through it is worthless.
+    """
+    from piquet.cards import Hand
+
+    for run in ovec["runs"]:
+        for group in _observe(ovec["pack"], run["elder_takes"]):
+            for player, view, opponent_hand in group:
+                leaked = Hand(
+                    opponent_hand.bits
+                    & ~view.unseen.bits
+                    & ~view.watched_them_take.bits
+                )
+                assert leaked.bits == 0, (
+                    f"{run['name']}: {player.value} at {view.phase.value} can "
+                    f"account for {leaked.code} of the opponent's hand"
+                )
+
+
+def test_elder_hears_nothing_from_younger_until_he_has_led(ovec):
+    """Her declarations are withheld until he has led to the first trick.
+
+    Which makes elder's first lead genuinely blind, and is a real piece of
+    piquet a tutor can point at. Closing this leak is what moved the ladder.
+    """
+    for run in ovec["runs"]:
+        for group in _observe(ovec["pack"], run["elder_takes"]):
+            for player, view, _ in group:
+                if player.value != "elder":
+                    continue
+                if not view.tricks and view.current_trick is None:
+                    assert view.heard == (), "younger has not spoken yet"
+                    assert view.seen == (), "and has shown nothing"
+
+
+def test_only_elder_ever_watches_the_opponent_draw(ovec):
+    for run in ovec["runs"]:
+        for group in _observe(ovec["pack"], run["elder_takes"]):
+            for player, view, _ in group:
+                if player.value == "younger":
+                    assert view.watched_them_take.bits == 0
+
+
+def test_watched_cards_are_certain_and_shrink_as_she_plays(ovec):
+    """What comes back is what she holds *now*, so played cards drop out.
+
+    The set is only monotonic once the exchange is over. Before that it is
+    empty and then becomes populated, which is the exchange happening rather
+    than elder learning something he should not have.
+    """
+    from piquet.rules import Phase
+    from piquet.scoring import Player
+
+    exchanging = (Phase.ELDER_EXCHANGE, Phase.YOUNGER_EXCHANGE)
+    for run in ovec["runs"]:
+        previous = None
+        for group in _observe(ovec["pack"], run["elder_takes"]):
+            for player, view, opponent_hand in group:
+                if player is not Player.ELDER:
+                    continue
+                watched = view.watched_them_take
+                assert (watched - opponent_hand).bits == 0, (
+                    "a watched card must really be in her hand"
+                )
+                if view.phase in exchanging:
+                    continue
+                if previous is not None:
+                    assert (watched - previous).bits == 0, (
+                        "once dealt, the watched set may shrink, never grow"
+                    )
+                previous = watched
+
+
+def test_the_watched_case_is_actually_exercised(ovec):
+    """Otherwise the three tests above are asserting things about empty sets."""
+    non_empty = [
+        s
+        for run in ovec["runs"]
+        for s in run["snapshots"]
+        if s["watched_them_take"]
+    ]
+    assert non_empty, "no run leaves elder watching younger draw; add one"
+
+
+def test_younger_alone_is_asked_to_answer_and_hears_only_a_shape(ovec):
+    for run in ovec["runs"]:
+        for s in run["snapshots"]:
+            if s["awaiting_answer"] is None:
+                continue
+            assert s["me"] == "younger", "only younger answers a declaration"
+            assert s["awaiting_answer"]["tiebreak"] is None, (
+                "she hears the shape, never the tie-break"
+            )
+
+
+def test_observation_vector_file_is_self_describing(ovec):
+    assert ovec["module"] == "observation"
+    assert len(ovec["pack"]) == 32
+    assert len(ovec["runs"]) >= 2
+    for run in ovec["runs"]:
+        assert run["snapshots"], run["name"]
