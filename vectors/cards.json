@@ -1,0 +1,811 @@
+{
+  "module": "cards",
+  "generator": "tools/emit_vectors.py",
+  "note": "The 32-card piquet pack. Bit masks are JSON numbers: a 32-bit mask reaches 2**31, well inside the 2**53 a double holds exactly. Wider keys must travel as decimal strings.",
+  "pack": [
+    {
+      "index": 0,
+      "code": "7C",
+      "rank": 7,
+      "suit": 0,
+      "pip_value": 7,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 1,
+      "code": "8C",
+      "rank": 8,
+      "suit": 0,
+      "pip_value": 8,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 2,
+      "code": "9C",
+      "rank": 9,
+      "suit": 0,
+      "pip_value": 9,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 3,
+      "code": "TC",
+      "rank": 10,
+      "suit": 0,
+      "pip_value": 10,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 4,
+      "code": "JC",
+      "rank": 11,
+      "suit": 0,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 5,
+      "code": "QC",
+      "rank": 12,
+      "suit": 0,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 6,
+      "code": "KC",
+      "rank": 13,
+      "suit": 0,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 7,
+      "code": "AC",
+      "rank": 14,
+      "suit": 0,
+      "pip_value": 11,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 8,
+      "code": "7D",
+      "rank": 7,
+      "suit": 1,
+      "pip_value": 7,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 9,
+      "code": "8D",
+      "rank": 8,
+      "suit": 1,
+      "pip_value": 8,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 10,
+      "code": "9D",
+      "rank": 9,
+      "suit": 1,
+      "pip_value": 9,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 11,
+      "code": "TD",
+      "rank": 10,
+      "suit": 1,
+      "pip_value": 10,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 12,
+      "code": "JD",
+      "rank": 11,
+      "suit": 1,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 13,
+      "code": "QD",
+      "rank": 12,
+      "suit": 1,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 14,
+      "code": "KD",
+      "rank": 13,
+      "suit": 1,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 15,
+      "code": "AD",
+      "rank": 14,
+      "suit": 1,
+      "pip_value": 11,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 16,
+      "code": "7H",
+      "rank": 7,
+      "suit": 2,
+      "pip_value": 7,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 17,
+      "code": "8H",
+      "rank": 8,
+      "suit": 2,
+      "pip_value": 8,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 18,
+      "code": "9H",
+      "rank": 9,
+      "suit": 2,
+      "pip_value": 9,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 19,
+      "code": "TH",
+      "rank": 10,
+      "suit": 2,
+      "pip_value": 10,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 20,
+      "code": "JH",
+      "rank": 11,
+      "suit": 2,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 21,
+      "code": "QH",
+      "rank": 12,
+      "suit": 2,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 22,
+      "code": "KH",
+      "rank": 13,
+      "suit": 2,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 23,
+      "code": "AH",
+      "rank": 14,
+      "suit": 2,
+      "pip_value": 11,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 24,
+      "code": "7S",
+      "rank": 7,
+      "suit": 3,
+      "pip_value": 7,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 25,
+      "code": "8S",
+      "rank": 8,
+      "suit": 3,
+      "pip_value": 8,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 26,
+      "code": "9S",
+      "rank": 9,
+      "suit": 3,
+      "pip_value": 9,
+      "is_court": false,
+      "counts_for_set": false
+    },
+    {
+      "index": 27,
+      "code": "TS",
+      "rank": 10,
+      "suit": 3,
+      "pip_value": 10,
+      "is_court": false,
+      "counts_for_set": true
+    },
+    {
+      "index": 28,
+      "code": "JS",
+      "rank": 11,
+      "suit": 3,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 29,
+      "code": "QS",
+      "rank": 12,
+      "suit": 3,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 30,
+      "code": "KS",
+      "rank": 13,
+      "suit": 3,
+      "pip_value": 10,
+      "is_court": true,
+      "counts_for_set": true
+    },
+    {
+      "index": 31,
+      "code": "AS",
+      "rank": 14,
+      "suit": 3,
+      "pip_value": 11,
+      "is_court": false,
+      "counts_for_set": true
+    }
+  ],
+  "parse": [
+    {
+      "text": "7C",
+      "code": "7C"
+    },
+    {
+      "text": "TS",
+      "code": "TS"
+    },
+    {
+      "text": "10S",
+      "code": "TS"
+    },
+    {
+      "text": "ts",
+      "code": "TS"
+    },
+    {
+      "text": "10s",
+      "code": "TS"
+    },
+    {
+      "text": "AS",
+      "code": "AS"
+    },
+    {
+      "text": "as",
+      "code": "AS"
+    },
+    {
+      "text": "A♠",
+      "code": "AS"
+    },
+    {
+      "text": " AS ",
+      "code": "AS"
+    },
+    {
+      "text": "K♦",
+      "code": "KD"
+    }
+  ],
+  "hands": [
+    {
+      "code": "",
+      "bits": 0,
+      "size": 0,
+      "cards": []
+    },
+    {
+      "code": "7C",
+      "bits": 1,
+      "size": 1,
+      "cards": [
+        "7C"
+      ]
+    },
+    {
+      "code": "AS",
+      "bits": 2147483648,
+      "size": 1,
+      "cards": [
+        "AS"
+      ]
+    },
+    {
+      "code": "7C AS",
+      "bits": 2147483649,
+      "size": 2,
+      "cards": [
+        "7C",
+        "AS"
+      ]
+    },
+    {
+      "code": "7S 8S 9S TS JS QS KS AS",
+      "bits": 4278190080,
+      "size": 8,
+      "cards": [
+        "7S",
+        "8S",
+        "9S",
+        "TS",
+        "JS",
+        "QS",
+        "KS",
+        "AS"
+      ]
+    },
+    {
+      "code": "TC AC 9D KD 8H QH 7S JS",
+      "bits": 287458440,
+      "size": 8,
+      "cards": [
+        "TC",
+        "AC",
+        "9D",
+        "KD",
+        "8H",
+        "QH",
+        "7S",
+        "JS"
+      ]
+    },
+    {
+      "code": "7C 8C 9C TC JC QC KC AC JD QD KD AD",
+      "bits": 61695,
+      "size": 12,
+      "cards": [
+        "7C",
+        "8C",
+        "9C",
+        "TC",
+        "JC",
+        "QC",
+        "KC",
+        "AC",
+        "JD",
+        "QD",
+        "KD",
+        "AD"
+      ]
+    },
+    {
+      "code": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD JD QD KD AD 7H 8H 9H TH JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+      "bits": 4294967295,
+      "size": 32,
+      "cards": [
+        "7C",
+        "8C",
+        "9C",
+        "TC",
+        "JC",
+        "QC",
+        "KC",
+        "AC",
+        "7D",
+        "8D",
+        "9D",
+        "TD",
+        "JD",
+        "QD",
+        "KD",
+        "AD",
+        "7H",
+        "8H",
+        "9H",
+        "TH",
+        "JH",
+        "QH",
+        "KH",
+        "AH",
+        "7S",
+        "8S",
+        "9S",
+        "TS",
+        "JS",
+        "QS",
+        "KS",
+        "AS"
+      ]
+    }
+  ],
+  "suits": [
+    {
+      "hand": "AC KD QH JS TC 9D 8H 7S",
+      "suit": 0,
+      "in_suit": "TC AC",
+      "ranks_in": [
+        14,
+        10
+      ],
+      "counts": [
+        {
+          "rank": 7,
+          "count": 1
+        },
+        {
+          "rank": 8,
+          "count": 1
+        },
+        {
+          "rank": 9,
+          "count": 1
+        },
+        {
+          "rank": 10,
+          "count": 1
+        },
+        {
+          "rank": 11,
+          "count": 1
+        },
+        {
+          "rank": 12,
+          "count": 1
+        },
+        {
+          "rank": 13,
+          "count": 1
+        },
+        {
+          "rank": 14,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "hand": "AC KD QH JS TC 9D 8H 7S",
+      "suit": 3,
+      "in_suit": "7S JS",
+      "ranks_in": [
+        11,
+        7
+      ],
+      "counts": [
+        {
+          "rank": 7,
+          "count": 1
+        },
+        {
+          "rank": 8,
+          "count": 1
+        },
+        {
+          "rank": 9,
+          "count": 1
+        },
+        {
+          "rank": 10,
+          "count": 1
+        },
+        {
+          "rank": 11,
+          "count": 1
+        },
+        {
+          "rank": 12,
+          "count": 1
+        },
+        {
+          "rank": 13,
+          "count": 1
+        },
+        {
+          "rank": 14,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "hand": "AS KS QS JS TS 9S 8S 7S",
+      "suit": 3,
+      "in_suit": "7S 8S 9S TS JS QS KS AS",
+      "ranks_in": [
+        14,
+        13,
+        12,
+        11,
+        10,
+        9,
+        8,
+        7
+      ],
+      "counts": [
+        {
+          "rank": 7,
+          "count": 1
+        },
+        {
+          "rank": 8,
+          "count": 1
+        },
+        {
+          "rank": 9,
+          "count": 1
+        },
+        {
+          "rank": 10,
+          "count": 1
+        },
+        {
+          "rank": 11,
+          "count": 1
+        },
+        {
+          "rank": 12,
+          "count": 1
+        },
+        {
+          "rank": 13,
+          "count": 1
+        },
+        {
+          "rank": 14,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "hand": "AS KS QS JS TS 9S 8S 7S",
+      "suit": 2,
+      "in_suit": "",
+      "ranks_in": [],
+      "counts": [
+        {
+          "rank": 7,
+          "count": 1
+        },
+        {
+          "rank": 8,
+          "count": 1
+        },
+        {
+          "rank": 9,
+          "count": 1
+        },
+        {
+          "rank": 10,
+          "count": 1
+        },
+        {
+          "rank": 11,
+          "count": 1
+        },
+        {
+          "rank": 12,
+          "count": 1
+        },
+        {
+          "rank": 13,
+          "count": 1
+        },
+        {
+          "rank": 14,
+          "count": 1
+        }
+      ]
+    },
+    {
+      "hand": "AC AD AH AS KC KD",
+      "suit": 1,
+      "in_suit": "KD AD",
+      "ranks_in": [
+        14,
+        13
+      ],
+      "counts": [
+        {
+          "rank": 7,
+          "count": 0
+        },
+        {
+          "rank": 8,
+          "count": 0
+        },
+        {
+          "rank": 9,
+          "count": 0
+        },
+        {
+          "rank": 10,
+          "count": 0
+        },
+        {
+          "rank": 11,
+          "count": 0
+        },
+        {
+          "rank": 12,
+          "count": 0
+        },
+        {
+          "rank": 13,
+          "count": 2
+        },
+        {
+          "rank": 14,
+          "count": 4
+        }
+      ]
+    }
+  ],
+  "set_ops": [
+    {
+      "op": "sub",
+      "left": "AC KD QH JS",
+      "right": "KD JS",
+      "result": "AC QH"
+    },
+    {
+      "op": "sub",
+      "left": "AC KD QH JS",
+      "right": "",
+      "result": "AC KD QH JS"
+    },
+    {
+      "op": "sub",
+      "left": "AC KD",
+      "right": "AC KD",
+      "result": ""
+    },
+    {
+      "op": "and",
+      "left": "AC KD QH JS",
+      "right": "KD JS 7C",
+      "result": "KD JS"
+    },
+    {
+      "op": "and",
+      "left": "AC KD",
+      "right": "QH JS",
+      "result": ""
+    },
+    {
+      "op": "or",
+      "left": "AC KD",
+      "right": "QH JS",
+      "result": "AC KD QH JS"
+    },
+    {
+      "op": "or",
+      "left": "",
+      "right": "AS",
+      "result": "AS"
+    }
+  ],
+  "errors": [
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": "ZZ"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": "2S"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": "6H"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": "AX"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": "A"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.parse",
+      "args": {
+        "text": ""
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.from_index",
+      "args": {
+        "index": 32
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Card.from_index",
+      "args": {
+        "index": -1
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "parse_hand",
+      "args": {
+        "text": "AS AS"
+      },
+      "raises": "ValueError"
+    },
+    {
+      "op": "Hand.add",
+      "args": {
+        "hand": "AS KS",
+        "card": "AS"
+      },
+      "raises": "KeyError"
+    },
+    {
+      "op": "Hand.remove",
+      "args": {
+        "hand": "AS KS",
+        "card": "QS"
+      },
+      "raises": "KeyError"
+    },
+    {
+      "op": "Hand.or",
+      "args": {
+        "left": "AS KS",
+        "right": "KS QS"
+      },
+      "raises": "KeyError"
+    }
+  ]
+}
