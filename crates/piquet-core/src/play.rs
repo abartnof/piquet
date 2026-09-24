@@ -30,6 +30,18 @@ pub struct Decision {
 }
 
 /// Everything one deal produced.
+///
+/// The persistent move log. Andrew's product requirement is a record of agent
+/// decisions "so the correlation between training epochs and skill gained can
+/// be analyzed later", which needs the *decisions* and not only the scores.
+///
+/// One caveat the format carries from the original, recorded rather than
+/// fixed: for an exchange or a play, `choice` is a card code and parses back.
+/// For a declaration it is English prose — `"point of five (49), tierce to the
+/// queen"` — which by design never names a suit and **cannot** be parsed back.
+/// A consumer must branch on `phase` to know which it is looking at. That is
+/// why `docs/DESIGN.md` §2.2 says the golden vectors needed a structured
+/// export of their own rather than reusing this.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DealRecord {
     pub deal: usize,
@@ -193,4 +205,106 @@ pub fn play_partie(
         )?;
     }
     Ok(partie)
+}
+
+// -- the move log ------------------------------------------------------------
+
+/// Escape a string for JSON. Control characters are escaped; everything above
+/// them is emitted as UTF-8, so the suit symbols in a log's detail strings
+/// survive as themselves.
+fn escaped(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 2);
+    for ch in text.chars() {
+        match ch {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
+}
+
+fn optional(value: Option<i64>) -> String {
+    value.map_or_else(|| "null".to_string(), |v| v.to_string())
+}
+
+impl Decision {
+    fn as_json(&self) -> String {
+        format!(
+            r#"{{"ply":{},"player":"{}","phase":"{}","agent":"{}","hand":"{}","choice":"{}","options":{},"forgone":{}}}"#,
+            self.ply,
+            self.player.name(),
+            self.phase.value(),
+            escaped(&self.agent),
+            escaped(&self.hand),
+            escaped(&self.choice),
+            optional(self.options.map(|o| o as i64)),
+            optional(self.forgone.map(i64::from)),
+        )
+    }
+}
+
+impl DealRecord {
+    /// Assemble a record from a finished deal and the decisions that made it.
+    pub fn of(
+        number: usize,
+        deal: &Deal,
+        elder_agent: &str,
+        younger_agent: &str,
+        decisions: Vec<Decision>,
+    ) -> DealRecord {
+        let bonus = deal
+            .log
+            .events
+            .iter()
+            .find(|e| e.category == crate::scoring::Category::Bonus)
+            .map(|e| e.detail.clone());
+        DealRecord {
+            deal: number,
+            elder_agent: elder_agent.to_string(),
+            younger_agent: younger_agent.to_string(),
+            decisions,
+            elder_score: deal.log.total(Player::Elder),
+            younger_score: deal.log.total(Player::Younger),
+            elder_tricks: deal.tricks_won(Player::Elder),
+            bonus,
+        }
+    }
+
+    /// One deal per line, as the training analysis wants it.
+    pub fn as_json(&self) -> String {
+        let decisions: Vec<String> = self.decisions.iter().map(Decision::as_json).collect();
+        format!(
+            r#"{{"deal":{},"elder_agent":"{}","younger_agent":"{}","decisions":[{}],"elder_score":{},"younger_score":{},"elder_tricks":{},"bonus":{}}}"#,
+            self.deal,
+            escaped(&self.elder_agent),
+            escaped(&self.younger_agent),
+            decisions.join(","),
+            self.elder_score,
+            self.younger_score,
+            self.elder_tricks,
+            self.bonus
+                .as_ref()
+                .map_or_else(|| "null".to_string(), |b| format!("\"{}\"", escaped(b))),
+        )
+    }
+}
+
+/// Append records to a JSONL file, one deal per line.
+pub fn write_jsonl(records: &[DealRecord], path: &std::path::Path) -> std::io::Result<()> {
+    use std::io::Write;
+    if let Some(parent) = path.parent() {
+        if !parent.as_os_str().is_empty() {
+            std::fs::create_dir_all(parent)?;
+        }
+    }
+    let mut file = std::fs::File::create(path)?;
+    for record in records {
+        writeln!(file, "{}", record.as_json())?;
+    }
+    Ok(())
 }

@@ -73,11 +73,6 @@ fn parsing_is_forgiving_in_the_documented_ways() {
     let vec = vectors("cards.json");
     for case in vec["parse"].as_array().unwrap() {
         let text = case["text"].as_str().unwrap();
-        // The suit-symbol forms are not yet supported in this crate; the
-        // letter forms are, and those are what serialisation uses.
-        if !text.is_ascii() {
-            continue;
-        }
         let index = parse_card(text).unwrap_or_else(|e| panic!("{text:?}: {e}"));
         assert_eq!(card_code(index), case["code"].as_str().unwrap());
     }
@@ -539,7 +534,9 @@ fn a_score_must_be_positive() {
 
 // -- declarations -----------------------------------------------------------
 
-use piquet_core::declarations::{compare_in, Announcement, CategoryResult, Declaration};
+use piquet_core::declarations::{
+    compare_in, Announcement, CategoryResult, Combination, Declaration,
+};
 
 fn build_result(case: &serde_json::Value) -> CategoryResult {
     let category = category_named(case["category"].as_str().unwrap());
@@ -1834,4 +1831,359 @@ fn the_solver_agent_plays_the_recorded_cards() {
             .collect();
         assert_eq!(played, want, "{where_}: the cards played");
     }
+}
+
+// ===========================================================================
+// Gaps found by auditing this file against the Python suite.
+//
+// Section-level coverage looked complete and was not: four sections the
+// Python checked had no Rust counterpart, and several fields inside sections
+// that *were* checked went unread. Recorded here together rather than
+// scattered, so the omission stays visible.
+// ===========================================================================
+
+#[test]
+fn suit_views_and_rank_counts() {
+    let vec = vectors("cards.json");
+    for case in vec["suits"].as_array().unwrap() {
+        let held = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let suit = Suit(case["suit"].as_u64().unwrap() as u8);
+        assert_eq!(
+            held.in_suit(suit).code(),
+            case["in_suit"].as_str().unwrap(),
+            "{case}"
+        );
+        let ranks: Vec<u64> = held.ranks_in(suit).iter().map(|r| u64::from(r.0)).collect();
+        let want: Vec<u64> = case["ranks_in"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r.as_u64().unwrap())
+            .collect();
+        assert_eq!(ranks, want, "{case}");
+        for entry in case["counts"].as_array().unwrap() {
+            let rank = Rank(entry["rank"].as_u64().unwrap() as u8);
+            assert_eq!(
+                u64::from(held.count_of(rank)),
+                entry["count"].as_u64().unwrap(),
+                "{case}: count of {rank:?}"
+            );
+        }
+    }
+}
+
+#[test]
+fn set_operations_on_hands() {
+    let vec = vectors("cards.json");
+    for case in vec["set_ops"].as_array().unwrap() {
+        let left = Hand::parse(case["left"].as_str().unwrap()).unwrap();
+        let right = Hand::parse(case["right"].as_str().unwrap()).unwrap();
+        let got = match case["op"].as_str().unwrap() {
+            "sub" => left.without(right),
+            "and" => left.intersect(right),
+            // Strict about overlap: a card cannot be in two places, and a
+            // silent merge would hide a dealing bug.
+            _ => left
+                .union(right)
+                .expect("the vectors only union disjoint hands"),
+        };
+        assert_eq!(got.code(), case["result"].as_str().unwrap(), "{case}");
+    }
+}
+
+#[test]
+fn set_scoring() {
+    let vec = vectors("combos.json");
+    for case in vec["set_scores"].as_array().unwrap() {
+        let made = CardSet {
+            rank: Rank::ACE,
+            count: case["count"].as_u64().unwrap() as u32,
+        };
+        assert_eq!(u64::from(made.score()), case["score"].as_u64().unwrap());
+    }
+}
+
+#[test]
+fn invalid_declarations_are_refused() {
+    // Claims must be of the right kind, genuinely held, and non-overlapping.
+    let vec = vectors("declarations.json");
+    for case in vec["validate"].as_array().unwrap() {
+        let hand = Hand::parse(case["hand"].as_str().unwrap()).unwrap();
+        let category = category_named(case["category"].as_str().unwrap());
+        let claims: Vec<Combination> = case["claims"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|claim| match claim["kind"].as_str().unwrap() {
+                "point" => Combination::Point(Point {
+                    suit: Suit(claim["suit"].as_u64().unwrap() as u8),
+                    length: claim["length"].as_u64().unwrap() as u32,
+                    pip_value: claim["pip_value"].as_u64().unwrap() as u32,
+                }),
+                "sequence" => Combination::Sequence(Sequence {
+                    suit: Suit(claim["suit"].as_u64().unwrap() as u8),
+                    top: Rank(claim["top"].as_u64().unwrap() as u8),
+                    length: claim["length"].as_u64().unwrap() as u32,
+                }),
+                _ => Combination::Set(CardSet {
+                    rank: Rank(claim["rank"].as_u64().unwrap() as u8),
+                    count: claim["count"].as_u64().unwrap() as u32,
+                }),
+            })
+            .collect();
+        assert!(
+            Declaration { claims }.validate(hand, category).is_err(),
+            "{}: should have been refused",
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn younger_answers_in_the_recorded_words() {
+    // "good" / "not good" / "equal" is the dialogue at the table, and the
+    // strings are part of the contract rather than decoration.
+    let vec = vectors("declarations.json");
+    for case in vec["dialogue"].as_array().unwrap() {
+        let result = build_result(case);
+        assert_eq!(
+            result.response(),
+            case["response"].as_str().unwrap(),
+            "{case}"
+        );
+        assert_eq!(
+            u64::from(result.younger.score()),
+            case["younger_score_if_won"].as_u64().unwrap(),
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn the_tutors_breakdown_matches() {
+    // `by_category` exists for the tutor. Nothing in the engine reads it, so
+    // it would drift unnoticed.
+    let vec = vectors("scoring.json");
+    for case in vec["cases"].as_array().unwrap() {
+        let log = rebuild_log(&case["events"]);
+        for (name, player) in [("elder", Player::Elder), ("younger", Player::Younger)] {
+            let got: std::collections::BTreeMap<String, i64> = log
+                .by_category(player)
+                .into_iter()
+                .map(|(c, n)| (c.name().to_string(), i64::from(n)))
+                .collect();
+            let want: std::collections::BTreeMap<String, i64> = case["by_category"][name]
+                .as_object()
+                .unwrap()
+                .iter()
+                .map(|(k, v)| (k.clone(), v.as_i64().unwrap()))
+                .collect();
+            assert_eq!(got, want, "{}: {name}", case["name"]);
+        }
+    }
+}
+
+#[test]
+fn the_best_card_is_the_recorded_one() {
+    use piquet_core::solver::best_card;
+    let vec = vectors("solver.json");
+    for case in vec["positions"].as_array().unwrap() {
+        let elder = Hand::parse(case["elder"].as_str().unwrap()).unwrap();
+        let younger = Hand::parse(case["younger"].as_str().unwrap()).unwrap();
+        let leader = if case["leader"] == "elder" {
+            ELDER
+        } else {
+            YOUNGER
+        };
+        let led = case["led"].as_str().map(|c| parse_card(c).unwrap());
+        let tricks = case["elder_tricks"].as_u64().unwrap() as u32;
+
+        let (card, value) = best_card(elder, younger, leader, led, tricks, EVEN).unwrap();
+        assert_eq!(
+            card_code(card),
+            case["best_card"].as_str().unwrap(),
+            "{}: best card",
+            case["name"]
+        );
+        assert_eq!(
+            value,
+            case["best_value"].as_i64().unwrap(),
+            "{}: its value",
+            case["name"]
+        );
+    }
+}
+
+#[test]
+fn what_each_player_heard_and_saw_matches() {
+    // `heard` and `seen` are the leak-prone fields and neither suite compared
+    // their contents -- only that they were empty before elder led.
+    let vec = vectors("observation.json");
+    let pack = pack_of(&vec["pack"]);
+    for run in vec["runs"].as_array().unwrap() {
+        let elder_takes = run["elder_takes"].as_u64().map(|n| n as usize);
+        let observed = observe(&pack, elder_takes);
+        for ((view, _), want) in observed.iter().zip(run["snapshots"].as_array().unwrap()) {
+            let where_ = format!("{}: step {} {}", run["name"], want["step"], want["me"]);
+
+            let heard: Vec<(String, u64, Option<u64>)> = view
+                .heard
+                .iter()
+                .map(|a| {
+                    (
+                        a.category.name().to_string(),
+                        u64::from(a.primary),
+                        a.tiebreak.map(u64::from),
+                    )
+                })
+                .collect();
+            let want_heard: Vec<(String, u64, Option<u64>)> = want["heard"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|a| {
+                    (
+                        a["category"].as_str().unwrap().to_string(),
+                        a["primary"].as_u64().unwrap(),
+                        a["tiebreak"].as_u64(),
+                    )
+                })
+                .collect();
+            assert_eq!(heard, want_heard, "{where_}: heard");
+
+            let seen: Vec<String> = view.seen.iter().map(|c| c.describe()).collect();
+            let want_seen: Vec<&str> = want["seen"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|c| c.as_str().unwrap())
+                .collect();
+            assert_eq!(seen, want_seen, "{where_}: seen");
+
+            let outcomes: Vec<(String, Option<String>)> = view
+                .outcomes
+                .iter()
+                .map(|(c, w)| (c.name().to_string(), w.map(|p| p.name().to_string())))
+                .collect();
+            let want_outcomes: Vec<(String, Option<String>)> = want["outcomes"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|o| {
+                    let pair = o.as_array().unwrap();
+                    (
+                        pair[0].as_str().unwrap().to_string(),
+                        pair[1].as_str().map(|s| s.to_string()),
+                    )
+                })
+                .collect();
+            assert_eq!(outcomes, want_outcomes, "{where_}: outcomes");
+        }
+    }
+}
+
+// -- the move log ------------------------------------------------------------
+
+#[test]
+fn the_move_log_has_the_shape_the_python_writes() {
+    // Andrew's product requirement is a persistent record of agent decisions,
+    // so that training epochs can later be correlated with skill gained. It is
+    // only useful if something else can read it, so the keys and types are
+    // pinned against the Python's own output rather than invented here.
+    use piquet_core::play::DealRecord;
+
+    let pack: Vec<piquet_core::cards::Card> = (0u8..32).map(piquet_core::cards::Card).collect();
+    let mut elder = HeuristicAgent::new(2, 1).unwrap().named("L2");
+    let mut younger = HeuristicAgent::new(3, 2).unwrap().named("L3");
+    let (deal, decisions) = play_pack(&pack, &mut elder, &mut younger, None).unwrap();
+    let record = DealRecord::of(1, &deal, "L2", "L3", decisions);
+
+    let parsed: serde_json::Value =
+        serde_json::from_str(&record.as_json()).expect("the log must be valid JSON");
+
+    let mut keys: Vec<&str> = parsed
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(|k| k.as_str())
+        .collect();
+    keys.sort_unstable();
+    assert_eq!(
+        keys,
+        [
+            "bonus",
+            "deal",
+            "decisions",
+            "elder_agent",
+            "elder_score",
+            "elder_tricks",
+            "younger_agent",
+            "younger_score"
+        ]
+    );
+
+    let decisions = parsed["decisions"].as_array().unwrap();
+    assert!(!decisions.is_empty());
+    let mut decision_keys: Vec<&str> = decisions[0]
+        .as_object()
+        .unwrap()
+        .keys()
+        .map(|k| k.as_str())
+        .collect();
+    decision_keys.sort_unstable();
+    assert_eq!(
+        decision_keys,
+        ["agent", "choice", "forgone", "hand", "options", "phase", "player", "ply"]
+    );
+
+    // The first decision is elder's exchange: a card-code choice, no options,
+    // nothing forgone. Matching the Python's own first row.
+    assert_eq!(decisions[0]["ply"], 1);
+    assert_eq!(decisions[0]["player"], "elder");
+    assert_eq!(decisions[0]["phase"], "elder_exchange");
+    assert!(decisions[0]["options"].is_null());
+    assert!(decisions[0]["forgone"].is_null());
+
+    // A declaration records what was forgone, which is how sinking becomes
+    // visible in the log at all.
+    let declared = decisions
+        .iter()
+        .find(|d| d["phase"].as_str().unwrap().starts_with("declare"))
+        .expect("a declaration is logged");
+    assert!(declared["forgone"].is_i64());
+
+    // A play records how many legal cards there were, which is what makes a
+    // decision's difficulty measurable after the fact.
+    let played = decisions
+        .iter()
+        .find(|d| d["phase"] == "play")
+        .expect("a play is logged");
+    assert!(played["options"].is_i64());
+
+    // The scores agree with the deal they came from.
+    assert_eq!(
+        parsed["elder_score"],
+        i64::from(deal.log.total(Player::Elder))
+    );
+    assert_eq!(
+        parsed["younger_score"],
+        i64::from(deal.log.total(Player::Younger))
+    );
+}
+
+#[test]
+fn the_move_log_survives_the_suit_symbols_in_it() {
+    // Detail strings carry `10♦` and friends; a naive escaper would mangle
+    // them, and the file is meant to be read back by an analysis script.
+    use piquet_core::play::DealRecord;
+
+    let pack: Vec<piquet_core::cards::Card> = (0u8..32).map(piquet_core::cards::Card).collect();
+    let mut elder = HeuristicAgent::new(4, 1).unwrap().named("a\"quoted\" name");
+    let mut younger = HeuristicAgent::new(4, 2).unwrap().named("L4");
+    let (deal, decisions) = play_pack(&pack, &mut elder, &mut younger, None).unwrap();
+    let record = DealRecord::of(1, &deal, "a\"quoted\" name", "L4", decisions);
+
+    let parsed: serde_json::Value =
+        serde_json::from_str(&record.as_json()).expect("quotes must be escaped");
+    assert_eq!(parsed["elder_agent"], "a\"quoted\" name");
 }

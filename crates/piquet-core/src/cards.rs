@@ -326,17 +326,23 @@ pub fn parse_card(text: &str) -> Result<u8, String> {
     } else {
         cleaned
     };
-    let bytes = cleaned.as_bytes();
-    if bytes.len() != 2 {
+    // Chars, not bytes: the suit may be given as its symbol, and those are
+    // three bytes each in UTF-8. An earlier version indexed bytes and rejected
+    // every symbol form -- and the golden test quietly skipped the non-ASCII
+    // cases rather than failing, which is how the divergence survived.
+    let chars: Vec<char> = cleaned.chars().collect();
+    if chars.len() != 2 {
         return Err(format!("not a card: {text:?}"));
     }
     let rank = RANK_CHARS
         .iter()
-        .position(|&c| c == bytes[0])
+        .position(|&c| c as char == chars[0])
         .ok_or_else(|| format!("not a rank in the piquet pack: {text:?}"))?;
-    let suit = SUIT_LETTERS
+    // If the table drew you a spade as ♠ it should accept ♠ back.
+    let suit = SUIT_SYMBOLS
         .iter()
-        .position(|&c| c == bytes[1])
+        .position(|&c| c == chars[1])
+        .or_else(|| SUIT_LETTERS.iter().position(|&c| c as char == chars[1]))
         .ok_or_else(|| format!("not a suit: {text:?}"))?;
     Ok((suit * 8 + rank) as u8)
 }

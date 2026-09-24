@@ -326,6 +326,37 @@ pub fn solve_with_stats(
     Ok((value, memo.len()))
 }
 
+/// The best card for whoever is to play, and what it is worth.
+///
+/// The value is still elder-minus-younger, so elder takes the largest and
+/// younger the smallest. Ties go to the **first** card in hand order, matching
+/// Python's `max`, which returns the first maximum where Rust's `max_by_key`
+/// returns the last.
+pub fn best_card(
+    elder: Hand,
+    younger: Hand,
+    leader: Seat,
+    led: Option<u8>,
+    elder_tricks: u32,
+    weights: (i64, i64),
+) -> Result<(u8, i64), String> {
+    let values = card_values(elder, younger, leader, led, elder_tricks, weights)?;
+    let led_index = led.map_or(NO_CARD, i32::from);
+    let turn: Seat = if led_index == NO_CARD {
+        leader
+    } else {
+        1 - leader
+    };
+    let chosen = if turn == ELDER {
+        crate::util::first_max_by_key(&values, |(_, value)| *value)
+    } else {
+        crate::util::first_min_by_key(&values, |(_, value)| *value)
+    };
+    chosen
+        .copied()
+        .ok_or_else(|| "a position with cards in it always has a legal move".to_string())
+}
+
 /// What each legal card is worth to whoever is to play.
 pub fn card_values(
     elder: Hand,
@@ -414,6 +445,13 @@ pub struct SolverAgent {
     pub fallback: HeuristicAgent,
     pub exact_from: u32,
     pub max_worlds: usize,
+    /// Its own name, and not the fallback's.
+    ///
+    /// Delegating to the fallback made it report `L4`, which is not cosmetic:
+    /// `tournament::ratings` keys games by name, so a round robin containing
+    /// both this and a rung-4 agent merged their results into one entrant
+    /// without saying so.
+    pub label: String,
 }
 
 impl SolverAgent {
@@ -423,11 +461,18 @@ impl SolverAgent {
                 .expect("the top rung is a valid level"),
             exact_from: 8,
             max_worlds: 30,
+            label: "solver8".to_string(),
         }
+    }
+
+    pub fn named(mut self, name: &str) -> SolverAgent {
+        self.label = name.to_string();
+        self
     }
 
     pub fn from_depth(mut self, cards: u32) -> SolverAgent {
         self.exact_from = cards;
+        self.label = format!("solver{cards}");
         self
     }
 
@@ -439,7 +484,7 @@ impl SolverAgent {
 
 impl Agent for SolverAgent {
     fn name(&self) -> &str {
-        self.fallback.name()
+        &self.label
     }
 
     fn exchange(&mut self, view: &View) -> Hand {
