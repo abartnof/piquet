@@ -22,7 +22,7 @@ use crate::cards::{Card, Hand, Rank};
 use crate::chances::chance_of_the_rubicon;
 use crate::declarations::{Announcement, Declaration};
 use crate::observation::{view_for, View};
-use crate::opponents::{opponent, seat, Opponent};
+use crate::opponents::{opponent, seat, Opponent, Seated};
 use crate::options::declaration_options;
 use crate::partie::{Partie, Settlement, Side, Standing};
 use crate::rng::Rng;
@@ -338,7 +338,7 @@ pub struct Table {
     seed: u32,
     who: Opponent,
     rng: Rng,
-    machine: Box<dyn Agent>,
+    machine: Seated,
     partie: Partie,
     deal: Deal,
     /// Where the partie stood when this deal began, from elder's chair.
@@ -356,6 +356,9 @@ pub struct Table {
     /// While rebuilding from a record, nothing is automatic: the record says
     /// what was done, including what was done for the human.
     replaying: bool,
+    /// The table as it stood before each of the human's decisions, newest
+    /// last. Undo restores one; each is a copy without its own past.
+    past: Vec<Table>,
 }
 
 impl Table {
@@ -386,6 +389,9 @@ impl Table {
         let mut table = Table::seated(level, seed, aids, true);
         table.advance();
         for (step, (action, automatic)) in record.iter().enumerate() {
+            if !automatic {
+                table.past.push(table.snapshot());
+            }
             table.apply(action.clone()).map_err(|why| {
                 format!("the record does not fit this game at step {step}: {why}")
             })?;
@@ -418,6 +424,7 @@ impl Table {
             aids,
             history: Vec::new(),
             replaying,
+            past: Vec::new(),
         };
         table.begin_deal();
         table
@@ -443,6 +450,15 @@ impl Table {
     /// Take back the human's last decision, and anything the table did for
     /// them after it. The opponent's replies go with it.
     pub fn undo(&mut self) -> Result<(), String> {
+        if let Some(mut earlier) = self.past.pop() {
+            earlier.past = std::mem::take(&mut self.past);
+            earlier.aids = self.aids;
+            *self = earlier;
+            self.advance();
+            return Ok(());
+        }
+        // No snapshot to hand, which a table only lacks if it was built some
+        // other way: rebuild from the record instead. Slower, same answer.
         let mut record = self.history.clone();
         loop {
             match record.pop() {
@@ -593,7 +609,9 @@ impl Table {
     /// Answer the prompt. A move the rules forbid is refused with the reason,
     /// and the table is left exactly as it was.
     pub fn act(&mut self, action: Action) -> Result<(), String> {
+        let before = self.snapshot();
         self.apply(action.clone())?;
+        self.past.push(before);
         self.history.push((action, false));
         self.advance();
         Ok(())
@@ -669,6 +687,26 @@ impl Table {
             }
         }
         Ok(())
+    }
+
+    /// A copy of the table as it stands, without its own past.
+    fn snapshot(&self) -> Table {
+        Table {
+            seed: self.seed,
+            who: self.who,
+            rng: self.rng.clone(),
+            machine: self.machine.clone(),
+            partie: self.partie.clone(),
+            deal: self.deal.clone(),
+            standing: self.standing,
+            events: self.events.clone(),
+            narrated: self.narrated.clone(),
+            recorded: self.recorded,
+            aids: self.aids,
+            history: self.history.clone(),
+            replaying: self.replaying,
+            past: Vec::new(),
+        }
     }
 
     /// What the table would do for the human here, if anything.

@@ -277,8 +277,8 @@ fn main() {
 
         let finished: Deal = {
             let (elder, younger): (&mut dyn Agent, &mut dyn Agent) = match elder_side {
-                Side::A => (&mut human, machine.as_mut()),
-                Side::B => (machine.as_mut(), &mut human),
+                Side::A => (&mut human, &mut machine),
+                Side::B => (&mut machine, &mut human),
             };
             match play_deal(deal, elder, younger, Some(standing)) {
                 Ok((deal, _)) => deal,

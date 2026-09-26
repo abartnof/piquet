@@ -441,6 +441,7 @@ use crate::util::first_max_by;
 /// which wants the objective settled at the leaf instead of linearised on the
 /// way down. Porting a flag that is known to lose would have meant making the
 /// search generic over its weight type for no gain.
+#[derive(Clone)]
 pub struct SolverAgent {
     pub fallback: HeuristicAgent,
     pub exact_from: u32,

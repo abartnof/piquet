@@ -8,8 +8,12 @@
 //! wherever it is played.
 
 use crate::agents::Agent;
+use crate::cards::{Card, Hand};
+use crate::declarations::Declaration;
 use crate::heuristics::HeuristicAgent;
+use crate::observation::View;
 use crate::rng::Rng;
+use crate::scoring::Category;
 use crate::solver::SolverAgent;
 use crate::style::Style;
 
@@ -55,20 +59,60 @@ pub fn opponent(level: u32) -> Opponent {
     OPPONENTS[(level.clamp(1, 5) - 1) as usize]
 }
 
+/// An opponent in the chair: one of the ladder's agents, held as a value
+/// rather than behind a pointer, so that a whole table can be copied -- which
+/// is what makes undoing a move instant rather than a replay of every
+/// decision the opponent has made.
+#[derive(Clone)]
+pub enum Seated {
+    Ladder(HeuristicAgent),
+    Solver(SolverAgent),
+}
+
+impl Agent for Seated {
+    fn name(&self) -> &str {
+        match self {
+            Seated::Ladder(agent) => agent.name(),
+            Seated::Solver(agent) => agent.name(),
+        }
+    }
+
+    fn exchange(&mut self, view: &View) -> Hand {
+        match self {
+            Seated::Ladder(agent) => agent.exchange(view),
+            Seated::Solver(agent) => agent.exchange(view),
+        }
+    }
+
+    fn declare(&mut self, view: &View, category: Category) -> Declaration {
+        match self {
+            Seated::Ladder(agent) => agent.declare(view, category),
+            Seated::Solver(agent) => agent.declare(view, category),
+        }
+    }
+
+    fn play(&mut self, view: &View) -> Card {
+        match self {
+            Seated::Ladder(agent) => agent.play(view),
+            Seated::Solver(agent) => agent.play(view),
+        }
+    }
+}
+
 /// Build the agent for an opponent, drawing its seed and style from `rng`.
 ///
 /// The style is drawn once here and held for the whole partie, which is what
 /// `docs/DESIGN.md` §7 means by a style being stable. The draws are made in a
 /// fixed order -- seed, then style -- so a table seeded the same way always
 /// seats the same opponent.
-pub fn seat(level: u32, rng: &mut Rng) -> Box<dyn Agent> {
+pub fn seat(level: u32, rng: &mut Rng) -> Seated {
     let who = opponent(level);
     let seed = rng.below(u32::MAX as usize) as u32;
     let style = Style::random(rng);
     if who.level >= 5 {
-        Box::new(SolverAgent::new(seed).named(who.name))
+        Seated::Solver(SolverAgent::new(seed).named(who.name))
     } else {
-        Box::new(
+        Seated::Ladder(
             HeuristicAgent::new(who.level, seed)
                 .expect("every rung on the roster is a valid level")
                 .with_style(style)

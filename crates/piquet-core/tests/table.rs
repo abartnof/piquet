@@ -463,3 +463,48 @@ fn there_is_no_hint_between_deals() {
     }
     assert_eq!(table.hint(), None);
 }
+
+#[test]
+fn undo_is_instant_even_against_the_solver() {
+    // Undo by replaying re-runs every decision the opponent has made, which
+    // late in a partie against the solver is seconds in a browser. It must
+    // restore a snapshot instead -- and so must a table rebuilt from its
+    // record, since that is what a reloaded page undoes against.
+    let mut table = Table::with_aids(5, 70, all_aids());
+    while table.partie().outcomes.len() < 3 {
+        table.act(dull(&table).unwrap()).unwrap();
+    }
+    while !matches!(table.prompt(), Prompt::Play { .. }) {
+        table.act(dull(&table).unwrap()).unwrap();
+    }
+    let before = (table.prompt(), table.view(), table.events().to_vec());
+    table.act(dull(&table).unwrap()).unwrap();
+
+    let started = std::time::Instant::now();
+    let mut rebuilt = Table::replay(5, 70, all_aids(), table.record()).unwrap();
+    let replaying = started.elapsed();
+
+    let started = std::time::Instant::now();
+    table.undo().unwrap();
+    let undoing = started.elapsed();
+    assert_eq!(
+        (table.prompt(), table.view(), table.events().to_vec()),
+        before
+    );
+    assert!(
+        undoing * 5 < replaying,
+        "undo took {undoing:?} against a replay's {replaying:?}"
+    );
+
+    let started = std::time::Instant::now();
+    rebuilt.undo().unwrap();
+    let undoing = started.elapsed();
+    assert_eq!(
+        (rebuilt.prompt(), rebuilt.view(), rebuilt.events().to_vec()),
+        before
+    );
+    assert!(
+        undoing * 5 < replaying,
+        "after a reload, undo took {undoing:?} against a replay's {replaying:?}"
+    );
+}

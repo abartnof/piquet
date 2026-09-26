@@ -16,6 +16,7 @@
 
 use crate::mt19937::MersenneTwister;
 
+#[derive(Clone)]
 pub struct Rng {
     inner: MersenneTwister,
     /// One spare normal deviate: the polar method produces two at a time.

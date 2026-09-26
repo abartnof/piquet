@@ -25,6 +25,7 @@ pub const MAX_LEVEL: u32 = 4;
 /// sink. Nobody sinks a quatorze.
 pub const SINK_CEILING: f64 = 4.0;
 
+#[derive(Clone)]
 pub struct HeuristicAgent {
     pub level: u32,
     pub style: Style,
