@@ -2,18 +2,31 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated when development moved
-> to Google Cloud and the language was settled on Rust.
+> holds *where we are and what is left*. Last updated 26 September 2026,
+> mid-session: the browser table is playable, the dialogue's fourth leak is
+> fixed, and the "fun" work Andrew asked for is next.
 
 ## Where we are
 
-**Milestones 1–7 complete, and the Rust port with them. 520 Python tests, 95
-Rust.**
+**Milestones 1–7 complete, and the Rust port with them. Python oracle suite
+green; 118 Rust tests.**
 
-**It is playable in Rust.** `cargo run -p piquet-cli -- --level 3` sits you
-down against a named opponent for a partie of six deals, settled by the
-rubicon. Four measured rungs plus the exact-endgame solver, with styles and
+**It is playable in a browser.** `web/piquet.html` is the whole game in one
+391 KB file — the engine compiled to WebAssembly and inlined, and a
+deliberately plain table. Open it from disk; no server. Andrew's goal for it
+is to play and send notes; "Copy game record" gives a seed and command list
+that replays any game exactly. Rebuild with `python3 web/build.py`.
+
+**And in a terminal.** `cargo run -p piquet-cli -- --level 3` sits you down
+against a named opponent for a partie of six deals, settled by the rubicon.
+Four measured rungs plus the exact-endgame solver, with styles and
 erraticism, and a mirrored-pair tournament that rates them.
+
+**The GUI is disposable by design.** Andrew: "don't get too attached to the
+gui — we might move to 3d. but i'm interested in the game states, engine,
+etc being done." So the investment is in `table.rs` (the session, advanced
+one human decision at a time) and `docs/PROTOCOL.md` (the JSON a client
+renders); the page holds no rules at all.
 
 ```
 crates/piquet-core/src/
@@ -31,14 +44,26 @@ crates/piquet-core/src/
   inference.rs     which hands the opponent can possibly hold
   solver.rs        exact endgame search, and the agent that uses it
   play.rs          running deals and parties; the move log
+  table.rs         a partie as a session: Prompt / Action / Event, for any client
+  options.rs       what a player may declare in a category (full, sink, short)
+  opponents.rs     the named roster, Bess to Foster, and seating one
   tournament.rs    mirrored-pair duels, Bradley-Terry ratings
   mt19937.rs       CPython's generator, for the one fixed-seed model constant
   rng.rs           the agents' own generator
 crates/piquet-cli/src/
   main.rs          the table a person sits at; the human as an Agent
   render.rs        drawing a hand in the language the prompt accepts
+crates/piquet-wasm/src/
+  lib.rs           the table as a protocol: JSON out, one-line commands in
+web/
+  src/             index.html, app.js, style.css -- the page, holding no rules
+  build.py         inlines the wasm and the page into web/piquet.html
+  piquet.html      the built, playable, single-file game (committed)
+  test/ffi.mjs     node drives the .wasm; native and wasm32 agree byte for byte
+  test/browser.py  headless Chromium plays whole parties by clicking
 python/            the oracle: the original, which generates the vectors
 vectors/           golden JSON, read by both languages
+docs/PROTOCOL.md   the contract a replacement client is written against
 ```
 
 **The parity gate is met.** Both halves of it:
@@ -124,46 +149,84 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
-**Where we left off.** The Rust port is complete and both halves of the parity
-gate are met. The current line of work is the partie objective (TODO 1): the
-search now settles at the leaf, it costs only 1.6×, and over 720 mirrored last
-deals it wins 249 to 46 — but the net settlement is 1.3 sigma from zero. It
-wins often by little and loses rarely by a lot.
+### This session, 26 September 2026 — what landed
 
-**Pick up here.** Two hypotheses for the loss tail, neither measured, in the
-order worth trying:
+In order, all committed and pushed:
 
-1. **Teach the search pique and repique.** It ignores them, and a missed
-   repique is sixty points — the size of the losses swamping the wins.
-   `pique_is_live` (TODO 9) is the unused helper that exists for exactly this,
-   so two owed things close together.
-2. **Raise `max_worlds` above thirty** and see whether the tail shrinks. Cheap
-   to try; the flat objective forgives a thin sample and this one may not.
+1. **The settling search counts a repique already made** (`a84b34b`). Correct,
+   and measured to change nothing: 248–46–426 against 249–46–425, net −4.50 ±
+   3.48. So it was *not* the loss tail. The tail, split by bonus: **no-bonus
+   deals** hold 27 of the 46 losses and −6,724 of the damage (rubicon flips of
+   ~250 each); **pique deals** lose 18 of 52 — 35% against 4% elsewhere, which
+   points at a pique still *live* when the search starts (TODO 9's
+   `pique_is_live`); repique deals lose once. See TODO 1.
+2. Docs and lockfile caught up with the VM and the port.
+3. `options` and `opponents` moved from the CLI into the engine.
+4. **`table.rs`** — the session state machine; **`piquet-wasm`** — the JSON
+   protocol; **`docs/PROTOCOL.md`**; **`web/piquet.html`**, playable.
+5. **The dialogue's fourth leak, fixed** (`0765838`): after elder led, the
+   engine told him the shape of every holding younger declared, including
+   ones she lost outright and never names (pagat; Foster 1897). 46% of deals.
+   The inference had been leaning on it; its honesty rung now reads silence
+   against the public answers, and elder narrows 5,005 → 958 → 255 through the
+   dialogue where he used to sit at 5,005. Rungs 1–4 are unaffected (they
+   never read `heard`; the ladder is identical: 858 / 811 / 774 / 343). Rung
+   5 against rung 4, 300 mirrored pairs, same deals: **84.0% / +6.4 before,
+   83.5% / +6.2 after** — no measurable cost. After elder's first lead, over
+   300 deals, his candidate count went from mean 55 to 75 (median 34 → 36):
+   the leak had been sharpening his picture by about a quarter.
 
-Judge either on `bin/settle` (mirrored last deals, stacked) and on
-`bin/parties` (whole mirrored parties), never on deal points.
+### In flight
 
-Then, in rough order of value:
+- **Rebuild `web/piquet.html`** with the fixed engine, rerun
+  `web/test/ffi.mjs` and `web/test/browser.py`, commit.
 
-3. **Milestone 9, the training mode.** The largest unmet *product* requirement
-   and it needs no compute. Ladder-based: rank a move by *which rung would
-   play it*, so the explanation names a skill the player can go and learn.
-   Every rung is already a working agent, so it is nearly free. `explain.rs`
-   is owed.
+### Pick up here: making it effortless and fun
 
-4. **The browser build.** `piquet-wasm`, and the 5 MB single-page target the
-   language choice was made for. Low risk — the engine has no dependencies and
-   nothing needs threads at the eight-trick cap.
+Andrew's steer for the game layer: *"less persnickety, less needless
+clicking — rather, effortless and fun"*, with his examples of reordering the
+hand usefully, a running framework of where the game stands with a tab of the
+scores, and hints — and every aid a toggle. The plan, engine first where the
+logic belongs in the engine (TDD there), page second:
 
-5. **Milestone 8, the exchange policy.** The only item that would spend money,
-   and the price fell by an order of magnitude with the port. Run the
-   heuristic tier first: it is free now, and answers whether there is any
-   signal at all.
+**Engine (`table.rs`, then the protocol):**
 
-6. **`piquet-py`** (PyO3), so the thirty-line experiments this project runs on
-   stay thirty lines with the Rust engine underneath.
+- [ ] **Hints.** `Table::hint()` — what an advisor would do *from the human's
+      view*, so it can never leak. Advisor: rung 4 for the exchange and the
+      declarations, the solver in the endgame. Name the rung in the hint
+      ("Hoyle would throw…"), which is the ladder-based tutoring idea and the
+      first brick of Milestone 9.
+- [ ] **Undo.** The table is deterministic, so undoing is replaying every
+      accepted action but the last human one. Misclicks stop mattering.
+- [ ] **Auto-play forced cards** (one legal card — always so on the last
+      trick) as a table setting.
+- [ ] **Declare for me** as a table setting: call everything without asking.
+      Open question for Andrew — the default. Three prompts a deal is the
+      single biggest source of clicks, but sinking is the interesting move and
+      a teaching game should show it exists.
+- [ ] **The cards behind each option**, so a client can highlight what a
+      declaration or a "worth" line is made of.
 
-7. **Milestone 10, CFR declarations.** Still the largest unknown.
+**Page:**
+
+- [ ] Settings panel, every aid a toggle, remembered in `localStorage`.
+- [ ] "Where we are": the six deals as a strip with their scores, the phase
+      of this deal (exchange ▸ declare ▸ trick n of 12 ▸ count), and a running
+      tab by category — point, sequences, sets, play, cards, bonus.
+- [ ] Hand ordering: suits in alternating colours; freshly drawn cards marked;
+      hovering a declaration option lifts the cards it is made of; the hinted
+      card or discard highlighted when hints are on.
+- [ ] Keyboard: Enter for the primary action, digits for declaration options.
+- [ ] Pacing: let the opponent's card land visibly rather than appearing.
+
+### After that, in rough order of value
+
+1. **TODO 1, the partie objective** — the live pique first, then `max_worlds`.
+2. **Milestone 9, the training mode** — hints are its first half; `explain.rs`
+   (why a move is better, by which rung plays it) is the second.
+3. **Milestone 8, the exchange policy.** The only item that would spend money.
+4. **`piquet-py`** (PyO3), so thirty-line experiments stay thirty lines.
+5. **Milestone 10, CFR declarations.** Still the largest unknown.
 
 ## Settled decisions
 
@@ -300,15 +363,27 @@ Ordered by how much they are needed, not by size.
    3.48**, which is 1.3 sigma and therefore nothing. It wins often by little
    and loses rarely by a lot.
 
-   **Next, and in this order.** Both are hypotheses, neither measured:
+   **Repique — tried, and not it.** The search now counts a pique or repique
+   already decided (`solver::settled_log`), which was a real sixty-point
+   error in every repique deal. It changed the result by one deal. Splitting
+   the 720 by bonus says where the tail really is:
 
-   - Teach the search the **pique and repique** bonuses. It ignores them, an
-     approximation inherited from the additive version, and a missed repique
-     is sixty points — the size of the losses swamping the wins. `pique_is_live`
-     (TODO 9) is the unused helper that exists for this.
-   - Raise **`max_worlds`** above thirty and see whether the loss tail shrinks.
-     The flat objective averages a near-linear quantity and forgives a thin
-     sample; this one does not.
+   | deals | count | won | lost | sum of losses |
+   |---|---|---|---|---|
+   | no bonus | 626 | 221 | 27 | −6,724 |
+   | pique | 52 | 18 | **18** | −1,228 |
+   | repique | 42 | 9 | 1 | −398 |
+
+   **Next, and in this order.** Both are leads, neither measured:
+
+   - A pique still **live** when the search begins — elder short of thirty,
+     younger on nothing — which the play can make or deny. Pique deals lose
+     at nine times the rate of the rest. `pique_is_live` (TODO 9) is the
+     helper that exists for this; it would need the log's order of
+     precedence carried into the search.
+   - Raise **`max_worlds`** above thirty and see whether the no-bonus tail
+     shrinks. Those losses average ~250 — rubicon flips — and the flat
+     objective forgives a thin sample where this one does not.
 
    Judge any of it on `tournament::partie_duel`, not on deals. The baseline is
    in "Where we are".
@@ -501,6 +576,8 @@ conviction first:
 | Elder declares knowing what younger holds | He does not. He leads to the first trick before she names anything, so his first lead is blind |
 | A point is a point | Not in a partie. Six, when it carries you over the rubicon; **plus one to your opponent** while a hundred is out of their reach, because a rubiconed loser pays the sum |
 | The two scores in a deal are roughly independent | They correlate at **−0.47**, so the joint had to be sampled rather than assumed |
+| Younger names the shape of everything she declared | Only what she won, or matched: beaten outright she says "good" and nothing else. Naming the rest leaked in 46% of deals, and the inference had quietly come to depend on it |
+| Elder leads blind against five thousand hands | Against about 255 in the vector deal: her public answers narrow him too. The 5,005 was the inference discarding them |
 | Every unaccounted-for card is equally likely to be hers | An ace is, 100% of the time; a seven, 28% — though correcting it is worth only +0.3 a pair |
 | The hand-tuned discard must be leaving points on the table | A Monte Carlo with a hundredfold more compute per decision agrees with it five times in six |
 | Hoyle's three-to-two on younger's draw | Right, and the sentence pins down which sum he did: 23/57, or 1.478 to 1 |
@@ -531,11 +608,17 @@ And three methodological ones:
 - **Consult him before any long or paid compute run**, with a runtime and cost
   estimate in hand. Milestone 8 is the first one that needs it.
 - `observation.py` is still the module most likely to be got subtly wrong. It
-  has now leaked three times: `View.results` handed over the opponent's full
-  declarations; `Announcement` published the tie-break unconditionally; and
-  `_heard` gave elder younger's declarations before he had led. Treat every
-  addition to `View` with suspicion, and ask of each field *when was this said
-  aloud, and by whom*.
+  has now leaked four times: `View.results` handed over the opponent's full
+  declarations; `Announcement` published the tie-break unconditionally;
+  `_heard` gave elder younger's declarations before he had led; and
+  `announcement_of` named younger's beaten holdings, which she never says.
+  Treat every addition to `View` with suspicion, and ask of each field *when
+  was this said aloud, and by whom*. The fourth was found by **narrating**
+  the dialogue for the browser table — reading it as a player would is a
+  good audit.
+- Browser testing on the VM: `node` and `chromium` come from apt; Playwright
+  lives in the project `.venv` (`.venv/bin/python web/test/browser.py
+  [shot-dir]`). Screenshots can be read back to check the page by eye.
 - Tests: 95 in Rust, 520 in the Python oracle. The Python's fast loop once
   drifted from sixteen seconds to sixty-three, and the drift was one test: a
   full twelve-card solve, unmarked. **When a loop starts to feel slow, look for

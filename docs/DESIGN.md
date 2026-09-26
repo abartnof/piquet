@@ -613,17 +613,27 @@ through a scripted deal in which elder takes two:
 |---|---|---|
 | Before the exchange | 125,970 | 125,970 |
 | After both exchange | 5,005 | 91 |
-| After elder's point | 5,005 | 91 |
-| After his sequences | 5,005 | 28 |
-| After his sets | 5,005 | **1** |
-| **He leads to trick 1** | **5,005** | **1** |
+| After the point is answered | 958 | **1** |
+| After sequences | 958 | 1 |
+| After sets | 255 | 1 |
+| **He leads to trick 1** | **255** | **1** |
 | After trick 1 | 1 | 1 |
 
-Younger narrows with every category elder declares and knows his hand exactly
-before a card is played. **Elder learns nothing at all until he has led**,
-because her declarations are withheld until then — so he leads to the first
-trick with five thousand hands still possible, against an opponent who knows
-his precisely.
+Younger narrows as elder names and shows his holdings, and in this deal knows
+his hand exactly once his point is on the table. **Elder hears only her
+answers until he has led** — *good*, *not good*, *equal* — because she names
+nothing before then. The answers narrow him too, but only as far as answers
+can: he leads to the first trick with 255 hands still possible, against an
+opponent who knows his precisely.
+
+An earlier version of this table had elder at 5,005 throughout and younger
+at 91 → 28 → 1, and called the 5,005 the blind lead. Both columns were the
+inference's silence rule misreading the dialogue. It read every category not
+yet named as "held nothing" — so before his lead, when she has named
+nothing, it ruled out every candidate and threw away the answers he had
+heard; and during the dialogue it treated categories not yet reached as
+silences. It had also been leaning on a leak: younger's beaten holdings were
+being named, which she never does (pagat; Foster, 1897).
 
 That is §3.4's blind first lead, quantified. It is also the strongest argument
 in the document for the information discipline in `observation`: the gap is
@@ -644,12 +654,17 @@ Then the declaration dialogue happens, and it is extraordinarily
 informative: point length, sequence length, set size, the tie-break whenever
 two shapes match, and the right to inspect any combination that scored.
 
-**Measured, over 300 deals between rung-4 agents, at elder's first lead** —
-which is the earliest either player can have heard everything, because younger
-names nothing until he has led:
+**Measured, over 300 deals between rung-4 agents, just after elder's first
+lead** — which is the earliest either player can have heard everything,
+because younger names nothing until he has led:
 
-    elder   median 36 · mean  60
-    younger median 56 · mean 118
+    elder   median 36 · mean  75
+    younger median 70 · mean 142
+
+(Rust, September 2026, after the fourth leak was closed; the truth was a
+candidate in all 600 views. With younger's beaten holdings still being named,
+elder's mean was 55 on the same deals — the leak was sharpening his picture by
+about a quarter.)
 
 Roughly a twelve-fold cut for elder and a hundred-fold one for younger, and in
 some deals the hand is pinned to a single possibility. The original estimate of
@@ -659,7 +674,7 @@ The asymmetry is the interesting part, and it is new. An earlier version had
 both players at a median of 35, because `heard` published the tie-break
 unconditionally — so younger was handed elder's pip total even when he had been
 beaten outright and never stated it. With the dialogue modelled properly,
-younger's world is half again as large as elder's. That is his seat advantage
+younger's world is about twice as large as elder's. That is his seat advantage
 showing up as a number: he reads five talon cards to her three, and he hears
 her holdings only after he has committed to a lead.
 

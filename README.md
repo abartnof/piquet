@@ -104,12 +104,14 @@ measurement. The full list is in `PLAN.md`.
 - **Elder's advantage is not structural**; it has to be used. He wins 52.5% of
   deals when both players take the full exchange and 49.6% when they do not.
 - **Elder leads to the first trick blind.** Measured through the engine's own
-  inference, younger knows his hand exactly before a card is played while he
-  still has five thousand possibilities open. Her declarations are withheld
-  until he has led, and that single rule is the whole asymmetry.
+  inference, younger can know his hand exactly before a card is played while
+  he still has a couple of hundred possibilities open. She answers his calls
+  but names nothing of her own until he has led — and afterwards only what
+  she won — and that single rule is the whole asymmetry.
 
 ## Status
 
-The rules engine, the opponents and the terminal table are complete and the
-game is playable. Still to come: the training mode, a browser build, and a
-mixed strategy for declarations. `PLAN.md` has the detail.
+The rules engine, the opponents, the terminal table and a browser table
+(`web/piquet.html`, one file, open it from disk) are complete and the game is
+playable. Still to come: the training mode, and a mixed strategy for
+declarations. `PLAN.md` has the detail.
