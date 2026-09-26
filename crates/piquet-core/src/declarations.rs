@@ -13,7 +13,7 @@
 //! which point either player "may ask to see any combination that has been
 //! scored for or which caused no score because of equality" (Cavendish).
 
-use crate::cards::Hand;
+use crate::cards::{Card, Hand, Rank};
 use crate::combos::{
     best_point, compare_point, compare_sequence, compare_set, sequences, sets, CardSet, Comparison,
     Point, Sequence,
@@ -59,6 +59,31 @@ impl Combination {
             Combination::Sequence(c) => c.is_supported_by(hand),
             Combination::Set(c) => c.is_supported_by(hand),
         }
+    }
+
+    /// The cards in `hand` this claim is made of -- what would be laid on the
+    /// table if it were shown. An understated point is its top cards, since
+    /// that is what its pip count was taken from; an understated set is any
+    /// `count` of the rank, taken in pack order.
+    pub fn cards_in(self, hand: Hand) -> Hand {
+        let picked: Vec<Card> = match self {
+            Combination::Point(p) => {
+                let mut suit: Vec<Card> = hand.in_suit(p.suit).cards().collect();
+                suit.sort_by_key(|c| std::cmp::Reverse(c.rank()));
+                suit.truncate(p.length as usize);
+                suit
+            }
+            Combination::Sequence(s) => (0..s.length)
+                .map(|below| Card::new(Rank(s.top.0 - below as u8), s.suit))
+                .filter(|card| hand.holds(*card))
+                .collect(),
+            Combination::Set(set) => hand
+                .cards()
+                .filter(|card| card.rank() == set.rank)
+                .take(set.count as usize)
+                .collect(),
+        };
+        Hand(picked.iter().fold(0, |mask, card| mask | 1 << card.0))
     }
 
     /// How it reads aloud once it has to be shown. Never names a suit.
@@ -249,6 +274,15 @@ impl Declaration {
         })
     }
 
+    /// Every card the claims are made of. See [`Combination::cards_in`].
+    pub fn cards_in(&self, hand: Hand) -> Hand {
+        Hand(
+            self.claims
+                .iter()
+                .fold(0, |mask, c| mask | c.cards_in(hand).0),
+        )
+    }
+
     pub fn describe(&self) -> String {
         if self.claims.is_empty() {
             "sunk".to_string()
@@ -378,5 +412,55 @@ impl CategoryResult {
             None => self.declaration_of(player).claims.clone(),
             _ => Vec::new(),
         }
+    }
+}
+
+#[cfg(test)]
+mod cards_tests {
+    use super::*;
+    use crate::cards::Hand;
+    use crate::scoring::Category;
+
+    fn cards(hand: &str, category: Category) -> Vec<String> {
+        let hand = Hand::parse(hand).unwrap();
+        Declaration::full(hand, category)
+            .cards_in(hand)
+            .cards()
+            .map(|c| c.code())
+            .collect()
+    }
+
+    #[test]
+    fn a_point_is_made_of_its_suit() {
+        assert_eq!(cards("AS KS 9S 7H 8D", Category::Point), ["9S", "KS", "AS"]);
+    }
+
+    #[test]
+    fn a_sequence_is_made_of_its_run_and_nothing_either_side() {
+        // The quart to the king, not the stray seven below the gap.
+        let got = cards("KH QH JH TH 7H AC", Category::Sequences);
+        assert_eq!(got, ["TH", "JH", "QH", "KH"]);
+    }
+
+    #[test]
+    fn a_set_is_made_of_its_rank() {
+        let got = cards("AS AH AD 7C 8C", Category::Sets);
+        assert_eq!(got, ["AD", "AH", "AS"]);
+    }
+
+    #[test]
+    fn an_understated_claim_is_made_of_only_what_it_claims() {
+        // Five spades called as four: the top four, which is what the pip
+        // count of the understatement is taken from.
+        let hand = Hand::parse("AS KS QS JS 9S 7H").unwrap();
+        let short = crate::options::understatements(hand, Category::Point);
+        let got: Vec<String> = short[0].cards_in(hand).cards().map(|c| c.code()).collect();
+        assert_eq!(got, ["JS", "QS", "KS", "AS"]);
+    }
+
+    #[test]
+    fn saying_nothing_is_made_of_nothing() {
+        let hand = Hand::parse("AS KS QS").unwrap();
+        assert!(Declaration::sink().cards_in(hand).is_empty());
     }
 }
