@@ -206,7 +206,7 @@ impl Event {
                 if *count == 1 { "" } else { "s" }
             ),
             Event::Drew { discarded, drew } => {
-                format!("You threw {} and drew {}.", discarded.code(), drew.code())
+                format!("You threw {} and drew {}.", shown(*discarded), shown(*drew))
             }
             Event::Called { who, said, .. } => {
                 format!("{}: \u{201c}{said}.\u{201d}", capital(name(*who)))
@@ -229,7 +229,7 @@ impl Event {
                 format!("You have nothing to call in {}.", category_word(*category))
             }
             Event::Played { who, card } => {
-                format!("{} played {}.", capital(name(*who)), card.code())
+                format!("{} played {}.", capital(name(*who)), card.display())
             }
             Event::TookTrick { who, number } => format!(
                 "{} take{} trick {number}.",
@@ -273,6 +273,15 @@ impl Event {
             }
         }
     }
+}
+
+/// Cards as a reader sees them -- `10♣ 7♦` -- rather than as they are typed.
+fn shown(cards: Hand) -> String {
+    cards
+        .cards()
+        .map(|c| c.display())
+        .collect::<Vec<_>>()
+        .join(" ")
 }
 
 fn capital(word: &str) -> String {
@@ -441,7 +450,10 @@ impl Table {
                 }
                 if !legal.holds(card) {
                     let led = self.deal.current_trick.expect("a trick in progress").led;
-                    return Err(format!("you must follow {} while you can", suit_name(led)));
+                    return Err(format!(
+                        "you must follow {} while you can",
+                        led.suit().name()
+                    ));
                 }
                 let before = self.view();
                 let next = self.deal.play(you, card)?;
@@ -685,8 +697,4 @@ fn shuffled(rng: &mut Rng) -> Vec<Card> {
     let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
     rng.shuffle(&mut pack);
     pack
-}
-
-fn suit_name(card: Card) -> &'static str {
-    ["clubs", "diamonds", "hearts", "spades"][card.suit().0 as usize]
 }

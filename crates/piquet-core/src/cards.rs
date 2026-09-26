@@ -117,6 +117,11 @@ impl Suit {
     pub fn symbol(self) -> char {
         SUIT_SYMBOLS[self.0 as usize]
     }
+
+    /// The suit's name, plural, as a player says it: "clubs".
+    pub fn name(self) -> &'static str {
+        ["clubs", "diamonds", "hearts", "spades"][self.0 as usize]
+    }
 }
 
 /// A card, stored as its index in `0..32`.

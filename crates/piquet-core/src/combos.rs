@@ -342,3 +342,66 @@ pub fn score_sets(hand: Hand) -> u32 {
 pub fn is_carte_blanche(hand: Hand) -> bool {
     !hand.cards().any(|card| card.rank().is_court())
 }
+
+/// What a hand is worth in declarations, one phrase per holding.
+///
+/// For a player deciding what to keep, which is the decision a beginner is
+/// least equipped to make: the exchange is where most of a deal's points are
+/// won or thrown away. Suits are named, since this describes the player's own
+/// hand to the player; it is never what is said aloud. Empty when there is
+/// nothing to call.
+pub fn holdings(held: Hand) -> Vec<String> {
+    let mut parts = Vec::new();
+    if let Some(point) = best_point(held) {
+        parts.push(format!(
+            "point of {} ({}) in {}",
+            point.length,
+            point.pip_value,
+            point.suit.name()
+        ));
+    }
+    for sequence in sequences(held) {
+        parts.push(format!(
+            "{} to the {} in {}",
+            sequence.name(),
+            sequence.top.name(),
+            sequence.suit.name()
+        ));
+    }
+    for held_set in sets(held) {
+        parts.push(format!("{} of {}s", held_set.name(), held_set.rank.name()));
+    }
+    // Guarded on non-empty: `is_carte_blanche` is vacuously true of an empty
+    // hand, which is correct as a predicate and nonsense at a table.
+    if !held.is_empty() && is_carte_blanche(held) {
+        parts.push("carte blanche \u{2014} no court card at all".to_string());
+    }
+    parts
+}
+
+#[cfg(test)]
+mod holdings_tests {
+    use super::*;
+
+    #[test]
+    fn a_hand_is_described_by_everything_it_could_call() {
+        let held = Hand::parse("AC KC QC JC TC AD AH AS").unwrap();
+        let described = holdings(held).join(", ");
+        assert!(
+            described.contains("point of 5 (51) in clubs"),
+            "{described}"
+        );
+        assert!(
+            described.contains("quint to the ace in clubs"),
+            "{described}"
+        );
+        assert!(described.contains("quatorze of aces"), "{described}");
+    }
+
+    #[test]
+    fn carte_blanche_is_named_and_an_empty_hand_is_worth_nothing() {
+        let held = Hand::parse("AS TS 9S 8S 7S AH TH 9H").unwrap();
+        assert!(holdings(held).iter().any(|h| h.contains("carte blanche")));
+        assert!(holdings(Hand::EMPTY).is_empty());
+    }
+}

@@ -8,7 +8,7 @@
 //! Every card here is drawn as the code you would type to name it.
 
 use piquet_core::cards::{Card, Hand, Suit};
-use piquet_core::combos::{best_point, is_carte_blanche, sequences, sets};
+use piquet_core::combos::holdings;
 use piquet_core::observation::View;
 use piquet_core::partie::Standing;
 use piquet_core::scoring::{Player, ScoreLog};
@@ -16,10 +16,8 @@ use piquet_core::scoring::{Player, ScoreLog};
 /// Spades, hearts, diamonds, clubs -- the order a player expects to read.
 const DISPLAY_ORDER: [Suit; 4] = [Suit::SPADES, Suit::HEARTS, Suit::DIAMONDS, Suit::CLUBS];
 
-const SUIT_NAMES: [&str; 4] = ["clubs", "diamonds", "hearts", "spades"];
-
 pub fn suit_name(suit: Suit) -> &'static str {
-    SUIT_NAMES[suit.0 as usize]
+    suit.name()
 }
 
 /// A hand laid out by suit, highest first, legal plays in brackets.
@@ -57,35 +55,7 @@ pub fn hand(hand: Hand, legal: Option<Hand>) -> String {
 
 /// What the hand is worth in declarations, for a player deciding what to keep.
 pub fn combinations(held: Hand) -> String {
-    let mut parts = Vec::new();
-    if let Some(point) = best_point(held) {
-        parts.push(format!(
-            "point of {} ({}) in {}",
-            point.length,
-            point.pip_value,
-            suit_name(point.suit)
-        ));
-    }
-    for sequence in sequences(held) {
-        parts.push(format!(
-            "{} to the {} in {}",
-            sequence.name(),
-            sequence.top.name(),
-            suit_name(sequence.suit)
-        ));
-    }
-    for held_set in sets(held) {
-        parts.push(format!("{} of {}s", held_set.name(), held_set.rank.name()));
-    }
-    // Guarded on non-empty. `is_carte_blanche` is vacuously true of a hand
-    // with no cards in it -- correct as a predicate, nonsense at a table --
-    // and this is display code, so guarding here diverges from nothing. The
-    // Python's own renderer does not mention carte blanche at all, which is a
-    // gap rather than a precedent: it is worth ten points and a player has to
-    // be told they have it.
-    if !held.is_empty() && is_carte_blanche(held) {
-        parts.push("carte blanche — no court card at all".to_string());
-    }
+    let parts = holdings(held);
     if parts.is_empty() {
         "nothing to call".to_string()
     } else {
