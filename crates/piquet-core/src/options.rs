@@ -8,10 +8,25 @@
 //! the rules give the right to understate and the engine models it, but a
 //! human cannot sink a holding the interface never lists.
 
-use piquet_core::cards::Hand;
-use piquet_core::combos::{best_point, sequences, sets, CardSet, Point, Sequence};
-use piquet_core::declarations::{Combination, Declaration};
-use piquet_core::scoring::Category;
+use crate::cards::Hand;
+use crate::combos::{best_point, sequences, sets, CardSet, Point, Sequence};
+use crate::declarations::{Combination, Declaration};
+use crate::scoring::Category;
+
+/// Everything a player may say in a category, in the order a table offers it.
+///
+/// The full declaration first, since it is what a player means nine times in
+/// ten; then saying nothing; then calling one step short. A hand with nothing
+/// to call has one option, and it is the empty declaration.
+pub fn declaration_options(hand: Hand, category: Category) -> Vec<Declaration> {
+    let full = Declaration::full(hand, category);
+    if full.is_empty() {
+        return vec![full];
+    }
+    let mut options = vec![full, Declaration::sink()];
+    options.extend(understatements(hand, category));
+    options
+}
 
 /// One step short of the full declaration, keeping everything else intact.
 pub fn understatements(hand: Hand, category: Category) -> Vec<Declaration> {
@@ -140,6 +155,24 @@ mod tests {
         let offers = offered("AS KS QS JS TS 9S 7H", Category::Point);
         assert_eq!(offers.len(), 1);
         assert!(offers[0].contains("point of 5"), "{offers:?}");
+    }
+
+    #[test]
+    fn the_full_call_comes_first_then_silence_then_the_understatements() {
+        let hand = Hand::parse("AC KC QC JC TC 7D 8D 9D").unwrap();
+        let options = declaration_options(hand, Category::Sequences);
+        assert_eq!(options.len(), 3);
+        assert_eq!(options[0], Declaration::full(hand, Category::Sequences));
+        assert!(options[1].is_empty(), "the second option is saying nothing");
+        assert!(options[2].describe().contains("quart"));
+    }
+
+    #[test]
+    fn a_hand_with_nothing_to_call_has_exactly_one_option() {
+        let hand = Hand::parse("AC KD 9H 7S").unwrap();
+        let options = declaration_options(hand, Category::Sets);
+        assert_eq!(options.len(), 1);
+        assert!(options[0].is_empty());
     }
 
     #[test]

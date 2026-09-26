@@ -5,34 +5,22 @@
 //! plain -- `docs/DESIGN.md` defers the real interface and says basic graphics
 //! are acceptable until then.
 
-mod options;
 mod render;
 
 use std::io::{self, BufRead, Write};
 
-use options::understatements;
 use piquet_core::agents::Agent;
 use piquet_core::cards::{Card, Hand};
 use piquet_core::chances::{chance_of_the_rubicon, in_words};
 use piquet_core::declarations::Declaration;
-use piquet_core::heuristics::HeuristicAgent;
 use piquet_core::observation::View;
+use piquet_core::opponents::{opponent, seat};
+use piquet_core::options::declaration_options;
 use piquet_core::partie::{Partie, Side};
 use piquet_core::play::play_deal;
 use piquet_core::rng::Rng;
 use piquet_core::rules::{deal_from, Deal};
 use piquet_core::scoring::{Category, Player};
-use piquet_core::solver::SolverAgent;
-use piquet_core::style::Style;
-
-/// Named opponents, so a skill setting is a person rather than a number.
-const OPPONENTS: [(u32, &str, &str); 5] = [
-    (1, "Bess", "plays her highest card and hopes"),
-    (2, "Cotton", "knows what a hand is worth"),
-    (3, "Cavendish", "remembers what has been played"),
-    (4, "Hoyle", "watches what you show him"),
-    (5, "Foster", "reads the endgame exactly"),
-];
 
 struct Table {
     input: Box<dyn BufRead>,
@@ -129,8 +117,7 @@ impl Agent for HumanAgent {
             return full;
         }
 
-        let mut options = vec![full.clone(), Declaration::sink()];
-        options.extend(understatements(view.hand, category));
+        let options = declaration_options(view.hand, category);
         self.table.say(&format!(
             "\n  {}:",
             category.name().to_lowercase().replace('_', " ")
@@ -202,21 +189,6 @@ impl Agent for HumanAgent {
     }
 }
 
-fn make_opponent(level: u32, rng: &mut Rng, name: &str) -> Box<dyn Agent> {
-    let seed = rng.below(u32::MAX as usize) as u32;
-    let style = Style::random(rng);
-    if level >= 5 {
-        Box::new(SolverAgent::new(seed))
-    } else {
-        Box::new(
-            HeuristicAgent::new(level, seed)
-                .expect("a level from the table is valid")
-                .with_style(style)
-                .named(name),
-        )
-    }
-}
-
 fn shuffled(rng: &mut Rng) -> Vec<Card> {
     let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
     rng.shuffle(&mut pack);
@@ -243,8 +215,8 @@ fn main() {
                 .unwrap_or(1674)
         });
 
-    let level = level.clamp(1, 5);
-    let (_, opponent_name, gloss) = OPPONENTS[(level - 1) as usize];
+    let who = opponent(level);
+    let (opponent_name, gloss) = (who.name, who.gloss);
     let mut rng = Rng::seeded(seed);
 
     let table = Table {
@@ -258,7 +230,7 @@ fn main() {
         table,
         opponent: opponent_name.to_string(),
     };
-    let mut machine = make_opponent(level, &mut rng, opponent_name);
+    let mut machine = seat(who.level, &mut rng);
 
     // The human is side A and deals first, so the machine is elder in deal one
     // -- the dealer is not elder.

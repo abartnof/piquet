@@ -27,6 +27,8 @@ pub mod test_support {
 pub mod heuristics;
 pub mod inference;
 pub mod observation;
+pub mod opponents;
+pub mod options;
 pub mod partie;
 pub mod play;
 pub mod rng;
