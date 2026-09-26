@@ -129,6 +129,10 @@ def the_aids(page):
     assert s["aids"] == {"hints": True, "play_forced": True, "play_winners": True,
                          "declare_for_me": False}, s["aids"]
 
+    # What the hand is worth reads as words, not as a serialised object.
+    worth = page.locator("#worth").inner_text()
+    assert worth.startswith("Worth:") and "[object" not in worth, worth
+
     # A hint, pointed at in the hand, and followed with one click.
     assert page.locator("#prompt .hint").count() == 1
     assert page.locator("#hand .card.hinted").count() >= 1

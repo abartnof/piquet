@@ -84,7 +84,7 @@ if one names a card the opponent is still holding.
 
 ```jsonc
 {
-  "protocol": 1,                 // bumped when the shape changes
+  "protocol": 2,                 // bumped when the shape changes
   "seed": 42, "level": 3,
   "opponent": { "level": 3, "skill": "remembers what has been played" },
                                  // never a name: the machine is "your opponent"
@@ -99,7 +99,10 @@ if one names a card the opponent is still holding.
                                  // reaching 100; null in the first deal
 
   "hand": ["AS", "KS", "9H"],    // yours, spades-hearts-diamonds-clubs, high first
-  "worth": ["point of 4 (40) in spades", "trio of aces"],  // what it could call
+  "worth": [                     // what it could call, holding by holding
+    { "text": "point of 4 (40) in spades", "category": "point",
+      "cards": ["AS", "KS", "9S", "7S"] },
+    { "text": "trio of aces", "category": "sets", "cards": ["AS", "AH", "AC"] } ],
   "discards": ["7C"],            // yours
   "talon_seen": ["8D"],          // talon cards you have legitimately looked at
   "talon_remaining": 3,

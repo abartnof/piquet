@@ -768,7 +768,7 @@ function renderHand(s) {
 function renderWorth(s) {
   const worth = $("worth");
   worth.textContent = ["exchange", "declare"].includes(s.prompt.kind)
-    ? `Worth: ${s.worth.length ? s.worth.join(" · ") : "nothing to call"}`
+    ? `Worth: ${s.worth.length ? s.worth.map((w) => w.text).join(" · ") : "nothing to call"}`
     : "";
 }
 
