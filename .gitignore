@@ -13,3 +13,8 @@ logs/
 data/runs/
 *.parquet
 target/
+
+# editor swap and backup files
+*.swp
+*.swo
+*~
