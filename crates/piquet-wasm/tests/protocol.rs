@@ -22,6 +22,50 @@ fn cards(value: &Value) -> Vec<String> {
         .collect()
 }
 
+/// Every card a piece of text names, in either form a client might print:
+/// the code a player types (`AS`, `TC`) or the form a reader sees (`A♠`,
+/// `10♣`).
+fn named_cards(text: &str) -> Vec<Card> {
+    let mut found = Vec::new();
+    for token in text.split(|c: char| !c.is_ascii_alphanumeric()) {
+        if token.len() == 2 && token.to_uppercase() == token {
+            if let Ok(card) = Card::parse(token) {
+                found.push(card);
+            }
+        }
+    }
+    let chars: Vec<char> = text.chars().collect();
+    for (i, c) in chars.iter().enumerate() {
+        let suit = match c {
+            '\u{2663}' => 'C',
+            '\u{2666}' => 'D',
+            '\u{2665}' => 'H',
+            '\u{2660}' => 'S',
+            _ => continue,
+        };
+        let rank = if i >= 2 && chars[i - 2] == '1' && chars[i - 1] == '0' {
+            'T'
+        } else if i >= 1 {
+            chars[i - 1]
+        } else {
+            continue;
+        };
+        if let Ok(card) = Card::parse(&format!("{rank}{suit}")) {
+            found.push(card);
+        }
+    }
+    found
+}
+
+#[test]
+fn the_scan_for_named_cards_reads_both_forms() {
+    let named: Vec<String> = named_cards("You threw 10\u{2663} 7\u{2666} and KS")
+        .iter()
+        .map(|c| c.code())
+        .collect();
+    assert_eq!(named, ["KS", "TC", "7D"]);
+}
+
 /// The dullest legal command for whatever the state asks.
 fn dull(state: &Value) -> Option<String> {
     let prompt = &state["prompt"];
@@ -61,6 +105,10 @@ fn a_new_session_describes_a_decision() {
     assert_eq!(s["deal"], 1);
     assert_eq!(s["you_are"], "younger");
     assert_eq!(cards(&s["hand"]).len(), 12);
+    assert!(
+        s["worth"].as_array().unwrap().iter().all(|w| w.is_string()),
+        "what the hand is worth, one phrase per holding"
+    );
     assert_eq!(s["prompt"]["kind"], "exchange");
     assert!(s["prompt"]["limit"].as_u64().unwrap() >= 1);
     assert!(s["error"].is_null());
@@ -167,16 +215,11 @@ fn nothing_in_the_state_names_a_card_the_opponent_still_holds() {
             let mut found = Vec::new();
             strings(&current, &mut found);
             for text in found {
-                for token in text.split(|c: char| !c.is_ascii_alphanumeric()) {
-                    if token.len() != 2 || token.to_uppercase() != token {
-                        continue;
-                    }
-                    let Ok(card) = Card::parse(token) else {
-                        continue;
-                    };
+                for card in named_cards(text) {
                     assert!(
                         !theirs.holds(card) || known.holds(card),
-                        "seed {seed}: the state names {token}, which the opponent holds, in {text:?}"
+                        "seed {seed}: the state names {}, which the opponent holds, in {text:?}",
+                        card.code()
                     );
                 }
             }

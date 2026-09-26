@@ -21,6 +21,7 @@
 
 use piquet_core::cards::{Card, Hand, Suit};
 use piquet_core::chances::in_words;
+use piquet_core::combos::holdings;
 use piquet_core::declarations::Declaration;
 use piquet_core::rules::Trick;
 use piquet_core::scoring::{Category, Player};
@@ -424,6 +425,7 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
         ),
         ("rubicon", or_null(rubicon)),
         ("hand", hand(view.hand)),
+        ("worth", list(holdings(view.hand).iter().map(|h| text(h)))),
         ("discards", hand(view.my_discards)),
         (
             "talon_seen",
