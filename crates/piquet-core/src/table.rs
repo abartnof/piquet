@@ -295,7 +295,7 @@ impl Event {
                         "You win the partie, and {them} pays {}{}.",
                         settlement.points,
                         if settlement.rubicon {
-                            " -- rubiconed, so the sum and not the difference"
+                            " \u{2014} rubiconed, so the sum and not the difference"
                         } else {
                             ""
                         }
@@ -304,7 +304,7 @@ impl Event {
                         "{them} wins the partie, and you pay {}{}.",
                         settlement.points,
                         if settlement.rubicon {
-                            " -- you were rubiconed, so the sum and not the difference"
+                            " \u{2014} you were rubiconed, so the sum and not the difference"
                         } else {
                             ""
                         }

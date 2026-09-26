@@ -236,6 +236,7 @@ fn every_event_reads_as_a_sentence() {
         let said = event.text("Foster");
         assert!(!said.is_empty(), "{event:?} says nothing");
         assert!(!said.contains("Some(") && !said.contains("None"), "{said}");
+        assert!(!said.contains("--"), "a typewriter dash in {said:?}");
     }
 }
 
