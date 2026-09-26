@@ -36,5 +36,6 @@ pub mod rules;
 pub mod scoring;
 pub mod solver;
 pub mod style;
+pub mod table;
 pub mod tournament;
 pub(crate) mod util;
