@@ -47,6 +47,13 @@ You can do the same thing without the wrapper:
     gcloud compute instances start piquet-dev --zone=us-west1-b
     gcloud compute instances stop  piquet-dev --zone=us-west1-b
 
+Both have to be run **from the laptop**. The VM cannot stop itself: its
+service account was created without the compute API scope, so `gcloud` there
+fails with *Request had insufficient authentication scopes*. From inside the
+VM the equivalent is `sudo shutdown -h now`, which should drop the instance to
+`TERMINATED` and end the compute charge — that one is expected behaviour
+rather than something tested on this machine.
+
 Give it 30–60 seconds after `start` before SSH answers. The instance is
 booting while `gcloud` has already returned.
 
@@ -87,6 +94,46 @@ The first run will ask you to log in; it prints a URL to open in the browser
 here on the laptop. Do it inside `~/piquet` so Claude picks up the repository
 and the memories, which live under
 `~/.claude/projects/-home-andrewbartnof-piquet/`.
+
+### Surviving an internet hiccup
+
+A plain `ssh` session does **not** come back. If the link drops, sshd hangs up
+on the session, and anything running in it — Claude Code included — gets a
+SIGHUP and dies mid-thought. Reconnecting gives you a fresh shell, not the one
+you lost.
+
+`tmux` fixes this, and it is installed on the VM (3.3a, from Debian's own
+repository, with no config file — stock defaults). The trick is that tmux runs
+its own server on the VM, independent of any SSH connection; your terminal
+merely attaches to it. Use this instead of a bare `ssh`:
+
+    ssh -t piquet-dev.us-west1-b.abartnof-piquet 'tmux new -A -s piquet'
+
+`new -A` means *attach to the session called `piquet`, or create it if there
+isn't one*, so the **same command is both how you start and how you come
+back**. After a drop, run it again and you are looking at the same shell, with
+Claude Code still running and whatever it printed while you were gone still on
+screen.
+
+To step away deliberately, detach with **Ctrl-B then d** — that leaves
+everything running. Closing the terminal window does the same thing.
+
+Worth adding keepalives, so a dead link is noticed in a minute rather than
+hanging:
+
+    ssh -t -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+        piquet-dev.us-west1-b.abartnof-piquet 'tmux new -A -s piquet'
+
+Measured, not assumed: a tmux session started over SSH kept writing to a file
+for the whole time the connection was closed, and was still there — same
+session, same output — on reconnecting.
+
+Two things tmux cannot save you from. **Stopping or rebooting the VM** kills
+the tmux server with everything else; and if the VM was restarted, the SSH
+alias points at the old IP, so run `gcloud compute config-ssh` before
+reconnecting. For the first case, Claude Code has its own recovery: `claude
+--continue` in `~/piquet` resumes the most recent conversation, and `claude
+--resume` lets you pick one.
 
 ### One step left, and it needs your browser
 
