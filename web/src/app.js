@@ -125,6 +125,14 @@ function start(level, seed) {
 }
 
 function resume(saved) {
+  // Rebuilding replays the opponent's thinking so far -- a few seconds late
+  // in a partie against Foster -- so say so rather than look frozen.
+  const note = el("p", { class: "restoring" }, "Restoring your game\u2026");
+  $("prompt").replaceChildren(note);
+  setTimeout(() => restore(saved), TESTING ? 0 : 30);
+}
+
+function restore(saved) {
   engine.start(saved.level, saved.seed);
   const payload = [`replay ${saved.level} ${saved.seed}`, ...(saved.record || [])].join("\n");
   if (!engine.send(payload)) {
