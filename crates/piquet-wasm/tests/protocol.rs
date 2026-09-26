@@ -271,3 +271,120 @@ fn every_legal_card_offered_is_accepted() {
         assert!(session.send(&dull(&s).unwrap()));
     }
 }
+
+// ---------------------------------------------------------------------------
+// Aids, undo and hints
+// ---------------------------------------------------------------------------
+
+#[test]
+fn undo_takes_back_the_last_decision() {
+    let mut session = Session::new(3, 50);
+    assert_eq!(state(&session)["can_undo"], false);
+    assert!(!session.send("undo"), "nothing to take back yet");
+
+    for _ in 0..25 {
+        let before = state(&session);
+        assert!(session.send(&dull(&before).unwrap()));
+        assert_eq!(state(&session)["can_undo"], true);
+        assert!(session.send("undo"));
+        let after = state(&session);
+        for key in ["hand", "prompt", "events", "score", "trick", "deal"] {
+            assert_eq!(after[key], before[key], "{key} after undo");
+        }
+        assert!(
+            session.send(&dull(&before).unwrap()),
+            "and play on from there"
+        );
+    }
+}
+
+#[test]
+fn aids_are_switched_by_command_and_reported() {
+    let mut session = Session::new(3, 51);
+    let s = state(&session);
+    for aid in ["hints", "play_forced", "declare_for_me"] {
+        assert_eq!(s["aids"][aid], false, "{aid} starts off");
+    }
+    assert!(session.send("set declare_for_me on"));
+    assert!(session.send("set play_forced on"));
+    assert_eq!(state(&session)["aids"]["declare_for_me"], true);
+    for nonsense in ["set declare_for_me maybe", "set telepathy on", "set"] {
+        assert!(!session.send(nonsense), "{nonsense:?} was accepted");
+    }
+    play_out(&mut session, |_, s| {
+        assert_ne!(
+            s["prompt"]["kind"], "declare",
+            "asked to declare with it on"
+        );
+        if s["prompt"]["kind"] == "play" {
+            assert!(
+                cards(&s["prompt"]["legal"]).len() > 1,
+                "asked to play a forced card"
+            );
+        }
+    });
+}
+
+#[test]
+fn a_hint_appears_only_when_asked_for_and_can_be_followed() {
+    let mut session = Session::new(4, 52);
+    assert!(state(&session)["hint"].is_null());
+    assert!(session.send("set hints on"));
+    let mut followed = 0;
+    for _ in 0..40 {
+        let s = state(&session);
+        if s["prompt"]["kind"] == "next_deal" {
+            assert!(s["hint"].is_null());
+            assert!(session.send("next"));
+            continue;
+        }
+        let hint = &s["hint"];
+        assert!(hint["text"].as_str().unwrap().contains(" would "), "{hint}");
+        let command = hint["command"].as_str().unwrap().to_string();
+        assert!(
+            session.send(&command),
+            "the hint's own command {command:?} was refused"
+        );
+        followed += 1;
+    }
+    assert!(followed > 30);
+}
+
+#[test]
+fn each_declaration_option_names_its_cards() {
+    let mut session = Session::new(2, 53);
+    let mut checked = 0;
+    play_out(&mut session, |_, s| {
+        if s["prompt"]["kind"] != "declare" {
+            return;
+        }
+        let hand: Vec<String> = cards(&s["hand"]);
+        for option in s["prompt"]["options"].as_array().unwrap() {
+            let these = cards(&option["cards"]);
+            assert!(these.iter().all(|c| hand.contains(c)), "{option}");
+            if option["text"] == "nothing" {
+                assert!(these.is_empty());
+            } else {
+                assert!(!these.is_empty(), "{option}");
+            }
+        }
+        checked += 1;
+    });
+    assert!(checked > 0);
+}
+
+#[test]
+fn every_score_carries_its_category() {
+    let mut session = Session::new(3, 54);
+    let last = play_out(&mut session, |_, _| {});
+    let scored: Vec<&Value> = last["events"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["kind"] == "scored")
+        .collect();
+    assert!(!scored.is_empty());
+    for event in scored {
+        assert!(event["category"].is_string(), "{event}");
+    }
+}

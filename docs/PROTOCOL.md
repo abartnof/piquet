@@ -39,6 +39,20 @@ record" produces, and replaying it reproduces the game exactly.
 | `declare N` | `prompt.kind == "declare"` | Choose option `N` (0-based) of `prompt.options` |
 | `play KS` | `prompt.kind == "play"` | Lead or follow with this card |
 | `next` | `prompt.kind == "next_deal"` | Deal the next hand |
+| `undo` | `can_undo` | Take back the last decision, with the opponent's replies and anything the table did automatically after it |
+| `set <aid> on` / `off` | any time | Switch an aid: `hints`, `play_forced`, `declare_for_me` |
+
+**Aids** change what the human is asked, never what happens. `play_forced`
+plays a card when it is the only legal one; `declare_for_me` calls everything
+in every category without asking; `hints` puts `hint` in the state. A
+declaration with nothing to call is never put to the human whatever the aids.
+Switching one on takes effect at once — `declare_for_me` at a declaration
+prompt makes the call.
+
+**Undo** replays the game from its seed and everything taken from the human's
+seat except the last real decision. Automatic moves are recorded as such, so
+switching aids mid-game never stops a record fitting. Undoing costs a replay
+of the opponent's thinking so far — a second or two late in a level-5 partie.
 
 Cards are written as two characters, rank then suit: `7 8 9 T J Q K A` and
 `C D H S`. A command the rules forbid — a card not held, a card that fails to
@@ -85,6 +99,11 @@ if one names a card the opponent is still holding.
   "score": { "you": 12, "them": 7 },  // this deal so far
 
   "prompt": { ... },             // see below
+  "aids": { "hints": false, "play_forced": false, "declare_for_me": false },
+  "can_undo": true,
+  "hint": null,                  // with hints on: { "text": "Foster would play K♠.",
+                                 //   "command": "play KS", "advisor": "Foster",
+                                 //   "cards": ["KS"] }
   "events": [ ... ],             // see below
   "deals": [ { "number": 1, "you": 11, "them": 24 } ],  // finished deals
   "partie": { "you": 11, "them": 24 },                  // running totals
@@ -103,9 +122,11 @@ swap every deal and a player thinks of themselves, not of elder.
 { "kind": "exchange", "limit": 5 }
 { "kind": "declare", "category": "point",          // point, sequences, sets
   "answering": "point of 5",                        // what elder just called, or null
-  "options": [ { "text": "point of 6 (56)", "score": 6, "full": true },
-               { "text": "nothing", "score": 0, "full": false },
-               { "text": "point of 5 (46)", "score": 5, "full": false } ] }
+  "options": [ { "text": "point of 6 (56)", "score": 6, "full": true,
+                 "cards": ["AH", "KH", "QH", "JH", "9H", "8H"] },
+               { "text": "nothing", "score": 0, "full": false, "cards": [] },
+               { "text": "point of 5 (46)", "score": 5, "full": false,
+                 "cards": ["AH", "KH", "QH", "JH", "9H"] } ] }
 { "kind": "play", "legal": ["QH", "9H"] }
 { "kind": "next_deal" }
 { "kind": "over" }
@@ -113,7 +134,8 @@ swap every deal and a player thinks of themselves, not of elder.
 
 A declaration's first option is the full call; then saying nothing; then
 calling one step short, which is how the rules let a player *sink* part of a
-holding. A category with nothing to call is never put to the human — the table
+holding. Each option names the cards it is made of — what would be laid on the
+table if it were shown — so a client can show a claim before it is made. A category with nothing to call is never put to the human — the table
 calls it for them and says so in the narration.
 
 ### Events
@@ -130,7 +152,7 @@ fields by kind for a client that wants to animate rather than print:
 | `called` | `who`, `category`, `said` — what was said aloud, never a suit |
 | `decided` | `category`, `winner` (`null` if equal) |
 | `showed` | `who`, `what` — a combination the opponent had to expose |
-| `scored` | `who`, `amount`, `what` |
+| `scored` | `who`, `amount`, `what`, `category` — carte_blanche, point, sequences, sets, play, cards or bonus |
 | `nothing_to_call` | `category` |
 | `played` | `who`, `card` |
 | `took_trick` | `who`, `number` |
@@ -167,3 +189,14 @@ const send = (command) => {
 
 Read `memory.buffer` afresh after every call: the module may grow its memory,
 which detaches any view taken before.
+
+## Hints
+
+A hint is what Foster, the top of the opponent ladder, would do in the
+human's place — the exact solver in the endgame and Hoyle's judgement before
+it — computed from the human's own view, so it cannot tell them anything they
+could not know. The advisor has its own generator, seeded from where the game
+stands: asking twice gives the same answer, and asking at all changes nothing
+about the game. `hint.command` is exactly what to send to follow it, and
+`hint.cards` is what to point at: the discards, the card, or the cards of the
+recommended declaration.

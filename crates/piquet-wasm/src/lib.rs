@@ -9,6 +9,8 @@
 //! declare 0              choose option 0 of the declaration prompt
 //! play KS                lead or follow with this card
 //! next                   deal the next hand
+//! undo                   take back the last decision
+//! set hints on           switch an aid: hints, play_forced, declare_for_me
 //! ```
 //!
 //! The state's shape is documented in `docs/PROTOCOL.md`, and every field in
@@ -53,8 +55,7 @@ impl Session {
     /// Carry out one command. On refusal the table is untouched and the
     /// reason is in the state's `error` until the next command succeeds.
     pub fn send(&mut self, command: &str) -> bool {
-        let outcome = parse(command).and_then(|action| self.table.act(action));
-        match outcome {
+        match self.carry_out(command) {
             Ok(()) => {
                 self.error = None;
                 true
@@ -68,6 +69,44 @@ impl Session {
 
     pub fn state(&self) -> String {
         state(&self.table, self.level, self.error.as_deref())
+    }
+
+    fn carry_out(&mut self, command: &str) -> Result<(), String> {
+        let words: Vec<&str> = command.split_whitespace().collect();
+        match words.as_slice() {
+            ["undo"] => self.table.undo(),
+            ["set", aid, value] => {
+                let on = match *value {
+                    "on" => true,
+                    "off" => false,
+                    other => return Err(format!("set {aid} on, or off -- not {other:?}")),
+                };
+                let mut aids = self.table.aids();
+                match *aid {
+                    "hints" => aids.hints = on,
+                    "play_forced" => aids.play_forced = on,
+                    "declare_for_me" => aids.declare_for_me = on,
+                    other => return Err(format!("there is no aid called {other:?}")),
+                }
+                self.table.set_aids(aids);
+                Ok(())
+            }
+            ["set", ..] => Err("set which aid, on or off?".to_string()),
+            _ => parse(command).and_then(|action| self.table.act(action)),
+        }
+    }
+}
+
+/// The command that carries out an action, as a client would send it.
+fn command(action: &Action) -> String {
+    match action {
+        Action::Exchange(discard) => {
+            let codes: Vec<String> = discard.cards().map(|c| c.code()).collect();
+            format!("exchange {}", codes.join(" "))
+        }
+        Action::Declare(index) => format!("declare {index}"),
+        Action::Play(card) => format!("play {}", card.code()),
+        Action::NextDeal => "next".to_string(),
     }
 }
 
@@ -190,7 +229,7 @@ fn trick(trick: &Trick, you: Player, complete: bool) -> String {
     object(&fields)
 }
 
-fn option(declaration: &Declaration, full: bool) -> String {
+fn option(declaration: &Declaration, full: bool, held: Hand) -> String {
     object(&[
         (
             "text",
@@ -202,10 +241,11 @@ fn option(declaration: &Declaration, full: bool) -> String {
         ),
         ("score", declaration.score().to_string()),
         ("full", full.to_string()),
+        ("cards", hand(declaration.cards_in(held))),
     ])
 }
 
-fn prompt(prompt: &Prompt) -> String {
+fn prompt(prompt: &Prompt, held: Hand) -> String {
     match prompt {
         Prompt::Exchange { limit } => {
             object(&[("kind", text("exchange")), ("limit", limit.to_string())])
@@ -224,7 +264,7 @@ fn prompt(prompt: &Prompt) -> String {
                     options
                         .iter()
                         .enumerate()
-                        .map(|(i, d)| option(d, i == 0 && !d.is_empty())),
+                        .map(|(i, d)| option(d, i == 0 && !d.is_empty(), held)),
                 ),
             ),
         ]),
@@ -329,6 +369,38 @@ fn event(event: &Event, deal: usize, them: &str) -> String {
     ];
     all.extend(fields);
     object(&all)
+}
+
+fn aids(table: &Table) -> String {
+    let aids = table.aids();
+    object(&[
+        ("hints", aids.hints.to_string()),
+        ("play_forced", aids.play_forced.to_string()),
+        ("declare_for_me", aids.declare_for_me.to_string()),
+    ])
+}
+
+/// The advice, when hints are on: a sentence, the command that follows it,
+/// and the cards it concerns, for a client that wants to point at them.
+fn hint(table: &Table, held: Hand) -> Option<String> {
+    if !table.aids().hints {
+        return None;
+    }
+    let hint = table.hint()?;
+    let cards = match (&hint.action, table.prompt()) {
+        (Action::Exchange(discard), _) => *discard,
+        (Action::Play(card), _) => Hand(1 << card.0),
+        (Action::Declare(index), Prompt::Declare { options, .. }) => options
+            .get(*index)
+            .map_or(Hand::EMPTY, |d| d.cards_in(held)),
+        _ => Hand::EMPTY,
+    };
+    Some(object(&[
+        ("text", text(&hint.text())),
+        ("command", text(&command(&hint.action))),
+        ("advisor", text(hint.advisor.name)),
+        ("cards", hand(cards)),
+    ]))
 }
 
 /// The whole state of the table, from the human's chair.
@@ -456,7 +528,17 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
                 ("them", view.log.total(you.opponent()).to_string()),
             ]),
         ),
-        ("prompt", prompt(&table.prompt())),
+        ("prompt", prompt(&table.prompt(), view.hand)),
+        ("aids", aids(table)),
+        (
+            "can_undo",
+            table
+                .record()
+                .iter()
+                .any(|(_, automatic)| !automatic)
+                .to_string(),
+        ),
+        ("hint", or_null(hint(table, view.hand))),
         ("events", list(events)),
         ("deals", deals),
         (
