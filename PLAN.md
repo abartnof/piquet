@@ -176,33 +176,40 @@ In order, all committed and pushed:
    300 deals, his candidate count went from mean 55 to 75 (median 34 → 36):
    the leak had been sharpening his picture by about a quarter.
 
-### In flight: Andrew's second round of notes (27 Sept 2026)
+### Andrew's second round of notes (27 Sept 2026) — done
 
-After playing the first build he asked for six things. Engine and protocol
-side done and pushed (`6902047` … `f07393f`); **the page is being rebuilt
-around them next, and `web/piquet.html` is stale until it is** (its embedded
-engine predates the cut, so it still works as it was).
+After playing the first build he asked for six things; all six are built,
+tested and pushed, and `web/piquet.html` is current (`a5f2e34`).
 
-1. **Sort the hand in the first segment to show the best holdings.** Engine:
-   `combos::holdings` returns text + category + cards (protocol 2). Page: a
-   one-click sort bar by the hand — suit / rank / combinations — and worth
-   chips that lift their cards.
-2. **Show what the opponent does, e.g. their discards as a pile.**
-   `View::opponent_discards` (the size, never the cards) → `their_discards`.
-3. **Played tricks represented, per the books.** Face up in front of whoever
-   won them, examinable any time (Cavendish p.108 and Law 60; pagat) →
-   `tricks_played`.
-4. **An easy way to turn hints off.** Page: a visible switch, not just H.
-5. **No proper names — "your opponent".** Done everywhere (`e67e1e8`), and
-   saved as a standing preference.
-6. **The cut for deal, verified and made part of the experience.** Verified
-   (pagat, Cavendish Laws 3–4 and p.108, Foster 1897, Cotton 1674 —
-   `docs/PIQUET.md`); engine `Prompt::Cut` / `ChooseDealer` (`f07393f`). Page:
-   a fanned pack to click, the two cards shown, the choice as two buttons.
+1. **Sort the hand in the first segment to show the best holdings.** A sort bar
+   beside the hand — Auto / Suit / Rank / Combinations. Auto groups by
+   combination while exchanging and declaring (best point, sequences, sets,
+   then the rest, each group set apart) and by suit in play. Worth chips lift a
+   holding's cards; click to pin. Engine: `combos::holdings` gives text +
+   category + cards (protocol 2).
+2. **Show what the opponent does.** Their discards are a face-down pile with its
+   size (`View::opponent_discards`, derived from the view); their hand is a
+   face-down fan; the talon is a pile in the middle.
+3. **Played tricks, per the books.** Face up in front of whoever won them,
+   examinable any time — Cavendish p.108 and Law 60; pagat (`tricks_played`).
+4. **An easy way to turn hints off.** A switch in the header, "Hide hints" on the
+   hint itself, and H.
+5. **No proper names.** "Your opponent" everywhere a player reads; levels are
+   described by skill (`e67e1e8`). Saved as a standing preference.
+6. **The cut for deal.** Verified from pagat, Cavendish Laws 3–4 and p.108,
+   Foster (1897) and Cotton (1674) — the older lower-card rule is recorded and
+   not followed (`docs/PIQUET.md`). The partie opens on a fanned pack; the
+   higher card chooses; the opponent, winning it, elects to deal first.
 
-Also this round: a pushed page briefly showed "Worth: [object Object]" — a
-patch that failed silently. Fixed (`2b30cbd`) and the browser test now reads
-the worth line; multi-step shell commands now start with `set -e`.
+Loose ends from the round:
+
+- The **terminal** does not cut yet; it still deals the human first. The same
+  seed gives the same packs everywhere, and the same game whenever the human
+  ends up dealing first.
+- On a phone a combination group can break across the wrap of the hand.
+- A pushed page briefly read "Worth: [object Object]" — a patch that failed
+  silently (`2b30cbd`). The browser test now reads the worth line, and every
+  multi-step shell command starts with `set -e`.
 
 ### Pick up here: making it effortless and fun
 
