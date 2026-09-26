@@ -559,6 +559,11 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
             list(view.talon_seen.iter().map(|c| text(&c.code()))),
         ),
         ("talon_remaining", view.talon_remaining.to_string()),
+        ("their_discards", view.opponent_discards().to_string()),
+        (
+            "tricks_played",
+            list(view.tricks.iter().map(|t| trick(t, you, true))),
+        ),
         (
             "trick",
             or_null(view.current_trick.as_ref().map(|t| trick(t, you, false))),

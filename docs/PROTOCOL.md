@@ -106,9 +106,12 @@ if one names a card the opponent is still holding.
   "discards": ["7C"],            // yours
   "talon_seen": ["8D"],          // talon cards you have legitimately looked at
   "talon_remaining": 3,
+  "their_discards": 5,           // the size of your opponent's pile, never its cards
 
   "trick": { "leader": "them", "led": "QH", "followed": null },  // in progress, or null
   "last_trick": { "leader": "you", "led": "AS", "followed": "7S", "winner": "you" },
+  "tricks_played": [ ... ],      // every trick this deal, in order, same shape: they
+                                 // lie face up and either player may look at them
   "tricks": { "you": 3, "them": 2 },
   "score": { "you": 12, "them": 7 },  // this deal so far
 

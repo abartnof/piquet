@@ -485,3 +485,32 @@ fn a_record_that_does_not_fit_is_refused() {
         "a refused replay leaves the table alone"
     );
 }
+
+// ---------------------------------------------------------------------------
+// What lies on the table
+// ---------------------------------------------------------------------------
+
+#[test]
+fn the_piles_and_the_tricks_are_on_the_table() {
+    // The opponent's discards are a pile whose size is public and whose
+    // contents are not; the tricks lie face up in front of whoever won them,
+    // and either player may look at them at any time (Cavendish, Law 60).
+    let mut session = Session::new(3, 90);
+    play_out(&mut session, |session, s| {
+        let table = session.table();
+        if table.partie().complete() {
+            return;
+        }
+        let theirs = table.deal().discard_of(table.you().opponent()).len();
+        assert_eq!(s["their_discards"].as_u64().unwrap(), u64::from(theirs));
+        let tricks = s["tricks_played"].as_array().unwrap();
+        let won = |who: &str| tricks.iter().filter(|t| t["winner"] == who).count() as u64;
+        assert_eq!(won("you"), s["tricks"]["you"].as_u64().unwrap());
+        assert_eq!(won("them"), s["tricks"]["them"].as_u64().unwrap());
+        for trick in tricks {
+            for key in ["leader", "led", "followed", "winner"] {
+                assert!(trick[key].is_string(), "{trick}");
+            }
+        }
+    });
+}

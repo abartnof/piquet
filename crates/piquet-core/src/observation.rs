@@ -21,7 +21,7 @@
 use crate::cards::{Card, Hand};
 use crate::declarations::{Announcement, Combination};
 use crate::partie::Standing;
-use crate::rules::{Deal, Phase, Trick, ELDER_MAX_EXCHANGE};
+use crate::rules::{Deal, Phase, Trick, ELDER_MAX_EXCHANGE, TALON_SIZE};
 use crate::scoring::{Category, Player, ScoreLog};
 
 /// One player's legal knowledge of a deal in progress.
@@ -74,6 +74,14 @@ pub struct View {
 impl View {
     pub fn opponent(&self) -> Player {
         self.me.opponent()
+    }
+
+    /// How many cards the opponent has thrown out -- the size of their
+    /// discard pile, never what is in it. Public, because both players watch
+    /// how many cards each takes from the talon: whatever has left the talon
+    /// and is not in this player's own discards is in theirs.
+    pub fn opponent_discards(&self) -> usize {
+        TALON_SIZE - self.talon_remaining - self.my_discards.len() as usize
     }
 
     /// Every card this player cannot account for.

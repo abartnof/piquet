@@ -255,3 +255,37 @@ fn elder_only_ever_gains_by_using_the_exchange() {
         100.0 * rate
     );
 }
+
+#[test]
+fn a_view_counts_the_opponents_discards_as_the_table_can() {
+    // How many cards each player throws is public -- both watch how many are
+    // taken from the talon -- so a view can say how big the opponent's
+    // discard pile is without saying what is in it.
+    for (i, pack) in packs(200, 41).into_iter().enumerate() {
+        let mut deal = deal_from(&pack).unwrap();
+        let mut elder = agent(i + 1, 700 + i as u32);
+        let mut younger = agent(i + 3, 800 + i as u32);
+        let check = |deal: &piquet_core::rules::Deal| {
+            for player in [Player::Elder, Player::Younger] {
+                let view = view_for(deal, player, None);
+                assert_eq!(
+                    view.opponent_discards(),
+                    deal.discard_of(player.opponent()).len() as usize,
+                    "deal {i}, {} at {}",
+                    player.name(),
+                    view.phase.value()
+                );
+            }
+        };
+        check(&deal);
+        for player in [Player::Elder, Player::Younger] {
+            let view = view_for(&deal, player, None);
+            let a: &mut dyn Agent = match player {
+                Player::Elder => elder.as_mut(),
+                Player::Younger => younger.as_mut(),
+            };
+            deal = deal.exchange(player, a.exchange(&view)).unwrap();
+            check(&deal);
+        }
+    }
+}
