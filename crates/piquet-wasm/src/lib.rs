@@ -10,7 +10,8 @@
 //! play KS                lead or follow with this card
 //! next                   deal the next hand
 //! undo                   take back the last decision
-//! set hints on           switch an aid: hints, play_forced, declare_for_me
+//! set hints on           switch an aid: hints, play_forced, declare_for_me,
+//!                        play_winners
 //! ```
 //!
 //! The state's shape is documented in `docs/PROTOCOL.md`, and every field in
@@ -91,6 +92,7 @@ impl Session {
                     "hints" => aids.hints = on,
                     "play_forced" => aids.play_forced = on,
                     "declare_for_me" => aids.declare_for_me = on,
+                    "play_winners" => aids.play_winners = on,
                     other => return Err(format!("there is no aid called {other:?}")),
                 }
                 self.table.set_aids(aids);
@@ -420,6 +422,7 @@ fn aids(table: &Table) -> String {
         ("hints", aids.hints.to_string()),
         ("play_forced", aids.play_forced.to_string()),
         ("declare_for_me", aids.declare_for_me.to_string()),
+        ("play_winners", aids.play_winners.to_string()),
     ])
 }
 

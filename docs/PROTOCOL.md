@@ -47,12 +47,14 @@ record" produces, and replaying it reproduces the game exactly.
 | `play KS` | `prompt.kind == "play"` | Lead or follow with this card |
 | `next` | `prompt.kind == "next_deal"` | Deal the next hand |
 | `undo` | `can_undo` | Take back the last decision, with the opponent's replies and anything the table did automatically after it |
-| `set <aid> on` / `off` | any time | Switch an aid: `hints`, `play_forced`, `declare_for_me` |
+| `set <aid> on` / `off` | any time | Switch an aid: `hints`, `play_forced`, `declare_for_me`, `play_winners` |
 | `replay L S` + one record entry per line | any time | Rebuild the table at level `L`, seed `S`, from a `record` — how a client reloads a game |
 
 **Aids** change what the human is asked, never what happens. `play_forced`
 plays a card when it is the only legal one; `declare_for_me` calls everything
-in every category without asking; `hints` puts `hint` in the state. A
+in every category without asking; `play_winners` plays out a hand of certain
+winners — on lead, every card beating everything unaccounted for and every
+talon card elder watched younger take; `hints` puts `hint` in the state. A
 declaration with nothing to call is never put to the human whatever the aids.
 Switching one on takes effect at once — `declare_for_me` at a declaration
 prompt makes the call.
@@ -107,7 +109,8 @@ if one names a card the opponent is still holding.
   "score": { "you": 12, "them": 7 },  // this deal so far
 
   "prompt": { ... },             // see below
-  "aids": { "hints": false, "play_forced": false, "declare_for_me": false },
+  "aids": { "hints": false, "play_forced": false, "declare_for_me": false,
+            "play_winners": false },
   "can_undo": true,
   "record": ["exchange 7C", "declare 0", "*play 8S", "next"],  // everything taken
                                  // from your seat; * marks what the table did for you

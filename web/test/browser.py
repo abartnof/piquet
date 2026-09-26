@@ -121,7 +121,8 @@ def the_aids(page):
     open_fresh(page, 4, 99)
     assert page.locator("#settings").is_hidden(), "the settings panel starts shut"
     s = state(page)
-    assert s["aids"] == {"hints": True, "play_forced": True, "declare_for_me": False}, s["aids"]
+    assert s["aids"] == {"hints": True, "play_forced": True, "play_winners": True,
+                         "declare_for_me": False}, s["aids"]
 
     # A hint, pointed at in the hand, and followed with one click.
     assert page.locator("#prompt .hint").count() == 1

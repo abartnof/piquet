@@ -306,12 +306,14 @@ fn undo_takes_back_the_last_decision() {
 fn aids_are_switched_by_command_and_reported() {
     let mut session = Session::new(3, 51);
     let s = state(&session);
-    for aid in ["hints", "play_forced", "declare_for_me"] {
+    for aid in ["hints", "play_forced", "declare_for_me", "play_winners"] {
         assert_eq!(s["aids"][aid], false, "{aid} starts off");
     }
     assert!(session.send("set declare_for_me on"));
     assert!(session.send("set play_forced on"));
+    assert!(session.send("set play_winners on"));
     assert_eq!(state(&session)["aids"]["declare_for_me"], true);
+    assert_eq!(state(&session)["aids"]["play_winners"], true);
     for nonsense in ["set declare_for_me maybe", "set telepathy on", "set"] {
         assert!(!session.send(nonsense), "{nonsense:?} was accepted");
     }

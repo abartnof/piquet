@@ -33,7 +33,7 @@ const GAME_STORE = "piquet.game";
 const PREF_STORE = "piquet.prefs";
 const AID_STORE = "piquet.aids";
 const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "suit" };
-const DEFAULT_AIDS = { hints: true, play_forced: true, declare_for_me: false };
+const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: true, declare_for_me: false };
 
 // Automated tests pass ?test to drop the pauses that make play feel like play.
 const TESTING = new URL(window.location.href).searchParams.has("test");
