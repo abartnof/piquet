@@ -191,21 +191,26 @@ logic belongs in the engine (TDD there), page second:
 
 **Engine (`table.rs`, then the protocol):**
 
-- [ ] **Hints.** `Table::hint()` — what an advisor would do *from the human's
+- [x] **Hints.** `Table::hint()` — what an advisor would do *from the human's
       view*, so it can never leak. Advisor: rung 4 for the exchange and the
       declarations, the solver in the endgame. Name the rung in the hint
       ("Hoyle would throw…"), which is the ladder-based tutoring idea and the
       first brick of Milestone 9.
-- [ ] **Undo.** The table is deterministic, so undoing is replaying every
+- [x] **Undo.** The table is deterministic, so undoing is replaying every
       accepted action but the last human one. Misclicks stop mattering.
-- [ ] **Auto-play forced cards** (one legal card — always so on the last
+- [x] **Auto-play forced cards** (one legal card — always so on the last
       trick) as a table setting.
-- [ ] **Declare for me** as a table setting: call everything without asking.
+- [x] **Declare for me** as a table setting: call everything without asking.
       Open question for Andrew — the default. Three prompts a deal is the
       single biggest source of clicks, but sinking is the interesting move and
       a teaching game should show it exists.
-- [ ] **The cards behind each option**, so a client can highlight what a
+- [x] **The cards behind each option**, so a client can highlight what a
       declaration or a "worth" line is made of.
+
+Engine half done (`4baba8c`, `2e42573`, `8521b87`): `Aids` on the table, a
+record of every action from the human's seat, `Table::replay` and `undo`,
+`Table::hint`, and the protocol commands `undo` and `set <aid> on|off`.
+Scores carry their category now, for the running tab.
 
 **Page:**
 
