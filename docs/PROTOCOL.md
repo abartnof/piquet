@@ -24,6 +24,13 @@ The engine runs the opponent between human decisions, so after any accepted
 command the state is already at the human's next decision. Nothing happens
 while the client waits.
 
+**Reloading.** `record` is everything taken from the human's seat, with `*`
+on what the table did automatically. `replay L S` followed by those entries,
+one per line, rebuilds the table in a single pass — automatic moves are
+replayed as recorded, so aids switched mid-game never stop a record fitting —
+after which the client switches its aids back on with `set`. That is what a
+page keeps across a reload, and what "Copy game record" hands over.
+
 The same `level` and `seed` always produce the same partie — the same packs,
 the same opponent, the same style — and so do the terminal (`piquet --level L
 --seed S`) and every build of the engine, native or WebAssembly (checked byte
@@ -41,6 +48,7 @@ record" produces, and replaying it reproduces the game exactly.
 | `next` | `prompt.kind == "next_deal"` | Deal the next hand |
 | `undo` | `can_undo` | Take back the last decision, with the opponent's replies and anything the table did automatically after it |
 | `set <aid> on` / `off` | any time | Switch an aid: `hints`, `play_forced`, `declare_for_me` |
+| `replay L S` + one record entry per line | any time | Rebuild the table at level `L`, seed `S`, from a `record` — how a client reloads a game |
 
 **Aids** change what the human is asked, never what happens. `play_forced`
 plays a card when it is the only legal one; `declare_for_me` calls everything
@@ -101,6 +109,8 @@ if one names a card the opponent is still holding.
   "prompt": { ... },             // see below
   "aids": { "hints": false, "play_forced": false, "declare_for_me": false },
   "can_undo": true,
+  "record": ["exchange 7C", "declare 0", "*play 8S", "next"],  // everything taken
+                                 // from your seat; * marks what the table did for you
   "hint": null,                  // with hints on: { "text": "Foster would play K♠.",
                                  //   "command": "play KS", "advisor": "Foster",
                                  //   "cards": ["KS"] }

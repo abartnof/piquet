@@ -201,7 +201,11 @@ fn nothing_in_the_state_names_a_card_the_opponent_still_holds() {
             let known = table.view().watched_them_take;
             // Events from earlier deals name cards that have been shuffled
             // back into the pack since; only this deal's are claims about it.
+            // The record is left out for the same reason: it is the human's
+            // own past actions, so within this deal it names only cards that
+            // were theirs, and across deals it names reshuffled ones.
             let mut current = s.clone();
+            current["record"] = Value::Null;
             let deal = s["deal"].clone();
             current["events"] = Value::Array(
                 s["events"]
@@ -387,4 +391,79 @@ fn every_score_carries_its_category() {
     for event in scored {
         assert!(event["category"].is_string(), "{event}");
     }
+}
+
+// ---------------------------------------------------------------------------
+// Reloading a game from its record
+// ---------------------------------------------------------------------------
+
+fn record_of(s: &Value) -> Vec<String> {
+    s["record"]
+        .as_array()
+        .expect("the state carries the record")
+        .iter()
+        .map(|r| r.as_str().unwrap().to_string())
+        .collect()
+}
+
+#[test]
+fn a_game_reloads_exactly_from_its_record() {
+    // Aids switched mid-game and a decision taken back: the record still
+    // rebuilds the same table in one pass, which is what a reload does.
+    let mut session = Session::new(4, 60);
+    for step in 0..40 {
+        let now = state(&session);
+        let Some(command) = dull(&now) else { break };
+        assert!(session.send(&command));
+        if step == 10 {
+            assert!(session.send("set play_forced on"));
+        }
+        if step == 20 {
+            assert!(session.send("undo"));
+        }
+        if step == 25 {
+            assert!(session.send("set declare_for_me on"));
+        }
+    }
+    let original = state(&session);
+    let record = record_of(&original);
+    assert!(
+        record.iter().any(|r| r.starts_with('*')),
+        "automatic moves are marked"
+    );
+    for entry in &record {
+        let verb = entry.trim_start_matches('*').split(' ').next().unwrap();
+        assert!(
+            ["exchange", "declare", "play", "next"].contains(&verb),
+            "a record entry is a command: {entry:?}"
+        );
+    }
+
+    let mut reloaded = Session::new(1, 1);
+    let payload = format!("replay 4 60\n{}", record.join("\n"));
+    assert!(reloaded.send(&payload), "{}", state(&reloaded)["error"]);
+    assert!(reloaded.send("set play_forced on"));
+    assert!(reloaded.send("set declare_for_me on"));
+    let again = state(&reloaded);
+    for key in [
+        "hand", "prompt", "events", "score", "deal", "record", "aids", "seed", "level",
+    ] {
+        assert_eq!(again[key], original[key], "{key} after reloading");
+    }
+    assert_eq!(again["can_undo"], true, "and it can still be taken back");
+}
+
+#[test]
+fn a_record_that_does_not_fit_is_refused() {
+    let mut session = Session::new(3, 61);
+    let before = state(&session);
+    assert!(!session.send("replay 3 61\nplay ZZ"));
+    assert!(!session.send("replay 3 61\nnext"));
+    assert!(!session.send("replay three 61"));
+    let after = state(&session);
+    assert!(after["error"].is_string());
+    assert_eq!(
+        after["hand"], before["hand"],
+        "a refused replay leaves the table alone"
+    );
 }

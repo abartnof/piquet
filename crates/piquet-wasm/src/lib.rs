@@ -27,7 +27,7 @@ use piquet_core::combos::holdings;
 use piquet_core::declarations::Declaration;
 use piquet_core::rules::Trick;
 use piquet_core::scoring::{Category, Player};
-use piquet_core::table::{said, Action, Event, Prompt, Table, Who};
+use piquet_core::table::{said, Action, Aids, Event, Prompt, Table, Who};
 
 /// Bumped whenever the state changes shape in a way a client would notice.
 pub const PROTOCOL: u32 = 1;
@@ -72,6 +72,11 @@ impl Session {
     }
 
     fn carry_out(&mut self, command: &str) -> Result<(), String> {
+        let mut lines = command.lines();
+        let first: Vec<&str> = lines.next().unwrap_or("").split_whitespace().collect();
+        if first.first() == Some(&"replay") {
+            return self.reload(&first, lines);
+        }
         let words: Vec<&str> = command.split_whitespace().collect();
         match words.as_slice() {
             ["undo"] => self.table.undo(),
@@ -95,6 +100,44 @@ impl Session {
             _ => parse(command).and_then(|action| self.table.act(action)),
         }
     }
+}
+
+impl Session {
+    /// `replay LEVEL SEED`, then one record entry per line: rebuild the
+    /// table from a record in one pass. A record that does not fit leaves
+    /// the table alone.
+    fn reload<'a>(
+        &mut self,
+        first: &[&str],
+        entries: impl Iterator<Item = &'a str>,
+    ) -> Result<(), String> {
+        let [_, level, seed] = first else {
+            return Err("replay LEVEL SEED, then the record, one entry a line".to_string());
+        };
+        let level: u32 = level
+            .parse()
+            .map_err(|_| format!("{level:?} is not a level"))?;
+        let seed: u32 = seed
+            .parse()
+            .map_err(|_| format!("{seed:?} is not a seed"))?;
+        let mut record = Vec::new();
+        for line in entries.map(str::trim).filter(|l| !l.is_empty()) {
+            let (automatic, entry) = match line.strip_prefix('*') {
+                Some(rest) => (true, rest),
+                None => (false, line),
+            };
+            record.push((parse(entry)?, automatic));
+        }
+        self.table = Table::replay(level, seed, Aids::default(), &record)?;
+        self.level = level.clamp(1, 5);
+        Ok(())
+    }
+}
+
+/// A record entry: the command, marked `*` when the table took it for the
+/// human.
+fn entry(action: &Action, automatic: bool) -> String {
+    format!("{}{}", if automatic { "*" } else { "" }, command(action))
 }
 
 /// The command that carries out an action, as a client would send it.
@@ -539,6 +582,15 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
                 .to_string(),
         ),
         ("hint", or_null(hint(table, view.hand))),
+        (
+            "record",
+            list(
+                table
+                    .record()
+                    .iter()
+                    .map(|(a, auto)| text(&entry(a, *auto))),
+            ),
+        ),
         ("events", list(events)),
         ("deals", deals),
         (
