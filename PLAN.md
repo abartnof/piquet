@@ -176,10 +176,33 @@ In order, all committed and pushed:
    300 deals, his candidate count went from mean 55 to 75 (median 34 → 36):
    the leak had been sharpening his picture by about a quarter.
 
-### In flight
+### In flight: Andrew's second round of notes (27 Sept 2026)
 
-Nothing. Everything above is committed and pushed, and `web/piquet.html` is
-current.
+After playing the first build he asked for six things. Engine and protocol
+side done and pushed (`6902047` … `f07393f`); **the page is being rebuilt
+around them next, and `web/piquet.html` is stale until it is** (its embedded
+engine predates the cut, so it still works as it was).
+
+1. **Sort the hand in the first segment to show the best holdings.** Engine:
+   `combos::holdings` returns text + category + cards (protocol 2). Page: a
+   one-click sort bar by the hand — suit / rank / combinations — and worth
+   chips that lift their cards.
+2. **Show what the opponent does, e.g. their discards as a pile.**
+   `View::opponent_discards` (the size, never the cards) → `their_discards`.
+3. **Played tricks represented, per the books.** Face up in front of whoever
+   won them, examinable any time (Cavendish p.108 and Law 60; pagat) →
+   `tricks_played`.
+4. **An easy way to turn hints off.** Page: a visible switch, not just H.
+5. **No proper names — "your opponent".** Done everywhere (`e67e1e8`), and
+   saved as a standing preference.
+6. **The cut for deal, verified and made part of the experience.** Verified
+   (pagat, Cavendish Laws 3–4 and p.108, Foster 1897, Cotton 1674 —
+   `docs/PIQUET.md`); engine `Prompt::Cut` / `ChooseDealer` (`f07393f`). Page:
+   a fanned pack to click, the two cards shown, the choice as two buttons.
+
+Also this round: a pushed page briefly showed "Worth: [object Object]" — a
+patch that failed silently. Fixed (`2b30cbd`) and the browser test now reads
+the worth line; multi-step shell commands now start with `set -e`.
 
 ### Pick up here: making it effortless and fun
 
