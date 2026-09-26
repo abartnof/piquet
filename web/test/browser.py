@@ -109,6 +109,8 @@ def whole_parties(page):
 
         final = state(page)
         assert final["settlement"] is not None
+        folds = page.locator("#log details.fold").count()
+        assert folds >= 5, f"earlier deals fold away in the narration: {folds}"
         assert illegal_checked, f"level {level}: never had an illegal card to try"
         assert reload_checked, f"level {level}: never reloaded mid-game"
         print(f"level {level} seed {seed}: {turns} clicks, "

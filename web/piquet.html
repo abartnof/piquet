@@ -249,6 +249,11 @@ body.testing *, body.testing *::before, body.testing *::after {
   transition: none !important;
 }
 
+/* The narration, folded by deal. */
+.log .fold { margin: 0 0 4px; }
+.log .fold summary { cursor: pointer; color: var(--gold); font-weight: 600; }
+.log .fold[open] summary { margin-bottom: 4px; }
+
 </style>
 </head>
 <body>
@@ -381,6 +386,7 @@ let selected = new Set(); // cards chosen for the discard
 let fresh = new Set(); // cards just drawn, marked until the play begins
 let lifted = new Set(); // the cards of the declaration under the pointer
 let holding = null; // a finished trick left on the table for a moment
+let opened = new Set(); // earlier deals the player has unfolded in the narration
 let busy = false;
 
 const $ = (id) => document.getElementById(id);
@@ -863,12 +869,31 @@ function renderDiscards(s) {
   if (!s.discards.length) discards.append(el("span", { class: "muted" }, "none yet"));
 }
 
+// The narration, one fold per deal: earlier deals shut to a line each, this
+// one open, so the log reads as a partie rather than a scroll.
 function renderLog(s) {
   const log = $("log");
+  const them = s.opponent.name;
   log.replaceChildren();
+  const deals = new Map();
   for (const e of s.events) {
-    const who = e.kind === "deal_begins" ? "deal" : e.who === "you" ? "you" : e.who === "them" ? "them" : "table";
-    log.append(el("p", { class: who }, e.text));
+    if (!deals.has(e.deal)) deals.set(e.deal, []);
+    deals.get(e.deal).push(e);
+  }
+  for (const [deal, events] of deals) {
+    const lines = events.map((e) => {
+      const who = e.kind === "deal_begins" ? "deal" : e.who === "you" ? "you" : e.who === "them" ? "them" : "table";
+      return el("p", { class: who }, e.text);
+    });
+    const ended = events.find((e) => e.kind === "deal_ends");
+    if (!ended || deal === s.deal) {
+      log.append(...lines);
+      continue;
+    }
+    const fold = el("details", { class: "fold", open: opened.has(deal) ? "" : false },
+      el("summary", {}, `Deal ${deal} \u2014 you ${ended.you} \u00b7 ${them} ${ended.them}`), ...lines);
+    fold.addEventListener("toggle", () => (fold.open ? opened.add(deal) : opened.delete(deal)));
+    log.append(fold);
   }
   log.scrollTop = log.scrollHeight;
 }

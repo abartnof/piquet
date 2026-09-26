@@ -241,3 +241,8 @@ body.testing *, body.testing *::before, body.testing *::after {
   animation: none !important;
   transition: none !important;
 }
+
+/* The narration, folded by deal. */
+.log .fold { margin: 0 0 4px; }
+.log .fold summary { cursor: pointer; color: var(--gold); font-weight: 600; }
+.log .fold[open] summary { margin-bottom: 4px; }
