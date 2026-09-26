@@ -88,6 +88,10 @@ pub struct Aids {
     pub play_forced: bool,
     /// Call everything, in every category, without asking.
     pub declare_for_me: bool,
+    /// On lead with nothing but certain winners -- every card beats all that
+    /// could still be played against it -- play them out. The tricks are the
+    /// human's whatever happens, so leading them one by one is only clicking.
+    pub play_winners: bool,
 }
 
 /// What an advisor would do in the human's place.
@@ -689,6 +693,27 @@ impl Table {
         Ok(())
     }
 
+    /// Whether the human is on lead holding nothing but certain winners.
+    ///
+    /// A card is certain if nothing that could still be played against it
+    /// outranks it in its suit: nothing unaccounted for, and nothing elder
+    /// watched younger draw -- those are in her hand for sure, which is why
+    /// the view keeps them apart from the unaccounted-for. Lead one and it
+    /// wins, and the lead comes back; so all the tricks are the human's.
+    fn only_sure_winners(&self) -> bool {
+        let view = self.view();
+        if view.current_trick.is_some() {
+            return false;
+        }
+        let threats = Hand(view.unseen().0 | view.watched_them_take.0);
+        view.hand.cards().all(|mine| {
+            threats
+                .in_suit(mine.suit())
+                .cards()
+                .all(|theirs| theirs.rank() < mine.rank())
+        })
+    }
+
     /// A copy of the table as it stands, without its own past.
     fn snapshot(&self) -> Table {
         Table {
@@ -719,6 +744,9 @@ impl Table {
             Prompt::Declare { options, .. } if options.len() == 1 => Some(Action::Declare(0)),
             Prompt::Declare { .. } if self.aids.declare_for_me => Some(Action::Declare(0)),
             Prompt::Play { legal } if self.aids.play_forced && legal.len() == 1 => {
+                legal.cards().next().map(Action::Play)
+            }
+            Prompt::Play { legal } if self.aids.play_winners && self.only_sure_winners() => {
                 legal.cards().next().map(Action::Play)
             }
             _ => None,

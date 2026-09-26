@@ -252,7 +252,24 @@ fn all_aids() -> Aids {
         hints: true,
         play_forced: true,
         declare_for_me: true,
+        play_winners: true,
     }
+}
+
+/// On lead, and every card in hand beats everything that might yet be
+/// played against it -- whatever is unaccounted for, and whatever elder
+/// watched younger draw. Stated here independently of the table.
+fn all_sure_winners(table: &Table) -> bool {
+    let view = table.view();
+    if !matches!(table.prompt(), Prompt::Play { .. }) || view.current_trick.is_some() {
+        return false;
+    }
+    let threats = Hand(view.unseen().0 | view.watched_them_take.0);
+    view.hand.cards().all(|mine| {
+        threats
+            .cards()
+            .all(|theirs| theirs.suit() != mine.suit() || theirs.rank() < mine.rank())
+    })
 }
 
 #[test]
@@ -506,5 +523,46 @@ fn undo_is_instant_even_against_the_solver() {
     assert!(
         undoing * 5 < replaying,
         "after a reload, undo took {undoing:?} against a replay's {replaying:?}"
+    );
+}
+
+#[test]
+fn sure_winners_play_themselves() {
+    // Find games where the plain table asks the human to lead out a hand of
+    // certain winners -- pure clicking -- and check the aid never does.
+    let mut found = 0;
+    for seed in 80..110 {
+        let mut plain = Table::new(3, seed);
+        let mut asked = false;
+        while let Some(action) = dull(&plain) {
+            asked |= all_sure_winners(&plain);
+            plain.act(action).unwrap();
+        }
+        if !asked {
+            continue;
+        }
+        found += 1;
+        let mut aided = Table::with_aids(
+            3,
+            seed,
+            Aids {
+                play_winners: true,
+                ..Aids::default()
+            },
+        );
+        while let Some(action) = dull(&aided) {
+            assert!(
+                !all_sure_winners(&aided),
+                "seed {seed}: asked to lead out certain winners"
+            );
+            aided.act(action).unwrap();
+        }
+        // The same cards in the same order as the dull script would have
+        // led them, so the same game.
+        assert_eq!(aided.events(), plain.events(), "seed {seed}");
+    }
+    assert!(
+        found >= 3,
+        "only {found} games ever offered certain winners"
     );
 }
