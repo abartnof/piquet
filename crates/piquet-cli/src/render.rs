@@ -55,7 +55,7 @@ pub fn hand(hand: Hand, legal: Option<Hand>) -> String {
 
 /// What the hand is worth in declarations, for a player deciding what to keep.
 pub fn combinations(held: Hand) -> String {
-    let parts = holdings(held);
+    let parts: Vec<String> = holdings(held).into_iter().map(|h| h.text).collect();
     if parts.is_empty() {
         "nothing to call".to_string()
     } else {

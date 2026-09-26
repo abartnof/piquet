@@ -31,7 +31,7 @@ use piquet_core::scoring::{Category, Player};
 use piquet_core::table::{said, Action, Aids, Event, Prompt, Table, Who};
 
 /// Bumped whenever the state changes shape in a way a client would notice.
-pub const PROTOCOL: u32 = 1;
+pub const PROTOCOL: u32 = 2;
 
 /// One human at one table, and the reason the last command was refused.
 pub struct Session {
@@ -543,7 +543,16 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
         ),
         ("rubicon", or_null(rubicon)),
         ("hand", hand(view.hand)),
-        ("worth", list(holdings(view.hand).iter().map(|h| text(h)))),
+        (
+            "worth",
+            list(holdings(view.hand).iter().map(|h| {
+                object(&[
+                    ("text", text(&h.text)),
+                    ("category", category(h.category)),
+                    ("cards", hand(h.cards)),
+                ])
+            })),
+        ),
         ("discards", hand(view.my_discards)),
         (
             "talon_seen",

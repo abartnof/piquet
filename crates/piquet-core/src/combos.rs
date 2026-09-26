@@ -12,7 +12,8 @@
 //! sinking. Deciding *what to declare* from what you hold belongs to the
 //! agents.
 
-use crate::cards::{Hand, Rank, Suit};
+use crate::cards::{Card, Hand, Rank, Suit};
+use crate::scoring::Category;
 
 pub const MINIMUM_SEQUENCE: u32 = 3;
 pub const MINIMUM_SET: u32 = 3;
@@ -343,50 +344,89 @@ pub fn is_carte_blanche(hand: Hand) -> bool {
     !hand.cards().any(|card| card.rank().is_court())
 }
 
-/// What a hand is worth in declarations, one phrase per holding.
+/// One thing a hand could declare, described for its holder.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Holding {
+    /// "point of 5 (46) in clubs" -- suits named, since this describes the
+    /// player's own hand to the player; it is never what is said aloud.
+    pub text: String,
+    /// Carte blanche, point, sequences or sets.
+    pub category: Category,
+    /// The cards it is made of. For carte blanche, the whole hand, which is
+    /// what has to be shown to prove it.
+    pub cards: Hand,
+}
+
+/// What a hand is worth in declarations, one holding at a time.
 ///
 /// For a player deciding what to keep, which is the decision a beginner is
 /// least equipped to make: the exchange is where most of a deal's points are
-/// won or thrown away. Suits are named, since this describes the player's own
-/// hand to the player; it is never what is said aloud. Empty when there is
-/// nothing to call.
-pub fn holdings(held: Hand) -> Vec<String> {
-    let mut parts = Vec::new();
+/// won or thrown away. Empty when there is nothing to call.
+pub fn holdings(held: Hand) -> Vec<Holding> {
+    let mut found = Vec::new();
     if let Some(point) = best_point(held) {
-        parts.push(format!(
-            "point of {} ({}) in {}",
-            point.length,
-            point.pip_value,
-            point.suit.name()
-        ));
+        found.push(Holding {
+            text: format!(
+                "point of {} ({}) in {}",
+                point.length,
+                point.pip_value,
+                point.suit.name()
+            ),
+            category: Category::Point,
+            cards: held.in_suit(point.suit),
+        });
     }
     for sequence in sequences(held) {
-        parts.push(format!(
-            "{} to the {} in {}",
-            sequence.name(),
-            sequence.top.name(),
-            sequence.suit.name()
-        ));
+        let run = (0..sequence.length)
+            .map(|below| Card::new(Rank(sequence.top.0 - below as u8), sequence.suit))
+            .fold(0u32, |mask, card| mask | 1 << card.0);
+        found.push(Holding {
+            text: format!(
+                "{} to the {} in {}",
+                sequence.name(),
+                sequence.top.name(),
+                sequence.suit.name()
+            ),
+            category: Category::Sequences,
+            cards: Hand(run),
+        });
     }
     for held_set in sets(held) {
-        parts.push(format!("{} of {}s", held_set.name(), held_set.rank.name()));
+        let of_rank = held
+            .cards()
+            .filter(|card| card.rank() == held_set.rank)
+            .fold(0u32, |mask, card| mask | 1 << card.0);
+        found.push(Holding {
+            text: format!("{} of {}s", held_set.name(), held_set.rank.name()),
+            category: Category::Sets,
+            cards: Hand(of_rank),
+        });
     }
     // Guarded on non-empty: `is_carte_blanche` is vacuously true of an empty
     // hand, which is correct as a predicate and nonsense at a table.
     if !held.is_empty() && is_carte_blanche(held) {
-        parts.push("carte blanche \u{2014} no court card at all".to_string());
+        found.push(Holding {
+            text: "carte blanche \u{2014} no court card at all".to_string(),
+            category: Category::CarteBlanche,
+            cards: held,
+        });
     }
-    parts
+    found
 }
 
 #[cfg(test)]
 mod holdings_tests {
     use super::*;
 
+    fn codes(cards: Hand) -> Vec<String> {
+        cards.cards().map(|c| c.code()).collect()
+    }
+
     #[test]
     fn a_hand_is_described_by_everything_it_could_call() {
         let held = Hand::parse("AC KC QC JC TC AD AH AS").unwrap();
-        let described = holdings(held).join(", ");
+        let described: Vec<String> = holdings(held).into_iter().map(|h| h.text).collect();
+        let described = described.join(", ");
         assert!(
             described.contains("point of 5 (51) in clubs"),
             "{described}"
@@ -399,9 +439,41 @@ mod holdings_tests {
     }
 
     #[test]
+    fn each_holding_names_its_category_and_its_cards() {
+        // So a table can lift the cards a line is about, or sort the hand by
+        // what it is worth.
+        let held = Hand::parse("KH QH JH 9H AS AC AD 7C").unwrap();
+        let found = holdings(held);
+        let point = found
+            .iter()
+            .find(|h| h.category == Category::Point)
+            .unwrap();
+        assert_eq!(codes(point.cards), ["9H", "JH", "QH", "KH"]);
+        let run = found
+            .iter()
+            .find(|h| h.category == Category::Sequences)
+            .unwrap();
+        assert_eq!(
+            codes(run.cards),
+            ["JH", "QH", "KH"],
+            "the run, not the stray nine"
+        );
+        let set = found.iter().find(|h| h.category == Category::Sets).unwrap();
+        assert_eq!(codes(set.cards), ["AC", "AD", "AS"]);
+        for holding in &found {
+            assert_eq!(holding.cards.without(held), Hand::EMPTY, "only cards held");
+        }
+    }
+
+    #[test]
     fn carte_blanche_is_named_and_an_empty_hand_is_worth_nothing() {
         let held = Hand::parse("AS TS 9S 8S 7S AH TH 9H").unwrap();
-        assert!(holdings(held).iter().any(|h| h.contains("carte blanche")));
+        let blank = holdings(held)
+            .into_iter()
+            .find(|h| h.category == Category::CarteBlanche)
+            .expect("carte blanche is a holding");
+        assert!(blank.text.contains("carte blanche"));
+        assert_eq!(blank.cards, held, "the whole hand is the proof");
         assert!(holdings(Hand::EMPTY).is_empty());
     }
 }

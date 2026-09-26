@@ -99,7 +99,7 @@ fn play_out(session: &mut Session, mut each: impl FnMut(&Session, &Value)) -> Va
 fn a_new_session_describes_a_decision() {
     let session = Session::new(3, 11);
     let s = state(&session);
-    assert_eq!(s["protocol"], 1);
+    assert_eq!(s["protocol"], 2);
     assert_eq!(s["seed"], 11);
     assert_eq!(s["opponent"]["level"], 3);
     assert_eq!(s["opponent"]["skill"], "remembers what has been played");
@@ -110,10 +110,20 @@ fn a_new_session_describes_a_decision() {
     assert_eq!(s["deal"], 1);
     assert_eq!(s["you_are"], "younger");
     assert_eq!(cards(&s["hand"]).len(), 12);
-    assert!(
-        s["worth"].as_array().unwrap().iter().all(|w| w.is_string()),
-        "what the hand is worth, one phrase per holding"
-    );
+    let hand = cards(&s["hand"]);
+    for holding in s["worth"].as_array().unwrap() {
+        assert!(holding["text"].is_string(), "{holding}");
+        assert!(
+            ["point", "sequences", "sets", "carte_blanche"]
+                .contains(&holding["category"].as_str().unwrap()),
+            "{holding}"
+        );
+        let its = cards(&holding["cards"]);
+        assert!(
+            !its.is_empty() && its.iter().all(|c| hand.contains(c)),
+            "{holding}"
+        );
+    }
     assert_eq!(s["prompt"]["kind"], "exchange");
     assert!(s["prompt"]["limit"].as_u64().unwrap() >= 1);
     assert!(s["error"].is_null());
