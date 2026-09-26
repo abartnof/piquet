@@ -72,11 +72,20 @@ a laptop, and there is no Rust toolchain on one.
 | | |
 |---|---|
 | Project / zone | `abartnof-piquet`, `us-west1-b` |
-| Instance | `piquet-dev`, e2-standard-4 (4 vCPU, 16 GB), Debian 12 |
+| Instance | `piquet-dev`, e2-standard-2 (2 vCPU, 8 GB), Debian 12 |
 | Disk | 50 GB, `autoDelete: False` — it survives the instance being deleted |
 | Toolchain | Rust 1.98.1 with clippy, rustfmt, rust-analyzer; Python 3.11.2, pytest 9.1.1 |
 
-`bin/vm` is the whole interface. It syncs the working tree and runs the command
+**Development now happens *on* the VM, not through it.** `~/piquet` there is a
+real git clone tracking `origin/main`, with Claude Code installed, so the two
+checkouts are joined by GitHub rather than by rsync. `docs/VM.md` is the whole
+story: starting it, getting in, and the one foot-gun the change introduces.
+
+`bin/vm` remains useful for `--up`, `--down` and `--status`. Its other modes
+rsync the laptop's tree over the VM's with `--delete` and will destroy
+unpushed work there; do not use them while working on the VM.
+
+Historically, `bin/vm` was the whole interface. It syncs the working tree and runs the command
 there, starting the instance if it is stopped and refreshing the SSH alias,
 whose address changes on every stop-start cycle.
 
@@ -101,9 +110,9 @@ rather than on spend, and an instance left running over a weekend.
 
 | | |
 |---|---|
-| Instance, while running | ≈$0.13/hour |
+| Instance, while running | ≈$0.067/hour (halved from $0.13 when the heavy measurement runs finished) |
 | Disk, always | ≈$5/month, whether or not the instance is up |
-| At ~15 hrs/week | ≈$14/month — the credit should outlast the 90 days comfortably |
+| At ~15 hrs/week | ≈$9/month — the credit should outlast the 90 days comfortably |
 
 Two things guard it, deliberately of different kinds. A **budget on the billing
 account** (`Piquet — free trial credit`, $300) emails at 25 / 50 / 75 / 90 /

@@ -20,6 +20,12 @@
 #
 # The VM's external IP is ephemeral and changes every time it is stopped and
 # started, so the SSH alias is refreshed automatically rather than pinned.
+#
+# CAUTION, since the VM became a checkout in its own right (see docs/VM.md):
+# every form of this command except --up, --down and --status rsyncs the
+# laptop's tree over the VM's with --delete. If work has been done on the VM
+# and not yet pushed, that destroys it. Commit and push from the VM first, or
+# just use git through GitHub and leave this to starting and stopping.
 
 set -euo pipefail
 
