@@ -63,13 +63,25 @@ That long name is the alias `gcloud compute config-ssh` writes into
 
 ## Running Claude Code on the VM
 
-Claude Code **2.1.283** is installed at `~/.local/bin/claude` and is on the
-PATH of a login shell. Your four project memories and your `settings.json`
-were copied across.
+Claude Code **2.1.283** is installed at `~/.local/bin/claude`. Your four
+project memories and your `settings.json` were copied across.
 
     bin/vm                       # or the plain ssh above
     cd ~/piquet
     claude
+
+Nothing was added to any shell startup file, here or on the VM — this document
+is the only place that knowledge lives, so there is nothing to clean up
+afterwards beyond deleting the machine. Two consequences worth knowing:
+
+- `claude` is on the PATH of a **login** shell only, because Debian's stock
+  `~/.profile` puts `~/.local/bin` there. `bin/vm` and a plain `ssh` both give
+  you one. If you ever land in a shell where it is not found, run it by its
+  full path: `~/.local/bin/claude`.
+- **`cargo` is not on the PATH at all.** Put it there for the session with
+  `source ~/.cargo/env`, or call it by path as `~/.cargo/bin/cargo`. The
+  commands listed under *What is installed on it* below assume you have
+  sourced it.
 
 The first run will ask you to log in; it prints a URL to open in the browser
 here on the laptop. Do it inside `~/piquet` so Claude picks up the repository
@@ -116,6 +128,7 @@ project's `.venv` and pytest; `git`, `gh` 2.101, `ripgrep`, and Claude Code.
 The `target/` and `.venv/` directories are already warm, so builds do not
 start from zero.
 
+    source ~/.cargo/env          # once per shell; nothing does this for you
     cargo test --release
     cargo clippy --all-targets --release -- -D warnings
     cargo fmt --check
@@ -136,3 +149,11 @@ realistic failure is not a surprise bill — the trial suspends rather than
 charging — it is an instance left running over a weekend. Hence:
 
     bin/vm --down
+
+## Cleaning up when the project is over
+
+Deleting the instance and its disk removes everything on the VM side. On the
+laptop the only residue is the SSH alias block `gcloud` writes into
+`~/.ssh/config`, which comes out with:
+
+    gcloud compute config-ssh --remove
