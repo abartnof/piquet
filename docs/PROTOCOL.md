@@ -42,6 +42,8 @@ record" produces, and replaying it reproduces the game exactly.
 
 | Command | When | Meaning |
 |---|---|---|
+| `cut N` | `prompt.kind == "cut"` | Cut for the deal: lift `N` cards (2 to 30, Cavendish Law 3) and show the bottom one |
+| `dealer you` / `dealer them` | `prompt.kind == "choose_dealer"` | Having cut higher, choose who deals first |
 | `exchange 7C 8C KC` | `prompt.kind == "exchange"` | Throw these cards (1 to `prompt.limit`) and draw as many from the talon |
 | `declare N` | `prompt.kind == "declare"` | Choose option `N` (0-based) of `prompt.options` |
 | `play KS` | `prompt.kind == "play"` | Lead or follow with this card |
@@ -74,6 +76,17 @@ command clears it.
 A client may send a move it suspects is illegal and show the refusal. The page
 does exactly that for a card that does not follow suit, because the engine's
 reason is the lesson.
+
+## The cut for deal
+
+A partie begins with the cut (pagat; Cavendish, Laws 3–4). The ace is high and
+suits do not rank; the higher card has the choice of deal, and equal cards are
+cut again. Until it is settled, `phase` is `"cut"`, `you_are` is `null` and the
+hand is empty: a hand seen before choosing who deals would be a hand chosen.
+When the opponent cuts higher it chooses to deal first — the choice the books
+advise, since the first dealer is elder in the sixth deal — and when the human
+does, the hint says the same. The cut has a generator of its own, so a seed
+deals the same packs however it falls.
 
 ## The state
 
@@ -138,6 +151,8 @@ swap every deal and a player thinks of themselves, not of elder.
 ### Prompts
 
 ```jsonc
+{ "kind": "cut", "fewest": 2, "most": 30 }
+{ "kind": "choose_dealer" }
 { "kind": "exchange", "limit": 5 }
 { "kind": "declare", "category": "point",          // point, sequences, sets
   "answering": "point of 5",                        // what elder just called, or null
@@ -165,6 +180,10 @@ fields by kind for a client that wants to animate rather than print:
 
 | kind | fields |
 |---|---|
+| `cut` | `who`, `card` — a card shown in the cut for deal |
+| `cut_again` | — the cuts were equal |
+| `choice_of_deal` | `who` — cut higher, and chooses |
+| `first_dealer` | `chooser`, `dealer` |
 | `deal_begins` | `elder`, `you_total`, `them_total`, `rubicon_permille` |
 | `exchanged` | `who`, `count` |
 | `drew` | `discarded`, `drew` (yours only) |

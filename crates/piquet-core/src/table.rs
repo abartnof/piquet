@@ -26,7 +26,9 @@ use crate::opponents::{opponent, seat, Opponent, Seated};
 use crate::options::declaration_options;
 use crate::partie::{Partie, Settlement, Side, Standing};
 use crate::rng::Rng;
+use crate::rules::TALON_SIZE;
 use crate::rules::{deal_from, Deal, Phase};
+use crate::scoring::ScoreLog;
 use crate::scoring::{Category, Player};
 use crate::solver::SolverAgent;
 
@@ -44,6 +46,11 @@ pub enum Who {
 /// What the human must decide now.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Prompt {
+    /// Cut the pack for the deal: lift between two and thirty cards. The
+    /// higher card shown has the choice of who deals first.
+    Cut,
+    /// The human cut higher: who deals first?
+    ChooseDealer,
     /// Throw between one and `limit` cards, and draw as many.
     Exchange { limit: usize },
     /// Choose one of `options` in this category. The first is the full call.
@@ -65,6 +72,11 @@ pub enum Prompt {
 /// The human's answer to a [`Prompt`].
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Action {
+    /// Lift this many cards from the top of the pack, between two and
+    /// thirty, and show the bottom one (Cavendish, Law 3).
+    Cut(usize),
+    /// Who deals the first hand.
+    FirstDealer(Who),
     Exchange(Hand),
     /// An index into the prompt's `options`.
     Declare(usize),
@@ -117,6 +129,22 @@ impl Hint {
 /// is there for one that just wants to print it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Event {
+    /// A card shown in the cut for deal.
+    Cut {
+        who: Who,
+        card: Card,
+    },
+    /// The cuts were equal, and are made again.
+    CutAgain,
+    /// Who cut higher, and so has the choice of deal.
+    ChoiceOfDeal {
+        who: Who,
+    },
+    /// Who chose, and who deals first.
+    FirstDealer {
+        chooser: Who,
+        dealer: Who,
+    },
     DealBegins {
         number: usize,
         elder: Who,
@@ -239,6 +267,25 @@ impl Event {
         const THEM: &str = "your opponent";
         let name = |who: Who| if who == Who::You { "you" } else { THEM };
         match self {
+            Event::Cut { who, card } => format!(
+                "{} cut{} the {}.",
+                capital(name(*who)),
+                if *who == Who::You { "" } else { "s" },
+                card.display()
+            ),
+            Event::CutAgain => "The cuts are equal, so you both cut again.".to_string(),
+            Event::ChoiceOfDeal { who: Who::You } => {
+                "You cut higher, and have the choice of deal.".to_string()
+            }
+            Event::ChoiceOfDeal { who: Who::Them } => {
+                format!("{} cut higher, and has the choice of deal.", capital(THEM))
+            }
+            Event::FirstDealer { chooser, dealer } => match (chooser, dealer) {
+                (Who::You, Who::You) => "You choose to deal first.".to_string(),
+                (Who::You, Who::Them) => format!("You let {THEM} deal first."),
+                (Who::Them, Who::Them) => format!("{} chooses to deal first.", capital(THEM)),
+                (Who::Them, Who::You) => format!("{} lets you deal first.", capital(THEM)),
+            },
             Event::DealBegins { number, elder, .. } => format!(
                 "Deal {number} of six. {}",
                 if *elder == Who::You {
@@ -369,7 +416,25 @@ pub struct Table {
     /// The table as it stood before each of the human's decisions, newest
     /// last. Undo restores one; each is a copy without its own past.
     past: Vec<Table>,
+    /// The cut for deal, until it is settled. Nothing is dealt, and nothing
+    /// is seen, while this is here.
+    cutting: Option<Cutting>,
 }
+
+/// The cut for deal, in progress.
+#[derive(Clone)]
+struct Cutting {
+    /// Its own generator, derived from the table's seed, so however the cut
+    /// falls the packs dealt are the same -- the ones this seed always dealt.
+    rng: Rng,
+    /// The human cut higher and must say who deals.
+    choosing: bool,
+}
+
+/// The fewest cards a cut may lift, and the most: at least two lifted and at
+/// least two left (Cavendish, Law 3).
+const SHALLOWEST_CUT: usize = 2;
+const DEEPEST_CUT: usize = 30;
 
 impl Table {
     /// Sit down against the opponent at `level`, with everything drawn from
@@ -420,7 +485,7 @@ impl Table {
         let partie = Partie::new(YOU);
         let standing = partie.standing();
         let deal = deal_from(&shuffled(&mut rng)).expect("a whole pack deals");
-        let mut table = Table {
+        Table {
             seed,
             who,
             rng,
@@ -435,9 +500,11 @@ impl Table {
             history: Vec::new(),
             replaying,
             past: Vec::new(),
-        };
-        table.begin_deal();
-        table
+            cutting: Some(Cutting {
+                rng: Rng::seeded(seed ^ 0x0C07_C07C),
+                choosing: false,
+            }),
+        }
     }
 
     pub fn aids(&self) -> Aids {
@@ -501,6 +568,15 @@ impl Table {
             .wrapping_add((self.history.len() as u32).wrapping_mul(0x9E37_79B9));
         let mut agent = SolverAgent::new(seed).named(advisor.name);
         let (action, said) = match prompt {
+            Prompt::Cut => (
+                Action::Cut(16),
+                "cut anywhere: the pack is shuffled".to_string(),
+            ),
+            Prompt::ChooseDealer => (
+                Action::FirstDealer(Who::You),
+                "deal first: it makes you elder in the sixth deal, when it matters most"
+                    .to_string(),
+            ),
             Prompt::Exchange { .. } => {
                 let discard = agent.exchange(&view);
                 (
@@ -575,8 +651,39 @@ impl Table {
     }
 
     /// The deal as the human sees it. Render from this.
+    ///
+    /// Before the cut is settled nothing has been dealt, and the view is
+    /// empty: a hand seen before choosing who deals would be a hand chosen.
     pub fn view(&self) -> View {
+        if self.cutting.is_some() {
+            return View {
+                me: self.you(),
+                phase: Phase::ElderExchange,
+                hand: Hand::EMPTY,
+                my_discards: Hand::EMPTY,
+                talon_seen: Vec::new(),
+                watched_them_take: Hand::EMPTY,
+                talon_remaining: TALON_SIZE,
+                exchange_limit: 0,
+                outcomes: Vec::new(),
+                heard: Vec::new(),
+                said: Vec::new(),
+                seen: Vec::new(),
+                awaiting_answer: None,
+                partie: None,
+                log: ScoreLog::new(),
+                tricks: Vec::new(),
+                current_trick: None,
+                legal_plays: Hand::EMPTY,
+                to_act: true,
+            };
+        }
         view_for(&self.deal, self.you(), Some(self.standing))
+    }
+
+    /// Whether the partie is still waiting on the cut for deal.
+    pub fn cutting(&self) -> bool {
+        self.cutting.is_some()
     }
 
     /// The whole truth about the deal, both hands included.
@@ -590,6 +697,13 @@ impl Table {
 
     /// What the human must decide now.
     pub fn prompt(&self) -> Prompt {
+        if let Some(cut) = &self.cutting {
+            return if cut.choosing {
+                Prompt::ChooseDealer
+            } else {
+                Prompt::Cut
+            };
+        }
         if self.partie.complete() {
             return Prompt::Over;
         }
@@ -633,6 +747,22 @@ impl Table {
     fn apply(&mut self, action: Action) -> Result<(), String> {
         let you = self.you();
         match (self.prompt(), action) {
+            (Prompt::Cut, Action::Cut(depth)) => {
+                if !(SHALLOWEST_CUT..=DEEPEST_CUT).contains(&depth) {
+                    return Err(format!(
+                        "a cut lifts at least {SHALLOWEST_CUT} cards and leaves at least \
+                         {SHALLOWEST_CUT}: between {SHALLOWEST_CUT} and {DEEPEST_CUT}, not {depth}"
+                    ));
+                }
+                self.cut(depth);
+            }
+            (Prompt::ChooseDealer, Action::FirstDealer(dealer)) => {
+                self.events.push(Event::FirstDealer {
+                    chooser: Who::You,
+                    dealer,
+                });
+                self.begin_partie(dealer);
+            }
             (Prompt::Exchange { .. }, Action::Exchange(discard)) => {
                 let before = self.view();
                 let next = self.deal.exchange(you, discard)?;
@@ -737,6 +867,7 @@ impl Table {
             history: self.history.clone(),
             replaying: self.replaying,
             past: Vec::new(),
+            cutting: self.cutting.clone(),
         }
     }
 
@@ -757,6 +888,54 @@ impl Table {
             }
             _ => None,
         }
+    }
+
+    /// Both players cut, the human at `depth` and the opponent anywhere else;
+    /// the higher card chooses who deals, and equal cards cut again.
+    fn cut(&mut self, depth: usize) {
+        let cutting = self.cutting.as_mut().expect("the cut is under way");
+        let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
+        cutting.rng.shuffle(&mut pack);
+        let span = DEEPEST_CUT - SHALLOWEST_CUT; // the depths left once one is taken
+        let mut theirs = SHALLOWEST_CUT + cutting.rng.below(span);
+        if theirs >= depth {
+            theirs += 1;
+        }
+        let (mine, theirs) = (pack[depth - 1], pack[theirs - 1]);
+        self.events.push(Event::Cut {
+            who: Who::You,
+            card: mine,
+        });
+        self.events.push(Event::Cut {
+            who: Who::Them,
+            card: theirs,
+        });
+        match mine.rank().cmp(&theirs.rank()) {
+            std::cmp::Ordering::Equal => self.events.push(Event::CutAgain),
+            std::cmp::Ordering::Greater => {
+                self.events.push(Event::ChoiceOfDeal { who: Who::You });
+                cutting.choosing = true;
+            }
+            std::cmp::Ordering::Less => {
+                // The opponent takes the choice the books advise: deal first,
+                // and be elder in the sixth deal (Cavendish, p. 108; pagat).
+                self.events.push(Event::ChoiceOfDeal { who: Who::Them });
+                self.events.push(Event::FirstDealer {
+                    chooser: Who::Them,
+                    dealer: Who::Them,
+                });
+                self.begin_partie(Who::Them);
+            }
+        }
+    }
+
+    /// The cut is settled: the partie begins, with `dealer` dealing first.
+    fn begin_partie(&mut self, dealer: Who) {
+        let side = if dealer == Who::You { YOU } else { YOU.other() };
+        self.partie = Partie::new(side);
+        self.standing = self.partie.standing();
+        self.cutting = None;
+        self.begin_deal();
     }
 
     fn elder_side(&self) -> Side {
@@ -784,6 +963,9 @@ impl Table {
     /// Run the opponent, and any move the human has no real choice in, until
     /// the human must decide something or the deal is over.
     fn advance(&mut self) {
+        if self.cutting.is_some() {
+            return;
+        }
         loop {
             if self.deal.phase == Phase::Complete {
                 self.finish_deal();

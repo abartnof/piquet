@@ -27,6 +27,8 @@ const send = (command) => {
 function dull(s) {
   const p = s.prompt;
   switch (p.kind) {
+    case "cut": return "cut 16";
+    case "choose_dealer": return "dealer you";
     case "exchange": return `exchange ${s.hand[0]}`;
     case "declare": return "declare 0";
     case "play": return `play ${p.legal[0]}`;

@@ -5,6 +5,8 @@
 //! one of four commands:
 //!
 //! ```text
+//! cut 16                 lift sixteen cards in the cut for deal (2 to 30)
+//! dealer you             with the choice of deal: you deal first (or: them)
 //! exchange 7C 8C KC      throw these, draw as many
 //! declare 0              choose option 0 of the declaration prompt
 //! play KS                lead or follow with this card
@@ -145,6 +147,9 @@ fn entry(action: &Action, automatic: bool) -> String {
 /// The command that carries out an action, as a client would send it.
 fn command(action: &Action) -> String {
     match action {
+        Action::Cut(depth) => format!("cut {depth}"),
+        Action::FirstDealer(Who::You) => "dealer you".to_string(),
+        Action::FirstDealer(Who::Them) => "dealer them".to_string(),
         Action::Exchange(discard) => {
             let codes: Vec<String> = discard.cards().map(|c| c.code()).collect();
             format!("exchange {}", codes.join(" "))
@@ -160,6 +165,18 @@ fn parse(command: &str) -> Result<Action, String> {
     let verb = words.next().unwrap_or("");
     let rest: Vec<&str> = words.collect();
     match verb {
+        "cut" => {
+            let depth = rest
+                .first()
+                .and_then(|w| w.parse::<usize>().ok())
+                .ok_or_else(|| "cut how deep? give the number of cards to lift".to_string())?;
+            Ok(Action::Cut(depth))
+        }
+        "dealer" => match rest.first() {
+            Some(&"you") => Ok(Action::FirstDealer(Who::You)),
+            Some(&"them") => Ok(Action::FirstDealer(Who::Them)),
+            _ => Err("dealer you, or dealer them".to_string()),
+        },
         "exchange" => {
             if rest.is_empty() {
                 return Err("name at least one card to throw".to_string());
@@ -292,6 +309,12 @@ fn option(declaration: &Declaration, full: bool, held: Hand) -> String {
 
 fn prompt(prompt: &Prompt, held: Hand) -> String {
     match prompt {
+        Prompt::Cut => object(&[
+            ("kind", text("cut")),
+            ("fewest", "2".to_string()),
+            ("most", "30".to_string()),
+        ]),
+        Prompt::ChooseDealer => object(&[("kind", text("choose_dealer"))]),
         Prompt::Exchange { limit } => {
             object(&[("kind", text("exchange")), ("limit", limit.to_string())])
         }
@@ -322,6 +345,21 @@ fn prompt(prompt: &Prompt, held: Hand) -> String {
 fn event(event: &Event, deal: usize) -> String {
     let mut fields: Vec<(&str, String)> = Vec::new();
     let kind = match event {
+        Event::Cut { who: w, card } => {
+            fields.push(("who", who(*w)));
+            fields.push(("card", text(&card.code())));
+            "cut"
+        }
+        Event::CutAgain => "cut_again",
+        Event::ChoiceOfDeal { who: w } => {
+            fields.push(("who", who(*w)));
+            "choice_of_deal"
+        }
+        Event::FirstDealer { chooser, dealer } => {
+            fields.push(("chooser", who(*chooser)));
+            fields.push(("dealer", who(*dealer)));
+            "first_dealer"
+        }
         Event::DealBegins {
             elder,
             standing,
@@ -526,13 +564,24 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
         ("deal", standing.number.to_string()),
         (
             "you_are",
-            text(if you == Player::Elder {
-                "elder"
+            if table.cutting() {
+                "null".to_string()
             } else {
-                "younger"
+                text(if you == Player::Elder {
+                    "elder"
+                } else {
+                    "younger"
+                })
+            },
+        ),
+        (
+            "phase",
+            text(if table.cutting() {
+                "cut"
+            } else {
+                view.phase.value()
             }),
         ),
-        ("phase", text(view.phase.value())),
         (
             "standing",
             object(&[

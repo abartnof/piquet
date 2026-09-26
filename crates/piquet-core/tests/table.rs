@@ -14,6 +14,8 @@ use piquet_core::table::{Action, Event, Prompt, Table, Who};
 /// play the first legal card. It is here to walk the machinery, not to win.
 fn dull(table: &Table) -> Option<Action> {
     match table.prompt() {
+        Prompt::Cut => Some(Action::Cut(16)),
+        Prompt::ChooseDealer => Some(Action::FirstDealer(Who::You)),
         Prompt::Exchange { .. } => {
             let first = table
                 .view()
@@ -42,22 +44,148 @@ fn play_out(table: &mut Table) -> usize {
     steps
 }
 
+/// Cut, and if the choice falls to the human, deal first -- the choice
+/// Cavendish and pagat both advise.
+fn through_the_cut(table: &mut Table) {
+    while matches!(table.prompt(), Prompt::Cut | Prompt::ChooseDealer) {
+        let action = dull(table).unwrap();
+        table.act(action).unwrap();
+    }
+}
+
 #[test]
-fn the_table_opens_on_a_decision_for_the_human() {
-    // The human deals first, so the opponent is elder in deal one and has
-    // already exchanged by the time the human is asked anything.
-    let table = Table::new(3, 1);
-    assert_eq!(table.you(), Player::Younger);
+fn the_table_opens_on_the_cut_with_nothing_dealt() {
+    let mut table = Table::new(3, 1);
+    assert_eq!(table.prompt(), Prompt::Cut);
+    assert!(
+        table.view().hand.is_empty(),
+        "no hand is seen before the deal is settled"
+    );
+    assert!(!table
+        .events()
+        .iter()
+        .any(|e| matches!(e, Event::DealBegins { .. })));
+    assert!(
+        table.act(Action::Cut(1)).is_err(),
+        "a cut lifts at least two cards"
+    );
+    assert!(
+        table.act(Action::Cut(31)).is_err(),
+        "and leaves at least two"
+    );
+    assert!(table.act(Action::NextDeal).is_err());
+    through_the_cut(&mut table);
     match table.prompt() {
-        Prompt::Exchange { limit } => assert!((1..=3).contains(&limit), "limit {limit}"),
+        Prompt::Exchange { limit } => assert!((1..=5).contains(&limit), "limit {limit}"),
         other => panic!("expected to be asked for a discard, got {other:?}"),
     }
-    assert!(
-        table
+    assert_eq!(table.view().hand.len(), 12);
+}
+
+#[test]
+fn the_higher_cut_chooses_the_ace_is_high_and_ties_cut_again() {
+    let (mut chose, mut deferred, mut tied) = (0, 0, 0);
+    for seed in 0..300 {
+        let mut table = Table::new(2, seed);
+        table.act(Action::Cut(2 + (seed as usize % 29))).unwrap();
+        let cuts: Vec<(Who, piquet_core::cards::Card)> = table
             .events()
             .iter()
-            .any(|e| matches!(e, Event::Exchanged { who: Who::Them, .. })),
-        "the opponent's exchange is narrated"
+            .filter_map(|e| match e {
+                Event::Cut { who, card } => Some((*who, *card)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(cuts.len(), 2, "both players cut");
+        let (mine, theirs) = (cuts[0].1.rank(), cuts[1].1.rank());
+        if mine == theirs {
+            tied += 1;
+            assert_eq!(table.prompt(), Prompt::Cut, "equal cuts are cut again");
+            assert!(table.events().iter().any(|e| matches!(e, Event::CutAgain)));
+        } else if mine > theirs {
+            chose += 1;
+            assert_eq!(
+                table.prompt(),
+                Prompt::ChooseDealer,
+                "the higher cut chooses"
+            );
+        } else {
+            deferred += 1;
+            // The opponent has the choice, and takes the one the books advise.
+            assert!(table.events().iter().any(|e| matches!(
+                e,
+                Event::FirstDealer {
+                    chooser: Who::Them,
+                    dealer: Who::Them
+                }
+            )));
+            assert!(matches!(table.prompt(), Prompt::Exchange { .. }));
+            assert_eq!(
+                table.you(),
+                Player::Elder,
+                "the opponent deals, so you lead"
+            );
+        }
+    }
+    assert!(
+        chose > 50 && deferred > 50 && tied > 5,
+        "{chose} / {deferred} / {tied}"
+    );
+}
+
+#[test]
+fn whoever_deals_first_is_elder_in_the_sixth_deal() {
+    for (dealer, first_seat) in [(Who::You, Player::Younger), (Who::Them, Player::Elder)] {
+        let mut found = false;
+        for seed in 0..40 {
+            let mut table = Table::new(1, seed);
+            table.act(Action::Cut(16)).unwrap();
+            if table.prompt() != Prompt::ChooseDealer {
+                continue;
+            }
+            table.act(Action::FirstDealer(dealer)).unwrap();
+            assert_eq!(table.you(), first_seat, "deal 1");
+            while table.partie().outcomes.len() < 5 {
+                table.act(dull(&table).unwrap()).unwrap();
+            }
+            if table.prompt() == Prompt::NextDeal {
+                table.act(Action::NextDeal).unwrap();
+            }
+            assert_eq!(table.you(), first_seat.opponent(), "deal 6 reverses deal 1");
+            found = true;
+            break;
+        }
+        assert!(found, "never had the choice in forty cuts");
+    }
+}
+
+#[test]
+fn the_cut_changes_nothing_about_the_cards() {
+    // The cut has a generator of its own, so the pack a seed deals is the
+    // same however the cut falls -- the same talon always, and, whenever the
+    // same player ends up dealing, the same hands. (When the dealer differs
+    // the hands differ only because an elder opponent has already exchanged.)
+    let mut compared = 0;
+    for seed in 0..20 {
+        let mut tables: Vec<(bool, Table)> = Vec::new();
+        for depth in [2, 9, 16, 23, 30] {
+            let mut table = Table::new(3, seed);
+            table.act(Action::Cut(depth)).unwrap();
+            through_the_cut(&mut table);
+            tables.push((table.you() == Player::Younger, table));
+        }
+        let (first_deals, first) = &tables[0];
+        for (deals, other) in &tables[1..] {
+            assert_eq!(first.deal().talon, other.deal().talon, "seed {seed}");
+            if deals == first_deals {
+                assert_eq!(first.deal().hands, other.deal().hands, "seed {seed}");
+                compared += 1;
+            }
+        }
+    }
+    assert!(
+        compared > 20,
+        "too few like-for-like cuts to compare: {compared}"
     );
 }
 

@@ -70,6 +70,8 @@ fn the_scan_for_named_cards_reads_both_forms() {
 fn dull(state: &Value) -> Option<String> {
     let prompt = &state["prompt"];
     match prompt["kind"].as_str().expect("a prompt kind") {
+        "cut" => Some("cut 16".to_string()),
+        "choose_dealer" => Some("dealer you".to_string()),
         "exchange" => Some(format!("exchange {}", cards(&state["hand"])[0])),
         "declare" => Some("declare 0".to_string()),
         "play" => Some(format!("play {}", cards(&prompt["legal"])[0])),
@@ -97,7 +99,19 @@ fn play_out(session: &mut Session, mut each: impl FnMut(&Session, &Value)) -> Va
 
 #[test]
 fn a_new_session_describes_a_decision() {
-    let session = Session::new(3, 11);
+    let mut session = Session::new(3, 11);
+    let s = state(&session);
+    assert_eq!(s["prompt"]["kind"], "cut", "a partie begins with the cut");
+    assert_eq!(s["phase"], "cut");
+    assert!(s["you_are"].is_null(), "no seat until the deal is settled");
+    assert!(cards(&s["hand"]).is_empty(), "and no hand");
+    while matches!(
+        state(&session)["prompt"]["kind"].as_str(),
+        Some("cut" | "choose_dealer")
+    ) {
+        let command = dull(&state(&session)).unwrap();
+        assert!(session.send(&command));
+    }
     let s = state(&session);
     assert_eq!(s["protocol"], 2);
     assert_eq!(s["seed"], 11);
@@ -108,7 +122,7 @@ fn a_new_session_describes_a_decision() {
         "the opponent has no name at the table"
     );
     assert_eq!(s["deal"], 1);
-    assert_eq!(s["you_are"], "younger");
+    assert!(s["you_are"] == "younger" || s["you_are"] == "elder");
     assert_eq!(cards(&s["hand"]).len(), 12);
     let hand = cards(&s["hand"]);
     for holding in s["worth"].as_array().unwrap() {
@@ -255,6 +269,10 @@ fn the_hand_in_the_state_is_the_hand_in_the_view() {
             .map(|c| Card::parse(c).unwrap())
             .collect();
         assert_eq!(Hand::of(&drawn).unwrap(), session.table().view().hand);
+        if session.table().cutting() {
+            assert!(s["you_are"].is_null(), "no seat before the deal is settled");
+            return;
+        }
         let seat = if session.table().you() == Player::Elder {
             "elder"
         } else {
@@ -452,7 +470,7 @@ fn a_game_reloads_exactly_from_its_record() {
     for entry in &record {
         let verb = entry.trim_start_matches('*').split(' ').next().unwrap();
         assert!(
-            ["exchange", "declare", "play", "next"].contains(&verb),
+            ["cut", "dealer", "exchange", "declare", "play", "next"].contains(&verb),
             "a record entry is a command: {entry:?}"
         );
     }
@@ -513,4 +531,48 @@ fn the_piles_and_the_tricks_are_on_the_table() {
             }
         }
     });
+}
+
+// ---------------------------------------------------------------------------
+// The cut for deal
+// ---------------------------------------------------------------------------
+
+#[test]
+fn the_cut_is_made_through_the_protocol() {
+    let (mut chose, mut ceded) = (0, 0);
+    for seed in 0..60 {
+        let mut session = Session::new(2, seed);
+        assert!(!session.send("cut 1"), "a cut lifts at least two");
+        assert!(!session.send("cut 31"), "and leaves at least two");
+        assert!(!session.send("dealer you"), "nobody has the choice yet");
+        assert!(session.send("cut 12"));
+        let s = state(&session);
+        let cuts: Vec<&Value> = s["events"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|e| e["kind"] == "cut")
+            .collect();
+        assert!(cuts.len() >= 2, "both players cut");
+        for cut in &cuts {
+            assert!(cut["who"].is_string() && cut["card"].is_string(), "{cut}");
+        }
+        match s["prompt"]["kind"].as_str().unwrap() {
+            "choose_dealer" => {
+                chose += 1;
+                assert!(session.send("dealer them"));
+                assert_eq!(state(&session)["you_are"], "elder", "they deal, you lead");
+            }
+            "exchange" => {
+                ceded += 1;
+                let dealt = s["events"].as_array().unwrap().iter().any(|e| {
+                    e["kind"] == "first_dealer" && e["chooser"] == "them" && e["dealer"] == "them"
+                });
+                assert!(dealt, "the opponent chose, and chose to deal");
+            }
+            "cut" => {}
+            other => panic!("after the cut: {other}"),
+        }
+    }
+    assert!(chose > 10 && ceded > 10, "{chose} / {ceded}");
 }
