@@ -28,6 +28,7 @@ use crate::partie::{Partie, Settlement, Side, Standing};
 use crate::rng::Rng;
 use crate::rules::{deal_from, Deal, Phase};
 use crate::scoring::{Category, Player};
+use crate::solver::SolverAgent;
 
 /// The human is always side A, and deals first -- so the opponent is elder in
 /// the first deal, as at the terminal.
@@ -69,6 +70,41 @@ pub enum Action {
     Declare(usize),
     Play(Card),
     NextDeal,
+}
+
+/// The help the human has asked for. Every one is a toggle, and none of them
+/// changes the rules: they change what the human is *asked*, never what
+/// happens.
+///
+/// Andrew's brief for the table: "less persnickety, less needless clicking --
+/// rather, effortless and fun", with every aid something that "could be
+/// turned off".
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct Aids {
+    /// Offer [`Table::hint`]. The table does nothing with this itself; it is
+    /// kept here so a client has one place to read every setting from.
+    pub hints: bool,
+    /// Play a card for the human when it is the only one they may play.
+    pub play_forced: bool,
+    /// Call everything, in every category, without asking.
+    pub declare_for_me: bool,
+}
+
+/// What an advisor would do in the human's place.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Hint {
+    pub action: Action,
+    /// Who is advising -- a rung of the ladder, so the advice names a player
+    /// whose skill can be learnt rather than an anonymous number.
+    pub advisor: Opponent,
+    said: String,
+}
+
+impl Hint {
+    /// The advice as a sentence: "Foster would play K♠."
+    pub fn text(&self) -> String {
+        format!("{} would {}.", self.advisor.name, self.said)
+    }
 }
 
 /// Something that happened at the table, as the human perceived it.
@@ -115,6 +151,9 @@ pub enum Event {
         who: Who,
         amount: i32,
         what: String,
+        /// Which of Law 67's categories it reckons in, for a client keeping a
+        /// running tab by category.
+        category: Category,
     },
     /// The human had nothing to call, and the table called it for them.
     NothingToCall {
@@ -220,7 +259,9 @@ impl Event {
                 ),
             },
             Event::Showed { who, what } => format!("{} shows {what}.", capital(name(*who))),
-            Event::Scored { who, amount, what } => format!(
+            Event::Scored {
+                who, amount, what, ..
+            } => format!(
                 "{} score{} {amount} for {what}.",
                 capital(name(*who)),
                 if *who == Who::You { "" } else { "s" }
@@ -308,12 +349,55 @@ pub struct Table {
     narrated: Vec<Announcement>,
     /// Whether the finished deal has been entered in the partie.
     recorded: bool,
+    aids: Aids,
+    /// Every action taken from the human's seat, and whether the table took
+    /// it for them. Enough, with the seed, to rebuild the table exactly.
+    history: Vec<(Action, bool)>,
+    /// While rebuilding from a record, nothing is automatic: the record says
+    /// what was done, including what was done for the human.
+    replaying: bool,
 }
 
 impl Table {
     /// Sit down against the opponent at `level`, with everything drawn from
     /// `seed`.
     pub fn new(level: u32, seed: u32) -> Table {
+        Table::with_aids(level, seed, Aids::default())
+    }
+
+    /// The same, with some help switched on from the start.
+    pub fn with_aids(level: u32, seed: u32, aids: Aids) -> Table {
+        let mut table = Table::seated(level, seed, aids, false);
+        table.advance();
+        table
+    }
+
+    /// Rebuild a table from its [`record`](Table::record).
+    ///
+    /// The table is deterministic -- the opponent, the packs and its choices
+    /// all come from the seed -- so the seed and what the human did are the
+    /// whole game. A record that does not fit the game is refused.
+    pub fn replay(
+        level: u32,
+        seed: u32,
+        aids: Aids,
+        record: &[(Action, bool)],
+    ) -> Result<Table, String> {
+        let mut table = Table::seated(level, seed, aids, true);
+        table.advance();
+        for (step, (action, automatic)) in record.iter().enumerate() {
+            table.apply(action.clone()).map_err(|why| {
+                format!("the record does not fit this game at step {step}: {why}")
+            })?;
+            table.history.push((action.clone(), *automatic));
+            table.advance();
+        }
+        table.replaying = false;
+        table.advance();
+        Ok(table)
+    }
+
+    fn seated(level: u32, seed: u32, aids: Aids, replaying: bool) -> Table {
         let mut rng = Rng::seeded(seed);
         let who = opponent(level);
         let machine = seat(who.level, &mut rng);
@@ -331,9 +415,102 @@ impl Table {
             events: Vec::new(),
             narrated: Vec::new(),
             recorded: false,
+            aids,
+            history: Vec::new(),
+            replaying,
         };
         table.begin_deal();
         table
+    }
+
+    pub fn aids(&self) -> Aids {
+        self.aids
+    }
+
+    /// Change the help. It takes effect at once: switching on "declare for
+    /// me" at a declaration makes it.
+    pub fn set_aids(&mut self, aids: Aids) {
+        self.aids = aids;
+        self.advance();
+    }
+
+    /// Every action taken from the human's seat, and whether the table took
+    /// it for them. With the level and seed, the whole game.
+    pub fn record(&self) -> &[(Action, bool)] {
+        &self.history
+    }
+
+    /// Take back the human's last decision, and anything the table did for
+    /// them after it. The opponent's replies go with it.
+    pub fn undo(&mut self) -> Result<(), String> {
+        let mut record = self.history.clone();
+        loop {
+            match record.pop() {
+                None => return Err("there is nothing to take back".to_string()),
+                Some((_, true)) => continue,
+                Some((_, false)) => break,
+            }
+        }
+        *self = Table::replay(self.who.level, self.seed, self.aids, &record)?;
+        Ok(())
+    }
+
+    /// What an advisor would do in the human's place, from the human's own
+    /// view -- so a hint can never tell them anything they could not know.
+    ///
+    /// The advisor is Foster, the top of the ladder: the exact solver in the
+    /// endgame and Hoyle's judgement before it. It has a generator of its own,
+    /// seeded from where the game stands, so asking twice gives the same
+    /// answer and asking at all changes nothing.
+    pub fn hint(&self) -> Option<Hint> {
+        let prompt = self.prompt();
+        if matches!(prompt, Prompt::NextDeal | Prompt::Over) {
+            return None;
+        }
+        let view = self.view();
+        let advisor = opponent(5);
+        let seed = self
+            .seed
+            .rotate_left(7)
+            .wrapping_add((self.history.len() as u32).wrapping_mul(0x9E37_79B9));
+        let mut agent = SolverAgent::new(seed).named(advisor.name);
+        let (action, said) = match prompt {
+            Prompt::Exchange { .. } => {
+                let discard = agent.exchange(&view);
+                (
+                    Action::Exchange(discard),
+                    format!("throw {}", shown(discard)),
+                )
+            }
+            Prompt::Play { .. } => {
+                let card = agent.play(&view);
+                let verb = if view.current_trick.is_some() {
+                    "play"
+                } else {
+                    "lead"
+                };
+                (Action::Play(card), format!("{verb} {}", card.display()))
+            }
+            Prompt::Declare {
+                category, options, ..
+            } => {
+                let wanted = agent.declare(&view, category);
+                let index = options.iter().position(|o| *o == wanted).unwrap_or(0);
+                let chosen = &options[index];
+                let said = if chosen.is_empty() {
+                    "say nothing".to_string()
+                } else {
+                    format!("call {}", chosen.describe())
+                };
+                (Action::Declare(index), said)
+            }
+            Prompt::NextDeal | Prompt::Over => return None,
+        };
+        Some(Hint {
+            action,
+            advisor,
+            said,
+        })
     }
 
     pub fn seed(&self) -> u32 {
@@ -416,6 +593,16 @@ impl Table {
     /// Answer the prompt. A move the rules forbid is refused with the reason,
     /// and the table is left exactly as it was.
     pub fn act(&mut self, action: Action) -> Result<(), String> {
+        self.apply(action.clone())?;
+        self.history.push((action, false));
+        self.advance();
+        Ok(())
+    }
+
+    /// Carry out one action from the human's seat and narrate it, without
+    /// running anyone else. The one path for every such action, chosen or
+    /// automatic, so a record replays to the same words.
+    fn apply(&mut self, action: Action) -> Result<(), String> {
         let you = self.you();
         match (self.prompt(), action) {
             (Prompt::Exchange { .. }, Action::Exchange(discard)) => {
@@ -423,7 +610,12 @@ impl Table {
                 let next = self.deal.exchange(you, discard)?;
                 self.step(next, Who::You, &before);
             }
-            (Prompt::Declare { options, .. }, Action::Declare(index)) => {
+            (
+                Prompt::Declare {
+                    category, options, ..
+                },
+                Action::Declare(index),
+            ) => {
                 let Some(choice) = options.get(index).cloned() else {
                     return Err(format!(
                         "there are {} options, not {}",
@@ -433,14 +625,19 @@ impl Table {
                 };
                 let before = self.view();
                 let next = self.deal.declare(you, choice.clone())?;
-                self.events.push(Event::Called {
-                    who: Who::You,
-                    category: self.deal.declaring_category().expect("a declaration phase"),
-                    said: if choice.is_empty() {
-                        "nothing".to_string()
-                    } else {
-                        choice.describe()
-                    },
+                // A declaration with nothing to call was never a decision.
+                self.events.push(if options.len() == 1 {
+                    Event::NothingToCall { category }
+                } else {
+                    Event::Called {
+                        who: Who::You,
+                        category,
+                        said: if choice.is_empty() {
+                            "nothing".to_string()
+                        } else {
+                            choice.describe()
+                        },
+                    }
                 });
                 self.step(next, Who::You, &before);
             }
@@ -465,15 +662,29 @@ impl Table {
                 self.recorded = false;
                 self.narrated.clear();
                 self.begin_deal();
-                return Ok(());
             }
             (Prompt::Over, _) => return Err("the partie is over".to_string()),
             (prompt, action) => {
                 return Err(format!("{action:?} is not an answer to {prompt:?}"));
             }
         }
-        self.advance();
         Ok(())
+    }
+
+    /// What the table would do for the human here, if anything.
+    fn automatic(&self) -> Option<Action> {
+        if self.replaying {
+            return None;
+        }
+        match self.prompt() {
+            // Nothing to call is not a decision, whatever the aids.
+            Prompt::Declare { options, .. } if options.len() == 1 => Some(Action::Declare(0)),
+            Prompt::Declare { .. } if self.aids.declare_for_me => Some(Action::Declare(0)),
+            Prompt::Play { legal } if self.aids.play_forced && legal.len() == 1 => {
+                legal.cards().next().map(Action::Play)
+            }
+            _ => None,
+        }
     }
 
     fn elder_side(&self) -> Side {
@@ -496,7 +707,6 @@ impl Table {
             standing,
             rubicon_permille,
         });
-        self.advance();
     }
 
     /// Run the opponent, and any move the human has no real choice in, until
@@ -516,23 +726,13 @@ impl Table {
             };
 
             if mover == you {
-                // A declaration with nothing to call is not a decision.
-                if let Prompt::Declare {
-                    category, options, ..
-                } = self.prompt()
-                {
-                    if options.len() == 1 {
-                        let before = self.view();
-                        let next = self
-                            .deal
-                            .declare(you, options[0].clone())
-                            .expect("the only option is a legal one");
-                        self.events.push(Event::NothingToCall { category });
-                        self.step(next, Who::You, &before);
-                        continue;
-                    }
-                }
-                return;
+                let Some(action) = self.automatic() else {
+                    return;
+                };
+                self.apply(action.clone())
+                    .expect("the table only ever makes legal moves for the human");
+                self.history.push((action, true));
+                continue;
             }
 
             let before = self.view();
@@ -648,6 +848,7 @@ impl Table {
                 who: self.who_is(event.player),
                 amount: event.amount,
                 what: scored_for(event.category, &event.detail),
+                category: event.category,
             });
         }
     }

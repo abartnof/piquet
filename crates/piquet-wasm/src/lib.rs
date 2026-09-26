@@ -289,10 +289,12 @@ fn event(event: &Event, deal: usize, them: &str) -> String {
             who: w,
             amount,
             what,
+            category: c,
         } => {
             fields.push(("who", who(*w)));
             fields.push(("amount", amount.to_string()));
             fields.push(("what", text(what)));
+            fields.push(("category", category(*c)));
             "scored"
         }
         Event::NothingToCall { category: c } => {
