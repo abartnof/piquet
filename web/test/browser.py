@@ -114,7 +114,10 @@ def whole_parties(page):
         assert illegal_checked, f"level {level}: never had an illegal card to try"
         assert reload_checked, f"level {level}: never reloaded mid-game"
         print(f"level {level} seed {seed}: {turns} clicks, "
-              f"you {final['partie']['you']} - {final['opponent']['name']} {final['partie']['them']}")
+              f"you {final['partie']['you']} - opponent {final['partie']['them']}")
+        body = page.locator("body").inner_text()
+        for name in ("Bess", "Cotton", "Cavendish", "Hoyle", "Foster"):
+            assert name not in body, f"the page names the opponent {name}"
         if level == 3:
             shot(page, "level3-over")
 

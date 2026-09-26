@@ -319,7 +319,7 @@ fn prompt(prompt: &Prompt, held: Hand) -> String {
     }
 }
 
-fn event(event: &Event, deal: usize, them: &str) -> String {
+fn event(event: &Event, deal: usize) -> String {
     let mut fields: Vec<(&str, String)> = Vec::new();
     let kind = match event {
         Event::DealBegins {
@@ -410,7 +410,7 @@ fn event(event: &Event, deal: usize, them: &str) -> String {
     let mut all = vec![
         ("kind", text(kind)),
         ("deal", deal.to_string()),
-        ("text", text(&event.text(them))),
+        ("text", text(&event.text())),
     ];
     all.extend(fields);
     object(&all)
@@ -444,7 +444,6 @@ fn hint(table: &Table, held: Hand) -> Option<String> {
     Some(object(&[
         ("text", text(&hint.text())),
         ("command", text(&command(&hint.action))),
-        ("advisor", text(hint.advisor.name)),
         ("cards", hand(cards)),
     ]))
 }
@@ -453,7 +452,6 @@ fn hint(table: &Table, held: Hand) -> Option<String> {
 pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
     let view = table.view();
     let you = table.you();
-    let them = table.opponent().name;
     let standing = table.standing();
 
     let mut deal_number = 0;
@@ -464,7 +462,7 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
             if let Event::DealBegins { number, .. } = e {
                 deal_number = *number;
             }
-            event(e, deal_number, them)
+            event(e, deal_number)
         })
         .collect();
 
@@ -521,8 +519,8 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
         (
             "opponent",
             object(&[
-                ("name", text(them)),
-                ("gloss", text(table.opponent().gloss)),
+                ("level", table.opponent().level.to_string()),
+                ("skill", text(table.opponent().gloss)),
             ]),
         ),
         ("deal", standing.number.to_string()),

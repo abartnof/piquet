@@ -22,7 +22,8 @@ use crate::style::Style;
 pub struct Opponent {
     pub level: u32,
     pub name: &'static str,
-    /// What they can do, as a clause: "Hoyle, who *watches what you show him*".
+    /// What they can do, as a clause: "your opponent *watches what you show
+    /// them*". The name is the ladder's; a player is only ever told this.
     pub gloss: &'static str,
 }
 
@@ -30,7 +31,7 @@ pub const OPPONENTS: [Opponent; 5] = [
     Opponent {
         level: 1,
         name: "Bess",
-        gloss: "plays her highest card and hopes",
+        gloss: "plays their highest card and hopes",
     },
     Opponent {
         level: 2,
@@ -45,7 +46,7 @@ pub const OPPONENTS: [Opponent; 5] = [
     Opponent {
         level: 4,
         name: "Hoyle",
-        gloss: "watches what you show him",
+        gloss: "watches what you show them",
     },
     Opponent {
         level: 5,

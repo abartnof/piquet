@@ -101,7 +101,12 @@ fn a_new_session_describes_a_decision() {
     let s = state(&session);
     assert_eq!(s["protocol"], 1);
     assert_eq!(s["seed"], 11);
-    assert_eq!(s["opponent"]["name"], "Cavendish");
+    assert_eq!(s["opponent"]["level"], 3);
+    assert_eq!(s["opponent"]["skill"], "remembers what has been played");
+    assert!(
+        s["opponent"]["name"].is_null(),
+        "the opponent has no name at the table"
+    );
     assert_eq!(s["deal"], 1);
     assert_eq!(s["you_are"], "younger");
     assert_eq!(cards(&s["hand"]).len(), 12);
@@ -345,7 +350,8 @@ fn a_hint_appears_only_when_asked_for_and_can_be_followed() {
             continue;
         }
         let hint = &s["hint"];
-        assert!(hint["text"].as_str().unwrap().contains(" would "), "{hint}");
+        assert!(hint["text"].as_str().unwrap().ends_with('.'), "{hint}");
+        assert!(hint["advisor"].is_null(), "a hint names nobody: {hint}");
         let command = hint["command"].as_str().unwrap().to_string();
         assert!(
             session.send(&command),

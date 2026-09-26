@@ -2,7 +2,7 @@
 //
 // It renders the engine's state and sends back commands. It knows nothing
 // about the rules: whether a card may be played, what a declaration is worth,
-// who won the trick, what Foster would do -- all of that arrives in the state,
+// who won the trick, what the strongest play is -- all of that arrives in the state,
 // and a move the rules forbid comes back as `state.error` in the engine's own
 // words. The protocol is docs/PROTOCOL.md; the engine is crates/piquet-core.
 //
@@ -50,6 +50,10 @@ let opened = new Set(); // earlier deals the player has unfolded in the narratio
 let busy = false;
 
 const $ = (id) => document.getElementById(id);
+
+// No proper names at the table (Andrew: "just call them your opponent").
+const THEM = "your opponent";
+const Them = "Your opponent";
 
 async function load() {
   const bytes = Uint8Array.from(atob(WASM_BASE64), (c) => c.charCodeAt(0));
@@ -127,7 +131,7 @@ function start(level, seed) {
 
 function resume(saved) {
   // Rebuilding replays the opponent's thinking so far -- a few seconds late
-  // in a partie against Foster -- so say so rather than look frozen.
+  // in a partie at level 5 -- so say so rather than look frozen.
   const note = el("p", { class: "restoring" }, "Restoring your game\u2026");
   $("prompt").replaceChildren(note);
   setTimeout(() => restore(saved), TESTING ? 0 : 30);
@@ -156,8 +160,7 @@ function inProgress() {
 
 function newPartie(level) {
   if (inProgress() && !TESTING) {
-    const name = $("level").selectedOptions[0].textContent.replace(/^\d · /, "");
-    if (!window.confirm(`Start a new partie against ${name}? This one will be abandoned.`)) {
+    if (!window.confirm(`Start a new partie at level ${level}? This one will be abandoned.`)) {
       $("level").value = String(engine.state().level);
       return;
     }
@@ -176,7 +179,7 @@ function act(command) {
   const before = engine.state();
   busy = true;
   $("prompt").insertAdjacentHTML("beforeend", '<p class="thinking">…</p>');
-  // Let the page paint before the opponent thinks; Foster can take a moment.
+  // Let the page paint before the opponent thinks; level 5 can take a moment.
   setTimeout(() => {
     const accepted = engine.send(command);
     const after = engine.state();
@@ -255,11 +258,10 @@ function sorted(cards) {
 }
 
 function render(s = engine.state()) {
-  const them = s.opponent.name;
-  $("who").textContent = `against ${them}, who ${s.opponent.gloss}`;
+  $("who").textContent = `${Them} ${s.opponent.skill}.`;
   $("seed").textContent = `seed ${s.seed}`;
   $("level").value = String(s.level);
-  $("their-name").textContent = them;
+  $("their-name").textContent = Them;
   $("undo").hidden = !prefs.undo;
   $("undo").disabled = busy || !s.can_undo;
   if (s.phase === "play" && (s.trick || s.last_trick)) fresh.clear();
@@ -277,7 +279,7 @@ function render(s = engine.state()) {
 }
 
 function renderScores(s) {
-  const them = s.opponent.name;
+  const them = THEM;
   const scores = $("scores");
   scores.replaceChildren(
     el("span", { class: "big" }, "Partie: ", el("span", { class: "you" }, `you ${s.partie.you}`), " · ",
@@ -297,7 +299,7 @@ function renderTab(s) {
   const tab = $("tab");
   tab.hidden = !prefs.tab;
   if (!prefs.tab) return;
-  const them = s.opponent.name;
+  const them = THEM;
 
   const strip = el("div", { class: "strip" });
   const deals = Math.max(6, s.deal, s.deals.length);
@@ -349,7 +351,7 @@ function renderOpponent(s) {
 }
 
 function renderTrick(s) {
-  const them = s.opponent.name;
+  const them = THEM;
   const area = $("trick");
   area.replaceChildren();
   if (holding) {
@@ -359,7 +361,7 @@ function renderTrick(s) {
     area.append(
       el("figure", {}, card(other, { extra: "landed" }), el("figcaption", {}, them)),
       el("figure", {}, card(mine, { extra: "landed" }), el("figcaption", {}, "you")),
-      el("p", { class: "taken" }, holding.winner === "you" ? "Your trick." : `${them}'s trick.`),
+      el("p", { class: "taken" }, holding.winner === "you" ? "Your trick." : `${Them}'s trick.`),
     );
     return;
   }
@@ -452,7 +454,7 @@ function hintLine(s) {
 }
 
 function renderPrompt(s) {
-  const them = s.opponent.name;
+  const them = THEM;
   const prompt = s.prompt;
   const box = $("prompt");
   box.replaceChildren();
@@ -498,7 +500,7 @@ function renderPrompt(s) {
     case "play": {
       if (s.trick && s.trick.leader === "them") {
         const narrowed = prompt.legal.length < s.hand.length;
-        ask(`${them} led ${label(s.trick.led)}. ${narrowed ? "You must follow suit." : "You cannot follow suit: play anything."}`);
+        ask(`${Them} led ${label(s.trick.led)}. ${narrowed ? "You must follow suit." : "You cannot follow suit: play anything."}`);
       } else {
         ask("Your lead.");
       }
@@ -533,7 +535,7 @@ function renderDiscards(s) {
 // one open, so the log reads as a partie rather than a scroll.
 function renderLog(s) {
   const log = $("log");
-  const them = s.opponent.name;
+  const them = THEM;
   log.replaceChildren();
   const deals = new Map();
   for (const e of s.events) {

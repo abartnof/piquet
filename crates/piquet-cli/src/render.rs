@@ -84,7 +84,12 @@ pub fn events(log: &ScoreLog, me: Player, my_name: &str, their_name: &str) -> St
             } else {
                 event.detail.clone()
             };
-            format!("    {who} scores {} for {what}", event.amount)
+            let verb = if event.player == me {
+                "score"
+            } else {
+                "scores"
+            };
+            format!("    {who} {verb} {} for {what}", event.amount)
         })
         .collect::<Vec<_>>()
         .join("\n")

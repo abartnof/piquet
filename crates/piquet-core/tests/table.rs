@@ -228,12 +228,40 @@ fn the_scores_narrated_are_the_scores_recorded() {
     );
 }
 
+const ROSTER: [&str; 5] = ["Bess", "Cotton", "Cavendish", "Hoyle", "Foster"];
+
+#[test]
+fn the_opponent_is_never_named() {
+    // Andrew: "don't refer to the dealer as a proper name, just call them
+    // your opponent." The roster's names are for the ladder, not the table.
+    for level in 1..=5 {
+        let mut table = Table::new(level, 90 + level);
+        play_out(&mut table);
+        let mut called_opponent = 0;
+        for event in table.events() {
+            let said = event.text();
+            for name in ROSTER {
+                assert!(!said.contains(name), "level {level}: {said:?} names {name}");
+            }
+            called_opponent += usize::from(said.to_lowercase().contains("your opponent"));
+        }
+        assert!(
+            called_opponent > 20,
+            "level {level}: the opponent is barely mentioned"
+        );
+    }
+}
+
 #[test]
 fn every_event_reads_as_a_sentence() {
     let mut table = Table::new(5, 9);
     play_out(&mut table);
     for event in table.events() {
-        let said = event.text("Foster");
+        let said = event.text();
+        assert!(
+            said.chars().next().is_some_and(char::is_uppercase),
+            "a sentence starts with a capital: {said:?}"
+        );
         assert!(!said.is_empty(), "{event:?} says nothing");
         assert!(!said.contains("Some(") && !said.contains("None"), "{said}");
         assert!(!said.contains("--"), "a typewriter dash in {said:?}");
@@ -464,12 +492,25 @@ fn asking_for_a_hint_changes_nothing() {
 }
 
 #[test]
-fn a_hint_says_who_is_advising() {
-    let table = Table::new(1, 45);
-    let hint = table.hint().unwrap();
-    assert!(!hint.advisor.name.is_empty());
-    assert!(!hint.text().is_empty());
-    assert!(matches!(hint.action, Action::Exchange(_)));
+fn a_hint_is_a_plain_instruction() {
+    let mut table = Table::new(1, 45);
+    let mut checked = 0;
+    while let Some(action) = dull(&table) {
+        if let Some(hint) = table.hint() {
+            let said = hint.text();
+            assert!(
+                said.chars().next().is_some_and(char::is_uppercase),
+                "{said:?}"
+            );
+            assert!(said.ends_with('.'), "{said:?}");
+            for name in ROSTER {
+                assert!(!said.contains(name), "{said:?} names {name}");
+            }
+            checked += 1;
+        }
+        table.act(action).unwrap();
+    }
+    assert!(checked > 50);
 }
 
 #[test]

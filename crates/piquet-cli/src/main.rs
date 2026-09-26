@@ -216,14 +216,15 @@ fn main() {
         });
 
     let who = opponent(level);
-    let (opponent_name, gloss) = (who.name, who.gloss);
+    // No proper names at the table: the machine is "your opponent".
+    let (opponent_name, gloss) = ("your opponent", who.gloss);
     let mut rng = Rng::seeded(seed);
 
     let table = Table {
         input: Box::new(io::stdin().lock()),
     };
     println!("\n  Piquet — a partie of six deals");
-    println!("  your opponent is {opponent_name}, who {gloss}");
+    println!("  your opponent {gloss}");
     println!("  (seed {seed}; pass --seed to replay, --level 1..5 to change opponent)\n");
 
     let mut human = HumanAgent {
@@ -332,7 +333,7 @@ fn main() {
             }
         ),
         Some(Side::B) => println!(
-            "    {opponent_name} wins, and you pay {}{}",
+            "    your opponent wins, and you pay {}{}",
             settlement.points,
             if settlement.rubicon {
                 " — you were rubiconed, so the sum and not the difference"

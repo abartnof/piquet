@@ -86,7 +86,8 @@ if one names a card the opponent is still holding.
 {
   "protocol": 1,                 // bumped when the shape changes
   "seed": 42, "level": 3,
-  "opponent": { "name": "Cavendish", "gloss": "remembers what has been played" },
+  "opponent": { "level": 3, "skill": "remembers what has been played" },
+                                 // never a name: the machine is "your opponent"
 
   "deal": 2,                     // the deal on the table, from 1
   "you_are": "elder",            // or "younger"; alternates every deal
@@ -114,9 +115,8 @@ if one names a card the opponent is still holding.
   "can_undo": true,
   "record": ["exchange 7C", "declare 0", "*play 8S", "next"],  // everything taken
                                  // from your seat; * marks what the table did for you
-  "hint": null,                  // with hints on: { "text": "Foster would play K♠.",
-                                 //   "command": "play KS", "advisor": "Foster",
-                                 //   "cards": ["KS"] }
+  "hint": null,                  // with hints on: { "text": "Lead K♠.",
+                                 //   "command": "play KS", "cards": ["KS"] }
   "events": [ ... ],             // see below
   "deals": [ { "number": 1, "you": 11, "them": 24 } ],  // finished deals
   "partie": { "you": 11, "them": 24 },                  // running totals
@@ -205,8 +205,7 @@ which detaches any view taken before.
 
 ## Hints
 
-A hint is what Foster, the top of the opponent ladder, would do in the
-human's place — the exact solver in the endgame and Hoyle's judgement before
+A hint is what the top of the opponent ladder would do in the human's place — the exact solver in the endgame and Hoyle's judgement before
 it — computed from the human's own view, so it cannot tell them anything they
 could not know. The advisor has its own generator, seeded from where the game
 stands: asking twice gives the same answer, and asking at all changes nothing

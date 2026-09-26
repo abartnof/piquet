@@ -98,16 +98,16 @@ pub struct Aids {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Hint {
     pub action: Action,
-    /// Who is advising -- a rung of the ladder, so the advice names a player
-    /// whose skill can be learnt rather than an anonymous number.
+    /// Which rung of the ladder is advising: the top one. Kept for a tutor
+    /// that wants to say which skill a move belongs to; never shown by name.
     pub advisor: Opponent,
     said: String,
 }
 
 impl Hint {
-    /// The advice as a sentence: "Foster would play K♠."
+    /// The advice as an instruction: "Lead K♠."
     pub fn text(&self) -> String {
-        format!("{} would {}.", self.advisor.name, self.said)
+        format!("{}.", capital(&self.said))
     }
 }
 
@@ -230,16 +230,21 @@ pub fn said(announcement: Announcement) -> String {
 }
 
 impl Event {
-    /// One line of narration. `them` is the opponent's name.
-    pub fn text(&self, them: &str) -> String {
-        let name = |who: Who| if who == Who::You { "you" } else { them };
+    /// One line of narration.
+    ///
+    /// The machine is always "your opponent". The ladder's rungs have names,
+    /// but Andrew's rule for the table is plain: "don't refer to the dealer as
+    /// a proper name, just call them your opponent."
+    pub fn text(&self) -> String {
+        const THEM: &str = "your opponent";
+        let name = |who: Who| if who == Who::You { "you" } else { THEM };
         match self {
             Event::DealBegins { number, elder, .. } => format!(
                 "Deal {number} of six. {}",
                 if *elder == Who::You {
                     "You are elder, and lead.".to_string()
                 } else {
-                    format!("{them} is elder; you deal.")
+                    format!("{} is elder; you deal.", capital(THEM))
                 }
             ),
             Event::Exchanged { who, count } => format!(
@@ -256,7 +261,9 @@ impl Event {
             }
             Event::Decided { category, winner } => match winner {
                 Some(Who::You) => format!("You take {}.", category_word(*category)),
-                Some(Who::Them) => format!("{them} takes {}.", category_word(*category)),
+                Some(Who::Them) => {
+                    format!("{} takes {}.", capital(THEM), category_word(*category))
+                }
                 None => format!(
                     "{} is equal: neither scores.",
                     capital(category_word(*category))
@@ -285,9 +292,7 @@ impl Event {
                 number,
                 you,
                 them: theirs,
-            } => {
-                format!("Deal {number} is over: you {you}, {them} {theirs}.")
-            }
+            } => format!("Deal {number} is over: you {you}, {THEM} {theirs}."),
             Event::PartieEnds {
                 you,
                 them: theirs,
@@ -296,7 +301,7 @@ impl Event {
                 let verdict = match settlement.winner {
                     None => "The partie is drawn.".to_string(),
                     Some(side) if side == YOU => format!(
-                        "You win the partie, and {them} pays {}{}.",
+                        "You win the partie, and {THEM} pays {}{}.",
                         settlement.points,
                         if settlement.rubicon {
                             " \u{2014} rubiconed, so the sum and not the difference"
@@ -305,7 +310,8 @@ impl Event {
                         }
                     ),
                     Some(_) => format!(
-                        "{them} wins the partie, and you pay {}{}.",
+                        "{} wins the partie, and you pay {}{}.",
+                        capital(THEM),
                         settlement.points,
                         if settlement.rubicon {
                             " \u{2014} you were rubiconed, so the sum and not the difference"
@@ -314,7 +320,7 @@ impl Event {
                         }
                     ),
                 };
-                format!("Final score: you {you}, {them} {theirs}. {verdict}")
+                format!("Final score: you {you}, {THEM} {theirs}. {verdict}")
             }
         }
     }
