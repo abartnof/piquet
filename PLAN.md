@@ -242,11 +242,11 @@ level 5 late in a partie (the page says "Restoring your game…").
 
 **Next niceties, not started:**
 
-- [ ] **Play my sure winners** as an aid: when you are on lead and every card
+- [x] **Play my sure winners** as an aid (`ea7861a`, on by default): when you are on lead and every card
       you hold beats everything still unseen in its suit, the rest of the
       tricks are yours whatever happens — play them out for you. The end of
       many deals is exactly this, and it is pure clicking.
-- [ ] Collapse the narration by deal, the current one open.
+- [x] Collapse the narration by deal, the current one open.
 - [ ] Faster reload: record the opponent's moves too, so a reload applies
       them instead of re-deciding them. Needs care — the opponent's generator
       would then not have advanced, so the game would stop being reproducible
