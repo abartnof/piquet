@@ -45,21 +45,27 @@ log and a sort whose tie-breaking differs between the two languages.
 
 ## Running things
 
-Development happens on a cloud VM; `bin/vm` is the whole interface.
+Development happens on a cloud VM, in a git clone there; `docs/VM.md` covers
+starting it, getting in, and why `bin/vm`'s sync modes must not be used any
+more. On the VM:
 
 ```
-bin/vm cargo run -p piquet-cli    # play
-bin/vm --check                    # fmt, clippy, and the full test suite
-bin/vm ./target/release/ladder    # rate the opponents against each other
-bin/vm ./target/release/bench 12  # time the exact solver by depth
-bin/vm --down                     # stop the instance
+source ~/.cargo/env                # cargo is not on the PATH otherwise
+cargo run -p piquet-cli            # play
+cargo fmt --check && cargo clippy --all-targets --release -- -D warnings \
+  && cargo test --release          # the whole gate
+./target/release/ladder            # rate the opponents against each other
+./target/release/bench 12          # time the exact solver by depth
 ```
+
+And from the laptop, `bin/vm --up`, `--status` and `--down` start, inspect
+and stop the instance.
 
 The Python oracle runs from `python/`:
 
 ```
-bin/vm --sync && ssh piquet-dev ... cd piquet/python && ../.venv/bin/pytest
-python tools/emit_vectors.py      # regenerate the golden vectors
+cd python && ../.venv/bin/pytest
+python tools/emit_vectors.py       # regenerate the golden vectors
 ```
 
 There is also a **differential harness**, which is a different instrument from
