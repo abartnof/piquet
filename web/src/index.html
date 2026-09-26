@@ -23,6 +23,7 @@
       </select>
     </label>
     <button id="new">New partie</button>
+    <button id="hints-switch" class="switch" title="Turn hints on or off (H)" aria-pressed="true">Hints on</button>
     <button id="undo" title="Take back your last decision (U)">Undo</button>
     <button id="settings-toggle" title="Settings" aria-expanded="false">Settings</button>
     <span class="seed" id="seed"></span>
@@ -39,12 +40,6 @@
   <label><input type="checkbox" data-pref="tab"> Show where we are and the running score</label>
   <label><input type="checkbox" data-pref="undo"> Allow undo</label>
   <label><input type="checkbox" data-pref="pause"> Leave each finished trick on the table a moment</label>
-  <label>Sort my hand
-    <select data-pref="sort">
-      <option value="suit">by suit, colours alternating</option>
-      <option value="rank">by rank, to spot quatorzes and trios</option>
-    </select>
-  </label>
 </div>
 
 <main>
@@ -52,28 +47,61 @@
     <div class="panel scores" id="scores"></div>
     <div class="panel tab" id="tab"></div>
 
-    <div class="zone opponent">
-      <h2 id="their-name">Opponent</h2>
-      <div class="row" id="their-hand"></div>
+    <div class="felt">
+      <div class="side them">
+        <div class="zone">
+          <h2>Your opponent's hand</h2>
+          <div class="row fan" id="their-hand"></div>
+        </div>
+        <div class="zone">
+          <h2>Their discards</h2>
+          <div class="pile" id="their-discards"></div>
+        </div>
+        <div class="zone grow">
+          <h2>Tricks they have won</h2>
+          <div class="tricks" id="their-tricks"></div>
+        </div>
+      </div>
+
+      <div class="middle">
+        <div class="zone">
+          <h2>Talon</h2>
+          <div class="pile" id="talon"></div>
+        </div>
+        <div class="zone grow">
+          <h2 id="middle-title">On the table</h2>
+          <div class="trick" id="trick"></div>
+        </div>
+      </div>
+
+      <div class="side you">
+        <div class="zone grow">
+          <h2>Tricks you have won</h2>
+          <div class="tricks" id="your-tricks"></div>
+        </div>
+        <div class="zone">
+          <h2>Your discards</h2>
+          <div class="row" id="discards"></div>
+        </div>
+      </div>
     </div>
 
-    <div class="zone">
-      <h2>On the table</h2>
-      <div class="trick" id="trick"></div>
-    </div>
-
-    <div class="zone">
-      <h2>Your hand</h2>
+    <div class="zone hand-zone">
+      <div class="hand-head">
+        <h2>Your hand</h2>
+        <div class="sortbar" id="sortbar" role="group" aria-label="Sort your hand">
+          <span class="muted">Sort</span>
+          <button data-sort="auto" title="Combinations while exchanging and declaring, suits while playing">Auto</button>
+          <button data-sort="suit">Suit</button>
+          <button data-sort="rank" title="Group ranks, to spot quatorzes and trios">Rank</button>
+          <button data-sort="combos" title="Your best point, sequences and sets first; the rest after">Combinations</button>
+        </div>
+      </div>
       <div class="row hand" id="hand"></div>
-      <p class="worth" id="worth"></p>
+      <div class="worth" id="worth"></div>
     </div>
 
     <div class="panel prompt" id="prompt"></div>
-
-    <div class="zone">
-      <h2>Your discards</h2>
-      <div class="row" id="discards"></div>
-    </div>
   </section>
 
   <aside class="panel">
@@ -86,7 +114,7 @@
   </aside>
 </main>
 
-<footer>Rubicon piquet, a partie of six deals. Rules after pagat.com. The engine is Rust, compiled to WebAssembly; this page is only its furniture. Keys: Enter — the main action · 1–3 — a declaration · U — undo · H — hints.</footer>
+<footer>Rubicon piquet, a partie of six deals. Rules after pagat.com and the Portland Club laws of 1892. The engine is Rust, compiled to WebAssembly; this page is only its furniture. Keys: Enter — the main action · 1–3 — a declaration · U — undo · H — hints.</footer>
 
 <script>
 const WASM_BASE64 = "__WASM_BASE64__";

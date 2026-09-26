@@ -45,17 +45,38 @@ def settle(page):
     page.wait_for_function("!busy")
 
 
+def cut_at(page, n):
+    """Cut by clicking the visible edge of the nth cuttable card, as a person
+    does. A fan shows only each card's edge; Playwright's own pre-click check
+    misjudges what covers it once the hover lift has run, so click the mouse
+    at the edge directly."""
+    target = page.locator("#trick .cutfan .card.cuttable").nth(n)
+    target.scroll_into_view_if_needed()
+    box = target.bounding_box()
+    page.mouse.click(box["x"] + 4, box["y"] + 30)
+    settle(page)
+
+
+def ready(page):
+    page.wait_for_selector("#prompt .ask")
+    settle(page)
+
+
 def open_fresh(page, level, seed):
     page.goto(f"{PAGE}?test&level={level}&seed={seed}")
     page.evaluate("localStorage.clear()")
     page.goto(f"{PAGE}?test&level={level}&seed={seed}")
-    page.wait_for_selector("#hand .card")
+    ready(page)
 
 
 def take_turn(page):
     """One human decision, made by clicking. False once the partie is over."""
     now = kind(page)
-    if now == "exchange":
+    if now == "cut":
+        cut_at(page, 14)
+    elif now == "choose_dealer":
+        page.get_by_role("button", name="Deal first").click()
+    elif now == "exchange":
         page.locator("#hand .card").first.click()
         page.locator("#prompt button.primary").click()
     elif now == "declare":
@@ -102,7 +123,7 @@ def whole_parties(page):
             if not reload_checked and state(page)["deal"] == 2 and now == "play":
                 before = page.evaluate("JSON.stringify(engine.state())")
                 page.reload()
-                page.wait_for_selector("#hand .card")
+                ready(page)
                 after = page.evaluate("JSON.stringify(engine.state())")
                 assert before == after, "a reload did not resume the game in progress"
                 reload_checked = True
@@ -122,9 +143,15 @@ def whole_parties(page):
             shot(page, "level3-over")
 
 
+def through_the_cut(page):
+    while kind(page) in ("cut", "choose_dealer"):
+        take_turn(page)
+
+
 def the_aids(page):
     open_fresh(page, 4, 99)
     assert page.locator("#settings").is_hidden(), "the settings panel starts shut"
+    through_the_cut(page)
     s = state(page)
     assert s["aids"] == {"hints": True, "play_forced": True, "play_winners": True,
                          "declare_for_me": False}, s["aids"]
@@ -178,6 +205,7 @@ def the_aids(page):
 
 def the_keyboard(page):
     open_fresh(page, 2, 123)
+    through_the_cut(page)
     page.locator("#hand .card").nth(2).click()
     page.keyboard.press("Enter")
     settle(page)
@@ -191,6 +219,75 @@ def the_keyboard(page):
         take_turn(page)
 
 
+def the_table(page):
+    """The cut, the piles, the tricks face up, the sort bar and the chips."""
+    open_fresh(page, 3, 2024)
+    assert kind(page) == "cut", "a partie begins with the cut"
+    assert page.locator("#trick .cutfan .card").count() == 32
+    assert page.locator("#hand .card").count() == 0, "nothing dealt before the cut"
+    shot(page, "table-cut")
+
+    # Cut until someone has the choice; if it is us, the two cards are shown.
+    for _ in range(10):
+        cut_at(page, 9)
+        if kind(page) != "cut":
+            break
+    if kind(page) == "choose_dealer":
+        assert page.locator("#trick .card").count() == 2, "both cut cards on the table"
+        shot(page, "table-choose")
+        page.get_by_role("button", name="Deal first").click()
+        settle(page)
+    s = state(page)
+    assert any(e["kind"] == "first_dealer" for e in s["events"])
+    assert page.locator("#hand .card").count() == 12
+
+    # The sort bar: rank groups ranks, combinations leads with the best holding.
+    page.locator("#sortbar button[data-sort=suit]").click()
+    by_suit = page.evaluate("[...document.querySelectorAll('#hand .card')].map(c => c.dataset.code)")
+    page.locator("#sortbar button[data-sort=rank]").click()
+    by_rank = page.evaluate("[...document.querySelectorAll('#hand .card')].map(c => c.dataset.code)")
+    assert sorted(by_suit) == sorted(by_rank) and by_suit != by_rank
+    ranks = [c[0] for c in by_rank]
+    assert all(ranks.index(r) + ranks.count(r) - 1 == len(ranks) - 1 - ranks[::-1].index(r) for r in ranks), "ranks together"
+    page.locator("#sortbar button[data-sort=combos]").click()
+    shot(page, "table-combos")
+    worth = state(page)["worth"]
+    if worth and worth[0]["category"] != "carte_blanche":
+        combos = page.evaluate("[...document.querySelectorAll('#hand .card')].map(c => c.dataset.code)")
+        first = set(worth[0]["cards"])
+        assert set(combos[: len(first)]) == first, "the best holding comes first"
+        assert page.locator("#hand .card.group-start").count() >= 1, "groups are set apart"
+        # Pointing at a holding lifts exactly its cards.
+        page.locator("#worth .chip").first.hover()
+        lifted = page.evaluate("[...document.querySelectorAll('#hand .card.lifted')].map(c => c.dataset.code)")
+        assert set(lifted) == first, (lifted, first)
+    page.locator("#sortbar button[data-sort=auto]").click()
+
+    # Play on to the middle of the deal: the piles and the tricks.
+    while kind(page) != "play":
+        take_turn(page)
+    for _ in range(5):
+        if kind(page) != "play":
+            break
+        take_turn(page)
+    s = state(page)
+    count = page.locator("#their-discards .count").inner_text()
+    assert count.startswith(str(s["their_discards"])), (count, s["their_discards"])
+    assert page.locator("#your-tricks .pair").count() == s["tricks"]["you"]
+    assert page.locator("#their-tricks .pair").count() == s["tricks"]["them"]
+    shot(page, "table-midplay")
+
+    # The hints switch, in the header, both ways.
+    assert state(page)["aids"]["hints"] is True
+    page.locator("#hints-switch").click()
+    settle(page)
+    assert state(page)["aids"]["hints"] is False
+    assert page.locator("#prompt .hint").count() == 0
+    page.locator("#hints-switch").click()
+    settle(page)
+    assert state(page)["aids"]["hints"] is True
+
+
 def main() -> int:
     errors = []
     with sync_playwright() as p:
@@ -202,11 +299,14 @@ def main() -> int:
         whole_parties(page)
         the_aids(page)
         the_keyboard(page)
-        print("aids, undo, hints, settings and keyboard all work")
+        the_table(page)
+        print("aids, undo, hints, settings, keyboard, cut, piles, tricks and sorting all work")
 
         phone = browser.new_page(viewport={"width": 390, "height": 844})
         phone.on("pageerror", lambda e: errors.append(str(e)))
         phone.goto(f"{PAGE}?test&level=2&seed=11")
+        ready(phone)
+        through_the_cut(phone)
         phone.wait_for_selector("#hand .card")
         width = phone.evaluate("document.documentElement.scrollWidth")
         assert width <= 390, f"the page scrolls sideways on a phone: {width}px"
@@ -222,3 +322,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
