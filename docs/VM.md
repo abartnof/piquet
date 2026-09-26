@@ -170,10 +170,16 @@ and push first, so there is nothing on the VM that only exists on the VM.
 
 ## What is installed on it
 
-Rust 1.98.1 with clippy, rustfmt and rust-analyzer; Python 3.11.2 with the
-project's `.venv` and pytest; `git`, `gh` 2.101, `ripgrep`, and Claude Code.
-The `target/` and `.venv/` directories are already warm, so builds do not
-start from zero.
+Rust 1.98.1 with clippy, rustfmt and rust-analyzer, and the
+`wasm32-unknown-unknown` target; Python 3.11.2 with the project's `.venv`,
+pytest and Playwright; Node 18 and Chromium 154 from apt, for testing the
+browser build headlessly; `git`, `gh` 2.101, `ripgrep`, and Claude Code. The
+`target/` and `.venv/` directories are already warm, so builds do not start
+from zero.
+
+    python3 web/build.py                                   # web/piquet.html
+    node web/test/ffi.mjs target/wasm32-unknown-unknown/release/piquet_wasm.wasm
+    .venv/bin/python web/test/browser.py [screenshot-dir]  # plays it by clicking
 
     source ~/.cargo/env          # once per shell; nothing does this for you
     cargo test --release

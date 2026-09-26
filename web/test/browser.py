@@ -2,11 +2,11 @@
 """Play the built page in a real browser, by clicking, the way a person would.
 
     python3 web/build.py
-    <venv with playwright>/bin/python web/test/browser.py [screenshot-dir]
+    .venv/bin/python web/test/browser.py [screenshot-dir]
 
-Needs Playwright's Python package and a Chromium; on the dev VM the system
-one is used (`/usr/bin/chromium`), so Playwright's own browser download is not
-needed. Plays whole parties at several levels through the page's buttons and
+Needs Playwright's Python package (in the project `.venv` on the dev VM) and a
+Chromium; the system one is used (`/usr/bin/chromium`, from apt), so
+Playwright's own browser download is not needed. Plays whole parties at several levels through the page's buttons and
 cards, and checks the things only a browser can show: that the page loads the
 engine at all from a file:// URL, that an illegal card is refused *on screen*
 with the engine's reason, that a reload resumes the game in progress, and that
