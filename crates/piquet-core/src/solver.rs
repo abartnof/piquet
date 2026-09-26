@@ -424,7 +424,7 @@ use crate::declarations::Declaration;
 use crate::heuristics::HeuristicAgent;
 use crate::inference::possible_hands;
 use crate::observation::View;
-use crate::scoring::{Category, Player};
+use crate::scoring::{Category, Player, ScoreLog};
 use crate::util::first_max_by;
 
 /// Rung 5: heuristic play early, exact play once the endgame is reachable.
@@ -555,11 +555,12 @@ impl Agent for SolverAgent {
                 } else {
                     (standing.theirs, standing.mine)
                 };
+                let banked = settled_log(view);
                 Settling {
                     elder_side,
                     younger_side,
-                    elder_so_far: view.log.total(Player::Elder),
-                    younger_so_far: view.log.total(Player::Younger),
+                    elder_so_far: banked.total(Player::Elder),
+                    younger_so_far: banked.total(Player::Younger),
                     deals_left: standing.deals_left,
                     // The seat alternates, so whoever sits elder now sits
                     // younger in the next deal.
@@ -638,6 +639,25 @@ impl Agent for SolverAgent {
 // costs is a question for measurement, not for argument.
 // ===========================================================================
 
+/// The log as it will be scored, so far as that is already decided.
+///
+/// A repique is made in declarations alone, so it is settled before a card is
+/// played; a pique is settled the moment elder reaches thirty with younger
+/// still on nothing. Neither enters the log until the deal is finished, and a
+/// settlement read off `log.total` is sixty points wrong in a repique deal --
+/// which near the rubicon is the difference between paying the difference and
+/// paying the sum.
+///
+/// Before elder has led, younger has not declared, and a bonus read off the
+/// log as it stands could be one her declarations are about to deny him.
+pub fn settled_log(view: &View) -> ScoreLog {
+    if view.tricks.is_empty() && view.current_trick.is_none() {
+        view.log.clone()
+    } else {
+        view.log.with_bonuses()
+    }
+}
+
 /// Everything outside the play that the settlement depends on.
 #[derive(Clone, Copy, Debug)]
 pub struct Settling {
@@ -645,8 +665,9 @@ pub struct Settling {
     pub elder_side: i32,
     /// And of whoever sits younger.
     pub younger_side: i32,
-    /// Points already in the log this deal, by seat: declarations, and any
-    /// play points made before the search begins.
+    /// Points already banked this deal, by seat: declarations, any play
+    /// points made before the search begins, and a pique or repique already
+    /// decided (`settled_log`).
     pub elder_so_far: i32,
     pub younger_so_far: i32,
     /// Deals still to play, counting this one.
@@ -660,11 +681,12 @@ pub struct Settling {
 
 /// The settlement to elder's **side**, in points, at the end of the deal.
 ///
-/// Known approximation, shared with the additive search: the pique and repique
-/// bonuses are ignored. They depend on Law 67's order of precedence over the
-/// whole log, which the search does not carry. `solver::pique_is_live` exists
-/// in the Python as a documented intention with no caller (`PLAN.md` TODO 9);
-/// this inherits the same gap rather than quietly pretending otherwise.
+/// A pique or repique already decided arrives in `ctx`. What is left out is a
+/// pique still *live* when the search begins -- elder short of thirty, younger
+/// still on nothing -- which the play could yet make or deny. It depends on
+/// Law 67's order of precedence over the whole log, which the search does not
+/// carry. `solver::pique_is_live` exists in the Python as a documented
+/// intention with no caller (`PLAN.md` TODO 9).
 fn settle(elder_tricks: u32, elder_pts: i32, younger_pts: i32, ctx: &Settling) -> f64 {
     let (elder_bonus, younger_bonus) = if elder_tricks == TRICKS {
         (CAPOT_BONUS as i32, 0)
