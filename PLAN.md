@@ -178,8 +178,8 @@ In order, all committed and pushed:
 
 ### In flight
 
-- **Rebuild `web/piquet.html`** with the fixed engine, rerun
-  `web/test/ffi.mjs` and `web/test/browser.py`, commit.
+Nothing. Everything above is committed and pushed, and `web/piquet.html` is
+current.
 
 ### Pick up here: making it effortless and fun
 
@@ -212,17 +212,47 @@ record of every action from the human's seat, `Table::replay` and `undo`,
 `Table::hint`, and the protocol commands `undo` and `set <aid> on|off`.
 Scores carry their category now, for the running tab.
 
-**Page:**
+**Page:** done (`d702eda`, `53f4d0d`, `83db0c3`).
 
-- [ ] Settings panel, every aid a toggle, remembered in `localStorage`.
-- [ ] "Where we are": the six deals as a strip with their scores, the phase
-      of this deal (exchange ▸ declare ▸ trick n of 12 ▸ count), and a running
-      tab by category — point, sequences, sets, play, cards, bonus.
-- [ ] Hand ordering: suits in alternating colours; freshly drawn cards marked;
-      hovering a declaration option lifts the cards it is made of; the hinted
-      card or discard highlighted when hints are on.
-- [ ] Keyboard: Enter for the primary action, digits for declaration options.
-- [ ] Pacing: let the opponent's card land visibly rather than appearing.
+- [x] Settings panel, every aid a toggle, remembered in `localStorage`.
+      Defaults: hints **on**, play forced cards **on**, declare for me
+      **off**, running tab on, undo on, trick pause on, hand by suit.
+- [x] "Where we are": the six deals as a strip with their scores, the phase
+      of this deal (exchange ▸ point ▸ sequences ▸ sets ▸ trick n of 12 ▸
+      count), and a running tab by category.
+- [x] Hand ordering: alternating colours, or by rank to spot quatorzes; cards
+      *slide* to new places; drawn cards marked "new" until play begins;
+      hovering a declaration option lifts the cards it is made of; hinted
+      cards glow.
+- [x] Hints with a **Follow** button; **Undo** (button, U, Ctrl+Z); Enter for
+      the main action; digits for declaration options; H toggles hints.
+- [x] Pacing: a finished trick stays on the table for 0.9 s; cards land.
+
+Measured: forced-card play takes a partie from ~97 clicks to ~82; declare for
+me removes up to 18 more. **Undo is instant** — a snapshot stack, 3.2 s →
+2 ms at level 5 late in a partie. **Reload still replays**: up to ~3.3 s at
+level 5 late in a partie (the page says "Restoring your game…").
+
+**Open questions for Andrew**, from playing it:
+
+- Should **declare for me** default on? It is the single biggest source of
+  clicks (three a deal), but the dialogue is the heart of the game.
+- Are hints-on-by-default right, or should they wait to be asked for?
+- Anything persnickety left — the notes he sends back are the next backlog.
+
+**Next niceties, not started:**
+
+- [ ] **Play my sure winners** as an aid: when you are on lead and every card
+      you hold beats everything still unseen in its suit, the rest of the
+      tricks are yours whatever happens — play them out for you. The end of
+      many deals is exactly this, and it is pure clicking.
+- [ ] Collapse the narration by deal, the current one open.
+- [ ] Faster reload: record the opponent's moves too, so a reload applies
+      them instead of re-deciding them. Needs care — the opponent's generator
+      would then not have advanced, so the game would stop being reproducible
+      from seed and human actions alone.
+- [ ] Say *why*, not just what: the hint's second half, `explain.rs`,
+      Milestone 9.
 
 ### After that, in rough order of value
 
