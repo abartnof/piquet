@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piquet</title>
+<style>
+/*STYLE*/
+</style>
+</head>
+<body>
+<header>
+  <h1>Piquet</h1>
+  <span class="who" id="who"></span>
+  <span class="controls">
+    <label>Opponent
+      <select id="level">
+        <option value="1">1 · Bess</option>
+        <option value="2">2 · Cotton</option>
+        <option value="3" selected>3 · Cavendish</option>
+        <option value="4">4 · Hoyle</option>
+        <option value="5">5 · Foster</option>
+      </select>
+    </label>
+    <button id="new">New partie</button>
+    <span class="seed" id="seed"></span>
+  </span>
+</header>
+
+<main>
+  <section>
+    <div class="panel scores" id="scores"></div>
+
+    <div class="zone opponent">
+      <h2 id="their-name">Opponent</h2>
+      <div class="row" id="their-hand"></div>
+    </div>
+
+    <div class="zone">
+      <h2>On the table</h2>
+      <div class="trick" id="trick"></div>
+    </div>
+
+    <div class="zone">
+      <h2>Your hand</h2>
+      <div class="row hand" id="hand"></div>
+      <p class="worth" id="worth"></p>
+    </div>
+
+    <div class="panel prompt" id="prompt"></div>
+
+    <div class="zone">
+      <h2>Your discards</h2>
+      <div class="row" id="discards"></div>
+    </div>
+  </section>
+
+  <aside class="panel">
+    <h2 style="margin-top:0;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">What has been said</h2>
+    <div class="log" id="log"></div>
+    <div class="record">
+      <button id="copy">Copy game record</button>
+      <span class="seed" id="copied"></span>
+    </div>
+  </aside>
+</main>
+
+<footer>Rubicon piquet, a partie of six deals. Rules after pagat.com. The engine is Rust, compiled to WebAssembly; this page is only its furniture.</footer>
+
+<script>
+const WASM_BASE64 = "__WASM_BASE64__";
+/*APP*/
+</script>
+</body>
+</html>
