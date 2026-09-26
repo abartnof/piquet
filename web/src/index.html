@@ -23,13 +23,33 @@
       </select>
     </label>
     <button id="new">New partie</button>
+    <button id="undo" title="Take back your last decision (U)">Undo</button>
+    <button id="settings-toggle" title="Settings" aria-expanded="false">Settings</button>
     <span class="seed" id="seed"></span>
   </span>
 </header>
 
+<div class="settings panel" id="settings" hidden>
+  <h2>Help at the table</h2>
+  <label><input type="checkbox" data-aid="hints"> Hints — say what Foster would do (H)</label>
+  <label><input type="checkbox" data-aid="play_forced"> Play a card for me when it is the only one I may play</label>
+  <label><input type="checkbox" data-aid="declare_for_me"> Declare for me — call everything, never ask</label>
+  <h2>The table</h2>
+  <label><input type="checkbox" data-pref="tab"> Show where we are and the running score</label>
+  <label><input type="checkbox" data-pref="undo"> Allow undo</label>
+  <label><input type="checkbox" data-pref="pause"> Leave each finished trick on the table a moment</label>
+  <label>Sort my hand
+    <select data-pref="sort">
+      <option value="suit">by suit, colours alternating</option>
+      <option value="rank">by rank, to spot quatorzes and trios</option>
+    </select>
+  </label>
+</div>
+
 <main>
   <section>
     <div class="panel scores" id="scores"></div>
+    <div class="panel tab" id="tab"></div>
 
     <div class="zone opponent">
       <h2 id="their-name">Opponent</h2>
@@ -56,7 +76,7 @@
   </section>
 
   <aside class="panel">
-    <h2 style="margin-top:0;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">What has been said</h2>
+    <h2 class="aside-title">What has been said</h2>
     <div class="log" id="log"></div>
     <div class="record">
       <button id="copy">Copy game record</button>
@@ -65,7 +85,7 @@
   </aside>
 </main>
 
-<footer>Rubicon piquet, a partie of six deals. Rules after pagat.com. The engine is Rust, compiled to WebAssembly; this page is only its furniture.</footer>
+<footer>Rubicon piquet, a partie of six deals. Rules after pagat.com. The engine is Rust, compiled to WebAssembly; this page is only its furniture. Keys: Enter — the main action · 1–3 — a declaration · U — undo · H — hints.</footer>
 
 <script>
 const WASM_BASE64 = "__WASM_BASE64__";

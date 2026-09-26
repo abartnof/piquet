@@ -6,11 +6,16 @@
 
 Needs Playwright's Python package (in the project `.venv` on the dev VM) and a
 Chromium; the system one is used (`/usr/bin/chromium`, from apt), so
-Playwright's own browser download is not needed. Plays whole parties at several levels through the page's buttons and
-cards, and checks the things only a browser can show: that the page loads the
-engine at all from a file:// URL, that an illegal card is refused *on screen*
-with the engine's reason, that a reload resumes the game in progress, and that
-nothing is ever written to the console in error.
+Playwright's own browser download is not needed. The page is opened with
+`?test`, which drops the pauses that make play feel like play.
+
+Checks the things only a browser can show: that the engine loads from a
+file:// URL; that whole parties can be played by clicking at several levels;
+that an illegal card is refused *on screen* with the engine's reason; that a
+reload resumes the game in progress exactly; that the aids work from the
+settings panel, the keyboard and the hint's Follow button; that undo puts the
+table back; that a phone never scrolls sideways; and that nothing is ever
+written to the console in error.
 """
 
 import sys
@@ -28,87 +33,170 @@ def shot(page, name):
         page.screenshot(path=str(SHOTS / f"{name}.png"), full_page=True)
 
 
-def prompt_kind(page):
+def state(page):
+    return page.evaluate("engine.state()")
+
+
+def kind(page):
     return page.evaluate("engine.state().prompt.kind")
+
+
+def settle(page):
+    page.wait_for_function("!busy")
+
+
+def open_fresh(page, level, seed):
+    page.goto(f"{PAGE}?test&level={level}&seed={seed}")
+    page.evaluate("localStorage.clear()")
+    page.goto(f"{PAGE}?test&level={level}&seed={seed}")
+    page.wait_for_selector("#hand .card")
 
 
 def take_turn(page):
     """One human decision, made by clicking. False once the partie is over."""
-    kind = prompt_kind(page)
-    if kind == "exchange":
+    now = kind(page)
+    if now == "exchange":
         page.locator("#hand .card").first.click()
         page.locator("#prompt button.primary").click()
-    elif kind == "declare":
+    elif now == "declare":
         page.locator("#prompt .options button").first.click()
-    elif kind == "play":
+    elif now == "play":
         page.locator("#hand .card:not(.illegal)").first.click()
-    elif kind == "next_deal":
+    elif now == "next_deal":
         page.get_by_role("button", name="Deal the next hand").click()
-    elif kind == "over":
+    elif now == "over":
         return False
     else:
-        raise AssertionError(f"unknown prompt {kind}")
-    page.wait_for_function("!busy")
+        raise AssertionError(f"unknown prompt {now}")
+    settle(page)
     return True
+
+
+def whole_parties(page):
+    for level, seed in [(1, 5), (3, 42), (5, 7)]:
+        open_fresh(page, level, seed)
+        assert state(page)["seed"] == seed
+
+        turns, shots_taken, illegal_checked, reload_checked = 0, set(), False, False
+        while take_turn(page):
+            turns += 1
+            assert turns < 1500, "the partie never ended"
+            now = kind(page)
+            if level == 3 and now not in shots_taken:
+                shot(page, f"level3-{now}")
+                shots_taken.add(now)
+
+            # A card that does not follow suit, clicked: refused, on screen.
+            if now == "play" and not illegal_checked and page.locator("#hand .card.illegal").count():
+                before = page.evaluate("JSON.stringify(engine.state().hand)")
+                page.locator("#hand .card.illegal").first.click()
+                settle(page)
+                message = page.locator("#prompt .error").inner_text()
+                assert "follow" in message, message
+                assert page.evaluate("JSON.stringify(engine.state().hand)") == before
+                if level == 3:
+                    shot(page, "level3-illegal")
+                illegal_checked = True
+
+            # A reload in the middle of the second deal resumes it exactly.
+            if not reload_checked and state(page)["deal"] == 2 and now == "play":
+                before = page.evaluate("JSON.stringify(engine.state())")
+                page.reload()
+                page.wait_for_selector("#hand .card")
+                after = page.evaluate("JSON.stringify(engine.state())")
+                assert before == after, "a reload did not resume the game in progress"
+                reload_checked = True
+
+        final = state(page)
+        assert final["settlement"] is not None
+        assert illegal_checked, f"level {level}: never had an illegal card to try"
+        assert reload_checked, f"level {level}: never reloaded mid-game"
+        print(f"level {level} seed {seed}: {turns} clicks, "
+              f"you {final['partie']['you']} - {final['opponent']['name']} {final['partie']['them']}")
+        if level == 3:
+            shot(page, "level3-over")
+
+
+def the_aids(page):
+    open_fresh(page, 4, 99)
+    assert page.locator("#settings").is_hidden(), "the settings panel starts shut"
+    s = state(page)
+    assert s["aids"] == {"hints": True, "play_forced": True, "declare_for_me": False}, s["aids"]
+
+    # A hint, pointed at in the hand, and followed with one click.
+    assert page.locator("#prompt .hint").count() == 1
+    assert page.locator("#hand .card.hinted").count() >= 1
+    page.get_by_role("button", name="Follow").click()
+    settle(page)
+    assert kind(page) in ("declare", "play"), "following the exchange hint exchanged"
+    shot(page, "aids-after-follow")
+
+    # Undo puts it back, from the button and from the keyboard.
+    before = page.evaluate("JSON.stringify([engine.state().hand, engine.state().prompt])")
+    take_turn(page)
+    page.locator("#undo").click()
+    settle(page)
+    after = page.evaluate("JSON.stringify([engine.state().hand, engine.state().prompt])")
+    assert before == after, "undo did not put the table back"
+    take_turn(page)
+    page.keyboard.press("u")
+    settle(page)
+    assert page.evaluate("JSON.stringify([engine.state().hand, engine.state().prompt])") == before
+
+    # Declare-for-me from the settings panel: no more declaration prompts.
+    page.locator("#settings-toggle").click()
+    page.locator("[data-aid=declare_for_me]").check()
+    settle(page)
+    shot(page, "aids-settings")
+    assert state(page)["aids"]["declare_for_me"] is True
+    for _ in range(60):
+        assert kind(page) != "declare", "asked to declare with declare-for-me on"
+        if not take_turn(page):
+            break
+
+    # H toggles hints; the hint line goes with them.
+    page.keyboard.press("h")
+    settle(page)
+    assert state(page)["aids"]["hints"] is False
+    assert page.locator("#prompt .hint").count() == 0
+
+    # The running tab can be put away.
+    assert page.locator("#tab .deal-cell").count() >= 7
+    page.locator("[data-pref=tab]").uncheck()
+    assert page.locator("#tab").is_hidden()
+
+
+def the_keyboard(page):
+    open_fresh(page, 2, 123)
+    page.locator("#hand .card").nth(2).click()
+    page.keyboard.press("Enter")
+    settle(page)
+    assert kind(page) != "exchange", "Enter did not exchange"
+    # Digits choose declaration options.
+    for _ in range(10):
+        if kind(page) == "declare":
+            page.keyboard.press("1")
+            settle(page)
+            break
+        take_turn(page)
 
 
 def main() -> int:
     errors = []
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path="/usr/bin/chromium", args=["--no-sandbox"])
-        page = browser.new_page(viewport={"width": 1280, "height": 1000})
+        page = browser.new_page(viewport={"width": 1280, "height": 1100})
         page.on("console", lambda m: m.type == "error" and errors.append(m.text))
         page.on("pageerror", lambda e: errors.append(str(e)))
 
-        for level, seed in [(1, 5), (3, 42), (5, 7)]:
-            page.goto(f"{PAGE}?level={level}&seed={seed}")
-            page.evaluate("localStorage.clear()")
-            page.goto(f"{PAGE}?level={level}&seed={seed}")
-            page.wait_for_selector("#hand .card")
-            assert page.evaluate("engine.state().seed") == seed
+        whole_parties(page)
+        the_aids(page)
+        the_keyboard(page)
+        print("aids, undo, hints, settings and keyboard all work")
 
-            turns, shots_taken, illegal_checked, reload_checked = 0, set(), False, False
-            while take_turn(page):
-                turns += 1
-                assert turns < 1500, "the partie never ended"
-                kind = prompt_kind(page)
-                if level == 3 and kind not in shots_taken:
-                    shot(page, f"level3-{kind}")
-                    shots_taken.add(kind)
-
-                # A card that does not follow suit, clicked: refused, on screen.
-                if kind == "play" and not illegal_checked and page.locator("#hand .card.illegal").count():
-                    before = page.evaluate("JSON.stringify(engine.state().hand)")
-                    page.locator("#hand .card.illegal").first.click()
-                    page.wait_for_function("!busy")
-                    message = page.locator("#prompt .error").inner_text()
-                    assert "follow" in message, message
-                    assert page.evaluate("JSON.stringify(engine.state().hand)") == before
-                    if level == 3:
-                        shot(page, "level3-illegal")
-                    illegal_checked = True
-
-                # A reload in the middle of the second deal resumes it exactly.
-                if not reload_checked and page.evaluate("engine.state().deal") == 2 and kind == "play":
-                    before = page.evaluate("JSON.stringify(engine.state())")
-                    page.reload()
-                    page.wait_for_selector("#hand .card")
-                    after = page.evaluate("JSON.stringify(engine.state())")
-                    assert before == after, "a reload did not resume the game in progress"
-                    reload_checked = True
-
-            final = page.evaluate("engine.state()")
-            assert final["settlement"] is not None
-            assert illegal_checked, f"level {level}: never had an illegal card to try"
-            assert reload_checked, f"level {level}: never reloaded mid-game"
-            print(f"level {level} seed {seed}: {turns} clicks, "
-                  f"you {final['partie']['you']} - {final['opponent']['name']} {final['partie']['them']}")
-            if level == 3:
-                shot(page, "level3-over")
-
-        # And at phone width.
         phone = browser.new_page(viewport={"width": 390, "height": 844})
-        phone.goto(f"{PAGE}?level=2&seed=11")
+        phone.on("pageerror", lambda e: errors.append(str(e)))
+        phone.goto(f"{PAGE}?test&level=2&seed=11")
         phone.wait_for_selector("#hand .card")
         width = phone.evaluate("document.documentElement.scrollWidth")
         assert width <= 390, f"the page scrolls sideways on a phone: {width}px"

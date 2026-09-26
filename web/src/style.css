@@ -142,3 +142,102 @@ main {
 
 .record { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
 footer { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 16px 20px; }
+
+/* --- the pieces that make it effortless ------------------------------- */
+
+.muted { color: var(--muted); font-size: 14px; }
+.buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.aside-title { margin-top: 0; font-size: 12px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+
+.settings {
+  max-width: 1200px;
+  margin: 12px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.settings h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 6px 0 0; }
+.settings label { display: flex; gap: 8px; align-items: center; }
+.settings select { margin-left: 6px; }
+
+/* Where we are: six deals, the phase of this one, a running tab. */
+.tab { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.tab[hidden] { display: none; }
+.strip { display: flex; gap: 4px; flex-wrap: wrap; }
+.deal-cell {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  text-align: center;
+  min-width: 42px;
+  padding: 3px 6px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.18);
+  line-height: 1.25;
+}
+.deal-cell .n { font-size: 11px; color: var(--muted); }
+.deal-cell.now { outline: 2px solid var(--gold); }
+.deal-cell.total { background: rgba(0, 0, 0, 0.3); font-weight: 600; }
+.deal-cell .you { color: var(--you); }
+.deal-cell .them { color: var(--them); }
+.track { display: flex; flex-wrap: wrap; gap: 4px 6px; }
+.track span { padding: 2px 8px; border-radius: 12px; color: var(--muted); background: rgba(0, 0, 0, 0.12); }
+.track span.past { color: #e8efe9; }
+.track span.now { background: var(--gold); color: var(--ink); font-weight: 600; }
+.cats { display: grid; grid-template-columns: auto auto auto; gap: 1px 14px; justify-content: start; }
+.cats .head { font-size: 11px; color: var(--muted); }
+.cats .you { color: var(--you); text-align: right; }
+.cats .them { color: var(--them); text-align: right; }
+
+/* The hand: what the hint means, what was just drawn, what a call is made of. */
+.hand .card.hinted { box-shadow: 0 0 0 3px #7fd1ff, 0 0 14px rgba(127, 209, 255, 0.8); }
+.hand .card.fresh::after {
+  content: "new";
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #2d6a3e;
+}
+.hand .card.lifted { transform: translateY(-12px); box-shadow: 0 0 0 3px var(--gold); }
+.hand .card.selected.hinted { box-shadow: 0 0 0 3px var(--gold), 0 0 14px rgba(127, 209, 255, 0.8); }
+
+.hint { margin-top: 10px; color: #cfeaff; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hint .follow { padding: 2px 10px; font-size: 13px; }
+.options .key {
+  display: inline-block;
+  min-width: 1.4em;
+  text-align: center;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.12);
+  font-size: 12px;
+}
+.options button.advised { outline: 2px solid #7fd1ff; }
+
+/* A card arriving on the table lands rather than appearing. */
+.trick .card.landed { animation: land 0.28s ease-out; }
+@keyframes land {
+  from { transform: translateY(-18px) scale(0.96); opacity: 0.2; }
+  to { transform: none; opacity: 1; }
+}
+.trick .taken { align-self: center; color: var(--gold); font-weight: 600; margin: 0; }
+button#undo[hidden] { display: none; }
+
+/* `hidden` must win over the display rules above. */
+.settings[hidden], .tab[hidden] { display: none; }
+
+/* A phone: smaller cards, so a twelve-card hand fits in two rows. */
+@media (max-width: 480px) {
+  .card { width: 46px; height: 68px; }
+  .card .rank { font-size: 15px; left: 4px; }
+  .card .pip { top: 18px; left: 4px; font-size: 12px; }
+  .card .centre { font-size: 24px; }
+  .row { gap: 4px; }
+  main { padding: 10px; gap: 10px; }
+}
+
+/* Automated tests: no motion, so screenshots show where things end up. */
+body.testing *, body.testing *::before, body.testing *::after {
+  animation: none !important;
+  transition: none !important;
+}
