@@ -93,6 +93,21 @@ Players cut for the deal, and the winner may choose who deals first; the deal
 then alternates. **Dealing is a disadvantage.** The non-dealer is the **elder
 hand**, the dealer the **younger hand**.
 
+**The cut, in detail.** The ace is highest in cutting, as in play, and suits do
+not rank. A cut must lift at least two cards and leave at least two (Cavendish,
+Laws 3–4). The **higher** cut has the choice of deal, and **should choose to deal
+first**, because six deals alternate and the first dealer is therefore elder in
+the sixth — "the attacking hand when he has the best opportunity of discarding,
+or of playing, to the score" (Cavendish, p. 108; pagat: "should always choose to
+deal first, as there is a slight advantage to being non-dealer on the critical
+sixth hand"). Equal cuts are cut again (Foster, 1897; pagat and Cavendish are
+silent).
+
+The older game ran the other way: Cotton (1674) has "whichsoever of the two
+dips the least card" deal, and Foster's *piquet au cent* (1897) gives the
+choice to "the lower cut". We follow pagat and Cavendish, the rubicon game's own
+authorities.
+
 Each player receives twelve cards, dealt in twos or threes — the dealer must
 declare which and keep to it for the rest of the partie. The remaining eight
 cards form the **talon**, laid face down in two packets: five for elder, three for
@@ -128,7 +143,7 @@ untaken, usually three. If she leaves any, she may expose them to both players
 after elder leads, or leave them face down for neither to see.
 
 Both players keep their own discards beside them and may consult them during
-play.
+play. Neither may look at the other's.
 
 Britannica notes that elder "in practice usually exchanges five cards", and
 Cotton had already observed in 1674 that "it is no small advantage to the eldest
@@ -206,6 +221,22 @@ with the second card**. The winner of the last trick scores two instead of one.
 At the end of play, the player who has taken more than six tricks scores **10 for
 the cards**; at six each, nobody does. A player taking all twelve scores **40 for
 capot** instead.
+
+**Where the tricks lie.** Face up, in front of whoever won them, and open to
+either player at any time: "The tricks are left face upwards on the table in
+front of the player who wins them. They may be examined by either player at any
+time" (Cavendish, p. 108, and Law 60: "A player is entitled to examine both his
+own and his adversary's tricks at any time"). pagat agrees: "The contents of
+tricks already played may be examined by either player at any time." Unlike
+whist, then, nothing is hidden once played, which is part of why the endgame
+is nearly perfect information.
+
+**Claiming.** A player who can see that the rest of the tricks are his need not
+play them one by one. Cavendish describes it as ordinary practice: holding a
+sixième major, a player "puts down his sixième, and says, 'Play six cards'";
+seeing he can win nothing more, he "lays down the remainder of his sorted hand".
+The browser table's *play out my winners* aid is this, and only where it is
+certain.
 
 ## Pique and repique
 
