@@ -1714,10 +1714,16 @@ fn the_candidate_set_matches_and_never_excludes_the_truth() {
 /// interesting half.
 ///
 /// Younger hears elder's declarations as the dialogue goes along, so her
-/// candidate set collapses 125,970 → 91 → 28 → 1 before a card is played.
-/// Elder hears *nothing* until he has led to the first trick, so he sits at
-/// 5,005 through the entire dialogue and leads to the first trick with five
-/// thousand hands still possible. **That is the blind first lead, measured.**
+/// candidate set collapses 125,970 → 91 → 1 before a card is played. Elder
+/// hears only her *answers* -- good, not good, equal -- until he has led, so he
+/// narrows only as far as those allow: 5,005 → 958 → 255, and leads to the
+/// first trick with a couple of hundred hands still possible against her one.
+/// **That is the blind first lead, measured.**
+///
+/// An earlier version had him at 5,005 throughout, and this comment called
+/// that the blind lead. It was the inference discarding answers he had heard:
+/// its silence rule read every unnamed category as "nothing held", which
+/// before his lead ruled out every candidate and so told him nothing at all.
 ///
 /// One trick later they are both down to a single hand.
 #[test]
@@ -1752,9 +1758,27 @@ fn elder_leads_blind_and_younger_does_not() {
         "by the end of the dialogue she should know his hand exactly"
     );
 
+    // Elder narrows too, but on her answers alone, and stays far behind.
+    let elder_narrowing: Vec<u64> = [
+        "younger exchanges 6",
+        "younger declares point",
+        "younger declares sequences",
+        "younger declares sets",
+    ]
+    .iter()
+    .map(|action| count_at(action, "elder"))
+    .collect();
+    assert!(
+        elder_narrowing.windows(2).all(|w| w[1] <= w[0]),
+        "elder should only ever learn more: {elder_narrowing:?}"
+    );
+    assert!(
+        elder_narrowing.last() < elder_narrowing.first(),
+        "her answers are public, and they tell him something: {elder_narrowing:?}"
+    );
     let elder_at_the_lead = count_at("younger declares sets", "elder");
     assert!(
-        elder_at_the_lead > 1000,
+        elder_at_the_lead >= 100,
         "elder should still be guessing when he leads, not {elder_at_the_lead}"
     );
 
@@ -2057,6 +2081,31 @@ fn what_each_player_heard_and_saw_matches() {
                 })
                 .collect();
             assert_eq!(heard, want_heard, "{where_}: heard");
+
+            let said: Vec<(String, u64, Option<u64>)> = view
+                .said
+                .iter()
+                .map(|a| {
+                    (
+                        a.category.name().to_string(),
+                        u64::from(a.primary),
+                        a.tiebreak.map(u64::from),
+                    )
+                })
+                .collect();
+            let want_said: Vec<(String, u64, Option<u64>)> = want["said"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|a| {
+                    (
+                        a["category"].as_str().unwrap().to_string(),
+                        a["primary"].as_u64().unwrap(),
+                        a["tiebreak"].as_u64(),
+                    )
+                })
+                .collect();
+            assert_eq!(said, want_said, "{where_}: said");
 
             let seen: Vec<String> = view.seen.iter().map(|c| c.describe()).collect();
             let want_seen: Vec<&str> = want["seen"]

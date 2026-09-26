@@ -55,6 +55,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -77,6 +78,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -105,6 +107,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -127,6 +130,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -155,6 +159,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -181,6 +186,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -209,6 +215,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -235,6 +242,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": {
             "category": "POINT",
@@ -272,6 +280,13 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -309,6 +324,7 @@
               "tiebreak": null
             }
           ],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -342,6 +358,13 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -379,6 +402,7 @@
               "tiebreak": null
             }
           ],
+          "said": [],
           "seen": [],
           "awaiting_answer": {
             "category": "SEQUENCES",
@@ -420,6 +444,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -466,6 +502,7 @@
               "tiebreak": null
             }
           ],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -503,6 +540,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -549,6 +598,7 @@
               "tiebreak": null
             }
           ],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -590,6 +640,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS",
@@ -640,6 +702,7 @@
               "tiebreak": null
             }
           ],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -697,6 +760,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -749,6 +824,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -809,6 +901,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -861,6 +965,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -921,6 +1042,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -973,6 +1106,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1033,6 +1183,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1085,6 +1247,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1145,6 +1324,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1197,6 +1388,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1257,6 +1465,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1309,6 +1529,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1369,6 +1606,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1421,6 +1670,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1481,6 +1747,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1533,6 +1811,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1593,6 +1888,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1645,6 +1952,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1705,6 +2029,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1757,6 +2093,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1817,6 +2170,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1869,6 +2234,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -1929,6 +2311,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -1981,6 +2375,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2041,6 +2452,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2093,6 +2516,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2153,6 +2593,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2205,6 +2657,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2265,6 +2734,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2317,6 +2798,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2377,6 +2875,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2429,6 +2939,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2489,6 +3016,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2541,6 +3080,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2601,6 +3157,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2653,6 +3221,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2713,6 +3298,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2765,6 +3362,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2825,6 +3439,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2877,6 +3503,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -2937,6 +3580,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -2989,6 +3644,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -3049,6 +3721,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -3101,6 +3785,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -3161,6 +3862,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -3213,6 +3926,23 @@
             {
               "category": "SEQUENCES",
               "primary": 5,
+              "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
               "tiebreak": null
             }
           ],
@@ -3273,6 +4003,18 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 5,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 5,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 8 (75)",
             "huitième to the ace",
@@ -3328,6 +4070,23 @@
               "tiebreak": null
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 8,
+              "tiebreak": null
+            },
+            {
+              "category": "SETS",
+              "primary": 3,
+              "tiebreak": null
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3357,6 +4116,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3379,6 +4139,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3407,6 +4168,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3429,6 +4191,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S 9S TS JS QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3457,6 +4220,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3486,6 +4250,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3514,6 +4279,7 @@
           "unseen": "JD QD KD AD 7H 8H 9H TH JH QH KH AH QS KS AS",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3543,6 +4309,7 @@
           "unseen": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
           "outcomes": [],
           "heard": [],
+          "said": [],
           "seen": [],
           "awaiting_answer": {
             "category": "POINT",
@@ -3580,6 +4347,13 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3620,6 +4394,7 @@
               "tiebreak": 60
             }
           ],
+          "said": [],
           "seen": [
             "point of 6 (60)"
           ],
@@ -3655,6 +4430,13 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3695,6 +4477,7 @@
               "tiebreak": 60
             }
           ],
+          "said": [],
           "seen": [
             "point of 6 (60)"
           ],
@@ -3738,6 +4521,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3787,6 +4582,7 @@
               "tiebreak": 14
             }
           ],
+          "said": [],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -3828,6 +4624,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "",
@@ -3877,6 +4685,7 @@
               "tiebreak": 14
             }
           ],
+          "said": [],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -3922,6 +4731,18 @@
             ]
           ],
           "heard": [],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
+            }
+          ],
           "seen": [],
           "awaiting_answer": null,
           "legal_plays": "9C TC JC QC KC AC 7D 8D 9D TD 7S 8S",
@@ -3975,6 +4796,7 @@
               "tiebreak": 14
             }
           ],
+          "said": [],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4029,6 +4851,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4088,6 +4922,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4142,6 +4988,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4201,6 +5059,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4255,6 +5125,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4314,6 +5196,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4368,6 +5262,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4427,6 +5333,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4481,6 +5399,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4540,6 +5470,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4594,6 +5536,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4653,6 +5607,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4707,6 +5673,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4766,6 +5744,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4820,6 +5810,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4879,6 +5881,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -4933,6 +5947,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -4992,6 +6018,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5046,6 +6084,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5105,6 +6155,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5159,6 +6221,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5218,6 +6292,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5272,6 +6358,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5331,6 +6429,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5385,6 +6495,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5444,6 +6566,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5498,6 +6632,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5557,6 +6703,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5611,6 +6769,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5670,6 +6840,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5724,6 +6906,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5783,6 +6977,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5837,6 +7043,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -5896,6 +7114,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -5950,6 +7180,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6009,6 +7251,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6063,6 +7317,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6122,6 +7388,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6176,6 +7454,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6235,6 +7525,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6289,6 +7591,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6348,6 +7662,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6402,6 +7728,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6461,6 +7799,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6515,6 +7865,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6574,6 +7936,18 @@
               "tiebreak": 14
             }
           ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
+            }
+          ],
           "seen": [
             "point of 6 (60)",
             "sixième to the ace",
@@ -6628,6 +8002,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": null
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": 60
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": 14
             }
           ],
           "seen": [
@@ -6685,6 +8071,18 @@
               "category": "SEQUENCES",
               "primary": 6,
               "tiebreak": 14
+            }
+          ],
+          "said": [
+            {
+              "category": "POINT",
+              "primary": 6,
+              "tiebreak": null
+            },
+            {
+              "category": "SEQUENCES",
+              "primary": 6,
+              "tiebreak": null
             }
           ],
           "seen": [

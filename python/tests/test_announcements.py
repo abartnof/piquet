@@ -6,8 +6,14 @@ information is the hinge the whole game turns on. Three separate things happen:
 - You **announce** a shape -- "point of five" -- and never a suit.
 - If your combination scores, or ties, the opponent may **ask to see it**, and
   the cards become public.
-- If it is beaten it scores nothing and is never shown, so you have given away
-  the shape of your hand without giving away the suit.
+- If it is beaten it scores nothing and is never shown. Elder, who speaks
+  first, has given away its shape. Younger has given away nothing but "good":
+  she names only what she won. pagat: "younger hand announces and scores for
+  combinations in categories where she has said 'not good' or where elder has
+  not made any declaration." Foster (1897): "the dealer ... proceeds to claim
+  the count for the combinations which are good in his own hand" -- and his
+  worked example's trios, "shut out by the superior combinations in the elder
+  hand", are never mentioned at all.
 """
 
 from piquet.cards import Suit
@@ -24,6 +30,16 @@ E, Y = Player.ELDER, Player.YOUNGER
 LOPSIDED = dict(
     elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
     younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+)
+
+# The same two hands the other way about: younger's eight beats elder's seven.
+REVERSED = dict(elder=LOPSIDED["younger"], younger=LOPSIDED["elder"])
+
+# Both hold a four-card point, elder's worth 41 and younger's 40. The shapes
+# match, so she answers "equal", he says "making forty-one", and she "good".
+SHAPES_MATCH = dict(
+    elder="AS KS QS JS 7H 8H 9H 7C 8C 9C 7D 8D",
+    younger="KD QD JD TD TH JH QH TC JC QC TS 9S",
 )
 
 # Both hold a four-card point worth 41. An exact tie.
@@ -98,12 +114,25 @@ def test_elder_hears_nothing_of_hers_until_he_has_led():
 
     This is the same rule that lets him pique by leading, seen from the other
     side, and it is what makes the first lead a genuinely blind one."""
-    deal = declare_point(declare_point(declaring(**LOPSIDED), E), Y)
+    deal = declare_point(declare_point(declaring(**REVERSED), E), Y)
     assert view_for(deal, E).heard == ()
-    assert view_for(deal, E).outcomes == ((Category.POINT, E),), "the score is called"
+    assert view_for(deal, E).outcomes == ((Category.POINT, Y),), "the score is called"
 
     deal = after_elders_lead(deal)
-    assert [a.primary for a in view_for(deal, E).heard] == [7]
+    assert [a.primary for a in view_for(deal, E).heard] == [8]
+
+
+def test_a_holding_answered_good_is_never_named():
+    """She said "good" to his eight. That is all she said, before his lead or
+    after it: she claims only the combinations that are good in her hand, so
+    her seven diamonds are never mentioned at all.
+
+    An earlier version had her name the shape of every holding she declared,
+    won or lost, which handed elder her point length in about half of all
+    deals -- a fourth leak in the dialogue, found by narrating it."""
+    deal = after_elders_lead(declare_point(declare_point(declaring(**LOPSIDED), E), Y))
+    assert view_for(deal, E).heard == ()
+    assert view_for(deal, E).seen == ()
 
 
 # --------------------------------------------------------------------------
@@ -121,11 +150,11 @@ def test_a_combination_that_scores_must_be_shown():
 
 
 def test_a_beaten_declaration_is_never_shown():
-    """Younger loses the point, so she gave away the shape of her hand -- seven
+    """Elder loses the point, so he gave away the shape of his hand -- seven
     cards in some suit -- without giving away which suit."""
-    deal = after_elders_lead(declare_point(declare_point(declaring(**LOPSIDED), E), Y))
-    assert view_for(deal, E).seen == ()
-    assert [a.primary for a in view_for(deal, E).heard] == [7]
+    deal = declare_point(declare_point(declaring(**REVERSED), E), Y)
+    assert view_for(deal, Y).seen == ()
+    assert [a.primary for a in view_for(deal, Y).heard] == [7]
 
 
 def test_an_equal_declaration_is_shown_to_both():
@@ -187,13 +216,31 @@ def test_younger_must_answer_from_the_shape_alone():
 
 
 def test_a_beaten_point_never_states_its_pip_value():
-    """Younger loses the point, so she shows nothing -- and she was never asked
-    what her seven cards were worth either."""
-    deal = after_elders_lead(declare_point(declare_point(declaring(**LOPSIDED), E), Y))
-    heard, = view_for(deal, E).heard
+    """Elder loses the point, so he shows nothing -- and he was never asked
+    what his seven cards were worth either."""
+    deal = declare_point(declare_point(declaring(**REVERSED), E), Y)
+    heard, = view_for(deal, Y).heard
     assert heard.primary == 7, "the shape is public"
     assert heard.tiebreak is None, "the pip total was never spoken"
-    assert view_for(deal, E).seen == ()
+    assert view_for(deal, Y).seen == ()
+
+
+def test_matching_shapes_are_heard_because_equal_was_said():
+    """She said "equal" to his four, and only then "good" to his forty-one --
+    so her four cards were as good as named, and elder may use them."""
+    deal = after_elders_lead(declare_point(declare_point(declaring(**SHAPES_MATCH), E), Y))
+    assert deal.results[0].winner is E
+    heard, = view_for(deal, E).heard
+    assert (heard.primary, heard.tiebreak) == (4, None), "the shape, never her pips"
+
+
+def test_a_player_remembers_what_they_said():
+    """`said` is `heard` from the other chair: the words were spoken aloud,
+    so both people at the table know them."""
+    deal = after_elders_lead(declare_point(declare_point(declaring(**REVERSED), E), Y))
+    assert view_for(deal, E).said == view_for(deal, Y).heard
+    assert view_for(deal, Y).said == view_for(deal, E).heard
+    assert [a.primary for a in view_for(deal, E).said] == [7]
 
 
 def test_a_winning_point_gives_up_its_value_by_being_shown_not_by_being_said():

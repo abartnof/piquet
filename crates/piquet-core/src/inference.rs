@@ -14,10 +14,10 @@
 
 use crate::cards::{Card, Hand, Suit};
 use crate::combos::{best_point, best_sequence, best_set};
-use crate::declarations::Combination;
+use crate::declarations::{Announcement, Combination};
 use crate::observation::View;
 use crate::rng::Rng;
-use crate::scoring::Category;
+use crate::scoring::{Category, Player};
 
 /// How many cards the opponent is holding right now.
 ///
@@ -98,14 +98,71 @@ fn at_least_what_was_claimed(original: Hand, view: &View) -> bool {
     })
 }
 
-/// She said nothing in that category, so she had nothing in it.
+/// Whether a holding is worse than a call. A call carries its tie-break only
+/// when the shapes matched, and then only the tie-break can decide.
+fn short_of(key: (u32, u32), called: Announcement) -> bool {
+    match called.tiebreak {
+        None => key.0 < called.primary,
+        Some(tiebreak) => key.0 == called.primary && key.1 < tiebreak,
+    }
+}
+
+/// Whether a holding beats a call.
+fn beyond(key: (u32, u32), called: Announcement) -> bool {
+    match called.tiebreak {
+        None => key.0 > called.primary,
+        Some(tiebreak) => key.0 == called.primary && key.1 > tiebreak,
+    }
+}
+
+/// What she did not name, read against what she answered.
 ///
-/// True of an honest declarer and false of one who sank the category whole.
-fn silence_means_nothing_held(original: Hand, view: &View) -> bool {
-    !DECLARED_CATEGORIES.iter().any(|category| {
-        let declared = view.heard.iter().any(|a| a.category == *category);
-        !declared && best_in(*category, original).is_some()
-    })
+/// She names only what she won, so a category she is silent in is not one
+/// she held nothing in. The answers are public, and they say what her silence
+/// means. If he called and she said "good", she holds less than his call. If
+/// she said "not good" and has not named it yet -- she names nothing until he
+/// has led -- she holds more. "Equal" means the same. Where there was no call
+/// to answer, silence means nothing held.
+///
+/// An earlier version read every silence as "nothing held", in unsettled
+/// categories too. That was only ever right because her beaten holdings were
+/// being named, which they should not have been; and at elder's blind first
+/// lead, when she has named nothing at all, it ruled out every candidate and
+/// so quietly told him nothing, discarding answers he had heard.
+///
+/// True of an honest declarer and false of one who sank.
+fn silence_agrees_with_the_answers(original: Hand, view: &View) -> bool {
+    for (category, winner) in &view.outcomes {
+        if !DECLARED_CATEGORIES.contains(category)
+            || view.heard.iter().any(|a| a.category == *category)
+        {
+            continue;
+        }
+        let best = best_in(*category, original).map(|c| c.key());
+        let called = if view.me == Player::Elder {
+            view.said.iter().copied().find(|a| a.category == *category)
+        } else {
+            None
+        };
+        let consistent = match called {
+            None if view.me == Player::Elder && *winner == Some(view.opponent()) => {
+                // She won it and has not named it yet: she holds something.
+                best.is_some()
+            }
+            None => best.is_none(),
+            Some(called) if *winner == Some(view.me) => {
+                best.is_none_or(|key| short_of(key, called))
+            }
+            Some(called) if *winner == Some(view.opponent()) => {
+                best.is_some_and(|key| beyond(key, called))
+            }
+            Some(called) => best.is_some() && best == called.tiebreak.map(|t| (called.primary, t)),
+        };
+        if !consistent {
+            return false;
+        }
+    }
+    true
 }
 
 /// She named her best holding, exactly, not some lesser one.
@@ -123,7 +180,7 @@ fn what_was_named_was_the_best(original: Hand, view: &View) -> bool {
 pub const LADDER: [fn(Hand, &View) -> bool; 4] = [
     shown_cards_are_held,
     at_least_what_was_claimed,
-    silence_means_nothing_held,
+    silence_agrees_with_the_answers,
     what_was_named_was_the_best,
 ];
 

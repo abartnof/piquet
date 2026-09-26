@@ -207,39 +207,32 @@ def test_legal_plays_are_offered_only_to_the_player_on_turn():
 # --------------------------------------------------------------------------
 
 
+#: Measured over these forty deals: a median of 56 (mean 83), and never the
+#: truth ruled out. The bound is the one this test has always held.
+MEDIAN_AT_FIRST_LEAD = 60
+
+
 def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
     """The measurement the play-phase solver depends on.
 
     Before anyone declares, elder faces exactly C(15,12)=455 possible hands.
-    The declaration dialogue is extraordinarily informative, and over 400 deals
-    it cuts that to a median of 21 -- occasionally to a single hand. That is
+    The declaration dialogue is extraordinarily informative, and it cuts that
+    to a few dozen at his first lead -- occasionally to a single hand. That is
     what makes solving the play phase by enumeration cheap enough to do while
     somebody is waiting.
+
+    Measured with the engine's own inference rather than a copy of it. An
+    earlier version carried its own "silence means nothing held" filter, which
+    was only ever right because younger's beaten holdings were being named;
+    once they were not, the copy started ruling out her real hand.
     """
     import random
     import statistics
     from itertools import combinations
 
-    from piquet.combos import best_point, best_sequence, best_set
     from piquet.heuristics import HeuristicAgent
+    from piquet.inference import possible_hands
     from piquet.rules import deal_shuffled
-    from piquet.scoring import Category
-
-    best_of = {
-        Category.POINT: best_point,
-        Category.SEQUENCES: best_sequence,
-        Category.SETS: best_set,
-    }
-
-    def consistent(hand, heard, shown):
-        for announcement in heard:
-            if not announcement.matches(best_of[announcement.category](hand)):
-                return False
-        declared = {a.category for a in heard}
-        for category, finder in best_of.items():
-            if category not in declared and finder(hand) is not None:
-                return False   # she would have declared it
-        return all(c.is_supported_by(hand) for c in shown)
 
     rng = random.Random(1674)
     counts = []
@@ -260,22 +253,17 @@ def test_the_declarations_collapse_the_possible_hands_to_a_couple_of_dozen():
             )
         # She names nothing until elder has led, so the collapse happens at
         # his first lead and not a moment before it. He chooses that card
-        # knowing only which categories she took.
+        # knowing only how she answered.
         assert view_for(deal, E).heard == ()
         deal = deal.play(E, agents[E.index].play(view_for(deal, E)))
 
         view = view_for(deal, E)
         assert len(list(combinations(list(view.unseen), 12))) == 455
-        counts.append(
-            sum(
-                1
-                for candidate in combinations(list(view.unseen), 12)
-                if consistent(Hand.of(*candidate), view.heard, view.seen)
-            )
-        )
+        candidates = possible_hands(view)
+        assert deal.hand_of(Y) in candidates, "younger's actual hand is always a candidate"
+        counts.append(len(candidates))
 
-    assert statistics.median(counts) < 60, "the collapse is what makes search cheap"
-    assert min(counts) >= 1, "younger's actual hand is always among the candidates"
+    assert statistics.median(counts) < MEDIAN_AT_FIRST_LEAD, "the collapse is what makes search cheap"
 
 
 # --------------------------------------------------------------------------

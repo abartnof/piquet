@@ -532,3 +532,66 @@ def test_the_partie_weighting_is_off_unless_it_is_asked_for():
     view = view_for(deal, E, Standing(mine=82, theirs=150, deals_left=1))
     assert SolverAgent(rng=random.Random(1)).weights(view) == EVEN
     assert SolverAgent(rng=random.Random(1), partie_aware=True).weights(view) != EVEN
+
+
+# --------------------------------------------------------------------------
+# What the answers imply
+# --------------------------------------------------------------------------
+#
+# She names only what she won, so a category she does not name is not a
+# category she held nothing in. Her silence has to be read against what she
+# answered: "good" to his call means less than it; "not good", before she has
+# named it, means more; "equal" means the same shape.
+
+LOPSIDED = dict(
+    elder="AS KS QS JS TS 9S 8S 7S AH KH QH JH",
+    younger="AD KD QD JD TD 9D 8D AC KC QC JC TC",
+)
+
+
+def _everything_declared(elder, younger):
+    """Both players call everything they hold, and nobody has led yet."""
+    from piquet.rules import Declaration
+    from tests.helpers import declaring
+
+    deal = declaring(elder=elder, younger=younger)
+    while deal.to_declare is not None:
+        player = deal.to_declare
+        deal = deal.declare(
+            player, Declaration.full(deal.hand_of(player), deal.declaring_category)
+        )
+    return deal
+
+
+def test_good_means_she_holds_less_than_his_call():
+    """He called eight cards and a huitième, and she said "good" to both --
+    so whatever she holds, it is shorter. And she held no trio, since both
+    were silent there and the category came out equal."""
+    from piquet.combos import best_point, best_sequence, best_set
+
+    deal = _everything_declared(**LOPSIDED)
+    for moment in (deal, deal.play(E, Card.parse("AS"))):
+        view = view_for(moment, E)
+        assert view.heard == (), "she named nothing, before his lead or after"
+        candidates = possible_hands(view)
+        assert moment.hand_of(Y) in candidates, "the truth is never ruled out"
+        for hand in candidates:  # she has played nothing yet: these are her twelve
+            assert best_point(hand).length < 8
+            assert best_sequence(hand) is None or best_sequence(hand).length < 8
+            assert best_set(hand) is None
+
+
+def test_not_good_means_she_beat_his_call_before_she_names_it():
+    """The same hands the other way about. At his blind first lead she has
+    named nothing, but her two answers of "not good" are public, and they say
+    she holds more than his seven."""
+    from piquet.combos import best_point, best_sequence
+
+    deal = _everything_declared(elder=LOPSIDED["younger"], younger=LOPSIDED["elder"])
+    view = view_for(deal, E)
+    assert view.heard == ()
+    candidates = possible_hands(view)
+    assert deal.hand_of(Y) in candidates
+    assert all(best_point(hand).length > 7 for hand in candidates)
+    assert all(best_sequence(hand).length > 7 for hand in candidates)
+    assert len(candidates) < len(possible_hands(view, use_declarations=False))

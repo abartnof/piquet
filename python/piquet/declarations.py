@@ -258,12 +258,21 @@ class CategoryResult:
         Younger never gives hers at all: she answers his number rather than
         naming her own, and on the occasions she has something to name she has
         won the category and has to show the cards anyway.
+
+        And younger names a holding only if she won the category with it, or
+        if the shapes matched -- when her "equal" said as much. Beaten
+        outright, she said "good" and nothing else: pagat has her announce
+        only "combinations in categories where she has said 'not good' or
+        where elder has not made any declaration", and Foster's dealer claims
+        "the combinations which are good in his own hand".
         """
         spoken = self.declaration_of(player).announce(self.category)
         if spoken is None:
             return None
         if player is Player.ELDER and self.shapes_match:
             return spoken
+        if player is Player.YOUNGER and self.winner is Player.ELDER and not self.shapes_match:
+            return None
         return spoken.shape
 
     def shown(self, player: Player) -> tuple:

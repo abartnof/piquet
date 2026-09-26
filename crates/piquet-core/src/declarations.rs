@@ -347,10 +347,22 @@ impl CategoryResult {
     ///
     /// Elder gives his tie-break when the shapes match, and not otherwise.
     /// Younger never gives hers at all.
+    ///
+    /// And younger names a holding only if she won the category with it, or
+    /// if the shapes matched -- when her "equal" said as much. Beaten
+    /// outright, she said "good" and nothing else: pagat has her announce only
+    /// "combinations in categories where she has said 'not good' or where
+    /// elder has not made any declaration", and Foster's dealer claims "the
+    /// combinations which are good in his own hand".
     pub fn announcement_of(&self, player: Player) -> Option<Announcement> {
         let spoken = self.declaration_of(player).announce(self.category)?;
         if player == Player::Elder && self.shapes_match() {
             Some(spoken)
+        } else if player == Player::Younger
+            && self.winner() == Some(Player::Elder)
+            && !self.shapes_match()
+        {
+            None
         } else {
             Some(spoken.shape())
         }

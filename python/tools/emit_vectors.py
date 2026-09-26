@@ -1088,6 +1088,10 @@ def _view(v: View) -> dict:
             {"category": a.category.name, "primary": a.primary, "tiebreak": a.tiebreak}
             for a in v.heard
         ],
+        "said": [
+            {"category": a.category.name, "primary": a.primary, "tiebreak": a.tiebreak}
+            for a in v.said
+        ],
         "seen": [str(c) for c in v.seen],
         "awaiting_answer": (
             None

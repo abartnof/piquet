@@ -68,6 +68,10 @@ class View:
     #: What the opponent said aloud in settled categories -- always public, but
     #: it names a shape ("point of five"), never a suit.
     heard: tuple[Announcement, ...]
+    #: What this player has said aloud: `heard`, from the other chair. Their own
+    #: words, so nothing new -- but inference needs them, because what the
+    #: opponent's silence means depends on what it was a silence in answer to.
+    said: tuple[Announcement, ...]
     #: The opponent's combinations that had to be exposed, because they scored
     #: or because the category was equal. A beaten declaration is never shown,
     #: so its owner gives away the shape of the holding but not its suit.
@@ -253,6 +257,7 @@ def view_for(
         exchange_limit=deal.exchange_limit(player),
         outcomes=tuple((r.category, r.winner) for r in deal.results),
         heard=_heard(deal, player),
+        said=_heard(deal, player.opponent),
         seen=_seen(deal, player),
         awaiting_answer=_awaiting_answer(deal, player),
         partie=(

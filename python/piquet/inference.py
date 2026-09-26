@@ -29,8 +29,9 @@ from typing import Optional
 
 from piquet.cards import Hand, Suit
 from piquet.combos import best_point, best_sequence, best_set
+from piquet.declarations import Announcement
 from piquet.observation import View
-from piquet.scoring import Category
+from piquet.scoring import Category, Player
 
 __all__ = [
     "possible_hands", "opponent_hand_size", "known_voids", "opponent_played",
@@ -114,16 +115,62 @@ def _at_least_what_was_claimed(original: Hand, view: View) -> bool:
     return True
 
 
-def _silence_means_nothing_held(original: Hand, view: View) -> bool:
-    """She said nothing in that category, so she had nothing in it.
+def _short_of(key: tuple[int, int], called: Announcement) -> bool:
+    """Whether a holding is worse than a call. A call carries its tie-break
+    only when the shapes matched, and then only the tie-break can decide."""
+    if called.tiebreak is None:
+        return key[0] < called.primary
+    return key[0] == called.primary and key[1] < called.tiebreak
 
-    True of an honest declarer and false of one who sank the category whole.
+
+def _beyond(key: tuple[int, int], called: Announcement) -> bool:
+    """Whether a holding beats a call."""
+    if called.tiebreak is None:
+        return key[0] > called.primary
+    return key[0] == called.primary and key[1] > called.tiebreak
+
+
+def _silence_agrees_with_the_answers(original: Hand, view: View) -> bool:
+    """What she did not name, read against what she answered.
+
+    She names only what she won, so a category she is silent in is not one she
+    held nothing in. The answers are public, and they say what her silence
+    means. If he called and she said "good", she holds less than his call. If
+    she said "not good" and has not named it yet -- she names nothing until he
+    has led -- she holds more. "Equal" means the same. Where there was no call
+    to answer, silence means nothing held.
+
+    An earlier version read every silence as "nothing held", in unsettled
+    categories too. That was only ever right because her beaten holdings were
+    being named, which they should not have been; and at elder's blind first
+    lead, when she has named nothing at all, it ruled out every candidate and
+    so quietly told him nothing, discarding answers he had heard.
+
+    True of an honest declarer and false of one who sank.
     """
-    declared = {a.category for a in view.heard}
-    return not any(
-        category not in declared and finder(original) is not None
-        for category, finder in _BEST.items()
-    )
+    named = {a.category for a in view.heard}
+    mine = {a.category: a for a in view.said}
+    for category, winner in view.outcomes:
+        if category not in _BEST or category in named:
+            continue
+        best = _BEST[category](original)
+        called = mine.get(category) if view.me is Player.ELDER else None
+        if called is None:
+            if view.me is Player.ELDER and winner is view.opponent:
+                # She won it and has not named it yet: she holds something.
+                if best is None:
+                    return False
+            elif best is not None:
+                return False
+        elif winner is view.me:
+            if best is not None and not _short_of(best.key, called):
+                return False
+        elif winner is view.opponent:
+            if best is None or not _beyond(best.key, called):
+                return False
+        elif best is None or best.key != (called.primary, called.tiebreak):
+            return False
+    return True
 
 
 def _what_was_named_was_the_best(original: Hand, view: View) -> bool:
@@ -150,7 +197,7 @@ def _what_was_named_was_the_best(original: Hand, view: View) -> bool:
 LADDER = (
     _shown_cards_are_held,
     _at_least_what_was_claimed,
-    _silence_means_nothing_held,
+    _silence_agrees_with_the_answers,
     _what_was_named_was_the_best,
 )
 

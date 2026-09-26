@@ -51,6 +51,10 @@ pub struct View {
     /// What the opponent said aloud in settled categories -- always public,
     /// but it names a shape ("point of five"), never a suit.
     pub heard: Vec<Announcement>,
+    /// What this player has said aloud: `heard`, from the other chair. Their
+    /// own words, so nothing new -- but inference needs them, because what
+    /// the opponent's silence means depends on what it answered.
+    pub said: Vec<Announcement>,
     /// The opponent's combinations that had to be exposed, because they scored
     /// or because the category was equal.
     pub seen: Vec<Combination>,
@@ -239,6 +243,7 @@ pub fn view_for(deal: &Deal, player: Player, standing: Option<Standing>) -> View
             .map(|r| (r.category, r.winner()))
             .collect(),
         heard: heard(deal, player),
+        said: heard(deal, player.opponent()),
         seen: seen(deal, player),
         awaiting_answer: awaiting_answer(deal, player),
         partie: match (standing, player) {

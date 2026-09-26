@@ -22,12 +22,7 @@
           "tiebreak": null,
           "spoken": "point of 8"
         },
-        "younger": {
-          "category": "POINT",
-          "primary": 7,
-          "tiebreak": null,
-          "spoken": "point of 7"
-        }
+        "younger": null
       },
       "shown": {
         "elder": [
@@ -163,12 +158,7 @@
           "tiebreak": null,
           "spoken": "quart"
         },
-        "younger": {
-          "category": "SEQUENCES",
-          "primary": 3,
-          "tiebreak": null,
-          "spoken": "tierce"
-        }
+        "younger": null
       },
       "shown": {
         "elder": [
