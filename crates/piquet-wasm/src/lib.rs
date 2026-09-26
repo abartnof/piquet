@@ -1,0 +1,539 @@
+//! The table as a protocol: JSON out, one-line commands in.
+//!
+//! A client -- the browser page under `web/`, or anything that replaces it --
+//! holds no game logic at all. It asks for the state, draws it, and sends back
+//! one of four commands:
+//!
+//! ```text
+//! exchange 7C 8C KC      throw these, draw as many
+//! declare 0              choose option 0 of the declaration prompt
+//! play KS                lead or follow with this card
+//! next                   deal the next hand
+//! ```
+//!
+//! The state's shape is documented in `docs/PROTOCOL.md`, and every field in
+//! it is derived from the human's view, so a client cannot show more than the
+//! human at the table could know.
+//!
+//! Compiled to WebAssembly the crate exports four functions (see [`ffi`]),
+//! passing strings through linear memory. There is no `wasm-bindgen`: the
+//! engine has no dependencies and the four functions do not need one.
+
+use piquet_core::cards::{Card, Hand, Suit};
+use piquet_core::chances::in_words;
+use piquet_core::declarations::Declaration;
+use piquet_core::rules::Trick;
+use piquet_core::scoring::{Category, Player};
+use piquet_core::table::{said, Action, Event, Prompt, Table, Who};
+
+/// Bumped whenever the state changes shape in a way a client would notice.
+pub const PROTOCOL: u32 = 1;
+
+/// One human at one table, and the reason the last command was refused.
+pub struct Session {
+    table: Table,
+    level: u32,
+    error: Option<String>,
+}
+
+impl Session {
+    pub fn new(level: u32, seed: u32) -> Session {
+        Session {
+            table: Table::new(level, seed),
+            level: level.clamp(1, 5),
+            error: None,
+        }
+    }
+
+    pub fn table(&self) -> &Table {
+        &self.table
+    }
+
+    /// Carry out one command. On refusal the table is untouched and the
+    /// reason is in the state's `error` until the next command succeeds.
+    pub fn send(&mut self, command: &str) -> bool {
+        let outcome = parse(command).and_then(|action| self.table.act(action));
+        match outcome {
+            Ok(()) => {
+                self.error = None;
+                true
+            }
+            Err(why) => {
+                self.error = Some(why);
+                false
+            }
+        }
+    }
+
+    pub fn state(&self) -> String {
+        state(&self.table, self.level, self.error.as_deref())
+    }
+}
+
+fn parse(command: &str) -> Result<Action, String> {
+    let mut words = command.split_whitespace();
+    let verb = words.next().unwrap_or("");
+    let rest: Vec<&str> = words.collect();
+    match verb {
+        "exchange" => {
+            if rest.is_empty() {
+                return Err("name at least one card to throw".to_string());
+            }
+            let cards = rest
+                .iter()
+                .map(|w| Card::parse(w))
+                .collect::<Result<Vec<Card>, String>>()?;
+            Ok(Action::Exchange(Hand::of(&cards)?))
+        }
+        "declare" => {
+            let index = rest
+                .first()
+                .and_then(|w| w.parse::<usize>().ok())
+                .ok_or_else(|| "declare which option? give its number".to_string())?;
+            Ok(Action::Declare(index))
+        }
+        "play" => {
+            let word = rest.first().ok_or_else(|| "play which card?".to_string())?;
+            Ok(Action::Play(Card::parse(word)?))
+        }
+        "next" => Ok(Action::NextDeal),
+        "" => Err("an empty command".to_string()),
+        other => Err(format!("unknown command {other:?}")),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Writing JSON. Twenty lines rather than a dependency.
+// ---------------------------------------------------------------------------
+
+fn text(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
+}
+
+fn object(fields: &[(&str, String)]) -> String {
+    let body: Vec<String> = fields
+        .iter()
+        .map(|(k, v)| format!("{}:{}", text(k), v))
+        .collect();
+    format!("{{{}}}", body.join(","))
+}
+
+fn list(items: impl IntoIterator<Item = String>) -> String {
+    format!("[{}]", items.into_iter().collect::<Vec<_>>().join(","))
+}
+
+fn or_null(value: Option<String>) -> String {
+    value.unwrap_or_else(|| "null".to_string())
+}
+
+// ---------------------------------------------------------------------------
+// The state.
+// ---------------------------------------------------------------------------
+
+/// Spades, hearts, diamonds, clubs; high to low within each. The order a
+/// player reads a fanned hand in, and the one the terminal draws.
+const DISPLAY_ORDER: [Suit; 4] = [Suit::SPADES, Suit::HEARTS, Suit::DIAMONDS, Suit::CLUBS];
+
+fn hand(cards: Hand) -> String {
+    let mut out = Vec::new();
+    for suit in DISPLAY_ORDER {
+        let mut these: Vec<Card> = cards.in_suit(suit).cards().collect();
+        these.sort_by_key(|c| std::cmp::Reverse(c.rank()));
+        out.extend(these.iter().map(|c| text(&c.code())));
+    }
+    list(out)
+}
+
+fn who(who: Who) -> String {
+    text(match who {
+        Who::You => "you",
+        Who::Them => "them",
+    })
+}
+
+fn category(category: Category) -> String {
+    text(match category {
+        Category::CarteBlanche => "carte_blanche",
+        Category::Point => "point",
+        Category::Sequences => "sequences",
+        Category::Sets => "sets",
+        Category::Play => "play",
+        Category::Cards => "cards",
+        Category::Bonus => "bonus",
+    })
+}
+
+fn trick(trick: &Trick, you: Player, complete: bool) -> String {
+    let side = |p: Player| who(if p == you { Who::You } else { Who::Them });
+    let mut fields = vec![
+        ("leader", side(trick.leader)),
+        ("led", text(&trick.led.code())),
+        ("followed", or_null(trick.followed.map(|c| text(&c.code())))),
+    ];
+    if complete {
+        let winner = trick.winner().expect("a complete trick has a winner");
+        fields.push(("winner", side(winner)));
+    }
+    object(&fields)
+}
+
+fn option(declaration: &Declaration, full: bool) -> String {
+    object(&[
+        (
+            "text",
+            text(&if declaration.is_empty() {
+                "nothing".to_string()
+            } else {
+                declaration.describe()
+            }),
+        ),
+        ("score", declaration.score().to_string()),
+        ("full", full.to_string()),
+    ])
+}
+
+fn prompt(prompt: &Prompt) -> String {
+    match prompt {
+        Prompt::Exchange { limit } => {
+            object(&[("kind", text("exchange")), ("limit", limit.to_string())])
+        }
+        Prompt::Declare {
+            category: c,
+            options,
+            answering,
+        } => object(&[
+            ("kind", text("declare")),
+            ("category", category(*c)),
+            ("answering", or_null(answering.map(|a| text(&said(a))))),
+            (
+                "options",
+                list(
+                    options
+                        .iter()
+                        .enumerate()
+                        .map(|(i, d)| option(d, i == 0 && !d.is_empty())),
+                ),
+            ),
+        ]),
+        Prompt::Play { legal } => object(&[("kind", text("play")), ("legal", hand(*legal))]),
+        Prompt::NextDeal => object(&[("kind", text("next_deal"))]),
+        Prompt::Over => object(&[("kind", text("over"))]),
+    }
+}
+
+fn event(event: &Event, deal: usize, them: &str) -> String {
+    let mut fields: Vec<(&str, String)> = Vec::new();
+    let kind = match event {
+        Event::DealBegins {
+            elder,
+            standing,
+            rubicon_permille,
+            ..
+        } => {
+            fields.push(("elder", who(*elder)));
+            fields.push(("you_total", standing.mine.to_string()));
+            fields.push(("them_total", standing.theirs.to_string()));
+            fields.push((
+                "rubicon_permille",
+                or_null(rubicon_permille.map(|p| p.to_string())),
+            ));
+            "deal_begins"
+        }
+        Event::Exchanged { who: w, count } => {
+            fields.push(("who", who(*w)));
+            fields.push(("count", count.to_string()));
+            "exchanged"
+        }
+        Event::Drew { discarded, drew } => {
+            fields.push(("discarded", hand(*discarded)));
+            fields.push(("drew", hand(*drew)));
+            "drew"
+        }
+        Event::Called {
+            who: w,
+            category: c,
+            said,
+        } => {
+            fields.push(("who", who(*w)));
+            fields.push(("category", category(*c)));
+            fields.push(("said", text(said)));
+            "called"
+        }
+        Event::Decided {
+            category: c,
+            winner,
+        } => {
+            fields.push(("category", category(*c)));
+            fields.push(("winner", or_null(winner.map(who))));
+            "decided"
+        }
+        Event::Showed { who: w, what } => {
+            fields.push(("who", who(*w)));
+            fields.push(("what", text(what)));
+            "showed"
+        }
+        Event::Scored {
+            who: w,
+            amount,
+            what,
+        } => {
+            fields.push(("who", who(*w)));
+            fields.push(("amount", amount.to_string()));
+            fields.push(("what", text(what)));
+            "scored"
+        }
+        Event::NothingToCall { category: c } => {
+            fields.push(("category", category(*c)));
+            "nothing_to_call"
+        }
+        Event::Played { who: w, card } => {
+            fields.push(("who", who(*w)));
+            fields.push(("card", text(&card.code())));
+            "played"
+        }
+        Event::TookTrick { who: w, number } => {
+            fields.push(("who", who(*w)));
+            fields.push(("number", number.to_string()));
+            "took_trick"
+        }
+        Event::DealEnds { you, them, .. } => {
+            fields.push(("you", you.to_string()));
+            fields.push(("them", them.to_string()));
+            "deal_ends"
+        }
+        Event::PartieEnds { you, them, .. } => {
+            fields.push(("you", you.to_string()));
+            fields.push(("them", them.to_string()));
+            "partie_ends"
+        }
+    };
+    let mut all = vec![
+        ("kind", text(kind)),
+        ("deal", deal.to_string()),
+        ("text", text(&event.text(them))),
+    ];
+    all.extend(fields);
+    object(&all)
+}
+
+/// The whole state of the table, from the human's chair.
+pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
+    let view = table.view();
+    let you = table.you();
+    let them = table.opponent().name;
+    let standing = table.standing();
+
+    let mut deal_number = 0;
+    let events: Vec<String> = table
+        .events()
+        .iter()
+        .map(|e| {
+            if let Event::DealBegins { number, .. } = e {
+                deal_number = *number;
+            }
+            event(e, deal_number, them)
+        })
+        .collect();
+
+    let rubicon = table.events().iter().rev().find_map(|e| match e {
+        Event::DealBegins {
+            rubicon_permille, ..
+        } => Some(*rubicon_permille),
+        _ => None,
+    });
+    let rubicon = rubicon.flatten().map(|p| {
+        object(&[
+            ("permille", p.to_string()),
+            ("words", text(&in_words(f64::from(p) / 1000.0))),
+        ])
+    });
+
+    let tricks_won = |p: Player| {
+        view.tricks
+            .iter()
+            .filter(|t| t.winner().is_ok_and(|w| w == p))
+            .count()
+    };
+
+    let deals = list(table.partie().outcomes.iter().map(|o| {
+        object(&[
+            ("number", o.number.to_string()),
+            ("you", o.scores[0].to_string()),
+            ("them", o.scores[1].to_string()),
+        ])
+    }));
+    let (partie_you, partie_them) = table.partie().totals();
+
+    let settlement = table.partie().settlement().map(|s| {
+        object(&[
+            (
+                "winner",
+                or_null(s.winner.map(|w| {
+                    who(if w == piquet_core::partie::Side::A {
+                        Who::You
+                    } else {
+                        Who::Them
+                    })
+                })),
+            ),
+            ("points", s.points.to_string()),
+            ("rubicon", s.rubicon.to_string()),
+        ])
+    });
+
+    object(&[
+        ("protocol", PROTOCOL.to_string()),
+        ("seed", table.seed().to_string()),
+        ("level", level.to_string()),
+        (
+            "opponent",
+            object(&[
+                ("name", text(them)),
+                ("gloss", text(table.opponent().gloss)),
+            ]),
+        ),
+        ("deal", standing.number.to_string()),
+        (
+            "you_are",
+            text(if you == Player::Elder {
+                "elder"
+            } else {
+                "younger"
+            }),
+        ),
+        ("phase", text(view.phase.value())),
+        (
+            "standing",
+            object(&[
+                ("you", standing.mine.to_string()),
+                ("them", standing.theirs.to_string()),
+                ("deals_left", standing.deals_left.to_string()),
+            ]),
+        ),
+        ("rubicon", or_null(rubicon)),
+        ("hand", hand(view.hand)),
+        ("discards", hand(view.my_discards)),
+        (
+            "talon_seen",
+            list(view.talon_seen.iter().map(|c| text(&c.code()))),
+        ),
+        ("talon_remaining", view.talon_remaining.to_string()),
+        (
+            "trick",
+            or_null(view.current_trick.as_ref().map(|t| trick(t, you, false))),
+        ),
+        (
+            "last_trick",
+            or_null(view.tricks.last().map(|t| trick(t, you, true))),
+        ),
+        (
+            "tricks",
+            object(&[
+                ("you", tricks_won(you).to_string()),
+                ("them", tricks_won(you.opponent()).to_string()),
+            ]),
+        ),
+        (
+            "score",
+            object(&[
+                ("you", view.log.total(you).to_string()),
+                ("them", view.log.total(you.opponent()).to_string()),
+            ]),
+        ),
+        ("prompt", prompt(&table.prompt())),
+        ("events", list(events)),
+        ("deals", deals),
+        (
+            "partie",
+            object(&[
+                ("you", partie_you.to_string()),
+                ("them", partie_them.to_string()),
+            ]),
+        ),
+        ("settlement", or_null(settlement)),
+        ("error", or_null(error.map(text))),
+    ])
+}
+
+/// The four functions a WebAssembly host calls.
+///
+/// Strings cross the boundary as UTF-8 in the module's linear memory: the
+/// host asks for a buffer with `piquet_alloc`, writes a command into it and
+/// calls `piquet_send`; it reads the state from `piquet_state`, which returns
+/// a pointer, and `piquet_state_len`. One session per module instance.
+pub mod ffi {
+    use super::Session;
+    use std::cell::RefCell;
+
+    thread_local! {
+        static SESSION: RefCell<Option<Session>> = const { RefCell::new(None) };
+        static OUT: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+        static IN: RefCell<Vec<u8>> = const { RefCell::new(Vec::new()) };
+    }
+
+    /// A buffer of `len` bytes for the host to write a command into. Valid
+    /// until the next call to this function.
+    #[no_mangle]
+    pub extern "C" fn piquet_alloc(len: usize) -> *mut u8 {
+        IN.with(|buffer| {
+            let mut buffer = buffer.borrow_mut();
+            buffer.clear();
+            buffer.resize(len, 0);
+            buffer.as_mut_ptr()
+        })
+    }
+
+    /// Sit down at a new table, discarding any old one.
+    #[no_mangle]
+    pub extern "C" fn piquet_new(level: u32, seed: u32) {
+        SESSION.with(|s| *s.borrow_mut() = Some(Session::new(level, seed)));
+        render();
+    }
+
+    /// Carry out the command in the `len` bytes just written. 1 if accepted.
+    #[no_mangle]
+    pub extern "C" fn piquet_send(len: usize) -> u32 {
+        let command = IN.with(|buffer| {
+            let buffer = buffer.borrow();
+            String::from_utf8_lossy(&buffer[..len.min(buffer.len())]).into_owned()
+        });
+        let accepted = SESSION.with(|s| match s.borrow_mut().as_mut() {
+            Some(session) => session.send(&command),
+            None => false,
+        });
+        render();
+        u32::from(accepted)
+    }
+
+    /// Where the state, as UTF-8 JSON, begins.
+    #[no_mangle]
+    pub extern "C" fn piquet_state() -> *const u8 {
+        OUT.with(|out| out.borrow().as_ptr())
+    }
+
+    #[no_mangle]
+    pub extern "C" fn piquet_state_len() -> usize {
+        OUT.with(|out| out.borrow().len())
+    }
+
+    fn render() {
+        let json = SESSION.with(|s| {
+            s.borrow()
+                .as_ref()
+                .map_or_else(|| "null".to_string(), |session| session.state())
+        });
+        OUT.with(|out| *out.borrow_mut() = json.into_bytes());
+    }
+}

@@ -1,0 +1,16 @@
+[package]
+name = "piquet-wasm"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+description = "The table, as a JSON protocol a browser -- or any other client -- can drive."
+
+[lib]
+# cdylib is the WebAssembly module; rlib lets the protocol be tested natively.
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+piquet-core = { path = "../piquet-core" }
+
+[dev-dependencies]
+serde_json = "1"
