@@ -35,14 +35,40 @@ test("sequences and sets called in full, as Cavendish calls them", () => {
   ]);
 });
 
-test("younger's bare call is voiced when she shows it, with her count", () => {
+// Younger speaks in the dialogue only to answer; what she holds she names as
+// she reckons it, each holding with her count (Cavendish p. 77: "Four tens
+// fourteen, and three queens seventeen").
+test("younger names what she won as she reckons it, each with her count", () => {
   const lines = speech([
     ev("deal_begins", { elder: "you" }),
     ev("called", { who: "them", category: "sets", said: "trio" }),
     ev("showed", { who: "them", what: "trio of aces" }),
-    ev("scored", { who: "them", amount: 3, category: "sets", what: "trio of aces" }),
+    ev("scored", { who: "them", amount: 3, category: "sequences", what: "tierce to the ace" }),
+    ev("scored", { who: "them", amount: 6, category: "sets", what: "trio of aces, trio of queens" }),
   ], 1, 0);
-  assert.deepEqual(said(lines), ["them:set-3-ace", "them:n-3"]);
+  assert.deepEqual(said(lines), ["them:seq-3-ace", "them:n-3", "them:set-3-ace", "them:set-3-queen", "them:n-9"]);
+});
+
+test("younger never repeats a call she lost", () => {
+  const lines = speech([
+    ev("deal_begins", { elder: "you" }),
+    ev("called", { who: "you", category: "point", said: "point of 5 (50)" }),
+    ev("decided", { category: "point", winner: "you" }),
+    ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (50)" }),
+    ev("called", { who: "them", category: "point", said: "point of 5" }),
+  ], 1, 0);
+  assert.deepEqual(said(lines), ["you:point-5", "them:what-make", "you:n-50", "them:good", "you:n-5"]);
+});
+
+test("younger's point, when she wins it, is named as she reckons it", () => {
+  const lines = speech([
+    ev("deal_begins", { elder: "them" }),
+    ev("called", { who: "them", category: "point", said: "point of 4" }),
+    ev("decided", { category: "point", winner: "you" }),
+    ev("called", { who: "you", category: "point", said: "point of 5" }),
+    ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (47)" }),
+  ], 1, 0);
+  assert.deepEqual(said(lines), ["them:point-4", "you:not-good", "you:point-5", "you:n-5"]);
 });
 
 test("counting aloud: each side's running total, and the great moments named", () => {

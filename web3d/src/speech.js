@@ -27,7 +27,6 @@ export function speech(events, deal, since = 0) {
   let elder = null;
   const count = { you: 0, them: 0 }; // each side's running total, said aloud
   const called = {}; // category -> elder's words
-  const bare = {}; // `${who}:${category}` -> called by bare name, to be said when shown
 
   events.forEach((e, at) => {
     if (e.deal !== deal) return;
@@ -48,7 +47,11 @@ export function speech(events, deal, since = 0) {
         if (now && who === elder && e.count < 5) say(who, `take-${e.count}`);
         break;
       case "called": {
-        if (who === elder) called[e.category] = e.said;
+        // Only elder calls aloud (Cavendish pp. 60-67); younger's part in the
+        // dialogue is her answers, and what she holds she names as she
+        // reckons it, below.
+        if (who !== elder) break;
+        called[e.category] = e.said;
         if (!now) break;
         if (e.said === "nothing") {
           say(who, "nothing");
@@ -65,9 +68,7 @@ export function speech(events, deal, since = 0) {
           }
           break;
         }
-        const parts = e.said.split(", ").map(holdingClip);
-        if (parts.some((clip) => clip === null)) bare[`${who}:${e.category}`] = true;
-        for (const clip of parts) say(who, clip);
+        for (const clip of e.said.split(", ").map(holdingClip)) say(who, clip);
         break;
       }
       case "decided": {
@@ -79,17 +80,18 @@ export function speech(events, deal, since = 0) {
         }
         break;
       }
-      case "showed": {
-        // A holding called by its bare name is said in full as it is shown.
-        const clip = holdingClip(String(e.what));
-        const category = clip && clip.startsWith("seq") ? "sequences" : clip ? "sets" : null;
-        if (now && clip && category && bare[`${who}:${category}`]) say(who, clip);
-        break;
-      }
       case "scored": {
         if (!who) break;
         count[who] += e.amount;
         if (!now) break;
+        // Younger names each holding as she reckons it, then her count: "Four
+        // tens fourteen, and three queens seventeen" (p. 77).
+        if (who !== elder && ["point", "sequences", "sets"].includes(e.category)) {
+          const what = String(e.what);
+          const point = what.match(/^point of (\d+)/);
+          if (point) say(who, `point-${point[1]}`);
+          else for (const clip of what.split(", ").map(holdingClip)) say(who, clip);
+        }
         if (e.category === "bonus") say(who, String(e.what).includes("repique") ? "repique" : "pique");
         if (e.category === "cards") say(who, e.amount >= 40 ? "capot" : "the-cards");
         if (e.category === "carte_blanche") say(who, "carte-blanche-have");
