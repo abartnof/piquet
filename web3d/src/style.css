@@ -497,143 +497,243 @@ md-assist-chip.pinned {
   background: var(--md-sys-color-surface-container-lowest);
 }
 
-/* ---- the dialogue box -------------------------------------------------------
-   Your opponent's words and points above, in red; yours below, in black;
-   what the table says between them. Each half keeps the whole deal and
-   shows its newest lines, the latest arriving on the spring. */
+/* ---- the live score -----------------------------------------------------------
+   A broadcast's score bug: two numbers, you in black and your opponent in
+   red, the deal between them as the period, a bar under each filling toward
+   the rubicon, and a caption -- the latest thing said. An ordinary score
+   ticks; a big one is celebrated (scorebug.js). */
 
-.talk {
-  flex: 1 1 auto !important;
-  min-height: 180px;
+.bug {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
-  padding: 0;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 2px 16px;
+  padding: 8px 16px 10px;
   overflow: hidden;
   background: var(--md-sys-color-surface-container-lowest);
 }
-.half {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  padding: 8px 12px 8px 16px;
+.side {
+  display: grid;
+  justify-items: start;
+  min-width: 0;
 }
-.half.them {
-  color: var(--talk-them);
-  background: var(--talk-them-soft);
+.side.them {
+  justify-items: end;
+  text-align: right;
 }
-.half.you {
+.side.you {
   color: var(--talk-you);
 }
-.half-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+.side.them {
+  color: var(--talk-them);
+}
+.side-name {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  opacity: 0.8;
+  white-space: nowrap;
+}
+.side-num {
   position: relative;
-}
-.half-head .thinking {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -4px;
-  --md-linear-progress-active-indicator-color: var(--talk-them);
-  --md-linear-progress-track-color: transparent;
-}
-.half-total {
+  font-size: 46px;
+  font-weight: 800;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  text-transform: none;
 }
-.lines {
-  list-style: none;
-  margin: 4px 0 0;
-  padding: 0;
-  overflow: auto;
-  min-height: 0;
-  flex: 1 1 auto;
-  scrollbar-width: thin;
+.side-num .n {
+  display: inline-block;
 }
-/* Once a half runs over, its oldest lines fade out at the top edge. */
-.lines.over {
-  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+.rubicon-bar {
+  display: block;
+  width: 100%;
+  height: 4px;
+  margin-top: 4px;
+  border-radius: 2px;
+  background: var(--md-sys-color-surface-container-highest);
+  overflow: hidden;
 }
-.line {
+.side.them .rubicon-bar {
+  transform: scaleX(-1); /* fills toward the middle, like the other */
+}
+.rubicon-bar i {
+  display: block;
+  height: 100%;
+  background: currentColor;
+  opacity: 0.55;
+  transition: width 700ms var(--ease);
+  transition: width 700ms var(--spring);
+}
+.side.safe .rubicon-bar i {
+  opacity: 1;
+}
+.side.thinking .side-name::after {
+  content: " …";
+  animation: thinking 900ms steps(3) infinite;
+}
+@keyframes thinking {
+  50% {
+    opacity: 0.2;
+  }
+}
+/* The period over both numbers, as a broadcast puts its quarter. */
+.period {
+  grid-column: 1 / -1;
+  grid-row: 1;
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 1px 0;
-  font-size: 14px;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--md-sys-color-on-surface-variant);
 }
-.line .words {
-  flex: 1 1 auto;
+.period-of {
+  font-weight: 500;
 }
-.line.said .words,
-.line.answer .words {
-  font-weight: 650;
+.side {
+  grid-row: 2;
 }
-.points {
-  font-weight: 750;
-  font-size: 15px;
-  font-variant-numeric: tabular-nums;
+.caption {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  margin: 8px 0 0;
+  padding-top: 7px;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  font-size: 13.5px;
+  font-weight: 600;
+  min-height: 1.4em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.line.fresh {
-  animation: said 520ms var(--ease-in);
-  animation: said 520ms var(--spring);
+.caption.you {
+  color: var(--talk-you);
 }
-@keyframes said {
+.caption.them {
+  color: var(--talk-them);
+}
+.caption.table {
+  color: var(--md-sys-color-on-surface-variant);
+  font-weight: 500;
+}
+.caption.slide {
+  animation: caption 420ms var(--ease-in);
+}
+@keyframes caption {
   from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* An ordinary score: the number bumps as it counts up, and a +N floats off. */
+.n.bump {
+  animation: bump 520ms var(--ease);
+  animation: bump 520ms var(--spring);
+}
+@keyframes bump {
+  from {
+    transform: scale(1.16);
+  }
+}
+.gain {
+  position: absolute;
+  top: -4px;
+  font-size: 16px;
+  font-weight: 800;
+  pointer-events: none;
+  animation: gain 1200ms var(--ease-in) both;
+}
+.side.you .gain {
+  left: calc(100% + 6px);
+}
+.side.them .gain {
+  right: calc(100% + 6px);
+}
+@keyframes gain {
+  0% {
     opacity: 0;
     transform: translateY(8px);
   }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
 }
-/* A rare big moment (talk.js, flairOf): the line stays marked ... */
-.line.flair {
-  margin: 2px -6px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  background: color-mix(in srgb, currentColor 10%, transparent);
+
+/* A big one: the scorer's number pops and a ring goes out from it ... */
+.n.pop {
+  animation: pop 1000ms var(--ease);
+  animation: pop 1000ms var(--spring);
 }
-.line.flair .words {
-  font-weight: 700;
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  25% {
+    transform: scale(1.55);
+  }
 }
-/* ... and, as it is scored, a slab sweeps in over the half and gives way. */
-.half {
-  position: relative;
+.ring {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  border: 3px solid currentColor;
+  pointer-events: none;
+  animation: ring 900ms var(--ease-in) both;
 }
+@keyframes ring {
+  from {
+    opacity: 0.8;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.4);
+  }
+}
+/* ... and a banner sweeps across the bug in the scorer's colour. */
 .flourish {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 10px;
+  inset: 8px;
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 18px 12px;
-  border-radius: 18px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  border-radius: 14px;
   color: #fff;
   overflow: hidden;
   box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
   animation: flourish 2300ms var(--ease) both;
   pointer-events: none;
 }
-.half.them .flourish {
+.flourish.them {
   background: var(--talk-them);
 }
-.half.you .flourish {
+.flourish.you {
   background: var(--talk-you);
 }
 .flourish-what {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .flourish-points {
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 850;
   font-variant-numeric: tabular-nums;
   animation: flourish-points 700ms var(--ease) 180ms both;
@@ -691,34 +791,22 @@ md-assist-chip.pinned {
   }
 }
 
-.between {
-  margin: 0;
-  padding: 4px 16px;
-  font-size: 12.5px;
-  color: var(--md-sys-color-on-surface-variant);
-  border-top: 1px solid var(--md-sys-color-outline-variant);
-  border-bottom: 1px solid var(--md-sys-color-outline-variant);
-  background: var(--md-sys-color-surface-container-low);
-}
-.between:empty {
-  display: none;
-}
+/* The question put to you, over the buttons under your hand. */
 .asked {
-  border-top: 1px dashed var(--md-sys-color-outline-variant);
-  margin-top: 6px;
-  padding-top: 6px;
-}
-.asked:empty {
-  display: none;
+  max-width: min(640px, 100%);
+  padding: 6px 14px;
+  border-radius: 14px;
+  text-align: center;
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-lowest) 90%, transparent);
+  box-shadow: var(--elevation-2);
 }
 .asked .ask {
   margin: 0;
   font-size: 15px;
   font-weight: 650;
-  font-style: italic;
 }
 .asked .note {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   font-size: 12.5px;
   color: var(--md-sys-color-on-surface-variant);
 }
@@ -882,33 +970,19 @@ kbd {
   .tab-head {
     padding: 4px 10px 4px 14px;
   }
-  /* The dialogue keeps its two halves, the newest two lines of each. */
-  .talk {
-    min-height: 0;
-    grid-template-rows: auto auto auto;
+  /* The live score, smaller; its caption one line. */
+  .bug {
+    padding: 6px 12px 6px;
   }
-  .half {
-    padding: 3px 10px 4px 12px;
+  .side-num {
+    font-size: 30px;
   }
-  .half-head {
-    font-size: 10.5px;
+  .caption {
+    margin-top: 4px;
+    padding-top: 4px;
+    font-size: 12.5px;
   }
-  .lines {
-    max-height: 2.9em;
-    flex: 0 0 auto;
-  }
-  .line {
-    font-size: 13px;
-  }
-  .asked {
-    margin-top: 2px;
-    padding-top: 2px;
-  }
-  .asked .ask {
-    font-size: 13.5px;
-  }
-  .asked .note,
-  .between {
+  .asked .note {
     display: none;
   }
   .worth-card {
@@ -969,7 +1043,9 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .num.changed,
   .num.cheer,
-  .line.fresh {
+  .n.bump,
+  .n.pop,
+  .caption.slide {
     animation: none;
   }
   .chevron,

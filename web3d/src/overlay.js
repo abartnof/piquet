@@ -3,7 +3,7 @@
 // the left, or top; any area with buttons that influence gameplay should be
 // on the right/bottom. preferably, all the buttons the user will need to play
 // the game would be right below the deck". So down the left: the running
-// score, the dialogue box, what your hand is worth; under your hand: the
+// score's log, the live score, what your hand is worth; under your hand: the
 // prompt's buttons, the sort, undo and the hint; along the top, the partie
 // itself -- the opponent, a new partie, settings.
 //
@@ -26,7 +26,7 @@ import "@material/web/select/select-option.js";
 import "@material/web/switch/switch.js";
 import "@material/web/labs/segmentedbutton/outlined-segmented-button.js";
 import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
-import { talk } from "./talk.js";
+import { caption, live, scoredSince } from "./scorebug.js";
 
 const THEM = "your opponent";
 const Them = "Your opponent";
@@ -345,8 +345,7 @@ export function createOverlay(root, on) {
 
   // ---- the prompt: what is asked of you, and the buttons that answer --------
   //
-  // The question is said to you, so it is the last line of your half of the
-  // dialogue; the buttons that answer it sit under your hand.
+  // Under your hand, the question over the buttons that answer it.
 
   function question(s, ui) {
     const p = s.prompt;
@@ -395,6 +394,13 @@ export function createOverlay(root, on) {
       b.addEventListener("click", onclick);
       return b;
     };
+    // What is asked of you, over the buttons that answer it.
+    const [ask, note] = question(s, ui);
+    if (ask || note) {
+      parts.push(el("div", { class: "asked" },
+        ask ? el("p", { class: "ask" }, ask) : null,
+        note ? el("p", { class: "note" }, note) : null));
+    }
     // The card the keyboard rests on, named -- the table itself is a picture.
     if (ui.focusText) parts.push(el("p", { class: "keyboard-focus", "aria-live": "polite" }, ui.focusText));
     if (s.error) parts.push(el("div", { class: "error", role: "alert" }, s.error));
@@ -505,70 +511,119 @@ export function createOverlay(root, on) {
       : el("div", { class: "hint" }, el("span", { class: "hint-text" }, "Nothing to suggest just now.")));
   }
 
-  // ---- the dialogue box --------------------------------------------------------
+  // ---- the live score --------------------------------------------------------
   //
-  // Andrew: "we speak a LOT in piquet- those things we say during gameplay
-  // are a part of the game. they shouldn't be hidden away here. think how in
-  // RPGs, damage/healing is summed up with a sort of text box ... split into
-  // two vertically-stacked halves- if the opponent does something, what they
-  // 'say', what they gain in points, etc- is in the top of the box, in red-
-  // if the user says/wins, it's on the bottom half in black."
+  // Andrew: "the immediacy of a WNBA on-screen live score display. 2 numbers,
+  // one for each team- and when you score, there's a minor animation to
+  // update the score- unless you score big, in which case there's a little
+  // celebratory animation." The stage table above is the log; this is the
+  // score as it stands, with the deal as the period, a bar filling toward
+  // the rubicon under each number, and a caption: the latest thing said.
 
-  const half = (who, name) => {
-    const total = el("span", { class: "half-total" });
-    const lines = el("ol", { class: "lines" });
-    const head = el("header", { class: "half-head" }, el("span", { class: "half-name" }, name), total);
-    return { who, root: el("div", { class: `half ${who}` }, head, lines), total, lines, head };
+  const side = (who, name) => {
+    const n = el("span", { class: "n" }, "0");
+    const num = el("span", { class: "side-num" }, n);
+    const fill = el("i");
+    const root = el("div", { class: `side ${who}` },
+      el("span", { class: "side-name" }, name), num,
+      el("span", { class: "rubicon-bar", title: "The rubicon: a hundred" }, fill));
+    return { who, root, n, num, fill, shown: 0 };
   };
-  const themHalf = half("them", Them);
-  const youHalf = half("you", "You");
-  const between = el("p", { class: "between" });
-  const asked = el("div", { class: "asked", "aria-live": "polite" });
-  youHalf.root.append(asked);
-  $("talk").replaceChildren(themHalf.root, between, youHalf.root);
-  let heard = { deal: null, at: -1 };
-
-  // A rare big moment, celebrated like a three-pointer in a broadcast's score
-  // box: a slab in the scorer's colour sweeps into their half, a sheen runs
-  // across it, and it gives way to the line; their figure in the tab pops.
+  const bugYou = side("you", "You");
+  const bugThem = side("them", Them);
+  const period = el("div", { class: "period" });
+  const said = el("p", { class: "caption", "aria-live": "polite" });
+  $("bug").replaceChildren(bugYou.root, period, bugThem.root, said);
+  let seen = null; // { seed, level, events }: what the bug last showed
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
-  function celebrate(h, line) {
-    root.querySelector(`#tab .tab-head .${h.who} .num`)?.classList.add("cheer");
-    if (calm.matches) return;
-    const slab = el("div", { class: "flourish", "aria-hidden": "true" },
-      el("span", { class: "flourish-what" }, line.flair),
-      line.points ? el("span", { class: "flourish-points" }, `+${line.points}`) : null);
-    slab.addEventListener("animationend", (e) => e.target === slab && slab.remove());
-    h.root.append(slab);
+
+  // Restart a CSS animation on an element.
+  const replay = (node, cls) => {
+    node.classList.remove(cls);
+    void node.offsetWidth;
+    node.classList.add(cls);
+  };
+
+  // An ordinary score: the number counts up, bumps, and a +N floats off it.
+  function tick(sd, to) {
+    const from = sd.shown;
+    sd.shown = to;
+    if (calm.matches) {
+      sd.n.textContent = String(to);
+      return;
+    }
+    const gain = el("span", { class: "gain" }, `+${to - from}`);
+    gain.addEventListener("animationend", () => gain.remove());
+    sd.num.append(gain);
+    replay(sd.n, "bump");
+    const start = performance.now();
+    const ease = (t) => 1 - (1 - t) ** 3;
+    const step = (now) => {
+      const t = Math.min(1, (now - start) / 520);
+      sd.n.textContent = String(Math.round(from + (to - from) * ease(t)));
+      if (t < 1 && sd.shown === to) requestAnimationFrame(step);
+      else if (sd.shown === to) sd.n.textContent = String(to);
+    };
+    requestAnimationFrame(step);
   }
 
-  function renderTalk(s, ui) {
-    themHalf.head.querySelector(".thinking")?.remove();
-    const t = talk(s.events, s.deal);
-    // What was there when the page opened was not just said: nothing replays.
-    const fresh = heard.deal === null ? Infinity : heard.deal === s.deal ? heard.at : -1;
-    let latest = heard.deal === s.deal ? heard.at : -1;
-    for (const h of [themHalf, youHalf]) {
-      h.total.replaceChildren(s.phase === "cut" ? "" : `${t.total[h.who]} this deal`);
-      h.lines.replaceChildren(...t[h.who].map((line) => {
-        latest = Math.max(latest, line.at);
-        const isNew = line.at > fresh;
-        if (isNew && line.flair) celebrate(h, line);
-        return el("li", { class: `line ${line.kind}${isNew ? " fresh" : ""}${line.flair ? " flair" : ""}` },
-          el("span", { class: "words" }, line.text),
-          line.points ? el("span", { class: "points" }, `+${line.points}`) : null);
-      }));
+  // A big one: a banner sweeps across the bug in the scorer's colour, their
+  // number pops and a ring goes out from it. Several at once, in turn.
+  let queue = Promise.resolve();
+  function celebrate(sd, big) {
+    root.querySelector(`#tab .tab-head .${sd.who} .num`)?.classList.add("cheer");
+    if (calm.matches) return;
+    queue = queue.then(() => new Promise((done) => {
+      const banner = el("div", { class: `flourish ${sd.who}`, "aria-hidden": "true" },
+        el("span", { class: "flourish-what" }, big.flair),
+        big.points ? el("span", { class: "flourish-points" }, `+${big.points}`) : null);
+      // As the banner leaves, the number it was about pops, so the eye
+      // follows it there.
+      banner.addEventListener("animationend", (e) => {
+        if (e.target !== banner) return;
+        banner.remove();
+        replay(sd.n, "pop");
+        const ring = el("span", { class: "ring" });
+        ring.addEventListener("animationend", () => ring.remove());
+        sd.num.append(ring);
+        done();
+      });
+      $("bug").append(banner);
+    }));
+  }
+
+  function renderBug(s) {
+    root.querySelector("#bug .side.them")?.classList.remove("thinking");
+    const now = live(s);
+    const fresh = !seen || seen.seed !== s.seed || seen.level !== s.level || s.events.length < seen.events
+      || now.you < bugYou.shown || now.them < bugThem.shown;
+    const since = fresh ? s.events.length : seen.events;
+    const news = scoredSince(s.events, s.deal, since);
+    for (const sd of [bugYou, bugThem]) {
+      const to = now[sd.who];
+      if (fresh || to === sd.shown) {
+        sd.shown = to;
+        sd.n.textContent = String(to);
+      } else {
+        tick(sd, to);
+      }
+      sd.fill.style.width = `${Math.min(100, to)}%`;
+      sd.root.classList.toggle("safe", to >= 100);
+      sd.root.querySelector(".rubicon-bar").title = to >= 100 ? "Over the rubicon" : `${100 - to} short of the rubicon`;
+      if (!fresh) for (const big of news[sd.who].big) celebrate(sd, big);
     }
-    const table = t.table[t.table.length - 1];
-    between.replaceChildren(table ? table.text : s.phase === "cut" ? "Cutting for the first deal." : "");
-    const [ask, note] = question(s, ui);
-    asked.replaceChildren(...(ask ? [el("p", { class: "ask" }, ask)] : []), ...(note ? [el("p", { class: "note" }, note)] : []));
-    heard = { deal: s.deal, at: latest };
-    // The newest words in view: the end of each half.
-    for (const h of [themHalf, youHalf]) {
-      h.lines.scrollTop = h.lines.scrollHeight;
-      h.lines.classList.toggle("over", h.lines.scrollHeight > h.lines.clientHeight + 1);
+    period.replaceChildren(
+      el("span", { class: "period-deal" }, s.phase === "cut" ? "Cut" : `Deal ${now.deal}`),
+      el("span", { class: "period-of" }, s.phase === "cut" ? "for deal" : now.deal > 6 ? "extra" : `of ${now.of}`));
+    const line = caption(s.events, s.deal);
+    const text = line ? `${line.who === "you" ? "You" : line.who === "them" ? Them : ""}${line.who ? ": " : ""}${line.text}` : "";
+    if (said.dataset.text !== text) {
+      said.dataset.text = text;
+      said.className = `caption ${line?.who ?? "table"}`;
+      said.replaceChildren(text);
+      if (!fresh && text) replay(said, "slide");
     }
+    seen = { seed: s.seed, level: s.level, events: s.events.length };
   }
 
   // ---- the narration ------------------------------------------------------------
@@ -616,17 +671,17 @@ export function createOverlay(root, on) {
         el("span", { class: "dot" }, "·"),
         el("span", { class: "them" }, String(s.score.them)));
       renderTab(s, prefs);
-      renderTalk(s, ui);
+      renderBug(s);
       renderWorth(s, ui);
       renderPrompt(s, ui);
       renderTools(s, prefs, ui);
       renderNarration(s);
     },
     // While your opponent thinks -- the engine runs on the page's own thread,
-    // and at the top level a decision can take a second -- say so, in their
-    // half of the dialogue.
+    // and at the top level a decision can take a second -- say so, under
+    // their number.
     thinking() {
-      themHalf.head.append(el("md-linear-progress", { indeterminate: true, class: "thinking", "aria-label": "Your opponent is thinking" }));
+      root.querySelector("#bug .side.them")?.classList.add("thinking");
     },
     // The hint opened or closed from the keyboard.
     toggleHint: () => on.pref("hintOpen", !hintFold.root.classList.contains("open")),

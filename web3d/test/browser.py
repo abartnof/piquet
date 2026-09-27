@@ -262,10 +262,12 @@ def main() -> int:
         final = state(page)
         if final["prompt"]["kind"] != "over":
             failures.append(f"the partie did not finish by clicking: stuck at {final['prompt']['kind']}")
-        # What is said is in view: by the last deal's end both sides have spoken.
-        for who in ("them", "you"):
-            if page.locator(f"#talk .half.{who} .line").count() == 0:
-                failures.append(f"nothing said in the {who} half of the dialogue")
+        # The live score shows the partie's totals, once its numbers stop counting.
+        page.wait_for_timeout(800)
+        for who in ("you", "them"):
+            shown = page.locator(f"#bug .side.{who} .n").inner_text()
+            if shown != str(final["partie"][who]):
+                failures.append(f"the score shows {shown} for {who}, the partie {final['partie'][who]}")
         check_drawn(page, failures, "at the end")
         shot(page, "04-over")
         check_offline(page, failures)

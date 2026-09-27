@@ -821,6 +821,25 @@ throughout.
       small, the information strip covers the opponent's hand, and the held
       hand's shadow reads as a heavy blob from the overhead eye.
 
+- [x] **P11 — The dialogue box, replaced by a live score (27 September).**
+      Seeing the two-halves box, Andrew: *"this box ... is no good. here's
+      what i want, ultimately: 1. the immediacy of a WNBA on-screen live
+      score display. 2 numbers, one for each team- and when you score,
+      there's a minor animation to update the score- unless you score big,
+      in which case there's a little celebratory animation ... 2. the table
+      above it is still necessary- it's the log of the game."* Built:
+      a **score bug** under the stage table (`scorebug.js`, node-tested):
+      the partie as it stands this instant (`standing` + `score` — the
+      protocol's `partie` counts finished deals only), the deal as the
+      period, a thin bar under each number filling toward the rubicon, and
+      one caption: the latest thing *said* (cards played and points scored
+      are left to the table and the numbers). An ordinary score counts the
+      number up, bumps it and floats a "+N" off it; a big one (`flairOf`, or
+      crossing the rubicon) sweeps a banner in the scorer's colour across
+      the bug, and as it leaves, their number pops and a ring goes out.
+      The question put to you moved under your hand, over its buttons.
+      `talk.js` stays: it names the moments and writes the caption.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
