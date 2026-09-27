@@ -45,7 +45,9 @@ export const PORTRAIT_BELOW = 0.85;
 // Where everything rests (docs/TABLE3D.md section 6), in centimetres on the
 // table. Hands are fans floating before their holders; the rest lies flat.
 export const ZONES = Object.freeze({
-  yourHand: Object.freeze({ centre: Object.freeze([0, 15, 27]), radius: 16, spread: 6.2, groupGap: 3, tilt: 14 }),
+  // 5.6 degrees a card leaves 1.6 cm of each showing at this radius -- twice
+  // the corner index -- and keeps a full hand in suits clear of the prompt.
+  yourHand: Object.freeze({ centre: Object.freeze([0, 15, 27]), radius: 16, spread: 5.6, groupGap: 2.6, tilt: 14 }),
   theirHand: Object.freeze({ centre: Object.freeze([0, 12, -22]), facing: Object.freeze([0, 26, -300]), radius: 16, spread: 5.2 }),
   ribbon: Object.freeze({ x: 22.5, z: -2, spacing: 1.45 }), // the pack spread for the cut, top card at the right
   yourCut: Object.freeze({ x: -5, z: 9 }),

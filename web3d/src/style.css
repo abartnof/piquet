@@ -97,6 +97,7 @@ body {
   pointer-events: none; /* the table beneath takes the clicks */
 }
 .surface {
+  box-sizing: border-box; /* a width means the whole card, padding and all */
   pointer-events: auto;
   position: absolute;
   background: var(--md-sys-color-surface-container-low);
