@@ -1,6 +1,8 @@
 # Credits
 
-Credit where it is due — including where no licence demands it.
+Credit where it is due — including where no licence demands it. **Every
+third-party asset is recorded here, in the commit that brings it in**: art,
+fonts, icons, libraries, build tools, and the design systems we follow.
 
 ## Card art
 
@@ -33,6 +35,17 @@ credits it on screen, not only here.
 
 The pinned originals, with checksums and measurements, are in
 `web3d/art/source/`.
+
+## Design system
+
+**Material Design 3**, by **Google** — <https://m3.material.io/>. The 3D
+table's controls follow its components, colour system, shape and motion
+guidance (Andrew: "clear designs, organic motion, and favors smooth lines over
+sharp lines"). The guidelines are Google's; the components are used through
+`@material/web` (below). If the colour scheme is generated with Google's
+Material Color Utilities or icons are drawn from Material Symbols, they are
+added here with their versions and licences (both Apache-2.0) when they come
+in.
 
 ## Software in the page
 

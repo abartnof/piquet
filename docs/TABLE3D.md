@@ -1,0 +1,516 @@
+# The 3D table — design and plan
+
+> A fresh session should be able to build this from this file alone. It holds
+> the brief (in Andrew's words), every decision taken and why, the physics, the
+> architecture, the tests, and a phased TODO with acceptance criteria. The
+> engine, protocol and 2D page it builds on are described in `PLAN.md`,
+> `docs/PROTOCOL.md` and `web/`. Written 27 September 2026, before any 3D code.
+
+## 1. The brief, verbatim
+
+Andrew, 27 September 2026:
+
+> "start to devise a new gui- 3d (threejs, if you prefer). the cards will be
+> these (Public domain complete playing card deck.svg). the back of the cards
+> will be this (Reverso baraja española.svg). please note these in the
+> documentation, so we can give credit where credit is due. we'll start with a
+> very clean aesthetic and build upon it. remember- this now exists in 3d, with
+> an implied table as the foundation for what we can see. so, when a card is
+> flipped, it should not just spin in the air- one side must be constrained by
+> the table. cards that the player can see should be held floating in the air
+> before them; the dealer's card should be held floating with only the
+> backsides visible. tricks that have been made should be pushed to the side.
+> i'd like a border around each 3d item, like a cartoon has (That effect is
+> called toon shading (or cel shading), and the black outline technique itself
+> is known as an ink line, toon outline, or contour rendering.). update the
+> todo thoroughly, and then go ahead! think critically about the physics
+> involved. try to use motion easing, and include shadows."
+
+> "your aesthetic is: clean and a bit cartoonish, for visual clarity's sake;
+> bright and easy to use. not childish. what would a computer version of cards
+> look like if it were freed of the cultural heritage of having to use grubby
+> cards on dirty furniture"
+
+> "you may simply use material design 3 components if you want- that aligns
+> with our design (but of course, anything you use must be downloaded so this
+> may work offline). material design has clear designs, organic motion, and
+> favors smooth lines over sharp lines- this makes it look pleasant instead of
+> cheap and old"
+
+> "i'd like the score to be a floating 2d running tab on the screen. think: a
+> collapsable list with all the gameplay stages, with the subtotal for each
+> part running as it goes- score for the player, and score for the opponent."
+
+> "remember to take copeous notes- it's probably a good idea to plan all this
+> and then tell me- we'll clear the context and you can proceed that way?"
+
+Standing rules that still apply (from `PLAN.md` and the project memory): TDD;
+atomic commits straight to `main`, often; `set -e` on multi-step shell
+commands; the single self-contained HTML page under 5 MB; everything offline;
+no proper names for the opponent — "your opponent"; every aid a toggle; the
+GUI is a client of the protocol and holds no rules.
+
+## 2. What we are making
+
+A second client, **`web3d/piquet3d.html`**: the same engine and the same
+protocol as the 2D page (`web/piquet.html`), drawn as a small 3D scene. The 2D
+page stays — it is the fastest way to test the engine, and a fallback.
+
+**The look, in one paragraph.** A bright, calm, slightly cartoonish scene: a
+clean pale surface that reads as "a table" only because things rest on it and
+cast shadows on it — not felt, not wood, not a casino. Cards are crisp white
+with a dark ink outline, lit with two or three flat tones (cel shading), their
+faces always readable. Your hand floats before you, fanned, facing you; your
+opponent's floats across the table showing only backs. Cards move the way a
+careful hand moves them: they accelerate and settle, they are laid down rather
+than dropped, turned over along an edge that stays on the table, and swept
+aside when a trick is won. The 2D controls float over the scene as Material
+Design 3 surfaces: rounded, quiet, clear.
+
+**What "freed of grubby cards on dirty furniture" rules out**: green felt and
+wood textures; casino chips, ashtrays and lamps; paper grain and wear;
+dark moody lighting; skeuomorphic chrome on the controls. **What it keeps**:
+the cards themselves (the art Andrew chose), the table as a plane of contact,
+and the real choreography of the game — dealing in twos, the talon's five
+crossed over three, tricks face up in front of their winner.
+
+## 3. Assets
+
+### 3.1 The art, and its licences
+
+Pinned originals: `web3d/art/source/` (see its `SOURCES.md` for URLs,
+checksums and measurements). Credits: `/CREDITS.md`.
+
+- **Faces — CC0.** "Public domain complete playing card deck", AustinGabriel64.
+  One SVG, 6750 × 6300, a 9 × 6 grid of 750 × 1050 cells (5:7), 54 top-level
+  `<g>`, one per card, in order A…K of ♠ ♥ ♣ ♦ then two jokers; card *n* is
+  centred at (375 + 750·(*n* mod 9), 525 + 1050·⌊*n*/9⌋). No card border
+  stroke. Corner radius 37.5/750.
+- **Back — CC BY-SA 3.0, attribution required.** "Reverso baraja española",
+  Germarquezm, adapting his "Baraja española.svg". 208 × 319 (≈1:1.53).
+  Re-framing it to 5:7 makes our version an adaptation, so **the back image we
+  ship is CC BY-SA 3.0** and must be credited **in the game** (a Credits screen
+  reachable from the settings), not only in the repository.
+
+### 3.2 The pipeline: rasterise at build time
+
+Measured: the 32 piquet cards are 2.16 MB of the 2.33 MB SVG (courts 1.95 MB).
+Shipping vector gains little and costs most of the budget, so:
+
+- `web3d/tools/art.py` (Python, the project `.venv`):
+  1. rasterise the deck SVG once with `rsvg-convert` (apt: `librsvg2-bin`) at
+     scale 512/750, giving a 4608 × 4301 sheet (each card 512 × 717);
+  2. crop the 32 cells (7–A of each suit) with Pillow; keep the white rounded
+     rectangle and make the area outside the corner radius transparent;
+  3. build the back: rasterise `reverso-baraja-espanola.svg`, take its lace
+     field, fit it ("cover") into a 5:7 card with a clean white border of the
+     same proportion as the faces', same corner radius — the adaptation;
+  4. encode each as WebP (Pillow, quality ≈ 88; lossless for the back if
+     smaller); write `web3d/art/cards/{AS,KS,…,7D}.webp` and `back.webp`;
+  5. print sizes; fail if the art exceeds its budget (1.2 MB total).
+- **Commit the generated images** (they are the game's art; the Mac has no
+  toolchain and the pipeline needs apt packages) and regenerate only when the
+  pipeline changes. Record regeneration in `docs/VM.md`.
+- Card codes follow the protocol: rank `A K Q J T 9 8 7`, suit `S H D C`.
+
+Resolution: a card in the floating fan is roughly 130–180 CSS px wide on a
+laptop; at DPR 2 that is up to ~360 device px, and a hovered card lifts closer.
+512 px wide with mipmaps is ample; revisit only if screenshots look soft.
+
+### 3.3 Budget (single file, target < 3 MB, hard limit 5 MB)
+
+| Part | Estimate | Note |
+|---|---|---|
+| three.js (tree-shaken, minified) | 350–550 KB | only the classes used |
+| @material/web + Lit (a handful of components) | 80–180 KB | per-component imports |
+| Engine (wasm, base64) | ~425 KB | as today |
+| Card art (32 faces + back, WebP, base64) | 0.8–1.3 MB | measured in phase 3 |
+| App code + CSS | 60–120 KB | |
+| **Total** | **~1.8–2.6 MB** | the build fails over 5 MB |
+
+No web fonts and no icon font: a system font stack, and a few inline SVG
+icons. (Roboto would be ~100 KB+ per weight; the M3 components work with any
+font via their tokens.)
+
+## 4. The stack
+
+- **three.js 0.186.1** (MIT) — WebGL2 renderer, shadow maps, `MeshToonMaterial`.
+- **@material/web 2.5.0** (Apache-2.0) with **Lit 3.3.3** (BSD-3-Clause) for
+  the overlay: `md-filled-button`, `md-outlined-button`, `md-text-button`,
+  `md-icon-button`, `md-switch`, `md-filter-chip`/`md-assist-chip`,
+  `md-dialog`, `md-list`/`md-list-item` (the score tab), `md-linear-progress`
+  (opponent thinking), `md-elevation`. Themed with M3 colour tokens generated
+  from one seed colour (see §8). Material Web was released in July 2026, so it
+  is maintained; check its changelog for deprecations when installing.
+- **esbuild 0.28.2** (MIT, build only) bundles `web3d/src/**` + three + Material
+  Web into one minified IIFE, which `web3d/build.py` inlines into the page with
+  the wasm and the art, exactly as `web/build.py` does for the 2D page.
+- **Dependencies via npm with a lockfile.** `sudo apt install npm` on the VM;
+  `web3d/package.json` pins exact versions; `package-lock.json` is committed;
+  `node_modules/` is git-ignored; `npm ci` then `node_modules/.bin/esbuild`.
+  (Hand-fetching tarballs was considered and rejected: Material Web has a
+  dependency tree, and a lockfile is the honest way to pin it.)
+- **Offline, verified.** The browser test blocks every network request and
+  fails if the page attempts one.
+
+## 5. Architecture
+
+The page is a client of the existing protocol (`docs/PROTOCOL.md`, version 2)
+and holds no rules. It is structured so that each piece is testable without a
+browser.
+
+```
+web3d/src/
+  main.js          boot: load wasm + art, build the scene, wire the overlay
+  engine.js        the wasm wrapper (as in web/src/app.js: start/state/send)
+  units.js         dimensions and zone positions (§6) — one source of truth
+  easing.js        minimum-jerk, friction, gravity, M3 cubic-béziers   [node-tested]
+  kinematics.js    hinge flip, transfer arc, slide, lay-down, pick-up   [node-tested]
+  layout.js        protocol state -> target poses for all 32 cards      [node-tested]
+  choreography.js  (previous state, new events) -> a timeline of motions [node-tested]
+  timeline.js      runs motions against the clock; speed; skip-to-end   [node-tested]
+  cards.js         card geometry (rounded slab, 3 material groups, outline normals)
+  materials.js     toon gradient, face/back/edge materials, ink-outline hull shader
+  scene.js         renderer, camera, lights, shadows, table surface, resize, DPR
+  interact.js      raycasting: hover, click, drag (later); test hooks
+  overlay/         Material Web components: prompt, score tab, settings, credits
+  tests/*.test.js  node --test
+```
+
+### 5.1 The card model: identities only where the view has them
+
+The scene holds **32 card meshes** for the whole partie. Each has a *pose*, a
+*zone* (pack, talon, your hand, their hand, your discards, their discards,
+trick, your won tricks, their won tricks, cut) and an *identity* — a card code
+**or unknown**. A mesh's face texture is assigned **only when the protocol
+state reveals that card to the human** (your hand, your discards, cards played,
+cards shown in the cut, talon cards you drew); until then it shows the back on
+both sides. This is the 3D equivalent of the rule that everything a client
+shows is derived from the human's view, and it gets a test: at every step of a
+scripted partie, no mesh in the opponent's hand, the talon or their discards
+carries a face.
+
+### 5.2 Layout: where everything is at rest
+
+`layout(state) → Map<meshSlot, Pose>` is a pure function of the protocol state:
+
+- **Your hand**: `state.hand` in the chosen sort order (reuse the 2D page's
+  grouping logic: Auto/Suit/Rank/Combinations), fanned and floating (§6).
+- **Their hand**: `12 − (tricks played) − (their card on the table)`
+  anonymous cards, fanned and floating, backs to you.
+- **Talon**: `talon_remaining` cards; before the exchange, five crossed over
+  three (Foster: "the five top cards being laid crosswise on the three at the
+  bottom").
+- **Discards**: yours face down (you may lift them to look — later), theirs
+  face down, `their_discards` of them.
+- **The trick**: `state.trick`, face up in the centre, the leader's card
+  nearer the leader.
+- **Won tricks**: `state.tricks_played`, face up, pushed to the winner's side,
+  each trick a crossed pair, overlapping in a row so every card stays
+  readable (Cavendish, Law 60: examinable at any time).
+- **The cut**: during `phase == "cut"`, the pack in the centre; after a cut,
+  the two cut cards shown.
+
+### 5.3 Choreography: how things get there
+
+`choreograph(prev, next)` turns the events added since the last state into a
+timeline of motions (§7), then `layout(next)` is the resting truth the
+timeline must end at — the test for every choreography is that it ends exactly
+at the layout. Events it reads: `cut`, `cut_again`, `first_dealer`,
+`deal_begins`, `exchanged`, `drew`, `called`, `decided`, `showed`, `scored`,
+`nothing_to_call`, `played`, `took_trick`, `deal_ends`, `partie_ends`.
+Unknown cards are matched by zone: "your opponent exchanges 5" moves five
+anonymous meshes from their hand to their discards and five from the talon to
+their hand.
+
+### 5.4 Rendering on demand
+
+Render only while something moves (or the pointer is over a card): a card game
+at rest should cost nothing. The timeline says when it is active.
+
+## 6. Space: units, table, camera, zones
+
+**Units: centimetres.** y is up, the table top is y = 0, the human sits at +z,
+the opponent at −z, x runs to the human's right.
+
+- **Card**: 6.35 × 8.89 cm (5:7), corner radius 0.3175 cm, thickness
+  0.03 cm. Stacked cards rise by one thickness each; render with a polygon
+  offset so stacked faces do not z-fight.
+- **Table**: an implied surface: a large, very slightly rounded slab
+  (~140 × 100 cm) whose edge fades into the background, bright and plain,
+  receiving shadows. No texture. Its outline, if visible at all, is soft.
+- **Camera**: the human's eyes, about 55 cm above the table and 60 cm back
+  from its centre, looking at a point ~8 cm in front of the centre; vertical
+  field of view ~40°. Fixed for now (a slight mouse parallax is an open
+  question, §12). Resize and DPR handled; DPR capped at 2.
+- **Zones** (x, y, z; to be tuned in the look spike):
+  - your hand: a fan floating at (0, 18, 30), tilted so the cards face the
+    camera, pivot ~16 cm below the fan's centre, ~6° between cards;
+  - their hand: the mirror at (0, 18, −30), backs toward you;
+  - pack / talon: (−20, 0, 0); the trick: (0, 0, 0);
+  - your won tricks: pushed right, (26 → 44, 0, 12); theirs: (26 → 44, 0, −12);
+  - your discards: (−32, 0, 14); theirs: (−32, 0, −14);
+  - the cut: the pack at the centre, the two shown cards either side of it.
+
+## 7. Motion and physics
+
+Principles: **cards are rigid, thin and light, and almost always moved by a
+hand**, so most motion is the smooth start-and-stop of a guided movement, not
+ballistic flight. Paper does not bounce. Nothing passes through the table or
+through another card. A card on the table that turns over does so about an
+edge that stays on the table.
+
+### 7.1 Easing, with its physics
+
+| Motion | Profile | Why |
+|---|---|---|
+| Hand-guided moves (deal, play, pick up, lay down) | **Minimum jerk**: s(t) = 10t³ − 15t⁴ + 6t⁵ | Human reaching movements follow the minimum-jerk profile (Flash & Hogan, 1985): zero velocity and acceleration at both ends, peak speed 1.875× the mean at mid-course |
+| A card slid across the table after a push (tricks aside) | **Coulomb friction**: constant deceleration a = μg, so s(t) = 1 − (1 − t)² | With μ ≈ 0.25 on a smooth top and g = 981 cm/s², a ≈ 245 cm/s²: a 30 cm slide starts at ≈ 121 cm/s and stops in ≈ 0.5 s. Stopping distance v₀²/2μg |
+| The falling half of a flip | **Gravity**: accelerating, ease-in | Past vertical, the card falls about its hinge under gravity |
+| Interface (overlay panels, chips, the score tab) | **M3 easing**: standard `cubic-bezier(0.2, 0, 0, 1)`; emphasized decelerate `(0.05, 0.7, 0.1, 1)`; emphasized accelerate `(0.3, 0, 0.8, 0.15)`; durations 50–600 ms by size (verify the tokens against m3.material.io when implementing) | Material's "organic motion" |
+
+Durations (starting points, tuned by eye; a speed setting scales them):
+deal one pair 180 ms (overlapping); play a card 420 ms; pick up 380 ms; lay
+down 360 ms; flip 480 ms; trick gathered and pushed 520 ms; cut lift and show
+700 ms. `prefers-reduced-motion` and the test mode shorten everything to near
+zero.
+
+### 7.2 The primitives
+
+1. **Transfer** (hand-guided, used by most moves). Position along a quadratic
+   Bézier arc from start to end, apex raised by clearance h = max(3 cm,
+   0.25 × distance) so the card clears everything between; orientation by
+   quaternion slerp. Both driven by minimum jerk; the rotation finishes at
+   ~85% of the way so the card arrives already level and is *set down*, not
+   rotated into the table.
+2. **Lay down** (hand → table). A transfer that ends flat; the last 10% is a
+   vertical approach so the card meets the surface face-parallel. Paper does
+   not bounce: at most a 1–2° settling wobble over 120 ms, optional.
+3. **Pick up** (table → hand). Lift the near edge first (a hinge on the far
+   edge, 15–25°), then a transfer into the floating fan pose. The face turns
+   toward the player during the transfer — in the air, in a hand, which is
+   physically fine; the "no spinning in the air" rule is about turning cards
+   *over on the table*.
+4. **Flip on the table** — Andrew's constraint. Rotate 180° about one edge
+   (the hinge), which stays on the table at its stack height the whole time;
+   the card ends one card-width over, face up. θ from 0 to π/2 is driven by a
+   finger (ease-out, decelerating to the top); θ from π/2 to π is a fall under
+   gravity (ease-in, accelerating), about 0.6 of the first half's duration;
+   no bounce, a tiny settle. **Invariant: every point of the card stays at or
+   above the table plane for all t** — true by construction for θ ∈ [0, π]
+   about an edge on the plane, and tested. Which edge: the one on the side the
+   card should end up.
+5. **Slide** (on the table). Translate along the surface, flat, with the
+   friction profile; a small yaw (±3°, deterministic per card code, so a
+   replay looks the same) makes it organic. Several cards pushed together
+   move as one.
+6. **Fan** (in the air). Place n cards on an arc about a pivot below the
+   hand's centre; each card tilted toward the camera. Reordering (sorting)
+   moves cards along the arc by transfer. An idle sway (±0.2 cm, ~4 s) keeps
+   a held hand from looking frozen; off under reduced motion.
+
+### 7.3 The game's choreography
+
+| Moment | What happens |
+|---|---|
+| **Partie begins: the cut** | The pack lies in the centre. Hovering its long side shows where you would cut (the upper packet lifts slightly); click to cut. Each packet is lifted and tilted up to show its bottom card to both players (a hand-held motion), held for a moment, then set back; equal cuts, cut again. The higher card chooses (see `docs/PIQUET.md`). |
+| **The deal** | The dealer's side deals from the pack **two at a time** (Cavendish), alternately, face down onto the table before each player; then the eight-card talon: three, and five crossed over them (Foster). Each player picks up their twelve: yours rise into the floating fan and turn to face you (faces assigned now); theirs rise showing backs. |
+| **Exchange** | Chosen discards lift out of your fan and are laid face down on your discard pile; the same number are picked up from the top of the talon into your fan. Your opponent's move the same way, anonymously. |
+| **Declarations** | The dialogue is 2D (the overlay says "Your opponent: point of 5"); a shown combination may later be briefly lifted and turned toward the other player — a v2 touch, needing a protocol addition (the cards of `showed` events). |
+| **A card played** | Yours: from the fan, transfer + lay down, face up, onto the trick spot. Theirs: the card is tipped **forward, away from its holder, about its lower edge** as it is laid down — which turns its face from them to the sky, face up, the natural motion — landing upside-down to you, as it would at a real table. |
+| **A trick won** | A beat to read it (the 2D page's 0.9 s pause, but in place); then the winner's side gathers the pair — the second card slides onto the first — and pushes it aside to the winner's row of tricks (slide, friction), face up, overlapping the previous tricks. |
+| **Deal ends** | The score tab fills in; all 32 cards are swept together (slides) into a pack, which is squared and set aside for the next dealer. |
+
+## 8. The look: toon shading, ink lines, light and colour
+
+### 8.1 Cel shading
+`MeshToonMaterial` with a small `gradientMap` (a 3–4 texel `DataTexture`,
+`NearestFilter`) so light falls in flat bands. Card faces use a bright-biased
+ramp (e.g. 0.82 / 0.94 / 1.0) so the art stays fully readable; the table uses a
+softer ramp; card edges a cream tone. Colour management: sRGB textures,
+`ColorManagement` on.
+
+### 8.2 Ink lines (contour rendering)
+**Plan A — inverted hull, per object.** Each mesh gets an outline child: the
+same geometry drawn with `side: BackSide` in a custom `ShaderMaterial` that
+pushes each vertex outward in **clip space** along a *smoothed* normal, so the
+line has a constant screen width (≈ 2.5 px at DPR 1, scaled by DPR). The
+smoothed normal is a separate vertex attribute, `outlineNormal`, computed by
+averaging the normals of vertices that share a position; this is what keeps the
+line unbroken at a card's hard edges, where three.js's stock `OutlineEffect`
+tears. Colour: a deep ink, not pure black (e.g. `#1d2433`).
+
+**Plan B — post-process edges**, if Plan A misbehaves on the very thin cards
+(test it first, in the look spike): render an object-ID buffer and a depth
+buffer, and draw ink where the ID changes or depth jumps. Robust for any
+geometry, one extra pass.
+
+**Ink as interface.** The line is also the selection language, which keeps the
+scene free of glows and badges: hovered-and-playable → slightly thicker ink;
+hinted → a cyan ink; selected for discard → amber ink and lifted; illegal →
+the face dims. (The 2D page's colours, carried over.)
+
+### 8.3 Light and shadow
+A hemisphere light (sky/ground) for the bright, airy base, and one directional
+key light high and to the front-left, casting soft shadows (`PCFSoftShadowMap`,
+2048² map, bias tuned for the thin cards). **Shadows are the depth cue for the
+floating hands**: their soft shadows on the table say "held above it". The
+table receives; cards cast and receive.
+
+### 8.4 Colour
+One M3 seed colour generates the overlay's scheme (light theme). Proposal to
+show Andrew in the look spike: a clear blue seed (the card back is navy and
+white), with warm amber for "you" and a teal for "your opponent" in the score
+tab. The table: two or three candidate pale surfaces in the spike's
+screenshots — warm paper-white, pale sky, soft sage — for him to choose.
+
+## 9. The 2D overlay (Material Design 3)
+
+Floating surfaces over the canvas, nothing modal unless it must be.
+
+- **The score tab** — Andrew's spec: *a floating 2D running tab, a collapsible
+  list with all the gameplay stages, the subtotal for each part running as it
+  goes, for the player and for the opponent.*
+  - A floating M3 card (top-right on a laptop; a bottom sheet on a phone),
+    collapsible with one tap. **Collapsed**: a single line — this deal, you
+    · your opponent; the partie, you · your opponent.
+  - **Expanded, this deal**: one row per stage in reckoning order (Law 67):
+    carte blanche (only if it happened), point, sequences, sets, pique /
+    repique (only if it happened), the play (live trick count), the cards /
+    capot, then the deal's total. Each row shows the stage's points and the
+    **running subtotal after it**, for each side. Stages not reached yet are
+    listed greyed, so the whole shape of a deal is visible from the start;
+    the current stage is highlighted; a stage's figures animate in (M3
+    emphasized decelerate) as they are scored.
+  - **Expanded, the partie**: a second fold with the six deals (plus extra
+    deals on a tie), each deal's two scores, the running partie totals, the
+    rubicon line at 100 with the chance of crossing it (`state.rubicon`).
+  - Data: the protocol already carries everything — `scored` events with
+    `category`, `deal`, `who`, `amount`; `deals`; `partie`; `phase`;
+    `tricks`. No engine change needed.
+  - A toggle in settings, like every aid.
+- **The prompt**: a floating card at the bottom centre with the question and
+  its actions (`md-filled-button` for the main action; `md-outlined-button`
+  for the rest); the declaration options as buttons whose hover lifts the
+  claim's cards in the 3D hand; the hint line with Follow; errors in the
+  engine's words.
+- **Top bar**: level (skill descriptions, never names), New partie, a hints
+  `md-switch`, Undo, Settings.
+- **Narration**: a collapsible side sheet, folded by deal, as on the 2D page.
+- **Settings dialog**: the aids (hints, play forced, play winners, declare for
+  me), the running tab, pause on tricks, animation speed, reduced motion, sort
+  order, and **Credits** (the art and software licences — required by CC
+  BY-SA and by the libraries' notices).
+- **Worth chips and the sort bar**: as on the 2D page, over the hand.
+
+## 10. Interaction
+
+- **Raycasting** against your hand's meshes (and the pack during the cut).
+  Hover: the card lifts toward you and its ink thickens. Click: select for
+  discard, or play. Keyboard as on the 2D page (Enter, digits, U, H, Escape).
+- **Illegal clicks are sent anyway** and the engine's refusal shown, as now —
+  the reason is the lesson.
+- **Test hooks** (`window.piquet3d`): `screenPoint(code)` gives a card's
+  projected screen position, `busy()`, `state()`; the browser test clicks
+  cards through them. `?test` makes every motion instant.
+- Later: drag a card to the table to play it; lift your discards to look at
+  them (the rules allow it); click a won trick to examine it.
+
+## 11. Testing
+
+- **Node (`node --test`, Node 18)** for the pure modules, test-first:
+  - `easing`: minimum jerk has s(0)=0, s(1)=1, zero slope and curvature at
+    both ends, symmetric about ½; friction profile has zero slope at the end
+    only; the cubic-bézier evaluator matches known M3 values.
+  - `kinematics`: the hinge flip keeps the hinge edge fixed and **every
+    corner at or above the table for all t**, ends face up one width over;
+    a transfer's apex clears the given obstacles; lay-down ends flat at stack
+    height; the fan faces the camera (normals point at the eye).
+  - `layout`: for scripted protocol states, zone counts match the state; no
+    two resting cards overlap unless stacked with distinct layers; **no face
+    texture on any card the view does not reveal**; won tricks are face up.
+  - `choreography`: each event kind ends exactly at `layout(next)`; unknown
+    cards are conserved (32 always); a `played` by the opponent assigns that
+    card's identity only as it lands.
+- **Browser (Playwright, system Chromium)**: the page loads **with the
+  network blocked** and makes no requests; the canvas is not blank; a whole
+  partie can be played by clicking cards through the test hooks; the score
+  tab's rows sum to the deal totals; undo, hints, settings, reload; a phone
+  viewport; no console errors; screenshots at each stage, read back by eye.
+- **Budget**: the build prints the size of each part and fails over 5 MB.
+
+## 12. Open questions for Andrew (after the look spike)
+
+1. The table's colour and mood — from the spike's two or three candidates.
+2. Camera: fixed, or a slight parallax following the pointer?
+3. Play by clicking (now) — add drag-to-play?
+4. Declarations: keep the dialogue purely 2D, or have shown combinations
+   lifted in 3D (needs the shown cards in the protocol)?
+5. Defaults for the aids stay as on the 2D page unless he says otherwise
+   (hints on, play forced on, play winners on, declare for me off).
+
+## 13. Phased TODO
+
+Each phase ends committed and pushed, with `PLAN.md` updated. Tests first
+throughout.
+
+- [x] **P0 — Assets and credits.** Originals pinned in `web3d/art/source/`
+      with checksums and measurements; `CREDITS.md`. (`3be2e5f`)
+- [ ] **P1 — Toolchain and skeleton.** `apt install npm librsvg2-bin`;
+      `web3d/package.json` + lockfile (three 0.186.1, @material/web 2.5.0, lit
+      3.3.3, esbuild 0.28.2); `web3d/build.py` producing a single
+      `web3d/piquet3d.html` with the wasm inlined; an empty three.js scene
+      renders; the Playwright test asserts no network requests and a
+      non-blank canvas; the size report. *Accept*: the page opens from disk,
+      offline, and shows a lit surface.
+- [ ] **P2 — Look spike.** Table surface, hemisphere + directional light,
+      soft shadows, toon materials, ink outline (Plan A) on a flat card, a
+      floating tilted card and the table; a placeholder card texture.
+      Screenshots of two or three surface colours for Andrew. *Accept*: the
+      ink line is continuous around a flat card and a tilted one at several
+      angles; shadows of a floating card are visible and soft; it looks
+      bright and clean. Decide Plan A or B here.
+- [ ] **P3 — Card art pipeline.** `web3d/tools/art.py`; 32 faces + back as
+      WebP, committed; card geometry with three material groups and UVs
+      (faces upright, the back not mirrored) and `outlineNormal`; the art
+      budget check. *Accept*: every card renders the right face, upright,
+      with the back on the reverse; sizes within budget.
+- [ ] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
+      `timeline.js` with the invariants in §11. *Accept*: tests green; a
+      demo page shows each primitive.
+- [ ] **P5 — Layout (node-tested).** `layout.js` from protocol states, with
+      the anonymity test. *Accept*: every zone right for scripted states
+      across a partie; no hidden face ever assigned.
+- [ ] **P6 — Choreography (node-tested).** Each event kind animated and
+      ending at the layout; speed setting; skip-to-end. *Accept*: a scripted
+      partie animates end to end with every step ending at its layout.
+- [ ] **P7 — Interaction and the overlay.** Raycasting, hover, select, play;
+      the M3 overlay: prompt, top bar, **score tab** (§9), narration, settings,
+      credits; keyboard; hints as cyan ink. *Accept*: a human can play a whole
+      partie with the mouse; the score tab tracks every stage live.
+- [ ] **P8 — The whole game, tested in a browser.** The Playwright suite in
+      §11, offline; phone layout. *Accept*: green, no console errors,
+      screenshots reviewed.
+- [ ] **P9 — Polish.** Idle sway, reduced motion, render on demand, DPR,
+      the cut ceremony's details, the talon crossed five-over-three, README
+      and PROTOCOL notes, `PLAN.md`.
+
+## 14. Notes for the implementer
+
+- Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
+  a working client: the resume/replay logic, the sort grouping and the pacing
+  are worth reusing as-is.
+- `web/test/ffi.mjs` and `web/test/browser.py` show how the wasm is driven in
+  node and how the page is driven in Chromium on this VM.
+- The engine never needs to know the scene exists. If something seems to need
+  an engine change, it is probably a protocol addition — make it there, with a
+  test, and bump `protocol` if a client would notice.
+- `cargo` needs `source ~/.cargo/env`; Playwright is in the project `.venv`;
+  shell commands with several steps start with `set -e`.
+- **Credit every asset as it arrives.** Andrew: "remember where we get all our
+  assets, so we can credit them (now, that includes MD3)". Anything
+  third-party — art, fonts, icons, libraries, build tools, design systems —
+  gets its entry in `/CREDITS.md` (what, who, URL, version, licence, our
+  changes) in the same commit that brings it in; art is pinned with a
+  checksum; licences that require it are honoured on the in-game Credits
+  screen.
