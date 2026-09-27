@@ -744,6 +744,33 @@ Ordered by how much they are needed, not by size.
     answer rather than a rule. All of that still lives in docstrings and commit
     messages.
 
+14. **Spoken audio for everything said at the table -- price it before
+    starting (Andrew, 27 September).** *"price out how much it would cost to
+    use google cloud apis to generate audio for ALL of the events that are
+    spoken during this game. before we start, a quick set of calculations
+    would be in order: cost per phrase, number of phrases necessary,
+    down-res'd so the game doesn't get enormous ... we can also use another
+    option (eg Piper TTS, espeak-ng)."* Talk it through with him before
+    building anything. The calculation:
+    - **The phrase inventory.** Every distinct utterance: the calls (point
+      of 3–8 with their values, tierce … huitième to each top card,
+      trio/quatorze of each rank), the answers (good, not good, equal,
+      making?), what is shown, the table's lines (deals, cuts, the
+      rubicon, the settlement), with or without suits. Enumerate from the
+      engine (`combos`, `talk.js`), and decide what is spliced from parts
+      ("tierce" + "to the" + "king") against what is recorded whole.
+    - **Cost per phrase**: Google Cloud Text-to-Speech is billed per
+      character by voice tier, with a free monthly allowance; characters
+      times phrases gives the one-off cost. It is generated once and
+      bundled, not called at play time (the page must work offline).
+    - **Size, down-res'd**: mono, 16–24 kHz, Opus or low-bitrate MP3, a
+      few kB a phrase -- times the inventory, weighed against the 5 MB
+      guideline (a guideline, not a wall).
+    - **The free alternatives, generated offline**: Piper TTS (neural,
+      MIT-licensed voices, good quality) and espeak-ng (tiny, robotic) --
+      or synthesis in the page itself, at no size at all.
+    - Credit whatever voice is used in `CREDITS.md`.
+
 13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
