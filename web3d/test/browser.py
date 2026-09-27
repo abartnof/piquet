@@ -214,10 +214,7 @@ def check_undo_hints_settings(page, failures):
         if not page.evaluate("document.querySelector(\"md-outlined-segmented-button[data-sort='rank']\").selected"):
             failures.append("choosing Rank did not select it")
         page.locator("md-outlined-segmented-button[data-sort='auto']").click()
-    # What is said is in view: both halves of the dialogue have spoken.
-    for who in ("them", "you"):
-        if page.locator(f"#talk .half.{who} .line").count() == 0:
-            failures.append(f"nothing said in the {who} half of the dialogue")
+
     page.locator("#settings-open").click()
     page.wait_for_selector("md-dialog#settings[open]")
     shot(page, "05-settings")
@@ -265,6 +262,10 @@ def main() -> int:
         final = state(page)
         if final["prompt"]["kind"] != "over":
             failures.append(f"the partie did not finish by clicking: stuck at {final['prompt']['kind']}")
+        # What is said is in view: by the last deal's end both sides have spoken.
+        for who in ("them", "you"):
+            if page.locator(f"#talk .half.{who} .line").count() == 0:
+                failures.append(f"nothing said in the {who} half of the dialogue")
         check_drawn(page, failures, "at the end")
         shot(page, "04-over")
         check_offline(page, failures)

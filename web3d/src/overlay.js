@@ -376,14 +376,11 @@ export function createOverlay(root, on) {
             "Click a card to play it, or use ← → and Space."];
         }
         return ["Your lead.", "Click a card to play it, or use ← → and Space."];
-      case "next_deal": {
-        const ended = [...s.events].reverse().find((e) => e.kind === "deal_ends");
-        return [ended ? ended.text : "The deal is over.", null];
-      }
-      case "over": {
-        const ended = [...s.events].reverse().find((e) => e.kind === "partie_ends");
-        return [ended ? ended.text : "The partie is over.", null];
-      }
+      // The table has just said how it ended, between the halves.
+      case "next_deal":
+        return [null, "Deal the next hand when you are ready."];
+      case "over":
+        return [null, null];
     }
     return [null, null];
   }
@@ -495,7 +492,7 @@ export function createOverlay(root, on) {
     undo.hidden = !prefs.undo;
     undo.disabled = ui.busy || !s.can_undo;
     const hint = s.aids.hints ? s.hint : null;
-    hintFold.root.hidden = !s.aids.hints || s.phase === "cut";
+    hintFold.root.hidden = !s.aids.hints || ["cut", "choose_dealer", "next_deal", "over"].includes(s.prompt.kind);
     hintFold.set(!!prefs.hintOpen && !!hint);
     hintFold.inner.replaceChildren(hint
       ? el("div", { class: "hint" },
