@@ -130,6 +130,48 @@ export function createOverlay(root, on) {
     gear,
   );
 
+  // ---- tooltips ----------------------------------------------------------------
+  //
+  // Longer words, and the keys, on hover (Andrew: explanations "should be
+  // mouseover tooltips", and keyboard shortcuts belong in tooltips, "not
+  // on-screen"). One Material-style rich tooltip for anything with a
+  // data-tip: beside the left column's chips, above the buttons under your
+  // hand -- never over the thing pointed at.
+  const tip = el("div", { class: "tip", role: "tooltip" });
+  root.append(tip);
+  let tipFor = null;
+  let tipTimer = null;
+  const tipTarget = (e) => e.composedPath().find((node) => node instanceof Element && node.dataset && node.dataset.tip);
+  const hideTip = () => {
+    clearTimeout(tipTimer);
+    tipFor = null;
+    tip.classList.remove("shown");
+  };
+  root.addEventListener("pointerover", (e) => {
+    const target = tipTarget(e);
+    if (!target || target === tipFor) return;
+    hideTip();
+    tipFor = target;
+    tipTimer = setTimeout(() => {
+      if (tipFor !== target || !target.isConnected) return;
+      tip.textContent = target.dataset.tip;
+      const r = target.getBoundingClientRect();
+      const beside = r.right < window.innerWidth * 0.4;
+      tip.classList.toggle("beside", beside);
+      if (beside) {
+        Object.assign(tip.style, { left: `${r.right + 12}px`, top: `${r.top + r.height / 2}px`, bottom: "" });
+      } else {
+        Object.assign(tip.style, { left: `${r.left + r.width / 2}px`, top: "", bottom: `${window.innerHeight - r.top + 10}px` });
+      }
+      tip.classList.add("shown");
+    }, 280);
+  });
+  root.addEventListener("pointerout", (e) => {
+    const target = tipTarget(e);
+    if (target && target === tipFor && !target.contains(e.relatedTarget)) hideTip();
+  });
+  root.addEventListener("pointerdown", hideTip);
+
   // ---- folds: Material 3's expanding list item ---------------------------------
   //
   // A head that opens and closes a body: the chevron turns and the body grows
@@ -435,9 +477,6 @@ export function createOverlay(root, on) {
       ? `Call only ${called}, hiding the rest: scores ${option.score} if your opponent's ${worse} is worse.`
       : `Call ${called}: scores ${option.score} if your opponent's ${worse} is worse.`;
   }
-  // The explanation of the option a button stands for, lit while it is
-  // pointed at.
-  const lightChoice = (i) => root.querySelectorAll("#worth .choice").forEach((line, k) => line.classList.toggle("lit", k === i));
 
   function renderPrompt(s, ui, prefs) {
     const box = $("prompt");
@@ -476,19 +515,19 @@ export function createOverlay(root, on) {
       // pick a card").
       case "cut": {
         const lift = p.fewest + Math.floor(Math.random() * (p.most - p.fewest + 1));
-        actions(button("filled-tonal", "Cut for me", () => on.act(`cut ${lift}`), { class: "primary", title: "Enter" }));
+        actions(button("filled-tonal", "Cut for me", () => on.act(`cut ${lift}`), { class: "primary", "data-tip": "Key: Enter" }));
         break;
       }
       case "choose_dealer":
         actions(
-          button("filled", "Deal first", () => on.act("dealer you"), { class: "primary", title: "Enter" }),
+          button("filled", "Deal first", () => on.act("dealer you"), { class: "primary", "data-tip": "Key: Enter" }),
           button("outlined", `Let ${THEM} deal`, () => on.act("dealer them")));
         break;
       case "exchange": {
         const n = ui.selected.length;
         actions(
           button("filled", n ? `Throw ${ui.selected.map(label).join(" ")} and draw ${n}` : "Choose cards to throw",
-            () => n && on.act(`exchange ${ui.selected.join(" ")}`), { class: "primary", disabled: !n, title: "Enter" }),
+            () => n && on.act(`exchange ${ui.selected.join(" ")}`), { class: "primary", disabled: !n, "data-tip": "Key: Enter" }),
           n ? button("text", "Clear", () => on.clear()) : null);
         break;
       }
@@ -500,31 +539,19 @@ export function createOverlay(root, on) {
           const kind = i === 0 ? "filled" : "outlined";
           const b = button(kind, text, () => on.act(`declare ${i}`), {
             class: `${i === 0 ? "primary" : ""} ${advised === `declare ${i}` ? "advised" : ""}`,
-            title: `Press ${i + 1}${i === 0 ? ", or Enter" : ""}`,
+            "data-tip": `${optionLong(option, p.category)}\nKey: ${i + 1}${i === 0 ? " or Enter" : ""}`,
           });
-          b.addEventListener("pointerenter", () => {
-            on.point(option.cards);
-            lightChoice(i);
-          });
-          b.addEventListener("pointerleave", () => {
-            on.unpoint();
-            lightChoice(-1);
-          });
-          b.addEventListener("focus", () => {
-            on.point(option.cards);
-            lightChoice(i);
-          });
-          b.addEventListener("blur", () => {
-            on.unpoint();
-            lightChoice(-1);
-          });
+          b.addEventListener("pointerenter", () => on.point(option.cards));
+          b.addEventListener("pointerleave", () => on.unpoint());
+          b.addEventListener("focus", () => on.point(option.cards));
+          b.addEventListener("blur", () => on.unpoint());
           options.append(b);
         });
         parts.push(options);
         break;
       }
       case "next_deal":
-        actions(button("filled", "Deal the next hand", () => on.act("next"), { class: "primary", title: "Enter" }));
+        actions(button("filled", "Deal the next hand", () => on.act("next"), { class: "primary", "data-tip": "Key: Enter" }));
         break;
       case "over":
         actions(button("filled", "Play another partie", () => on.newPartie(true), { class: "primary" }));
@@ -572,31 +599,31 @@ export function createOverlay(root, on) {
     const calling = s.prompt.kind === "declare" ? s.prompt.category : null;
     for (const [category, name] of WORTH_ORDER) {
       const held = s.worth.filter((h) => h.category === category);
-      if (!held.length && category !== calling) continue;
+      if (!held.length) continue;
       any = true;
       const total = held.reduce((sum, h) => sum + Number(h.score ?? 0), 0);
-      // The category being called: its choices, each spelled out, lit as its
-      // button under your hand is pointed at.
-      if (category === calling) {
-        const choices = el("ul", { class: "choices" },
-          s.prompt.options.map((option) => el("li", { class: "choice" }, optionLong(option, category))));
-        grid.append(
-          el("span", { class: "worth-name now" }, `${name} — your call`),
-          el("span", { class: "worth-total now" }, String(total)),
-          choices);
-        continue;
-      }
+      const now = category === calling;
+      // What a holding comes to, on hover (Andrew: the long explanations
+      // "should be mouseover tooltips"); for the category being called, every
+      // choice you have.
+      const worse = category === "point" ? "point" : category === "sequences" ? "best sequence" : "best set";
+      const tipFor = (holding) => (now
+        ? s.prompt.options.map((option) => `• ${optionLong(option, category)}`).join("\n")
+        : `${holding.text.charAt(0).toUpperCase()}${holding.text.slice(1)}: scores ${holding.score} if your opponent's ${worse} is worse.`);
       const chips = el("md-chip-set", { class: "worth", "aria-label": `${name}: ${total}` });
       for (const holding of held) {
         const pinned = ui.pinned === holding.text;
         const words = held.length > 1 ? `${holding.text} · ${holding.score}` : holding.text;
-        const chip = el("md-assist-chip", { label: words, class: pinned ? "pinned" : "", title: "Point to see its cards; click to keep them lifted" });
+        const chip = el("md-assist-chip", { label: words, class: pinned ? "pinned" : "", "data-tip": tipFor(holding) });
         chip.addEventListener("pointerenter", () => on.point(holding.cards));
         chip.addEventListener("pointerleave", () => on.unpoint());
         chip.addEventListener("click", () => on.pin(pinned ? null : holding));
         chips.append(chip);
       }
-      grid.append(el("span", { class: "worth-name" }, name), el("span", { class: "worth-total" }, String(total)), chips);
+      grid.append(
+        el("span", { class: `worth-name${now ? " now" : ""}` }, now ? `${name} — your call` : name),
+        el("span", { class: `worth-total${now ? " now" : ""}` }, String(total)),
+        chips);
     }
     card.replaceChildren(
       el("span", { class: "card-title" }, "Your hand is worth, if good"),
@@ -616,15 +643,15 @@ export function createOverlay(root, on) {
   sortSet.addEventListener("segmented-button-set-selection", (e) => {
     if (e.detail.selected) on.pref("sort", SORTS[e.detail.index][0]);
   });
-  const undo = el("md-outlined-icon-button", { id: "undo", title: "Take back your last decision (U)", "aria-label": "Undo" }, icon("undo"));
+  const undo = el("md-outlined-icon-button", { id: "undo", "data-tip": "Take back your last decision\nKey: U", "aria-label": "Undo" }, icon("undo"));
   undo.addEventListener("click", () => on.undo());
   // Andrew: "the b. prescriptive part should be easy to turn off (maybe two
   // buttons at the bottom: one button shows you interpretations, another
   // shows straight-up hints? put these where the Hint button currently is)".
-  const explainChip = el("md-filter-chip", { label: "Explain", title: "What the rules make of each moment, and how to act (E)" });
+  const explainChip = el("md-filter-chip", { label: "Explain", "data-tip": "What the rules make of each moment, and how to act\nKey: E" });
   explainChip.append(Object.assign(icon("explain"), { slot: "icon" }));
   explainChip.addEventListener("click", () => on.pref("explain", explainChip.selected));
-  const hintChip = el("md-filter-chip", { label: "Hints", title: "The strongest move, with Follow to make it (H)" });
+  const hintChip = el("md-filter-chip", { label: "Hints", "data-tip": "The strongest move, with Follow to make it\nKey: H" });
   hintChip.append(Object.assign(icon("hint"), { slot: "icon" }));
   hintChip.addEventListener("click", () => {
     if (hintChip.selected !== !!lastAids.hints) on.aid("hints");
