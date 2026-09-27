@@ -21,12 +21,9 @@ import {
   VSMShadowMap,
   WebGLRenderer,
 } from "three";
+import { aim } from "./framing.js";
 import { RAMPS } from "./materials.js";
-import { CAMERA, CAMERA_PORTRAIT, PORTRAIT_BELOW } from "./units.js";
-
-// The landscape view is tuned at 16:10 with a 40 degree vertical field; a
-// narrower window widens it just enough to keep the table's full width.
-const WIDTH_TAN = Math.tan((CAMERA.fov * Math.PI) / 360) * 1.6;
+import { CAMERA } from "./units.js";
 
 // Candidate surfaces for the table, for Andrew to choose between.
 export const SURFACES = {
@@ -37,7 +34,7 @@ export const SURFACES = {
 
 export function createScene(
   canvas,
-  { surface = "sky", shadow = "vsm", shadowMap = 512, blurSamples = 8, eye, at, fov } = {},
+  { surface = "sky", shadow = "vsm", shadowMap = 512, blurSamples = 8, eye, at, fov, lighting = {} } = {},
 ) {
   const colours = SURFACES[surface] || SURFACES.sky;
   const renderer = new WebGLRenderer({ canvas, antialias: true });
@@ -52,17 +49,20 @@ export function createScene(
 
   const camera = new PerspectiveCamera(CAMERA.fov, 1, CAMERA.near, CAMERA.far);
   let portrait = null;
+  // The share of the width the information column takes, across the table:
+  // the table is framed in the play area beside it (framing.js).
+  let inset = 0;
   const stage = { portrait: false, onReframe: null };
   // Place the eye for this window: upright, or across. Explicit eye, at and
   // fov (from the page's query, for tuning) win.
   function frame(aspect) {
-    const upright = aspect < PORTRAIT_BELOW;
-    const view = upright ? CAMERA_PORTRAIT : CAMERA;
-    camera.position.set(...(eye ?? view.position));
-    camera.lookAt(...(at ?? view.target));
-    camera.fov = fov ?? (upright ? view.fov : Math.max(view.fov, (360 / Math.PI) * Math.atan(WIDTH_TAN / aspect)));
-    camera.aspect = aspect;
-    camera.updateProjectionMatrix();
+    const { upright } = aim(camera, aspect, inset);
+    if (eye || at || fov) {
+      if (eye) camera.position.set(...eye);
+      if (at) camera.lookAt(...at);
+      if (fov) camera.fov = fov;
+      camera.updateProjectionMatrix();
+    }
     if (upright !== portrait) {
       const first = portrait === null;
       portrait = upright;
@@ -71,9 +71,17 @@ export function createScene(
     }
   }
 
-  scene.add(new HemisphereLight("#ffffff", "#d8dbe3", 2.3));
-  const key = new DirectionalLight("#ffffff", 1.0);
-  key.position.set(-30, 80, 40);
+  // The balance between the two sets how deep a shadow is: it takes away
+  // only the key light. With the sky at 2.3 against a key of 1.0 a shadow
+  // was a fifth darker than the table, and one card's in the air hardly
+  // showed (Andrew: the shadows "don't follow the cards to the table at
+  // all"). The same brightness, weighted toward the key, makes a shadow
+  // about a third darker; and a sun a little lower draws a held card's
+  // shadow long enough to show how it is tilted.
+  const light = { sky: 1.7, key: 1.6, ...lighting };
+  scene.add(new HemisphereLight("#ffffff", "#d8dbe3", light.sky));
+  const key = new DirectionalLight("#ffffff", light.key);
+  key.position.set(-34, 70, 46);
   key.castShadow = true;
   // The shadow camera must cover all the table either eye can see. Its
   // default box is ten units across and would clip every shadow but the
@@ -98,7 +106,7 @@ export function createScene(
   const SOFTNESS = 0.8; // cm
   key.shadow.radius = shadow === "vsm" ? (SOFTNESS * shadowMap) / (2 * REACH) : 3;
   key.shadow.blurSamples = blurSamples;
-  key.shadow.intensity = 0.75;
+  key.shadow.intensity = 0.8;
   scene.add(key);
 
   const table = new Mesh(
@@ -143,5 +151,15 @@ export function createScene(
     render();
   });
 
-  return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, frames: () => frames });
+  // The information column's width in CSS pixels, as laid out: reframe the
+  // table beside it.
+  function setInset(pixels) {
+    const width = canvas.clientWidth || 1;
+    const next = Math.max(0, Math.min(0.4, pixels / width));
+    if (Math.abs(next - inset) < 1e-3) return;
+    inset = next;
+    frame(width / (canvas.clientHeight || 1));
+  }
+
+  return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, setInset, frames: () => frames });
 }

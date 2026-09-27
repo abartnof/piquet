@@ -29,6 +29,9 @@ export const CAMERA = Object.freeze({
   near: 20,
   far: 400,
   maxPixelRatio: 2,
+  // The table's half-width the view must keep, as the tangent of half the
+  // horizontal field: what 40 degrees shows at 16:10 across the whole window.
+  widthTan: 0.44,
 });
 
 // The eye for a phone held upright: higher and nearer overhead, with a
@@ -47,24 +50,28 @@ export const PORTRAIT_BELOW = 0.85;
 export const ZONES = Object.freeze({
   // 5.6 degrees a card leaves 1.6 cm of each showing at this radius -- twice
   // the corner index -- and keeps a full hand in suits clear of the prompt.
-  yourHand: Object.freeze({ centre: Object.freeze([0, 15, 27]), radius: 16, spread: 5.6, groupGap: 2.6, tilt: 14 }),
-  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -22]), facing: Object.freeze([0, 26, -300]), radius: 16, spread: 5.2 }),
-  ribbon: Object.freeze({ x: 22.5, z: -2, spacing: 1.45 }), // the pack spread for the cut, top card at the right
-  yourCut: Object.freeze({ x: -5, z: 9 }),
-  theirCut: Object.freeze({ x: 5, z: -13 }),
-  talon: Object.freeze({ x: -18, z: -3 }),
+  //
+  // Both hands are held as people hold cards: at 75 degrees to the table,
+  // leaning back 15 from upright toward their holder (Andrew: "the hands are
+  // sort of tilted away from the player at ~75 degrees").
+  yourHand: Object.freeze({ centre: Object.freeze([0, 16, 26]), radius: 16, spread: 5.6, groupGap: 2.6, lean: 15 }),
+  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -22]), radius: 16, spread: 5.2, lean: 15 }),
+  ribbon: Object.freeze({ x: 20, z: -6, spacing: 1.3 }), // the pack spread for the cut, top card at the right
+  yourCut: Object.freeze({ x: -5, z: 4 }),
+  theirCut: Object.freeze({ x: 5, z: -16 }),
+  talon: Object.freeze({ x: -15, z: -9 }),
   // Your discards, and where you hold them up when you look at them.
-  yourDiscards: Object.freeze({ x: -31, z: 9, peek: Object.freeze({ centre: Object.freeze([-26, 11, 17]), radius: 10, spread: 9 }) }),
-  theirDiscards: Object.freeze({ x: -31, z: -14 }),
-  yourPlay: Object.freeze({ x: 0.6, z: 3 }), // your card in a trick, nearer you
-  theirPlay: Object.freeze({ x: -0.6, z: -7 }), // theirs, turned to face them
-  // Clear of the floating score tab above and the prompt below.
-  yourTricks: Object.freeze({ x: 15, z: 7, span: 24 }),
-  theirTricks: Object.freeze({ x: 15, z: -9, span: 24 }),
+  yourDiscards: Object.freeze({ x: -25, z: -1, peek: Object.freeze({ centre: Object.freeze([-21, 12, 14]), radius: 10, spread: 9 }) }),
+  theirDiscards: Object.freeze({ x: -25, z: -18 }),
+  yourPlay: Object.freeze({ x: 0.6, z: -4 }), // your card in a trick, nearer you
+  theirPlay: Object.freeze({ x: -0.6, z: -13 }), // theirs, turned to face them
+  // Won tricks shingled to the right, clear of your hand.
+  yourTricks: Object.freeze({ x: 10, z: -5, span: 18 }),
+  theirTricks: Object.freeze({ x: 10, z: -17, span: 18 }),
   // Only in passing, while dealing: the pack squared in front of the dealer,
   // and the pile dealt before each player.
-  pack: Object.freeze({ you: Object.freeze({ x: -7, z: 10 }), them: Object.freeze({ x: -7, z: -12 }) }),
-  dealt: Object.freeze({ you: Object.freeze({ x: 5, z: 13 }), them: Object.freeze({ x: 5, z: -15 }) }),
+  pack: Object.freeze({ you: Object.freeze({ x: -7, z: 0 }), them: Object.freeze({ x: -7, z: -16 }) }),
+  dealt: Object.freeze({ you: Object.freeze({ x: 5, z: 0 }), them: Object.freeze({ x: 5, z: -17 }) }),
 });
 
 // The same table for a phone held upright: everything drawn in within about
@@ -72,8 +79,10 @@ export const ZONES = Object.freeze({
 // -- their hand, their won tricks, the talon and the discards, the trick,
 // yours -- so the cards stay big enough to read on a narrow screen.
 export const ZONES_PORTRAIT = Object.freeze({
-  yourHand: Object.freeze({ centre: Object.freeze([0, 17, 25]), radius: 14, spread: 4.4, groupGap: 2, tilt: 14 }),
-  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -27]), facing: Object.freeze([0, 26, -300]), radius: 14, spread: 3.8 }),
+  // A phone's eye is nearly overhead, and a hand at 75 degrees would be seen
+  // almost edge on; held up at 50 degrees it still reads.
+  yourHand: Object.freeze({ centre: Object.freeze([0, 12, 33]), radius: 14, spread: 4.4, groupGap: 2, lean: 40 }),
+  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -27]), radius: 14, spread: 3.8, lean: 15 }),
   ribbon: Object.freeze({ x: 16.5, z: -2, spacing: 1.05 }),
   yourCut: Object.freeze({ x: -5, z: 9 }),
   theirCut: Object.freeze({ x: 5, z: -13 }),

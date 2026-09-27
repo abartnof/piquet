@@ -53,6 +53,8 @@ async function main() {
     shadow: params.get("shadow") || "vsm",
     shadowMap: Number(params.get("shadowmap")) || undefined,
     blurSamples: Number(params.get("blur")) || undefined,
+    // ?light=sky,key to try another balance.
+    lighting: numbers("light") ? { sky: numbers("light")[0], key: numbers("light")[1] } : {},
     eye: numbers("eye"),
     at: numbers("at"),
     fov: numbers("fov") ? numbers("fov")[0] : undefined,

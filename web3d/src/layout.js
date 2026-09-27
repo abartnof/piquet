@@ -88,12 +88,13 @@ function yourHand(state, view, zones) {
     }),
   );
   const middle = raw.length ? (raw[0] + raw[raw.length - 1]) / 2 : 0;
+  const centre = new Vector3(...zone.centre);
   const poses = fan({
     angles: raw.map((a) => a - middle),
-    centre: new Vector3(...zone.centre),
-    facing: view.eye,
+    centre,
+    facing: toward(centre, 1),
     radius: zone.radius,
-    tilt: zone.tilt * DEG,
+    tilt: zone.lean * DEG,
   });
   const codes = groups.flat();
   const chosen = new Set(view.selected);
@@ -109,14 +110,21 @@ function yourHand(state, view, zones) {
 
 function theirHand(count, zones) {
   const zone = zones.theirHand;
+  const centre = new Vector3(...zone.centre);
   return fan({
     count,
-    centre: new Vector3(...zone.centre),
-    facing: new Vector3(...zone.facing),
+    centre,
+    facing: toward(centre, -1),
     radius: zone.radius,
     spread: zone.spread * DEG,
-    tilt: 0,
+    tilt: zone.lean * DEG,
   }).map((pose, i) => ({ zone: "their-hand", index: i, code: null, pose }));
+}
+
+// A point level with a held hand, far off toward its holder's side of the
+// table (+1 yours, -1 theirs): the fan faces it, then leans back.
+function toward(centre, side) {
+  return centre.clone().add(new Vector3(0, 0, 300 * side));
 }
 
 function theirPlayed(state) {
