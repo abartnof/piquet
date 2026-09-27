@@ -159,7 +159,11 @@ from this session are all built and pushed (`docs/TABLE3D.md` P10, commits
 `c8502b7`…`8ef2fe3`); the verbatim notes and what each became are there.
 He then rejected the dialogue box for a broadcast-style **live score bug**
 — two numbers, a tick for ordinary points, a celebration for big ones —
-with the stage table kept as the log (P11).
+with the stage table kept as the log (P11). Then (P12): thrown motion —
+cards tossed and flicked, not glided; an optional, lifelike cut; the
+opponent's cards bobbing as they call; facts / interpretation / hints with
+the last two as toggles; and eighteen procedural table tops, one at random
+each partie.
 The overlay is now *information left, buttons under the hand*, a standing
 rule (saved to memory). Whatever he sends next is the backlog. Owed from
 this round: **the phone's table** (small hand, the info strip covering the

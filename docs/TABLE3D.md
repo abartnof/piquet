@@ -840,6 +840,34 @@ throughout.
       The question put to you moved under your hand, over its buttons.
       `talk.js` stays: it names the moments and writes the caption.
 
+- [x] **P12 — Motion, text layers, the cut, the table tops (27 September).**
+      Andrew's next round, all built:
+      - *"moving cards should start with strong jerks, then end with
+        gravity-like acceleration"* — §7.1's minimum-jerk glide is retired
+        for anything thrown. `kinematics.toss` (onto the table: launched at
+        speed, an exactly solved parabola, a landing with the speed of the
+        fall and a short friction slide) and `kinematics.rise` (into a
+        hand: flicked up, slowing under gravity into the grip); the
+        choreography's `carry` picks one by where a card is going. Only a
+        re-sort within a hand still glides.
+      - The cut: *optional* — **Cut for me** where the pointer rests — and
+        *"peel the card out of the deck, then flip it up and look at it"*:
+        peeled towards its cutter, flicked up and looked at, tossed face up.
+      - Your opponent's calls: *"the cards should rise from the deck a
+        bit"* — `kinematics.bob`, as many anonymous backs as the call holds
+        (`cardsNamed`), so nothing is shown that the words did not say.
+      - Text in three kinds — true, prescriptive, hints — the last two each
+        a toggle chip under the hand (**Explain**, **Hints**; E and H).
+      - The "+N" is a bubble over nothing; the opponent's level lives in
+        Settings only (*"unnecessary noise when the game is happening"*).
+      - **The table tops** (Andrew's spec, eighteen procedural monochrome
+        patterns): `surfaces.js`, one ink over #EDEEF0, a seamless 1024 px
+        tile repeating every 48 cm of an unlit table; shadows laid over it
+        by a shadow-only sheet. Chosen at random when a partie begins, kept
+        with the saved game, pickable in Settings. This settles §12's open
+        question on the table's colour: the candidates "paper / sky / sage"
+        are gone.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
