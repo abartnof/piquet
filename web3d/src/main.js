@@ -5,6 +5,8 @@
 // docs/TABLE3D.md.
 
 import { loadTextures } from "./art.js";
+import { createDeck } from "./deck.js";
+import { buildDemo } from "./demo.js";
 import { decodeBase64, loadEngine } from "./engine.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
@@ -31,7 +33,9 @@ async function main() {
     anisotropy: stage.renderer.capabilities.getMaxAnisotropy(),
     pixelRatio: stage.renderer.getPixelRatio(),
   });
-  buildSpike(stage, textures, { inkWidth: Number(params.get("ink") || 2.5), angles: params.has("angles") });
+  const deck = createDeck(stage, textures, { inkWidth: Number(params.get("ink") || 2.5) });
+  const demo = params.has("demo") ? buildDemo(stage, deck, { slow: Number(params.get("slow") || 1) }) : null;
+  if (!demo) buildSpike(stage, deck, { angles: params.has("angles") });
   stage.render();
   // Ready means the first frame has reached the screen, which is later than
   // render() returning: a browser may defer rasterising an SVG drawn to a
@@ -39,12 +43,15 @@ async function main() {
   await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
   const readyMs = performance.now();
   document.getElementById("loading").hidden = true;
+  if (demo && !TESTING) demo.play();
 
   // Test hooks: the browser test drives and inspects the table through these.
   window.piquet3d = {
     ready: () => stage.frames() > 0,
     busy: () => false,
     state: () => engine.state(),
+    // The motion demo, frozen at one moment for all its stations.
+    demoAt: (t) => demo && demo.at(t),
     art: () => ({
       vector: textures.vector,
       width: textures.width,

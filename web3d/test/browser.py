@@ -99,10 +99,20 @@ def main() -> int:
             failures.append(f"console errors: {page.errors}")
         page.context.close()
 
+        # The motion demo: every primitive, frozen part-way and at the end.
+        demo = open_page(browser, query="test&demo")
+        for t in (0.37, 1):
+            demo.evaluate(f"window.piquet3d.demoAt({t})")
+            check_drawn(demo, failures)
+        shot(demo, "03-demo")
+        if demo.errors:
+            failures.append(f"console errors in the motion demo: {demo.errors}")
+        demo.context.close()
+
         # A phone, held upright: the page must still load and draw.
         phone = open_page(browser, viewport={"width": 390, "height": 844})
         check_drawn(phone, failures)
-        shot(phone, "02-phone")
+        shot(phone, "04-phone")
         if phone.errors:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()

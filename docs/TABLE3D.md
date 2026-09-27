@@ -590,9 +590,23 @@ throughout.
       `web3d/piquet3d-svg.html` (not committed); raster stays the default.
       Measurements in §3.2. His machine's load time is still to be taken:
       open each page and read `piquet3d.art().readyMs` in the console.
-- [ ] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
+- [x] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
       `timeline.js` with the invariants in §11. *Accept*: tests green; a
       demo page shows each primitive.
+      *Landed*: 38 node tests, mutation-checked (a flip that swings down, a
+      flip on one pivot, a lay-down that skids in: each caught). Two pieces
+      of physics changed the design. **A card rolls over its thickness**:
+      flipped about one bottom edge it would finish sunk a thickness into
+      the table, so the flip pivots on one corner of its edge until upright
+      and on the other as it falls. **A flip crests without stopping**: the
+      first version decelerated to a dead stop upright and hung there for a
+      seventh of a second; now both halves are evenly accelerated
+      (`evenly(startSlope)`, of which friction and gravity are the two ends),
+      slowest at the crest at 30% of the rising speed, and continuous across
+      it. The M3 curves and durations are the tokens @material/web ships.
+      `deck.js` makes the card meshes and assigns faces; `?demo` loops every
+      primitive (`&slow=3`), and `piquet3d.demoAt(t)` freezes them for
+      filmstrips — the way to check motion from a headless browser.
 - [ ] **P5 — Layout (node-tested).** `layout.js` from protocol states, with
       the anonymity test. *Accept*: every zone right for scripted states
       across a partie; no hidden face ever assigned.
