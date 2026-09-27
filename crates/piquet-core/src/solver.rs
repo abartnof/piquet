@@ -518,15 +518,97 @@ impl Agent for SolverAgent {
         if legal.len() == 1 {
             return legal[0];
         }
-        if view.hand.len() > self.exact_from {
-            return self.fallback.play(view);
+        match self.estimates(view) {
+            Some(estimates) => estimates.best(),
+            None => self.fallback.play(view),
+        }
+    }
+}
+
+/// What each legal card is worth to a `SolverAgent`, summed over the opponent
+/// hands it sampled: in points, or in settlement if it settles, and always to
+/// whoever is to play, so larger is better for the mover.
+#[derive(Clone, Debug)]
+pub struct Estimates {
+    /// Every legal card, in legal order, with its total over the worlds.
+    pub totals: Vec<(Card, f64)>,
+    /// The sampled worlds the search could evaluate.
+    pub worlds: usize,
+}
+
+impl Estimates {
+    /// The card the agent plays: the largest total, ties to the lower rank
+    /// and then to the first in legal order.
+    pub fn best(&self) -> Card {
+        // Python's `max` over the dict returns the FIRST maximum in insertion
+        // order, which is `legal` order. Among equal values the lower rank
+        // wins, hence the negated rank. Ordered on bits so that ties break
+        // identically to the integer path.
+        first_max_by(&self.totals, |(card_a, value_a), (card_b, value_b)| {
+            value_a
+                .total_cmp(value_b)
+                .then_with(|| card_b.rank().cmp(&card_a.rank()))
+        })
+        .map(|(card, _)| *card)
+        .expect("a searched position has a legal card")
+    }
+
+    /// A card's average over the worlds, or `None` if it is not legal.
+    pub fn mean(&self, card: Card) -> Option<f64> {
+        self.totals
+            .iter()
+            .find(|(c, _)| *c == card)
+            .map(|(_, total)| total / self.worlds as f64)
+    }
+}
+
+impl SolverAgent {
+    /// What it would play by, without playing: `None` where it would not
+    /// search -- one legal card, more in hand than `exact_from`, or no
+    /// consistent world to search.
+    ///
+    /// Draws its worlds from the agent's own generator exactly as `play`
+    /// does, so a clone asked first reports the card the original then
+    /// plays.
+    pub fn estimates(&mut self, view: &View) -> Option<Estimates> {
+        let legal: Vec<Card> = view.legal_plays.cards().collect();
+        if legal.len() <= 1 || view.hand.len() > self.exact_from {
+            return None;
         }
 
         let worlds = possible_hands(view, Some(self.max_worlds), true, &mut self.fallback.rng);
         if worlds.is_empty() {
-            return self.fallback.play(view);
+            return None;
         }
 
+        let mut totals: Vec<(Card, f64)> = legal.iter().map(|c| (*c, 0.0)).collect();
+        let mut searched = 0usize;
+        for opponent_hand in worlds {
+            let Ok(values) = self.values_in(view, opponent_hand) else {
+                continue;
+            };
+            searched += 1;
+            for (card, value) in values {
+                if let Some(slot) = totals.iter_mut().find(|(c, _)| *c == card) {
+                    slot.1 += value;
+                }
+            }
+        }
+
+        // Every world failing to search leaves every total at zero, and the
+        // original then played the first of the tied cards by the same rule;
+        // `best` does exactly that, so the count only matters for `mean`.
+        Some(Estimates {
+            totals,
+            worlds: searched.max(1),
+        })
+    }
+
+    /// What each legal card is worth in one world -- the opponent holding
+    /// `opponent_hand` -- by this agent's objective, to whoever is to play,
+    /// in legal order. `estimates` sums this over the worlds it samples;
+    /// handed the true hand, it says what a card was really worth.
+    pub fn values_in(&self, view: &View, opponent_hand: Hand) -> Result<Vec<(Card, f64)>, String> {
         let elder_tricks = view
             .tricks
             .iter()
@@ -546,70 +628,50 @@ impl Agent for SolverAgent {
         };
         let led = view.current_trick.map(|t| t.led.0);
         let sign: i64 = if view.me == Player::Elder { 1 } else { -1 };
-
-        // The settling objective needs the partie, and there may not be one:
-        // a deal played on its own has no standing, and then the two
-        // objectives coincide anyway.
-        let settling = if self.partie_aware {
-            view.partie.map(|standing| {
-                let (elder_side, younger_side) = if view.me == Player::Elder {
-                    (standing.mine, standing.theirs)
-                } else {
-                    (standing.theirs, standing.mine)
-                };
-                let banked = settled_log(view);
-                Settling {
-                    elder_side,
-                    younger_side,
-                    elder_so_far: banked.total(Player::Elder),
-                    younger_so_far: banked.total(Player::Younger),
-                    deals_left: standing.deals_left,
-                    // The seat alternates, so whoever sits elder now sits
-                    // younger in the next deal.
-                    elder_first_next: false,
-                }
-            })
+        let (elder, younger) = if view.me == Player::Elder {
+            (view.hand, opponent_hand)
         } else {
-            None
+            (opponent_hand, view.hand)
         };
 
-        let mut totals: Vec<(Card, f64)> = legal.iter().map(|c| (*c, 0.0)).collect();
-        for opponent_hand in worlds {
-            let (elder, younger) = if view.me == Player::Elder {
-                (view.hand, opponent_hand)
-            } else {
-                (opponent_hand, view.hand)
-            };
-            let values: Vec<(u8, f64)> = match &settling {
-                Some(ctx) => {
-                    match card_settlements(elder, younger, leader, led, elder_tricks, ctx) {
-                        Ok(values) => values,
-                        Err(_) => continue,
-                    }
-                }
-                None => match card_values(elder, younger, leader, led, elder_tricks, EVEN) {
-                    Ok(values) => values.into_iter().map(|(c, v)| (c, v as f64)).collect(),
-                    Err(_) => continue,
-                },
-            };
-            for (card, value) in values {
-                if let Some(slot) = totals.iter_mut().find(|(c, _)| c.0 == card) {
-                    slot.1 += sign as f64 * value;
-                }
-            }
-        }
+        let values: Vec<(u8, f64)> = match self.settling_context(view) {
+            Some(ctx) => card_settlements(elder, younger, leader, led, elder_tricks, &ctx)?,
+            None => card_values(elder, younger, leader, led, elder_tricks, EVEN)?
+                .into_iter()
+                .map(|(c, v)| (c, v as f64))
+                .collect(),
+        };
+        Ok(values
+            .into_iter()
+            .map(|(card, value)| (Card(card), sign as f64 * value))
+            .collect())
+    }
 
-        // Python's `max` over the dict returns the FIRST maximum in insertion
-        // order, which is `legal` order. Among equal values the lower rank
-        // wins, hence the negated rank. Ordered on bits so that ties break
-        // identically to the integer path.
-        first_max_by(&totals, |(card_a, value_a), (card_b, value_b)| {
-            value_a
-                .total_cmp(value_b)
-                .then_with(|| card_b.rank().cmp(&card_a.rank()))
+    /// The settling objective needs the partie, and there may not be one:
+    /// a deal played on its own has no standing, and then the two
+    /// objectives coincide anyway.
+    fn settling_context(&self, view: &View) -> Option<Settling> {
+        if !self.partie_aware {
+            return None;
+        }
+        view.partie.map(|standing| {
+            let (elder_side, younger_side) = if view.me == Player::Elder {
+                (standing.mine, standing.theirs)
+            } else {
+                (standing.theirs, standing.mine)
+            };
+            let banked = settled_log(view);
+            Settling {
+                elder_side,
+                younger_side,
+                elder_so_far: banked.total(Player::Elder),
+                younger_so_far: banked.total(Player::Younger),
+                deals_left: standing.deals_left,
+                // The seat alternates, so whoever sits elder now sits
+                // younger in the next deal.
+                elder_first_next: false,
+            }
         })
-        .map(|(card, _)| *card)
-        .unwrap_or(legal[0])
     }
 }
 
