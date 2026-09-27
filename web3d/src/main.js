@@ -50,12 +50,12 @@ async function main() {
   const engine = await loadEngine(decodeBase64(WASM_BASE64));
   const numbers = (name) => (params.get(name) ? params.get(name).split(",").map(Number) : undefined);
   const stage = createScene(document.getElementById("stage"), {
-    // The table top: your own pick, else the one the partie in progress
-    // began with, else a new one at random (surfaces.js; ?table= to try one).
-    table: chooseSurface({
-      chosen: params.get("table") ?? recall(PREF_STORE, DEFAULT_PREFS).surface,
-      saved: recall(GAME_STORE, {}).surface,
-    }),
+    // The table top: your own pick if you made one, else one at random as
+    // the page opens -- kept while it is open, new parties and all (Andrew:
+    // "a single table top is chosen- at random- when the user opens the
+    // html. but it never changes (unless manually it's changed)").
+    // ?table= to try one.
+    table: chooseSurface({ chosen: params.get("table") ?? recall(PREF_STORE, DEFAULT_PREFS).surface, saved: null }),
     shadow: params.get("shadow") || "vsm",
     shadowMap: Number(params.get("shadowmap")) || undefined,
     blurSamples: Number(params.get("blur")) || undefined,
@@ -177,7 +177,7 @@ async function main() {
 
   function keep() {
     const s = engine.state();
-    store(GAME_STORE, { level: s.level, seed: s.seed, record: s.record, surface: stage.surface });
+    store(GAME_STORE, { level: s.level, seed: s.seed, record: s.record });
     const url = new URL(window.location.href);
     url.searchParams.set("level", s.level);
     url.searchParams.set("seed", s.seed);
@@ -295,9 +295,9 @@ async function main() {
     if (name === "speed") director.timeline.speed = value;
     if (name === "sort") director.rearrange();
     if (name === "surface") {
-      // Picking one lays it now; choosing Random keeps this partie's table.
+      // Picking one lays it now, and for good; choosing Random keeps the
+      // table in front of you until the page is next opened.
       if (value !== "random") stage.setSurface(value);
-      keep();
       stage.render();
     }
     render();
@@ -311,8 +311,6 @@ async function main() {
       return;
     }
     begin(n, randomSeed());
-    // A new partie, a new table -- unless you have picked one.
-    stage.setSurface(chooseSurface({ chosen: prefs.surface, saved: null }));
     ui.selected = [];
     ui.lifted = [];
     director.restart();

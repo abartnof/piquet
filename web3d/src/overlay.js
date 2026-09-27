@@ -198,9 +198,9 @@ export function createOverlay(root, on) {
     [["auto", "Automatically"], ["suit", "By suit"], ["rank", "By rank"], ["combos", "By combination"]].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   sort.addEventListener("change", () => on.pref("sort", sort.value));
-  // The table top: one chosen at random for each partie, or your own.
+  // The table top: one at random each time the page opens, or your own.
   const table = el("md-outlined-select", { "data-pref": "surface", label: "The table" },
-    [["random", "A new one each partie"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
+    [["random", "A new one each time the page opens"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   table.addEventListener("change", () => on.pref("surface", table.value));
   const again = el("md-text-button", {}, "New partie");

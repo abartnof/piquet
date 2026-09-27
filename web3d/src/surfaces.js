@@ -1,8 +1,8 @@
 // The table top: procedural monochrome patterns, after Andrew's spec
 // (docs/TABLE3D.md, "Table surface patterns"). A single ink drawn over a
 // flat light base into a 1024-pixel tile, which repeats across an unlit
-// table; no image assets. One pattern is chosen at random when a partie
-// begins, and kept while it is played unless the player picks another.
+// table; no image assets. One pattern is chosen at random when the
+// page opens, and kept while it is open unless the player picks another.
 //
 // plan(pattern) is pure -- where every mark goes, including the twins that
 // complete a mark cut by the tile's edge -- so the tests can hold it to
@@ -55,11 +55,11 @@ export const PATTERNS = Object.freeze([
   { id: "hex-dots", name: "Hexagon and dot mix", layout: "stagger", shape: "hex", shape2: "dot", mix: 0.35, spacing: 56, density: 0.5, posJitter: 10, rotJitter: 57 * DEG, size: 28, lineWidth: 1.3, opacity: 0.18 },
 ]);
 
-// The pattern to lay: the player's own pick if they made one; else the one
-// the partie in progress began with; else a new one at random (Andrew: "a
-// random occurance whenever anyone opens the page (it should not change
-// once a player has started playing unless the player has chosen to change
-// it)").
+// The pattern to lay: the player's own pick if they made one; else `saved`,
+// if the caller keeps one; else a new one at random. The page draws one
+// at random as it opens and keeps it while it is open (Andrew: "a single
+// table top is chosen- at random- when the user opens the html. but it
+// never changes (unless manually it's changed)").
 export function chooseSurface({ chosen, saved, random = Math.random }) {
   const known = (id) => PATTERNS.some((p) => p.id === id);
   if (known(chosen)) return chosen;

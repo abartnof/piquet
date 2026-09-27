@@ -863,8 +863,11 @@ throughout.
       - **The table tops** (Andrew's spec, eighteen procedural monochrome
         patterns): `surfaces.js`, one ink over #EDEEF0, a seamless 1024 px
         tile repeating every 48 cm of an unlit table; shadows laid over it
-        by a shadow-only sheet. Chosen at random when a partie begins, kept
-        with the saved game, pickable in Settings. This settles §12's open
+        by a shadow-only sheet. Chosen at random when the page opens and
+        kept while it is open, new parties included (Andrew: *"a single
+        table top is chosen- at random- when the user opens the html. but
+        it never changes (unless manually it's changed)"*); a pick in
+        Settings is kept for good. This settles §12's open
         question on the table's colour: the candidates "paper / sky / sage"
         are gone.
 
