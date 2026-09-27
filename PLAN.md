@@ -4,7 +4,8 @@
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
 > holds *where we are and what is left*. Last updated 27 September 2026:
 > the 2D browser table is complete through Andrew's second round of notes,
-> and **the 3D table is designed and ready to build** — `docs/TABLE3D.md`.
+> and **the 3D table is being built** — `docs/TABLE3D.md`, phases P1–P3 done
+> or waiting on Andrew, P4 next.
 
 ## Where we are
 
@@ -155,7 +156,33 @@ Andrew asked for a three.js table (27 September 2026) and for it to be planned
 in full before a context clear, so that a fresh session builds it from notes.
 **`docs/TABLE3D.md` is the plan** — the brief verbatim, the look, the assets
 and their licences, the stack, the architecture, the physics of every motion,
-the tests, open questions, and a phased TODO (P0 done; **start at P1**).
+the tests, open questions, and a phased TODO.
+
+**Progress, 27 September 2026 (second session).** P1 and P2 done; P3 built
+and waiting on Andrew's eye; **next is P4, the motion library**. Details and
+measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
+
+- **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
+  Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
+  (no network request of any kind, canvas drawn, engine answers, no console
+  errors; laptop and phone).
+- **Art** (`28bcd58`): `web3d/tools/art.py` cuts the deck into per-card SVGs
+  and 512 px WebP faces; the back re-framed to 5:7 (our CC BY-SA adaptation).
+- **P2** (`a4d11f0`): card geometry (node-tested), cel shading, the ink line —
+  pushed *in the model, in the card's plane*; pushing on screen drew a wedge
+  over every tilted card — and shadows. `web3d/src/spike.js` is a hand-set
+  table mid-deal, to be replaced by the real layout.
+- **P3** (`51c4a32`, `b2e6e53`): vector art (`build.py --art svg`) measured
+  against raster; both pages committed so Andrew can time them on his Mac.
+- **Andrew's four choices are on a comparison page:**
+  https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
+  (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
+  art (pictures/WebP), plus how to read `piquet3d.art().readyMs`. When he
+  answers, record it in §13 of `docs/TABLE3D.md` and delete the losing art
+  page.
+- Lessons: three r186 **removed `PCFSoftShadowMap`**; `render()` returns long
+  before the frame lands, so time to the second animation frame; every page
+  load on the VM takes ~7 s because SwiftShader emulates the GPU.
 
 Read, in this order: this section; `docs/TABLE3D.md` (all of it); §13 of it
 again as the checklist; `docs/PROTOCOL.md`; `web/src/app.js` (a working client
