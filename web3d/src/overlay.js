@@ -162,7 +162,7 @@ export function createOverlay(root, on) {
   const AIDS = [
     ["hints", "Hints", "Suggest the strongest move, under your hand (H)"],
     ["play_forced", "Play forced cards", "Play a card for me when it is the only one I may play"],
-    ["play_winners", "Play my winners", "Play out my hand when every trick left is certainly mine"],
+    ["play_winners", "Play my winners", "Play out my hand when every trick left is certainly mine (off unless you turn it on)"],
     ["declare_for_me", "Declare for me", "Call everything, never ask"],
   ];
   const PREFS = [
@@ -648,6 +648,25 @@ export function createOverlay(root, on) {
     }));
   }
 
+  // When the table plays a card for you (an aid), say so, and why -- a card
+  // leaving your hand unbidden is otherwise a mystery.
+  let lastRecord = null;
+  function renderPlayedForYou(s) {
+    const record = { seed: s.seed, level: s.level, length: s.record.length };
+    const since = lastRecord && lastRecord.seed === s.seed && lastRecord.level === s.level ? lastRecord.length : s.record.length;
+    lastRecord = record;
+    const auto = s.record.slice(since).filter((r) => r.startsWith("*play "));
+    if (!auto.length) return;
+    const cards = auto.map((r) => label(r.slice(6).trim()));
+    const text = auto.length > 1 && s.aids.play_winners
+      ? `Played out for you: ${cards.join(" ")} -- every trick left was yours.`
+      : `Played for you: ${cards.join(" ")}, the only card you could play.`;
+    const note = el("div", { class: "played-for-you", role: "status" }, text.replace(" -- ", " — "));
+    note.addEventListener("animationend", (e) => e.animationName === "toast-out" && note.remove());
+    root.querySelector(".played-for-you")?.remove();
+    $("controls").prepend(note);
+  }
+
   function renderBug(s) {
     root.querySelector("#bug .side.them")?.classList.remove("thinking");
     const now = live(s);
@@ -729,6 +748,7 @@ export function createOverlay(root, on) {
         el("span", { class: "them" }, String(s.score.them)));
       renderTab(s, prefs);
       renderBug(s);
+      renderPlayedForYou(s);
       renderWorth(s, ui, prefs);
       renderPrompt(s, ui, prefs);
       renderTools(s, prefs, ui);

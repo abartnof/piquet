@@ -68,7 +68,7 @@ export function talk(events, deal) {
         const silent = called[e.category] === undefined || called[e.category] === "nothing";
         if (younger && !silent) {
           const answer = e.winner === elder ? "Good" : e.winner === younger ? "Not good" : "Equal";
-          say(younger, `“${answer}.”`, { kind: "answer" });
+          say(younger, `“${answer}.”`, { kind: "answer", category: e.category, winner: e.winner ?? null });
         } else if (e.winner === "you" || e.winner === "them") {
           say(e.winner, `Takes ${TAKES[e.category] ?? e.category}`, { kind: "took" });
         }

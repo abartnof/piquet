@@ -24,9 +24,13 @@ const TESTING = params.has("test");
 
 const GAME_STORE = "piquet3d.game";
 const PREF_STORE = "piquet3d.prefs";
-const AID_STORE = "piquet3d.aids";
+// Versioned: "play my winners" became opt-in, and a stored set from before
+// would keep it on without the player ever having chosen it.
+const AID_STORE = "piquet3d.aids.2";
 const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random" };
-const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: true, declare_for_me: false };
+// Playing out your winners is opt-in: Andrew, finding his cards played for
+// him mid-trick, "i didn't intend for that to happen".
+const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: false, declare_for_me: false };
 
 function recall(key, fallback) {
   try {

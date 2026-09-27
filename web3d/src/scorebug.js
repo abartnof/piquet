@@ -47,3 +47,20 @@ export function caption(events, deal) {
     .reduce((best, line) => (!best || line.at > best.at ? line : best), null);
   return latest ? { who: latest.who, text: latest.text } : null;
 }
+
+// The answers given since the event at index `since` -- "good", "not good",
+// "equal" -- with who said them and what each means for you, so the page
+// can pop each up as a bubble from the speaker (Andrew: "green or blue if
+// good, red if no good"). A call of nothing is answered by nobody.
+export function answersSince(events, deal, since) {
+  const lines = talk(events, deal);
+  return [...lines.you, ...lines.them]
+    .filter((line) => line.kind === "answer" && line.at >= since)
+    .sort((a, b) => a.at - b.at)
+    .map((line) => ({
+      who: line.who,
+      text: line.text.replace(/[“”]/g, ""),
+      outcome: line.winner === "you" ? "won" : line.winner === "them" ? "lost" : "equal",
+      category: line.category,
+    }));
+}

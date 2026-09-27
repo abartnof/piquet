@@ -766,6 +766,29 @@ md-assist-chip.pinned {
   }
 }
 
+/* A card the table played for you, named, for a few seconds. */
+.played-for-you {
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 13.5px;
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  box-shadow: var(--elevation-2);
+  animation: toast-in 380ms var(--ease-in), toast-out 400ms var(--ease-out) 3600ms forwards;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 /* Buttons a new question brings spring in; the old ones shrink away. */
 .popping {
   animation: pop-in 520ms var(--ease-in);

@@ -73,6 +73,8 @@ test("younger answers each call: good, not good, or equal", () => {
     ev("decided", { category: "sets", winner: "them" }),
   ], 1);
   assert.deepEqual(t.them.map((l) => l.text), ["“Good.”", "“Not good.”", "Takes sets"]);
+  assert.deepEqual(t.them.filter((l) => l.kind === "answer").map((l) => [l.category, l.winner]),
+    [["point", "you"], ["sequences", "them"]], "an answer knows what it answered, and who won");
   assert.deepEqual(t.you.map((l) => l.text), ["“Point of 5 (50).”", "“Tierce to the jack.”", "“Nothing.”"]);
 
   const equal = talk([
