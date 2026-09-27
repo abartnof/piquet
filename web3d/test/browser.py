@@ -168,6 +168,21 @@ def check_peek(page, failures):
         failures.append("clicking your discards again did not put them back")
 
 
+def check_keyboard_play(page, failures):
+    """The whole hand can be played from the keyboard: the arrows move along
+    it, Space plays the card they rest on, and the prompt says which it is."""
+    before = state(page)
+    page.keyboard.press("ArrowRight")
+    focused = page.locator("#prompt .keyboard-focus").inner_text() if page.locator("#prompt .keyboard-focus").count() else ""
+    if not focused:
+        failures.append("the arrow keys named no card in the prompt")
+    page.keyboard.press("ArrowRight")
+    page.keyboard.press("Space")
+    after = state(page)
+    if len(after["record"]) <= len(before["record"]) and not after["error"]:
+        failures.append("Space played nothing from the keyboard")
+
+
 def check_undo_hints_settings(page, failures):
     s = state(page)
     if not s["can_undo"]:
@@ -215,6 +230,10 @@ def main() -> int:
             if "peek" not in checked and s["prompt"]["kind"] == "play" and s["discards"]:
                 checked.add("peek")
                 check_peek(page, failures)
+            if "keys" not in checked and s["prompt"]["kind"] == "play" and not s["trick"] and len(s["hand"]) > 3:
+                checked.add("keys")
+                check_keyboard_play(page, failures)
+                continue
             if n == 30:
                 shot(page, "03-play")
             if not take_turn(page, failures, n, checked):

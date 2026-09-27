@@ -11,7 +11,7 @@ import { createDeck } from "./deck.js";
 import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
 import { decodeBase64, loadEngine } from "./engine.js";
-import { createOverlay } from "./overlay.js";
+import { createOverlay, label as labelOf } from "./overlay.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
@@ -94,7 +94,7 @@ async function main() {
   // player has chosen a speed for themselves.
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let prefs = recall(PREF_STORE, { ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
-  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false };
+  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null };
   let cutDepth = 16;
   const view = () => ({
     sort: prefs.sort,
@@ -224,7 +224,14 @@ async function main() {
   });
 
   function render() {
-    overlay.render(engine.state(), { prefs, ui: { ...ui, busy: director.busy() } });
+    const f = focused();
+    const s = engine.state();
+    const focus = f
+      ? f.zone === "pack"
+        ? `Cut here: lift ${Math.min(Math.max(f.index + 1, s.prompt.fewest), s.prompt.most)} cards (Space)`
+        : `${labelOf(f.code)}${s.prompt.kind === "play" && !s.prompt.legal.includes(f.code) ? ", which you may not play" : ""} (Space to ${s.prompt.kind === "play" ? "play" : ui.selected.includes(f.code) ? "keep" : "throw"})`
+      : null;
+    overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus } });
   }
 
   // Carry out a command. The engine answers for your opponent on this
@@ -302,6 +309,7 @@ async function main() {
     if (director.busy()) return;
     const hit = director.pick(e.clientX, e.clientY);
     const t = target(hit);
+    ui.focus = null;
     director.hover(t ? hit.id : null);
     canvas.style.cursor = t ? "pointer" : "";
   });
@@ -312,7 +320,11 @@ async function main() {
       render();
       return;
     }
-    const t = target(director.pick(e.clientX, e.clientY));
+    use(target(director.pick(e.clientX, e.clientY)));
+  });
+
+  // What a card at the table does when clicked, or chosen from the keyboard.
+  function use(t) {
     if (!t) return;
     if (t.kind === "cut") act(`cut ${t.depth}`);
     else if (t.kind === "play") act(`play ${t.code}`); // refused ones too: the engine says why
@@ -320,7 +332,35 @@ async function main() {
       ui.peek = !ui.peek;
       director.rearrange();
     } else choose(t.code);
-  });
+  }
+
+  // The keyboard's own pointer: the arrows move it along whatever may be
+  // chosen now -- your hand, or the spread when cutting -- in the order the
+  // cards lie on the screen, and it looks exactly like pointing.
+  function candidates() {
+    const s = engine.state();
+    return director
+      .placement()
+      .filter((m) => target(m, s))
+      .filter((m) => m.zone !== "your-discards")
+      .map((m) => ({ m, x: director.screenPoint(m.code, m.zone, m.index)?.x ?? 0 }))
+      .sort((a, b) => a.x - b.x)
+      .map(({ m }) => m);
+  }
+  function moveFocus(step) {
+    const list = candidates();
+    if (!list.length) return;
+    const at = ui.focus !== null ? list.findIndex((m) => m.id === ui.focus) : -1; // card 0 is a card
+    const next = at < 0 ? (step > 0 ? 0 : list.length - 1) : Math.min(list.length - 1, Math.max(0, at + step));
+    ui.focus = list[next].id;
+    director.hover(ui.focus);
+    render();
+  }
+  function focused() {
+    if (ui.focus === null) return null;
+    const m = director.placement().find((x) => x.id === ui.focus);
+    return m && target(m) ? m : null;
+  }
 
   function choose(code) {
     const limit = engine.state().prompt.limit;
@@ -333,11 +373,20 @@ async function main() {
   document.addEventListener("keydown", (e) => {
     if (["INPUT", "SELECT", "TEXTAREA", "MD-OUTLINED-SELECT"].includes(e.target.tagName) || e.altKey) return;
     if (document.querySelector("md-dialog[open]")) return;
-    if (e.key === "Enter") {
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      e.preventDefault();
+      moveFocus(e.key === "ArrowRight" ? 1 : -1);
+    } else if (e.key === " " && !director.busy() && focused()) {
+      e.preventDefault();
+      use(target(focused()));
+    } else if (e.key === "Enter") {
       const primary = overlay.primary();
       if (primary) {
         e.preventDefault();
         primary.click();
+      } else if (focused()) {
+        e.preventDefault();
+        use(target(focused()));
       }
     } else if (/^[1-9]$/.test(e.key) && !e.ctrlKey && !e.metaKey) {
       overlay.option(Number(e.key) - 1)?.click();
@@ -352,6 +401,8 @@ async function main() {
       ui.selected = [];
       ui.lifted = [];
       ui.peek = false;
+      ui.focus = null;
+      director.hover(null);
       director.rearrange();
       render();
     } else if (e.key === " " && director.busy()) {

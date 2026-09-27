@@ -358,6 +358,11 @@ md-assist-chip.pinned {
 .hint-text {
   flex: 1 1 100%;
 }
+.keyboard-focus {
+  margin: 0;
+  font-weight: 600;
+  color: var(--md-sys-color-primary);
+}
 .error {
   padding: 8px 12px;
   border-radius: 12px;

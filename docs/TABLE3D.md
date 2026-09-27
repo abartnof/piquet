@@ -516,6 +516,14 @@ Floating surfaces over the canvas, nothing modal unless it must be.
   discard, or play. Keyboard as on the 2D page (Enter, digits, U, H, Escape).
 - **Illegal clicks are sent anyway** and the engine's refusal shown, as now —
   the reason is the lesson.
+- **The keyboard plays the whole game** (built after P9): ← and → move a
+  keyboard pointer along whatever may be chosen now — your hand, or the
+  spread when cutting — in the order the cards lie on screen, looking
+  exactly like pointing (the card rises, its line thickens); Space plays,
+  chooses or cuts there; Enter is still the prompt's main action, and plays
+  the card when there is none; the prompt names the card in a polite live
+  region, since the table itself is a picture to a screen reader. Found on
+  the way: a falsy-zero test on the pointer's card — card 0 is a card.
 - **Test hooks** (`window.piquet3d`): `screenPoint(code)` gives a card's
   projected screen position, `busy()`, `state()`; the browser test clicks
   cards through them. `?test` makes every motion instant.

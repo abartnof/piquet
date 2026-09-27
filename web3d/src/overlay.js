@@ -311,7 +311,7 @@ export function createOverlay(root, on) {
       case "cut": {
         const again = s.events.length && s.events[s.events.length - 1].kind === "cut_again";
         ask(again ? "The cuts were equal — cut again." : "Cut the pack for the deal.");
-        note("Point at the spread and click to lift the cards above. The higher card chooses who deals; aces are high.");
+        note("Point at the spread and click to lift the cards above, or use ← → and Space. The higher card chooses who deals; aces are high.");
         break;
       }
       case "choose_dealer":
@@ -326,7 +326,7 @@ export function createOverlay(root, on) {
         ask(s.you_are === "elder"
           ? `You are elder: throw 1 to ${p.limit} cards and draw as many.`
           : `You are younger: throw 1 to ${p.limit} cards — whatever ${THEM} left — and draw as many.`);
-        note(n ? "Click a card again to keep it." : "Click cards in your hand to choose them.");
+        note(n ? "Click a card again to keep it; Enter throws." : "Click cards in your hand to choose them, or use ← → and Space.");
         actions(
           button("filled", n ? `Throw ${ui.selected.map(label).join(" ")} and draw ${n}` : "Choose cards to throw",
             () => n && on.act(`exchange ${ui.selected.join(" ")}`), { class: "primary", disabled: !n }),
@@ -363,7 +363,7 @@ export function createOverlay(root, on) {
         } else {
           ask("Your lead.");
         }
-        note("Click a card to play it.");
+        note("Click a card to play it, or use ← → and Space.");
         break;
       case "next_deal": {
         const ended = [...s.events].reverse().find((e) => e.kind === "deal_ends");
@@ -399,6 +399,8 @@ export function createOverlay(root, on) {
         button("text", "Follow", () => on.act(s.hint.command), { title: "Do what the hint says" }),
         button("text", "Hide hints", () => on.aid("hints"), { title: "Turn hints off (H)" })));
     }
+    // The card the keyboard rests on, named -- the table itself is a picture.
+    if (ui.focusText) parts.push(el("p", { class: "keyboard-focus", "aria-live": "polite" }, ui.focusText));
     if (s.error) parts.push(el("div", { class: "error", role: "alert" }, s.error));
     box.replaceChildren(...parts);
   }
