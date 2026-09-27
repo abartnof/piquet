@@ -31,7 +31,6 @@ import {
   lying,
   pickUp,
   slide,
-  still,
   transfer,
 } from "./kinematics.js";
 import { jitter, layout } from "./layout.js";
@@ -253,6 +252,7 @@ class Plan {
   constructor(placement, view, options) {
     this.now = placement.map((m) => ({ ...m }));
     this.view = view;
+    this.zones = view.zones ?? ZONES;
     this.pause = options.pause ?? true;
     this.clock = 0;
     this.motions = [];
@@ -404,7 +404,7 @@ class Plan {
     });
     const start = this.clock;
     let end = start;
-    const spreadAt = new Vector3(ZONES.ribbon.x - 15.5 * ZONES.ribbon.spacing, 0, ZONES.ribbon.z);
+    const spreadAt = new Vector3(this.zones.ribbon.x - 15.5 * this.zones.ribbon.spacing, 0, this.zones.ribbon.z);
     for (const e of cuts) {
       const mesh = chosen[e.who];
       const slot = owner.get(e.card);
@@ -427,7 +427,7 @@ class Plan {
   }
 
   uncut({ state }) {
-    this.turnDown(new Vector3(ZONES.ribbon.x - 15.5 * ZONES.ribbon.spacing, 0, ZONES.ribbon.z));
+    this.turnDown(new Vector3(this.zones.ribbon.x - 15.5 * this.zones.ribbon.spacing, 0, this.zones.ribbon.z));
     for (const m of this.now) if (m.zone === "pack-pending") this.now[m.id] = { ...m, zone: "cut" };
     this.stage(layout(state, this.view), (mesh, slot) => ({ path: slide(mesh.pose, slot.pose), delay: 0, duration: TIMING.gather }));
   }
@@ -438,7 +438,7 @@ class Plan {
   // edge, towards `goal`; a lone card turns so that it lies face down the
   // standard way, away from the middle of the table, into clear space.
   turnDown(goal) {
-    const middle = new Vector3(0, 0, ZONES.ribbon.z);
+    const middle = new Vector3(0, 0, this.zones.ribbon.z);
     const up = this.now.filter((m) => FACE_UP.has(m.zone));
     if (!up.length) return;
     const groups = {};
@@ -482,7 +482,7 @@ class Plan {
     const elder = dealer === "you" ? "them" : "you";
     // 1. Everything face up turns over; everything comes together as a pack
     //    in front of the dealer.
-    const packAt = ZONES.pack[dealer];
+    const packAt = this.zones.pack[dealer];
     this.turnDown(new Vector3(packAt.x, 0, packAt.z));
     const order = [...this.now].sort((a, b) => a.pose.position.y - b.pose.position.y || a.id - b.id);
     const pack = this.virtual("pack", order, packAt);
@@ -507,7 +507,7 @@ class Plan {
       for (const who of [elder, dealer]) {
         for (let k = 0; k < 2; k++) {
           const mesh = top.shift();
-          const at = ZONES.dealt[who];
+          const at = this.zones.dealt[who];
           const n = piles[who].length;
           const pose = lying({ x: at.x, z: at.z, height: REST + n * STEP, faceUp: false, yaw: jitter(`deal${who}${n}`, 3) });
           piles[who].push({ mesh, pose });

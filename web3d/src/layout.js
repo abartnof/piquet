@@ -23,6 +23,7 @@ const GAP = 0.02; // and a hair above whatever it lies on
 const STEP = CARD.thickness + GAP;
 const CHOSEN_LIFT = 2.2; // a card chosen to throw stands clear of the hand
 const POINTED_LIFT = 1.1; // a card pointed at rises a little
+const FRESH_LIFT = 0.55; // a card just drawn stands a little proud until play begins
 const PAIR_OFFSET = 0.5; // the card that followed lies a little nearer its winner
 
 // A small fixed turn for each card, so piles look placed by a hand rather than
@@ -74,8 +75,8 @@ function wonRow(zone, tricks, { x, z, span }, { toward }) {
   return row(entries, { x, z, spacing });
 }
 
-function yourHand(state, view) {
-  const zone = ZONES.yourHand;
+function yourHand(state, view, zones) {
+  const zone = zones.yourHand;
   const groups = arrange(state, sortMode(state, view.sort));
   const raw = [];
   let angle = 0;
@@ -97,16 +98,17 @@ function yourHand(state, view) {
   const codes = groups.flat();
   const chosen = new Set(view.selected);
   const pointed = new Set(view.lifted);
+  const fresh = new Set(view.fresh);
   return codes.map((code, i) => {
     const pose = poses[i];
-    const lift = chosen.has(code) ? CHOSEN_LIFT : pointed.has(code) ? POINTED_LIFT : 0;
+    const lift = chosen.has(code) ? CHOSEN_LIFT : pointed.has(code) ? POINTED_LIFT : fresh.has(code) ? FRESH_LIFT : 0;
     if (lift) pose.position.addScaledVector(new Vector3(0, 1, 0).applyQuaternion(pose.quaternion), lift);
     return { zone: "your-hand", index: i, code, pose };
   });
 }
 
-function theirHand(count) {
-  const zone = ZONES.theirHand;
+function theirHand(count, zones) {
+  const zone = zones.theirHand;
   return fan({
     count,
     centre: new Vector3(...zone.centre),
@@ -122,35 +124,38 @@ function theirPlayed(state) {
   return state.tricks_played.length + onTable;
 }
 
-function cutLayout(state) {
+function cutLayout(state, zones) {
   const shown = state.prompt.kind === "choose_dealer"
     ? state.events.filter((e) => e.kind === "cut").slice(-2)
     : [];
-  const r = ZONES.ribbon;
+  const r = zones.ribbon;
   const ribbon = row(
     Array.from({ length: 32 - shown.length }, () => ({ zone: "pack", code: null })),
     { x: r.x - (31 - shown.length) * r.spacing, z: r.z, spacing: r.spacing, faceUp: false },
   ).reverse(); // index 0 is the top of the pack, at the right
   ribbon.forEach((slot, i) => (slot.index = i));
   const cuts = shown.map((e) => {
-    const at = e.who === "you" ? ZONES.yourCut : ZONES.theirCut;
+    const at = e.who === "you" ? zones.yourCut : zones.theirCut;
     const yaw = (e.who === "you" ? 0 : Math.PI) + jitter(e.card);
     return { zone: "cut", index: e.who === "you" ? 0 : 1, code: e.card, pose: lying({ x: at.x, z: at.z, height: REST, yaw }) };
   });
   return [...ribbon, ...cuts];
 }
 
-export function layout(state, { sort = "auto", selected = [], lifted = [], eye = new Vector3(...CAMERA.position) } = {}) {
-  if (state.phase === "cut") return cutLayout(state);
+export function layout(
+  state,
+  { sort = "auto", selected = [], lifted = [], fresh = [], eye = new Vector3(...CAMERA.position), zones = ZONES } = {},
+) {
+  if (state.phase === "cut") return cutLayout(state, zones);
 
   const slots = [];
-  slots.push(...yourHand(state, { sort, selected, lifted, eye }));
-  slots.push(...theirHand(12 - theirPlayed(state)));
+  slots.push(...yourHand(state, { sort, selected, lifted, fresh, eye }, zones));
+  slots.push(...theirHand(12 - theirPlayed(state), zones));
 
   // The talon: three below and the rest crossed over them (Foster: "the five
   // top cards being laid crosswise on the three at the bottom"). Cards are
   // taken from the top, so the crossed ones go first.
-  const t = ZONES.talon;
+  const t = zones.talon;
   const straight = Math.min(state.talon_remaining, 3);
   const crossed = state.talon_remaining - straight;
   slots.push(...pile("talon", Array(straight).fill(null), { x: t.x, z: t.z }));
@@ -161,9 +166,9 @@ export function layout(state, { sort = "auto", selected = [], lifted = [], eye =
     })),
   );
 
-  const d = ZONES.yourDiscards;
+  const d = zones.yourDiscards;
   slots.push(...pile("your-discards", state.discards, { x: d.x, z: d.z }));
-  const td = ZONES.theirDiscards;
+  const td = zones.theirDiscards;
   slots.push(...pile("their-discards", Array(state.their_discards).fill(null), { x: td.x, z: td.z }));
 
   // The trick on the table: each card in front of whoever played it, yours
@@ -172,7 +177,7 @@ export function layout(state, { sort = "auto", selected = [], lifted = [], eye =
     const { leader, led, followed } = state.trick;
     const played = [[leader, led], [leader === "you" ? "them" : "you", followed]].filter(([, c]) => c);
     played.forEach(([who, code], i) => {
-      const at = who === "you" ? ZONES.yourPlay : ZONES.theirPlay;
+      const at = who === "you" ? zones.yourPlay : zones.theirPlay;
       const yaw = (who === "you" ? 0 : Math.PI) + jitter(code, 4);
       slots.push({ zone: "trick", index: i, code, pose: lying({ x: at.x, z: at.z, height: REST, yaw }) });
     });
@@ -181,7 +186,7 @@ export function layout(state, { sort = "auto", selected = [], lifted = [], eye =
   // Tricks won lie face up in front of their winner, and either player may
   // look at them at any time (Cavendish, Law 60).
   const won = (who) => state.tricks_played.filter((x) => x.winner === who);
-  slots.push(...wonRow("your-tricks", won("you"), ZONES.yourTricks, { toward: 1 }));
-  slots.push(...wonRow("their-tricks", won("them"), ZONES.theirTricks, { toward: -1 }));
+  slots.push(...wonRow("your-tricks", won("you"), zones.yourTricks, { toward: 1 }));
+  slots.push(...wonRow("their-tricks", won("them"), zones.theirTricks, { toward: -1 }));
   return slots;
 }

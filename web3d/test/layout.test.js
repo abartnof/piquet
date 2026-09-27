@@ -7,7 +7,7 @@ import { Vector3 } from "three";
 import { cardCorners } from "../src/kinematics.js";
 import { layout } from "../src/layout.js";
 import { arrange } from "../src/hand.js";
-import { CAMERA, CARD } from "../src/units.js";
+import { CAMERA, CARD, ZONES, ZONES_PORTRAIT } from "../src/units.js";
 import { partie } from "./partie.js";
 
 const parties = await Promise.all([[3, 7], [1, 11], [2, 23], [3, 404]].map(([level, seed]) => partie(level, seed)));
@@ -116,9 +116,10 @@ function heightAt(pose, x, z) {
   return p.y - (n.x * (x - p.x) + n.z * (z - p.z)) / n.y;
 }
 
-test("resting cards never pass through one another: overlapping ones lie a card apart", () => {
+for (const [name, zones, reach] of [["across the table", ZONES, 44], ["on a phone held upright", ZONES_PORTRAIT, 24]]) {
+test(`resting cards never pass through one another, ${name}: overlapping ones lie a card apart`, () => {
   for (const s of states) {
-    const flat = layout(s).filter((x) => !["your-hand", "their-hand"].includes(x.zone));
+    const flat = layout(s, { zones }).filter((x) => !["your-hand", "their-hand"].includes(x.zone));
     for (let i = 0; i < flat.length; i++) {
       for (let j = i + 1; j < flat.length; j++) {
         const a = flat[i].pose;
@@ -134,16 +135,27 @@ test("resting cards never pass through one another: overlapping ones lie a card 
   }
 });
 
-test("nothing rests below the table, and everything on it is within reach of the eye", () => {
+test(`nothing rests below the table, and everything on it is within reach of the eye, ${name}`, () => {
   for (const s of states) {
-    for (const x of layout(s)) {
+    for (const x of layout(s, { zones })) {
       for (const c of cardCorners(x.pose)) assert.ok(c.y >= -1e-6, `${x.zone} below the table`);
       if (!x.zone.endsWith("hand")) {
-        assert.ok(Math.abs(x.pose.position.x) < 44 && Math.abs(x.pose.position.z) < 30, `${x.zone} off the table`);
+        for (const c of cardCorners(x.pose)) {
+          assert.ok(Math.abs(c.x) < reach && Math.abs(c.z) < 30, `${x.zone} off the table at ${c.x.toFixed(1)}, ${c.z.toFixed(1)}`);
+        }
       }
     }
   }
 });
+
+test(`every card is laid out, faces only where known, ${name}`, () => {
+  for (const s of states) {
+    const slots = layout(s, { zones });
+    assert.equal(slots.length, 32);
+    for (const x of slots) if (["their-hand", "talon", "their-discards", "pack"].includes(x.zone)) assert.equal(x.code, null);
+  }
+});
+}
 
 test("the hand is fanned in the order chosen, left to right", () => {
   const s = states.find((x) => x.prompt.kind === "exchange");
@@ -165,6 +177,14 @@ test("cards chosen to throw rise out of the hand, and a pointed-at holding rises
   const up = (p, q) => p.clone().sub(q).length();
   assert.ok(up(chosen, rest) > 1.5, "a chosen card stands clear of the hand");
   assert.ok(up(pointed, at({}, b)) > 0.5 && up(pointed, at({}, b)) < up(chosen, rest));
+});
+
+test("cards just drawn stand a little proud of the hand", () => {
+  const s = states.find((x) => x.prompt.kind === "declare");
+  const drawn = s.hand[0];
+  const at = (fresh) => layout(s, { fresh }).find((x) => x.code === drawn).pose.position;
+  const rise = at([drawn]).distanceTo(at([]));
+  assert.ok(rise > 0.3 && rise < 1.1, `rises ${rise}`);
 });
 
 test("the same state always lays out the same way", () => {

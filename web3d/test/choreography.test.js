@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { choreograph, initialPlacement, stagesBetween } from "../src/choreography.js";
 import { cardCorners } from "../src/kinematics.js";
 import { layout } from "../src/layout.js";
+import { ZONES_PORTRAIT } from "../src/units.js";
 import { engine, partie } from "./partie.js";
 
 const parties = await Promise.all([[3, 7], [1, 11], [2, 23], [3, 404], [1, 5]].map(([l, s]) => partie(l, s)));
@@ -22,7 +23,7 @@ const key = (slot) => `${slot.zone}#${slot.index}`;
 const close = (a, b, eps = 1e-6) => a.position.distanceTo(b.position) <= eps && Math.abs(Math.abs(a.quaternion.dot(b.quaternion)) - 1) <= eps;
 
 // Run a plan the way the timeline would, checking it as it goes.
-function run(before, result, next, where) {
+function run(before, result, next, where, view = {}) {
   const pose = before.map((m) => m.pose);
   const code = before.map((m) => m.code);
   const known = mayKnow(next);
@@ -48,7 +49,7 @@ function run(before, result, next, where) {
     }
   }
   // Every card lands exactly on its place in the layout, showing its face.
-  const want = new Map(layout(next).map((slot) => [key(slot), slot]));
+  const want = new Map(layout(next, view).map((slot) => [key(slot), slot]));
   const seen = new Set();
   for (const m of result.placement) {
     const slot = want.get(key(m));
@@ -84,6 +85,17 @@ test("whole parties animate end to end, every step landing exactly on its layout
       run(placement, result, states[i], `partie ${p} step ${i} (${states[i - 1].prompt.kind} -> ${states[i].prompt.kind})`);
       placement = result.placement;
     }
+  }
+});
+
+test("a whole partie animates on a phone held upright too", () => {
+  const states = parties[2];
+  const view = { zones: ZONES_PORTRAIT };
+  let placement = initialPlacement(states[0], view);
+  for (let i = 1; i < states.length; i++) {
+    const result = choreograph(states[i - 1], states[i], placement, view);
+    run(placement, result, states[i], `portrait step ${i}`, view);
+    placement = result.placement;
   }
 });
 
