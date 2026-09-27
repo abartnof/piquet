@@ -422,6 +422,13 @@ body {
   --md-outlined-button-outline-color: #009fb7;
   --md-outlined-button-outline-width: 2px;
 }
+/* It takes what height the column has left, and scrolls within it. */
+.info > .worth-card {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+}
 .worth-card {
   padding: 10px 12px 12px 16px;
   display: grid;
@@ -453,6 +460,32 @@ body {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+.worth-name.now,
+.worth-total.now {
+  color: var(--md-sys-color-primary);
+}
+/* The choices for the category being called, in full. */
+.choices {
+  grid-column: 1 / -1;
+  list-style: none;
+  margin: 2px 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.choice {
+  padding: 5px 10px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  background: var(--md-sys-color-surface-container);
+  transition: background 200ms var(--ease), transform 300ms var(--ease);
+}
+.choice.lit {
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  transform: translateX(3px);
+}
 md-assist-chip {
   --md-assist-chip-container-shape: 10px;
 }
@@ -472,10 +505,15 @@ md-assist-chip.pinned {
   color: var(--md-sys-color-on-error-container);
   box-shadow: var(--elevation-2);
 }
+/* The card the keyboard rests on, named for a screen reader; on screen the
+   card itself rises (Andrew: keys "not on-screen"). */
 .keyboard-focus {
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: var(--md-sys-color-surface-container-lowest);
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---- the live score -----------------------------------------------------------

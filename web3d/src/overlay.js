@@ -363,12 +363,12 @@ export function createOverlay(root, on) {
   // make of it, and how to act -- only with Explain on.
   function question(s, ui) {
     const p = s.prompt;
-    const how = "Click a card to play it, or use ← → and Space.";
+    const how = "Click a card to play it.";
     switch (p.kind) {
       case "cut": {
         const again = s.events.length && s.events[s.events.length - 1].kind === "cut_again";
         return [again ? "The cuts were equal — cut again." : "Cut the pack for the deal.",
-          "Click the spread to lift the cards above it, or use ← → and Space — or let the button cut for you. The higher card chooses who deals; aces are high."];
+          "Click the spread to lift the cards above it, or let the button cut for you. The higher card chooses who deals; aces are high."];
       }
       case "choose_dealer":
         return ["You cut higher: you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
@@ -377,8 +377,8 @@ export function createOverlay(root, on) {
         // how many cards i can draw when i see that").
         const left = s.talon_remaining;
         const how = ui.selected.length
-          ? `You have chosen ${plural(ui.selected.length, "card")}: you will draw ${ui.selected.length}. Click a card again to keep it; Enter throws.`
-          : "Click cards in your hand to choose them, or use ← → and Space.";
+          ? `You have chosen ${plural(ui.selected.length, "card")}: you will draw ${ui.selected.length}. Click a card again to keep it.`
+          : "Click cards in your hand to choose them.";
         return [`Your exchange. You are ${s.you_are}.`,
           s.you_are === "elder"
             ? `The talon holds ${left} cards, and you may take up to ${p.limit} of them. Throw away between 1 and ${p.limit} cards; you draw as many from the top of the talon, and ${THEM} gets what you leave. ${how}`
@@ -411,6 +411,34 @@ export function createOverlay(root, on) {
   let shownLayers = { explain: null, hints: null };
   let lastKind = null;
   const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  // A declaration option, two ways. On its button under your hand, the call
+  // as said at the table and what it scores if good (Andrew chose "Call +
+  // stake": "Point of five · +5"); in the worth card on the left, with
+  // Explain on, plainly what it is and what it scores (his "Call your 5
+  // diamonds (worth 48): scores 5 if your opponent's point is worse").
+  const NUMBER_WORDS = { 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight" };
+  function optionShort(option) {
+    if (option.text === "nothing") return "Nothing · 0";
+    const point = option.text.match(/^point of (\d+)/);
+    const call = point ? `Point of ${NUMBER_WORDS[point[1]] ?? point[1]}` : option.text.charAt(0).toUpperCase() + option.text.slice(1);
+    return `${call} · +${option.score}`;
+  }
+  function optionLong(option, category) {
+    const noun = { point: "point", sequences: "sequences", sets: "sets" }[category] ?? category;
+    if (option.text === "nothing") return `Say nothing: hide your ${noun}, and score nothing for it.`;
+    const partial = !option.full;
+    const point = option.text.match(/^point of (\d+) \((\d+)\)$/);
+    const suit = option.cards && option.cards.length ? SUIT_NAMES[option.cards[0][1]] : null;
+    const called = point && suit ? `your ${point[1]} ${suit} (worth ${point[2]})` : `your ${option.text}`;
+    const worse = category === "point" ? "point" : category === "sequences" ? "best sequence" : "best set";
+    return partial
+      ? `Call only ${called}, hiding the rest: scores ${option.score} if your opponent's ${worse} is worse.`
+      : `Call ${called}: scores ${option.score} if your opponent's ${worse} is worse.`;
+  }
+  // The explanation of the option a button stands for, lit while it is
+  // pointed at.
+  const lightChoice = (i) => root.querySelectorAll("#worth .choice").forEach((line, k) => line.classList.toggle("lit", k === i));
+
   function renderPrompt(s, ui, prefs) {
     const box = $("prompt");
     const p = s.prompt;
@@ -448,19 +476,19 @@ export function createOverlay(root, on) {
       // pick a card").
       case "cut": {
         const lift = p.fewest + Math.floor(Math.random() * (p.most - p.fewest + 1));
-        actions(button("filled-tonal", "Cut for me", () => on.act(`cut ${lift}`), { class: "primary" }));
+        actions(button("filled-tonal", "Cut for me", () => on.act(`cut ${lift}`), { class: "primary", title: "Enter" }));
         break;
       }
       case "choose_dealer":
         actions(
-          button("filled", "Deal first", () => on.act("dealer you"), { class: "primary" }),
+          button("filled", "Deal first", () => on.act("dealer you"), { class: "primary", title: "Enter" }),
           button("outlined", `Let ${THEM} deal`, () => on.act("dealer them")));
         break;
       case "exchange": {
         const n = ui.selected.length;
         actions(
           button("filled", n ? `Throw ${ui.selected.map(label).join(" ")} and draw ${n}` : "Choose cards to throw",
-            () => n && on.act(`exchange ${ui.selected.join(" ")}`), { class: "primary", disabled: !n }),
+            () => n && on.act(`exchange ${ui.selected.join(" ")}`), { class: "primary", disabled: !n, title: "Enter" }),
           n ? button("text", "Clear", () => on.clear()) : null);
         break;
       }
@@ -468,24 +496,35 @@ export function createOverlay(root, on) {
         const advised = s.hint && s.aids.hints ? s.hint.command : null;
         const options = el("div", { class: "options" });
         p.options.forEach((option, i) => {
-          let text;
-          if (prefs.explain === false) text = option.text === "nothing" ? "Nothing" : option.full ? option.text : `Only ${option.text}`;
-          else if (option.full) text = `Call ${option.text} — ${option.score} if good`;
-          else if (option.text === "nothing") text = "Say nothing (sink it)";
-          else text = `Call only ${option.text}, sinking the rest`;
+          const text = optionShort(option);
           const kind = i === 0 ? "filled" : "outlined";
-          const b = button(kind, `${i + 1}  ${text}`, () => on.act(`declare ${i}`), { class: `${i === 0 ? "primary" : ""} ${advised === `declare ${i}` ? "advised" : ""}` });
-          b.addEventListener("pointerenter", () => on.point(option.cards));
-          b.addEventListener("pointerleave", () => on.unpoint());
-          b.addEventListener("focus", () => on.point(option.cards));
-          b.addEventListener("blur", () => on.unpoint());
+          const b = button(kind, text, () => on.act(`declare ${i}`), {
+            class: `${i === 0 ? "primary" : ""} ${advised === `declare ${i}` ? "advised" : ""}`,
+            title: `Press ${i + 1}${i === 0 ? ", or Enter" : ""}`,
+          });
+          b.addEventListener("pointerenter", () => {
+            on.point(option.cards);
+            lightChoice(i);
+          });
+          b.addEventListener("pointerleave", () => {
+            on.unpoint();
+            lightChoice(-1);
+          });
+          b.addEventListener("focus", () => {
+            on.point(option.cards);
+            lightChoice(i);
+          });
+          b.addEventListener("blur", () => {
+            on.unpoint();
+            lightChoice(-1);
+          });
           options.append(b);
         });
         parts.push(options);
         break;
       }
       case "next_deal":
-        actions(button("filled", "Deal the next hand", () => on.act("next"), { class: "primary" }));
+        actions(button("filled", "Deal the next hand", () => on.act("next"), { class: "primary", title: "Enter" }));
         break;
       case "over":
         actions(button("filled", "Play another partie", () => on.newPartie(true), { class: "primary" }));
@@ -530,11 +569,23 @@ export function createOverlay(root, on) {
     if (!show) return;
     const grid = el("div", { class: "worth-grid" });
     let any = false;
+    const calling = s.prompt.kind === "declare" ? s.prompt.category : null;
     for (const [category, name] of WORTH_ORDER) {
       const held = s.worth.filter((h) => h.category === category);
-      if (!held.length) continue;
+      if (!held.length && category !== calling) continue;
       any = true;
       const total = held.reduce((sum, h) => sum + Number(h.score ?? 0), 0);
+      // The category being called: its choices, each spelled out, lit as its
+      // button under your hand is pointed at.
+      if (category === calling) {
+        const choices = el("ul", { class: "choices" },
+          s.prompt.options.map((option) => el("li", { class: "choice" }, optionLong(option, category))));
+        grid.append(
+          el("span", { class: "worth-name now" }, `${name} — your call`),
+          el("span", { class: "worth-total now" }, String(total)),
+          choices);
+        continue;
+      }
       const chips = el("md-chip-set", { class: "worth", "aria-label": `${name}: ${total}` });
       for (const holding of held) {
         const pinned = ui.pinned === holding.text;
@@ -550,6 +601,9 @@ export function createOverlay(root, on) {
     card.replaceChildren(
       el("span", { class: "card-title" }, "Your hand is worth, if good"),
       any ? grid : el("span", { class: "note" }, "Your hand calls nothing yet."));
+    // The category being called in view, if the card has had to scroll.
+    const now = card.querySelector(".worth-name.now");
+    if (now) card.scrollTop = Math.max(0, now.offsetTop - card.offsetTop - 28);
   }
 
   // ---- the tools under your hand: the sort, undo, the hint ----------------------
