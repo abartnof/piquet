@@ -27,9 +27,17 @@ async function main() {
     at: numbers("at"),
     fov: numbers("fov") ? numbers("fov")[0] : undefined,
   });
-  const textures = await loadTextures(ART, stage.renderer.capabilities.getMaxAnisotropy());
+  const textures = await loadTextures(ART, {
+    anisotropy: stage.renderer.capabilities.getMaxAnisotropy(),
+    pixelRatio: stage.renderer.getPixelRatio(),
+  });
   buildSpike(stage, textures, { inkWidth: Number(params.get("ink") || 2.5), angles: params.has("angles") });
   stage.render();
+  // Ready means the first frame has reached the screen, which is later than
+  // render() returning: a browser may defer rasterising an SVG drawn to a
+  // canvas until the canvas is uploaded, and the page stalls until it is.
+  await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  const readyMs = performance.now();
   document.getElementById("loading").hidden = true;
 
   // Test hooks: the browser test drives and inspects the table through these.
@@ -37,6 +45,12 @@ async function main() {
     ready: () => stage.frames() > 0,
     busy: () => false,
     state: () => engine.state(),
+    art: () => ({
+      vector: textures.vector,
+      width: textures.width,
+      ms: Math.round(textures.ms),
+      readyMs: Math.round(readyMs),
+    }),
   };
 }
 

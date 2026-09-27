@@ -17,6 +17,7 @@ Needs `npm ci` in web3d/ first (esbuild and the libraries, pinned by
 package-lock.json).
 """
 
+import argparse
 import base64
 import json
 import os
@@ -78,9 +79,17 @@ def bundle() -> tuple[str, dict[str, int]]:
     return code, owned
 
 
-def art() -> str:
-    """The 33 card images as a JSON object of data URIs, keyed by card code
-    (and "back"). Made by web3d/tools/art.py, committed."""
+def art(way: str) -> str:
+    """The 33 card images as a JSON object keyed by card code (and "back").
+
+    Way A, "webp": data URIs of the images web3d/tools/art.py made, committed.
+    Way B, "svg": the SVGs themselves, cut from the pinned originals at build
+    time, for the browser to rasterise at whatever size the screen wants.
+    """
+    if way == "svg":
+        sys.path.insert(0, str(HERE / "tools"))
+        import art as pipeline
+        return json.dumps({**pipeline.face_svgs(), "back": pipeline.back_svg()}, separators=(",", ":"))
     images = sorted(CARDS.glob("*.webp"))
     if len(images) != 33:
         sys.exit(f"expected 33 card images in {CARDS}, found {len(images)}: run web3d/tools/art.py")
@@ -100,27 +109,34 @@ def fill(template: str, values: dict[str, str]) -> str:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Build the 3D table's single-file page.")
+    parser.add_argument("--art", choices=["webp", "svg"], default="webp",
+                        help="ship the card art rasterised (webp, the default) or as vectors (svg), "
+                             "which writes web3d/piquet3d-svg.html instead")
+    args = parser.parse_args()
+    out = OUT if args.art == "webp" else OUT.with_name("piquet3d-svg.html")
     wasm = build_wasm()
     code, owned = bundle()
     if "</script" in code.lower():
         sys.exit("the bundle contains '</script', which would end the inline script early")
     style = (SRC / "style.css").read_text()
     engine = base64.b64encode(wasm).decode("ascii")
-    cards = art()
+    cards = art(args.art)
     page = fill((SRC / "index.html").read_text(), {
         "/*STYLE*/": style,
         "/*APP*/": code,
         "__WASM_BASE64__": engine,
         "/*ART*/": cards,
     })
-    OUT.write_text(page)
+    out.write_text(page)
 
     size = len(page.encode())
-    rows = [("the engine (wasm, base64)", len(engine)), ("the card art (WebP, base64)", len(cards)),
+    art_name = "the card art (WebP, base64)" if args.art == "webp" else "the card art (SVG)"
+    rows = [("the engine (wasm, base64)", len(engine)), (art_name, len(cards.encode())),
             *owned.items(),
             ("stylesheet", len(style.encode()))]
     rows.append(("page skeleton", size - sum(n for _, n in rows)))
-    print(f"{OUT.relative_to(ROOT)}: {size:,} bytes")
+    print(f"{out.relative_to(ROOT)}: {size:,} bytes")
     for name, n in rows:
         print(f"  {n:>10,}  {name}")
     if size > GUIDELINE:

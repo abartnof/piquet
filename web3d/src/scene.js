@@ -73,10 +73,17 @@ export function createScene(
   table.receiveShadow = true;
   scene.add(table);
 
+  // The ink width is given in CSS pixels and drawn in device pixels, so a
+  // line keeps its weight on a sharp screen.
   const inks = new Set();
-  function registerInk(material) {
-    inks.add(material);
+  function fitInk(material) {
     renderer.getDrawingBufferSize(material.uniforms.resolution.value);
+    material.uniforms.inkWidth.value = material.userData.cssWidth * renderer.getPixelRatio();
+  }
+  function registerInk(material) {
+    material.userData.cssWidth ??= material.uniforms.inkWidth.value;
+    inks.add(material);
+    fitInk(material);
   }
 
   function resize() {
@@ -86,7 +93,7 @@ export function createScene(
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    for (const ink of inks) renderer.getDrawingBufferSize(ink.uniforms.resolution.value);
+    for (const ink of inks) fitInk(ink);
   }
 
   let frames = 0;

@@ -52,8 +52,8 @@ export function cardMaterials({ face, back, ramp }) {
   ];
 }
 
-// The ink line. `width` is in device pixels; `resolution` is the drawing
-// buffer's size, kept current by the scene on every resize.
+// The ink line. `width` is in CSS pixels; the scene converts it to device
+// pixels and keeps `resolution`, the drawing buffer's size, current.
 export function inkMaterial({ color = INK, width = 2.5 } = {}) {
   return new ShaderMaterial({
     uniforms: {

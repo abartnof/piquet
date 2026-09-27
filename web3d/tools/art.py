@@ -12,8 +12,11 @@ and writes:
 Both ways of shipping the art (docs/TABLE3D.md section 3.2) start from the
 same cut: one standalone SVG per card, framed on its own cell of the deck.
 Way A rasterises those here with `rsvg-convert` (apt: librsvg2-bin) and
-encodes WebP with Pillow; Way B embeds the SVGs themselves, with their path
-data trimmed, and lets the browser rasterise them (web3d/build.py --art svg).
+encodes WebP with Pillow; Way B embeds the SVGs themselves, untouched, and
+lets the browser rasterise them (web3d/build.py --art svg). Trimming their
+path precision was measured and rejected: the deck is already written to
+three decimals, and its paths are relative, so rounding errors accumulate
+along each one -- two decimals saved 7% and visibly moved pixels.
 
 The back is our adaptation of a CC BY-SA 3.0 work: its lace field, re-framed
 from Spanish proportions (about 1:1.53) to the faces' 5:7, on flat white with
@@ -27,7 +30,6 @@ committed, because the machine a player builds on may have no librsvg.
 import argparse
 import copy
 import io
-import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -122,37 +124,6 @@ def back_svg() -> str:
     shifted = ET.SubElement(wrapper, f"{SVG}g", {"transform": f"translate(0 {-cut / 2:g})"})
     shifted.append(lace)
     return ET.tostring(svg, encoding="unicode")
-
-
-NUMBER = re.compile(r"-?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
-
-
-def trim_numbers(data: str, decimals: int) -> str:
-    """Round every number in SVG path data to `decimals` places."""
-    out, last = [], 0
-    for m in NUMBER.finditer(data):
-        out.append(data[last:m.start()])
-        text = m.group(0)
-        if "e" not in text.lower():
-            rounded = f"{round(float(text), decimals):.{decimals}f}".rstrip("0").rstrip(".")
-            if rounded in ("-0", ""):
-                rounded = "0"
-            # Keep the leading-dot shorthand the original used.
-            if text.lstrip("-").startswith(".") and rounded.lstrip("-").startswith("0."):
-                rounded = rounded.replace("0.", ".", 1)
-            if "." not in rounded and data[m.end():m.end() + 1] == ".":
-                rounded += " "         # "2" then ".5" would read as "2.5"
-            text = rounded
-        out.append(text)
-        last = m.end()
-    out.append(data[last:])
-    return "".join(out)
-
-
-def trim_precision(svg: str, decimals: int) -> str:
-    """Trim path data only. Transforms carry scale factors and stay exact."""
-    return re.sub(r'(\sd=")([^"]*)(")',
-                  lambda m: m.group(1) + trim_numbers(m.group(2), decimals) + m.group(3), svg)
 
 
 def rasterise(svg: str, width: int) -> bytes:

@@ -59,29 +59,6 @@ def test_the_back_is_reframed_to_five_by_seven_without_the_old_border():
     assert 'stroke="#000"' not in text
 
 
-def test_trimming_rounds_path_data_but_never_transforms():
-    before = '<g transform="matrix(0.24,0,0,0.24,375,525)"><path d="M1.23456,7.891011L2.5,3.14159Z"/></g>'
-    after = art.trim_precision(before, 2)
-    assert 'transform="matrix(0.24,0,0,0.24,375,525)"' in after
-    assert 'd="M1.23,7.89L2.5,3.14Z"' in after
-
-
-def test_trimming_keeps_exponents_and_signs():
-    assert art.trim_numbers("M-1.23456e-3,5.55555", 2) == "M-1.23456e-3,5.56"
-
-
-def test_trimming_never_runs_two_numbers_together():
-    # SVG allows "1.5.5" for 1.5 then .5; rounding the first to "2" must not
-    # leave "2.5", which is one number.
-    assert art.trim_numbers("M1.999.5", 2) == "M2 .5"
-    assert art.trim_numbers("L1.5.5", 2) == "L1.5.5"
-    assert art.trim_numbers("c-.37341-2.0752", 2) == "c-.37-2.08"
-
-
-def test_trimming_writes_no_negative_zero():
-    assert art.trim_numbers("M-0.001,3", 2) == "M0,3"
-
-
 def test_the_images_are_opaque_on_a_white_matte():
     from PIL import Image
     image = Image.open(io.BytesIO(art.webp(art.rasterise(art.face_svgs()["AS"], 64))))

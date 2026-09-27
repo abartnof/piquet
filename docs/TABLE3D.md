@@ -117,12 +117,41 @@ Either way the GPU gets raster textures (WebGL samples images, not paths); the
 question is only whether the rasterising happens once at build time or on the
 player's machine at load.
 
-**Measurements to take in phase 3, before choosing** (a scratch script was
-started and stopped; nothing is committed): total size of each variant, raw
-and gzipped; path precision at 2 and 1 decimals with a pixel-diff check that
-the rounding is invisible (Pillow is already in the `.venv`); WebP size of the
-33 raster cards; time to rasterise the 33 SVGs into textures in the browser, on
-the VM and on Andrew's machine; screenshots of the same close-up in each.
+**Measured in phase 3** (27 September 2026, on the VM):
+
+| | Way A, raster | Way B, vector |
+|---|---|---|
+| The art as files | 33 WebP, 1.22 MB | 33 SVG, 2.14 MB |
+| In the page | 1.63 MB (base64) | 2.18 MB (JSON text) |
+| The whole page | **2.60 MB** | **3.15 MB** |
+| Gzipped, if ever served | ~1.2 MB (WebP barely compresses) | **~0.49 MB** |
+| First frame on screen, DPR 1 | 7.2–7.3 s | 7.6–8.5 s |
+| First frame on screen, DPR 2 | 8.4–8.9 s | 9.8–10.3 s |
+| Texture width | 512 px | 512 × DPR, capped at 768 |
+| A close-up, far closer than play | slightly soft in fine lines | crisp |
+
+Three things the measuring turned up:
+
+- **Trimming path precision is not worth it.** The deck is already written to
+  three decimals, and its paths are *relative*, so rounding errors accumulate
+  along each one: two decimals saved 7% and moved hundreds of pixels per
+  card, some to the opposite colour; one decimal saved 15% and moved
+  thousands. Way B ships the SVGs untouched.
+- **The first frame is later than `render()` returning.** Timed at the call,
+  WebP looked ready in 1.9 s and SVG in 2.2 s — while the page stayed stalled
+  until 7–8 s. The honest clock waits two animation frames after the first
+  render (`piquet3d.art().readyMs`). Most of those seconds are SwiftShader
+  emulating a GPU on two CPU cores — shader compiles, mipmaps, the shadow
+  blur — and a real GPU should take a fraction of that. **Andrew's machine is
+  the number that decides this**, and has not been taken.
+- The capped texture width is a memory decision, not a looks one: 33 textures
+  at 1024 px with mipmaps would take ~250 MB of GPU memory; at 768, ~145 MB;
+  at 512, ~64 MB.
+
+So on the VM the choice is closer than it first looked: vector costs ~0.5 MB
+on disk and 0.5–1.5 s at load, and buys crisper close-ups, a four-colour deck
+for almost nothing, and a much smaller download if the page is ever served
+compressed. A 768 px WebP set would buy most of the crispness for ~1.2 MB more.
 
 **Way A — raster**, as first planned:
 
@@ -557,6 +586,10 @@ throughout.
       `outlineNormal`. *Accept*: every card renders the right face, upright,
       with the back on the reverse, in both variants; the comparison is in
       front of Andrew; his choice recorded here.
+      *Built, awaiting his choice.* `python3 web3d/build.py --art svg` writes
+      `web3d/piquet3d-svg.html` (not committed); raster stays the default.
+      Measurements in §3.2. His machine's load time is still to be taken:
+      open each page and read `piquet3d.art().readyMs` in the console.
 - [ ] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
       `timeline.js` with the invariants in §11. *Accept*: tests green; a
       demo page shows each primitive.
