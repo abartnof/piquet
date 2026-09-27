@@ -301,8 +301,9 @@ at rest should cost nothing. The timeline says when it is active.
 the opponent at −z, x runs to the human's right.
 
 - **Card**: 6.35 × 8.89 cm (5:7), corner radius 0.3175 cm, thickness
-  0.03 cm. Stacked cards rise by one thickness each; render with a polygon
-  offset so stacked faces do not z-fight.
+  0.03 cm. Stacked cards rise by a thickness and 0.02 cm each, and rest
+  0.02 cm above the table, so no two surfaces are coplanar and nothing
+  needs a polygon offset (§8.2).
 - **Table**: an implied surface: a large, very slightly rounded slab
   (~140 × 100 cm) whose edge fades into the background, bright and plain,
   receiving shadows. No texture. Its outline, if visible at all, is soft.
@@ -311,14 +312,18 @@ the opponent at −z, x runs to the human's right.
   it, which put your opponent's hand off the top of the screen); vertical
   field of view ~40°. Fixed for now (a slight mouse parallax is an open
   question, §12). Resize and DPR handled; DPR capped at 2.
-- **Zones** (x, y, z; to be tuned in the look spike):
-  - your hand: a fan floating at (0, 18, 30), tilted so the cards face the
-    camera, pivot ~16 cm below the fan's centre, ~6° between cards;
-  - their hand: the mirror at (0, 18, −30), backs toward you;
-  - pack / talon: (−20, 0, 0); the trick: (0, 0, 0);
-  - your won tricks: pushed right, (26 → 44, 0, 12); theirs: (26 → 44, 0, −12);
-  - your discards: (−32, 0, 14); theirs: (−32, 0, −14);
-  - the cut: the pack at the centre, the two shown cards either side of it.
+- **Zones**: `web3d/src/units.js` is the source of truth — `ZONES` across
+  the table, `ZONES_PORTRAIT` stacked down it for a phone or tablet held
+  upright (below an aspect of 0.85, under `CAMERA_PORTRAIT`). As built,
+  across the table: your hand a fan at (0, 15, 27), 16 cm radius, 5.6°
+  between cards and 2.6° more between groups, leaning back 14°; theirs
+  held upright at (0, 12, −22); the talon at (−18, −3), five crossed over
+  three; discards at (−31, 9) and (−31, −14); the trick in the middle
+  with each card in front of whoever played it; won tricks shingled in rows
+  to the right at z = 7 and −9 (moved in from the plan's ±12 so the score
+  tab never covers them); the cut a ribbon spread across the middle. The
+  first sketch here put the hands at y = 18, z = ±30, which set your
+  opponent's hand off the top of the screen.
 
 ## 7. Motion and physics
 
