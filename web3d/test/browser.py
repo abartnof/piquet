@@ -199,6 +199,8 @@ def check_undo_hints_settings(page, failures):
     page.locator("#settings-open").click()
     page.wait_for_selector("md-dialog#settings[open]")
     shot(page, "05-settings")
+    if page.locator("md-dialog#settings .keys dt").count() < 6:
+        failures.append("settings does not list the keys")
     button(page, "Done").click()
     page.wait_for_function("!document.querySelector('md-dialog#settings[open]')")
 

@@ -446,6 +446,24 @@ md-dialog {
   gap: 12px;
   margin-top: 12px;
 }
+.keys {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.keys dd {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+}
+kbd {
+  font: 600 12px/1.6 var(--font);
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--md-sys-color-surface-container-highest);
+  white-space: nowrap;
+}
 .credit {
   margin-bottom: 12px;
 }

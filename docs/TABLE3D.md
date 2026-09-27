@@ -529,6 +529,8 @@ Floating surfaces over the canvas, nothing modal unless it must be.
   the card when there is none; the prompt names the card in a polite live
   region, since the table itself is a picture to a screen reader. Found on
   the way: a falsy-zero test on the pointer's card — card 0 is a card.
+  Every key is listed under **Keys** in Settings, since a shortcut nobody
+  can find is not one.
 - **Test hooks** (`window.piquet3d`): `screenPoint(code)` gives a card's
   projected screen position, `busy()`, `state()`; the browser test clicks
   cards through them. `?test` makes every motion instant.

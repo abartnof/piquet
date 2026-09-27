@@ -184,7 +184,16 @@ export function createOverlay(root, on) {
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), aidSwitches,
       el("h3", {}, "The table"), prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, sort)),
+      el("div", { class: "selects" }, levelInSettings, speed, sort),
+      el("h3", {}, "Keys"),
+      el("dl", { class: "keys" },
+        [["← →", "move along your hand, or the pack when cutting"],
+          ["Space", "play, choose or cut there — or finish a move under way"],
+          ["Enter", "the prompt's main action"],
+          ["1 2 3", "a declaration"],
+          ["U", "undo"],
+          ["H", "hints on or off"],
+          ["Esc", "let go of everything chosen"]].flatMap(([k, what]) => [el("dt", {}, el("kbd", {}, k)), el("dd", {}, what)]))),
     el("div", { slot: "actions" }, again, copy, creditsOpen, closeSettings),
   );
   const closeCredits = el("md-filled-tonal-button", {}, "Close");
