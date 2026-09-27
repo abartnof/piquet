@@ -24,7 +24,7 @@ const TESTING = params.has("test");
 const GAME_STORE = "piquet3d.game";
 const PREF_STORE = "piquet3d.prefs";
 const AID_STORE = "piquet3d.aids";
-const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, hintOpen: false };
+const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true };
 const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: true, declare_for_me: false };
 
 function recall(key, fallback) {
@@ -409,12 +409,9 @@ async function main() {
         act("undo");
       }
     } else if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey) {
-      // Open or close the hint; with hints off, turn them on and open it.
-      if (engine.state().aids.hints) overlay.toggleHint();
-      else {
-        setPref("hintOpen", true);
-        toggleAid("hints");
-      }
+      toggleAid("hints");
+    } else if ((e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey) {
+      setPref("explain", prefs.explain === false);
     } else if (e.key === "Escape") {
       ui.selected = [];
       ui.lifted = [];

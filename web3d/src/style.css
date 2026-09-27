@@ -439,46 +439,6 @@ md-assist-chip.pinned {
   --md-assist-chip-outline-color: #e8900c;
   --md-assist-chip-label-text-color: #8a4f00;
 }
-/* The hint: a fold whose body floats up over the hand from its button. */
-.hint-fold {
-  position: relative;
-}
-.hint-head {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 36px;
-  padding: 0 10px 0 12px;
-  border-radius: 18px;
-  color: #004f5b;
-}
-.hint-head:hover {
-  background: #e0f6f9;
-}
-.hint-fold > .fold-body {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 10px);
-  width: 300px;
-}
-.hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 10px 10px 16px;
-  border-radius: 16px;
-  background: #e0f6f9;
-  color: #004f5b;
-  box-shadow: var(--elevation-2);
-}
-.hint-text {
-  flex: 1 1 auto;
-}
-.fold.hint-fold .fold-inner {
-  /* room for the card's own shadow inside the clipped body */
-  padding: 4px;
-  margin: -4px;
-}
 .keyboard-focus {
   margin: 0;
   font-weight: 600;
@@ -638,35 +598,50 @@ md-assist-chip.pinned {
     transform: scale(1.16);
   }
 }
+/* The +N is a bubble of its own, level with the number and beside it on
+   the inner side, where there is nothing to cover (Andrew: "that should be
+   a text bubble, not text colliding with other text"). */
 .gain {
   position: absolute;
-  top: -4px;
-  font-size: 16px;
+  top: 50%;
+  padding: 2px 8px 3px;
+  border-radius: 999px;
+  font-size: 14px;
   font-weight: 800;
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
   pointer-events: none;
-  animation: gain 1200ms var(--ease-in) both;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
+  animation: gain 1300ms var(--ease-in) both;
 }
 .side.you .gain {
-  left: calc(100% + 6px);
+  left: calc(100% + 8px);
+  background: var(--talk-you);
 }
 .side.them .gain {
-  right: calc(100% + 6px);
+  right: calc(100% + 8px);
+  background: var(--talk-them);
 }
 @keyframes gain {
   0% {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(-50%) scale(0.5);
   }
-  18% {
+  16% {
     opacity: 1;
-    transform: none;
+    transform: translateY(-50%) scale(1.08);
   }
-  70% {
+  26% {
+    transform: translateY(-50%) scale(1);
+  }
+  72% {
     opacity: 1;
+    transform: translateY(-50%);
   }
   100% {
     opacity: 0;
-    transform: translateY(-16px);
+    transform: translateY(-50%) scale(0.9);
   }
 }
 
@@ -809,6 +784,41 @@ md-assist-chip.pinned {
   margin: 1px 0 0;
   font-size: 12.5px;
   color: var(--md-sys-color-on-surface-variant);
+}
+/* The hint, in the same box: a teal line with Follow beside it. */
+.hint-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 6px -8px 0;
+  padding: 2px 4px 2px 12px;
+  border-radius: 12px;
+  background: #e0f6f9;
+  color: #004f5b;
+}
+.hint-line .icon {
+  width: 18px;
+  height: 18px;
+}
+.hint-line .follow {
+  --md-text-button-label-text-color: #00626f;
+  --md-text-button-container-height: 30px;
+}
+/* A layer just switched on arrives on the spring. */
+.asked .arriving {
+  animation: layer 480ms var(--ease-in);
+  animation: layer 480ms var(--spring);
+}
+@keyframes layer {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+.tools md-filter-chip {
+  --md-filter-chip-container-shape: 16px;
+  --md-filter-chip-container-height: 34px;
 }
 
 /* ---- the narration ------------------------------------------------------------ */
@@ -1005,23 +1015,6 @@ kbd {
     justify-content: center;
     max-width: 100%;
   }
-  .hint-head span {
-    display: none;
-  }
-  /* The hint pops up centred over the tools, not from its button, so it
-     stays on a narrow screen. */
-  .tools {
-    position: relative;
-  }
-  .hint-fold {
-    position: static;
-  }
-  .hint-fold > .fold-body {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    width: min(300px, calc(100vw - 32px));
-  }
   .options {
     gap: 4px;
   }
@@ -1045,7 +1038,8 @@ kbd {
   .num.cheer,
   .n.bump,
   .n.pop,
-  .caption.slide {
+  .caption.slide,
+  .asked .arriving {
     animation: none;
   }
   .chevron,

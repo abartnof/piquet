@@ -14,6 +14,7 @@
 import "@material/web/button/filled-button.js";
 import "@material/web/chips/assist-chip.js";
 import "@material/web/chips/chip-set.js";
+import "@material/web/chips/filter-chip.js";
 import "@material/web/button/filled-tonal-button.js";
 import "@material/web/button/outlined-button.js";
 import "@material/web/button/text-button.js";
@@ -59,6 +60,7 @@ const ICONS = {
   settings: '<path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/>',
   narration: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>',
   expand: '<path d="m6 9 6 6 6-6"/>',
+  explain: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
   hint: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
@@ -99,9 +101,8 @@ export function createOverlay(root, on) {
 
   // ---- the top bar ---------------------------------------------------------
 
-  const level = el("md-outlined-select", { id: "level", label: "Your opponent", "aria-label": "Your opponent's skill" },
-    LEVELS.map(([n, words]) => el("md-select-option", { value: String(n) }, el("div", { slot: "headline" }, `${n} — ${words}`))));
-  level.addEventListener("change", () => on.level(Number(level.value)));
+  // Your opponent's skill is chosen in Settings, once a partie (Andrew: in
+  // the top bar it was "unnecessary noise when the game is happening").
   const narrate = el("md-icon-button", { id: "narration-toggle", title: "What has been said", "aria-label": "Narration", toggle: true }, icon("narration"));
   narrate.addEventListener("click", () => {
     $("narration").hidden = !$("narration").hidden;
@@ -122,7 +123,6 @@ export function createOverlay(root, on) {
   $("topbar").replaceChildren(
     el("span", { class: "brand" }, "Piquet"),
     scoreChip,
-    level,
     fresh,
     narrate,
     gear,
@@ -159,12 +159,13 @@ export function createOverlay(root, on) {
   // ---- settings and credits -------------------------------------------------
 
   const AIDS = [
-    ["hints", "Hints", "Suggest the strongest move, under your hand (H opens it)"],
+    ["hints", "Hints", "Suggest the strongest move, under your hand (H)"],
     ["play_forced", "Play forced cards", "Play a card for me when it is the only one I may play"],
     ["play_winners", "Play my winners", "Play out my hand when every trick left is certainly mine"],
     ["declare_for_me", "Declare for me", "Call everything, never ask"],
   ];
   const PREFS = [
+    ["explain", "Explanations", "Say what the rules make of each moment, and how to act (E)"],
     ["tab", "The running score", "Show where the deal stands, stage by stage"],
     ["undo", "Undo", "Allow taking back a decision"],
     ["pause", "Pause on tricks", "Leave each finished trick on the table a moment"],
@@ -223,7 +224,8 @@ export function createOverlay(root, on) {
           ["Enter", "the prompt's main action"],
           ["1 2 3", "a declaration"],
           ["U", "undo"],
-          ["H", "open or close the hint"],
+          ["H", "hints on or off"],
+          ["E", "explanations on or off"],
           ["Esc", "let go of everything chosen"]].flatMap(([k, what]) => [el("dt", {}, el("kbd", {}, k)), el("dd", {}, what)]))),
     el("div", { slot: "actions" }, again, copy, creditsOpen, closeSettings),
   );
@@ -347,8 +349,14 @@ export function createOverlay(root, on) {
   //
   // Under your hand, the question over the buttons that answer it.
 
+  // What is asked of you, in two layers (Andrew: of "Your opponent led Q♣.
+  // You cannot follow suit: play anything." the first is simply true, the
+  // second prescriptive -- and the prescriptive part "should be easy to turn
+  // off"). The fact is always shown; the interpretation -- what the rules
+  // make of it, and how to act -- only with Explain on.
   function question(s, ui) {
     const p = s.prompt;
+    const how = "Click a card to play it, or use ← → and Space.";
     switch (p.kind) {
       case "cut": {
         const again = s.events.length && s.events[s.events.length - 1].kind === "cut_again";
@@ -356,26 +364,28 @@ export function createOverlay(root, on) {
           "Click the spread to lift the cards above, or use ← → and Space. The higher card chooses who deals; aces are high."];
       }
       case "choose_dealer":
-        return ["You cut higher, so you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
+        return ["You cut higher: you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
       case "exchange":
-        return [s.you_are === "elder"
-          ? `You are elder: throw 1 to ${p.limit} cards and draw as many.`
-          : `You are younger: throw 1 to ${p.limit} cards — whatever ${THEM} left — and draw as many.`,
-        ui.selected.length ? "Click a card again to keep it; Enter throws." : "Click cards in your hand to choose them, or use ← → and Space."];
+        return [`Your exchange. You are ${s.you_are}.`,
+          (s.you_are === "elder"
+            ? `Throw 1 to ${p.limit} cards and draw as many. `
+            : `Throw 1 to ${p.limit} cards — whatever ${THEM} left — and draw as many. `)
+          + (ui.selected.length ? "Click a card again to keep it; Enter throws." : "Click cards in your hand to choose them, or use ← → and Space.")];
       case "declare": {
         const name = CATEGORY[p.category] || p.category;
         return [p.answering
-          ? `${name}: ${THEM} calls “${p.answering}.” What do you call?`
-          : s.you_are === "elder" ? `${name}: you speak first. What do you call?` : `${name}: ${THEM} called nothing. What do you call?`, null];
+          ? `${name}: ${THEM} calls “${p.answering}.”`
+          : s.you_are === "elder" ? `${name}: you speak first.` : `${name}: ${THEM} called nothing.`,
+        "What do you call? Sinking a holding keeps it from your opponent, at the cost of its points."];
       }
       case "play":
         if (s.trick && s.trick.leader === "them") {
           const narrowed = p.legal.length < s.hand.length;
-          return [`${Them} led ${label(s.trick.led)}. ${narrowed ? "You must follow suit." : "You cannot follow suit: play anything."}`,
-            "Click a card to play it, or use ← → and Space."];
+          return [`${Them} led ${label(s.trick.led)}.`,
+            `${narrowed ? "You must follow suit." : "You cannot follow suit: play anything."} ${how}`];
         }
-        return ["Your lead.", "Click a card to play it, or use ← → and Space."];
-      // The table has just said how it ended, between the halves.
+        return ["Your lead.", how];
+      // The table has just said how it ended, in the score's caption.
       case "next_deal":
         return [null, "Deal the next hand when you are ready."];
       case "over":
@@ -384,7 +394,8 @@ export function createOverlay(root, on) {
     return [null, null];
   }
 
-  function renderPrompt(s, ui) {
+  let shownLayers = { explain: null, hints: null };
+  function renderPrompt(s, ui, prefs) {
     const box = $("prompt");
     const p = s.prompt;
     const parts = [];
@@ -394,13 +405,24 @@ export function createOverlay(root, on) {
       b.addEventListener("click", onclick);
       return b;
     };
-    // What is asked of you, over the buttons that answer it.
-    const [ask, note] = question(s, ui);
-    if (ask || note) {
-      parts.push(el("div", { class: "asked" },
-        ask ? el("p", { class: "ask" }, ask) : null,
-        note ? el("p", { class: "note" }, note) : null));
+    // What is asked of you, over the buttons that answer it: the fact; the
+    // interpretation, with Explain on; the hint, with Hints on. A layer
+    // just switched on arrives; otherwise nothing moves.
+    const [fact, rule] = question(s, ui);
+    const explain = prefs.explain !== false;
+    const hint = s.aids.hints && s.hint && !["next_deal", "over"].includes(p.kind) ? s.hint : null;
+    const arriving = (layer, on) => (on && shownLayers[layer] === false ? " arriving" : "");
+    const lines = [];
+    if (fact) lines.push(el("p", { class: "ask" }, fact));
+    if (rule && explain) lines.push(el("p", { class: `note${arriving("explain", explain)}` }, rule));
+    if (hint) {
+      const follow = el("md-text-button", { class: "follow", title: "Do what the hint says" }, "Follow");
+      follow.addEventListener("click", () => on.act(hint.command));
+      lines.push(el("div", { class: `hint-line${arriving("hints", true)}` },
+        icon("hint"), el("span", { class: "hint-text" }, hint.text), follow));
     }
+    shownLayers = { explain, hints: !!hint };
+    if (lines.length) parts.push(el("div", { class: "asked" }, lines));
     // The card the keyboard rests on, named -- the table itself is a picture.
     if (ui.focusText) parts.push(el("p", { class: "keyboard-focus", "aria-live": "polite" }, ui.focusText));
     if (s.error) parts.push(el("div", { class: "error", role: "alert" }, s.error));
@@ -423,7 +445,8 @@ export function createOverlay(root, on) {
         const options = el("div", { class: "options" });
         p.options.forEach((option, i) => {
           let text;
-          if (option.full) text = `Call ${option.text} — ${option.score} if good`;
+          if (prefs.explain === false) text = option.text === "nothing" ? "Nothing" : option.full ? option.text : `Only ${option.text}`;
+          else if (option.full) text = `Call ${option.text} — ${option.score} if good`;
           else if (option.text === "nothing") text = "Say nothing (sink it)";
           else text = `Call only ${option.text}, sinking the rest`;
           const kind = i === 0 ? "filled" : "outlined";
@@ -452,9 +475,10 @@ export function createOverlay(root, on) {
   // Holding by holding: point at one to lift its cards in your hand, click
   // to keep them lifted. Information about the hand, so down the left.
 
-  function renderWorth(s, ui) {
+  // An interpretation of your hand, so it goes with Explain.
+  function renderWorth(s, ui, prefs) {
     const card = $("worth");
-    const show = s.prompt.kind === "exchange" || s.prompt.kind === "declare";
+    const show = (s.prompt.kind === "exchange" || s.prompt.kind === "declare") && prefs.explain !== false;
     card.hidden = !show;
     if (!show) return;
     const chips = el("md-chip-set", { class: "worth", "aria-label": "What your hand is worth" });
@@ -482,12 +506,19 @@ export function createOverlay(root, on) {
   });
   const undo = el("md-outlined-icon-button", { id: "undo", title: "Take back your last decision (U)", "aria-label": "Undo" }, icon("undo"));
   undo.addEventListener("click", () => on.undo());
-  // Andrew: hints "should work like lists in MD3- with a toggle that lets it
-  // be seen/hidden". Open, it floats up over the hand from the button.
-  const hintFold = makeFold("hint-head", (open) => on.pref("hintOpen", open));
-  hintFold.root.classList.add("hint-fold");
-  hintFold.label(icon("hint"), el("span", {}, "Hint"));
-  $("tools").replaceChildren(sortSet, undo, hintFold.root);
+  // Andrew: "the b. prescriptive part should be easy to turn off (maybe two
+  // buttons at the bottom: one button shows you interpretations, another
+  // shows straight-up hints? put these where the Hint button currently is)".
+  const explainChip = el("md-filter-chip", { label: "Explain", title: "What the rules make of each moment, and how to act (E)" });
+  explainChip.append(Object.assign(icon("explain"), { slot: "icon" }));
+  explainChip.addEventListener("click", () => on.pref("explain", explainChip.selected));
+  const hintChip = el("md-filter-chip", { label: "Hints", title: "The strongest move, with Follow to make it (H)" });
+  hintChip.append(Object.assign(icon("hint"), { slot: "icon" }));
+  hintChip.addEventListener("click", () => {
+    if (hintChip.selected !== !!lastAids.hints) on.aid("hints");
+  });
+  let lastAids = {};
+  $("tools").replaceChildren(sortSet, undo, explainChip, hintChip);
 
   function renderTools(s, prefs, ui) {
     // Nothing to sort, undo or hint while cutting for the deal.
@@ -497,18 +528,9 @@ export function createOverlay(root, on) {
     for (const b of sortSet.querySelectorAll("md-outlined-segmented-button")) b.selected = b.dataset.sort === prefs.sort;
     undo.hidden = !prefs.undo;
     undo.disabled = ui.busy || !s.can_undo;
-    const hint = s.aids.hints ? s.hint : null;
-    hintFold.root.hidden = !s.aids.hints || ["cut", "choose_dealer", "next_deal", "over"].includes(s.prompt.kind);
-    hintFold.set(!!prefs.hintOpen && !!hint);
-    hintFold.inner.replaceChildren(hint
-      ? el("div", { class: "hint" },
-        el("span", { class: "hint-text" }, hint.text),
-        (() => {
-          const follow = el("md-filled-tonal-button", { title: "Do what the hint says" }, "Follow");
-          follow.addEventListener("click", () => on.act(hint.command));
-          return follow;
-        })())
-      : el("div", { class: "hint" }, el("span", { class: "hint-text" }, "Nothing to suggest just now.")));
+    lastAids = s.aids;
+    explainChip.selected = prefs.explain !== false;
+    hintChip.selected = !!s.aids.hints;
   }
 
   // ---- the live score --------------------------------------------------------
@@ -656,7 +678,7 @@ export function createOverlay(root, on) {
   return {
     render(s, { prefs, ui }) {
       // A select that has not yet upgraded drops its value; set it again once it has.
-      for (const select of [level, levelInSettings]) {
+      for (const select of [levelInSettings]) {
         select.value = String(s.level);
         select.updateComplete.then(() => {
           if (select.value !== String(s.level)) select.value = String(s.level);
@@ -672,8 +694,8 @@ export function createOverlay(root, on) {
         el("span", { class: "them" }, String(s.score.them)));
       renderTab(s, prefs);
       renderBug(s);
-      renderWorth(s, ui);
-      renderPrompt(s, ui);
+      renderWorth(s, ui, prefs);
+      renderPrompt(s, ui, prefs);
       renderTools(s, prefs, ui);
       renderNarration(s);
     },
@@ -683,8 +705,6 @@ export function createOverlay(root, on) {
     thinking() {
       root.querySelector("#bug .side.them")?.classList.add("thinking");
     },
-    // The hint opened or closed from the keyboard.
-    toggleHint: () => on.pref("hintOpen", !hintFold.root.classList.contains("open")),
     primary: () => $("prompt").querySelector(".primary:not([disabled])"),
     option: (i) => $("prompt").querySelectorAll(".options > *")[i],
   };

@@ -191,20 +191,20 @@ def check_undo_hints_settings(page, failures):
     back = state(page)
     if len(back["record"]) >= len(s["record"]):
         failures.append("U did not take anything back")
-    # H opens and closes the hint, like an M3 list item (Andrew); with hints
-    # off it turns them on first.
-    if not back["aids"]["hints"]:
-        page.keyboard.press("h")
-        if not state(page)["aids"]["hints"]:
-            failures.append("H with hints off did not turn them on")
-    elif state(page)["hint"]:
-        was = page.locator(".hint-fold.open").count()
-        page.keyboard.press("h")
-        if page.locator(".hint-fold.open").count() == was:
-            failures.append("H did not open or close the hint")
-        page.keyboard.press("h")
-        if page.locator(".hint-fold.open").count() != was:
-            failures.append("H twice did not leave the hint as it was")
+    # H switches hints; E switches the interpretations (Andrew: facts, the
+    # prescriptive layer, and hints -- the last two each easy to turn off).
+    hints = back["aids"]["hints"]
+    page.keyboard.press("h")
+    if state(page)["aids"]["hints"] == hints:
+        failures.append("H did not toggle hints")
+    page.keyboard.press("h")
+    notes = page.locator("#prompt .asked .note").count()
+    page.keyboard.press("e")
+    if notes and page.locator("#prompt .asked .note").count():
+        failures.append("E did not hide the interpretation")
+    page.keyboard.press("e")
+    if notes and not page.locator("#prompt .asked .note").count():
+        failures.append("E again did not bring the interpretation back")
     # Sorting is always to hand, as a segmented button under it.
     sort = page.locator("md-outlined-segmented-button[data-sort='rank']")
     if not sort.is_visible():
