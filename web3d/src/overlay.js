@@ -27,7 +27,7 @@ import "@material/web/select/select-option.js";
 import "@material/web/switch/switch.js";
 import "@material/web/labs/segmentedbutton/outlined-segmented-button.js";
 import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
-import { caption, live, scoredSince } from "./scorebug.js";
+import { answersSince, caption, live, scoredSince, tierOf } from "./scorebug.js";
 import { PATTERNS } from "./surfaces.js";
 
 const THEM = "your opponent";
@@ -517,23 +517,39 @@ export function createOverlay(root, on) {
   // Holding by holding: point at one to lift its cards in your hand, click
   // to keep them lifted. Information about the hand, so down the left.
 
-  // An interpretation of your hand, so it goes with Explain.
+  // An interpretation of your hand, so it goes with Explain. By category, as
+  // it will be called (Andrew: "point: sequence: set: and then showed the
+  // points you'd get (if you won each declaration), and why"): a category
+  // won scores every holding of it -- all your sequences, all your sets --
+  // but only your best point.
+  const WORTH_ORDER = [["carte_blanche", "Carte blanche"], ["point", "Point"], ["sequences", "Sequences"], ["sets", "Sets"]];
   function renderWorth(s, ui, prefs) {
     const card = $("worth");
     const show = (s.prompt.kind === "exchange" || s.prompt.kind === "declare") && prefs.explain !== false;
     card.hidden = !show;
     if (!show) return;
-    const chips = el("md-chip-set", { class: "worth", "aria-label": "What your hand is worth" });
-    if (!s.worth.length) chips.append(el("span", { class: "note" }, "Your hand calls nothing yet."));
-    for (const holding of s.worth) {
-      const pinned = ui.pinned === holding.text;
-      const chip = el("md-assist-chip", { label: holding.text, class: pinned ? "pinned" : "", title: "Point to see its cards; click to keep them lifted" });
-      chip.addEventListener("pointerenter", () => on.point(holding.cards));
-      chip.addEventListener("pointerleave", () => on.unpoint());
-      chip.addEventListener("click", () => on.pin(pinned ? null : holding));
-      chips.append(chip);
+    const grid = el("div", { class: "worth-grid" });
+    let any = false;
+    for (const [category, name] of WORTH_ORDER) {
+      const held = s.worth.filter((h) => h.category === category);
+      if (!held.length) continue;
+      any = true;
+      const total = held.reduce((sum, h) => sum + Number(h.score ?? 0), 0);
+      const chips = el("md-chip-set", { class: "worth", "aria-label": `${name}: ${total}` });
+      for (const holding of held) {
+        const pinned = ui.pinned === holding.text;
+        const words = held.length > 1 ? `${holding.text} · ${holding.score}` : holding.text;
+        const chip = el("md-assist-chip", { label: words, class: pinned ? "pinned" : "", title: "Point to see its cards; click to keep them lifted" });
+        chip.addEventListener("pointerenter", () => on.point(holding.cards));
+        chip.addEventListener("pointerleave", () => on.unpoint());
+        chip.addEventListener("click", () => on.pin(pinned ? null : holding));
+        chips.append(chip);
+      }
+      grid.append(el("span", { class: "worth-name" }, name), el("span", { class: "worth-total" }, String(total)), chips);
     }
-    card.replaceChildren(el("span", { class: "card-title" }, "Your hand is worth"), chips);
+    card.replaceChildren(
+      el("span", { class: "card-title" }, "Your hand is worth, if good"),
+      any ? grid : el("span", { class: "note" }, "Your hand calls nothing yet."));
   }
 
   // ---- the tools under your hand: the sort, undo, the hint ----------------------
@@ -591,7 +607,9 @@ export function createOverlay(root, on) {
     const root = el("div", { class: `side ${who}` },
       el("span", { class: "side-name" }, name), num,
       el("span", { class: "rubicon-bar", title: "The rubicon: a hundred" }, fill));
-    return { who, root, n, num, fill, shown: 0 };
+    // shown: the score the bug stands for now; announced: the last one a
+    // bubble told; pending: big moments not yet celebrated.
+    return { who, root, n, num, fill, shown: 0, announced: 0, pending: [] };
   };
   const bugYou = side("you", "You");
   const bugThem = side("them", Them);
@@ -607,53 +625,86 @@ export function createOverlay(root, on) {
     void node.offsetWidth;
     node.classList.add(cls);
   };
+  const later = (fn) => (calm.matches ? fn() : setTimeout(fn, 450)); // as the card lands
 
-  // An ordinary score: the number counts up, bumps, and a +N floats off it.
-  function tick(sd, to) {
-    const from = sd.shown;
+  // Confetti from a point: a burst of small flakes flung out and falling.
+  function confetti(host, colour) {
+    if (calm.matches) return;
+    const burst = el("span", { class: "confetti", "aria-hidden": "true" });
+    const tones = [colour, "#f2b705", "#2e7d32", "#435e91", "#e8900c", "#7e57c2"];
+    for (let i = 0; i < 22; i++) {
+      const angle = (i / 22) * 2 * Math.PI + Math.random() * 0.4;
+      const reach = 38 + Math.random() * 46;
+      const flake = el("i");
+      flake.style.setProperty("--dx", `${Math.cos(angle) * reach}px`);
+      flake.style.setProperty("--dy", `${Math.sin(angle) * reach - 20}px`);
+      flake.style.setProperty("--spin", `${Math.round(Math.random() * 720 - 360)}deg`);
+      flake.style.background = tones[i % tones.length];
+      burst.append(flake);
+    }
+    burst.addEventListener("animationend", (e) => e.target === burst.lastChild && burst.remove());
+    host.append(burst);
+  }
+
+  // A score, as a broadcast shows one (Andrew: "a little bubble replaces the
+  // 100 and says '+3' and then goes away and i see 103 ... for big ones ...
+  // confetti, or the text gets big and sort of wobbles"). The number steps
+  // aside for a +N bubble sized by the score -- a point just swaps, a
+  // handful bounces, ten or a named moment is big, wobbles and throws
+  // confetti -- and then the new total pops in.
+  function announce(sd, to, gained, big) {
+    const tier = tierOf(gained, big.map((b) => b.flair));
     sd.shown = to;
-    if (calm.matches) {
+    if (!tier || calm.matches) {
       sd.n.textContent = String(to);
       return;
     }
-    const gain = el("span", { class: "gain" }, `+${to - from}`);
-    gain.addEventListener("animationend", () => gain.remove());
-    sd.num.append(gain);
-    replay(sd.n, "bump");
-    const start = performance.now();
-    const ease = (t) => 1 - (1 - t) ** 3;
-    const step = (now) => {
-      const t = Math.min(1, (now - start) / 520);
-      sd.n.textContent = String(Math.round(from + (to - from) * ease(t)));
-      if (t < 1 && sd.shown === to) requestAnimationFrame(step);
-      else if (sd.shown === to) sd.n.textContent = String(to);
-    };
-    requestAnimationFrame(step);
+    const flair = big.find((b) => b.flair)?.flair;
+    sd.num.querySelector(".swap")?.remove();
+    // The number is true at once, under the bubble; the bubble only hides it.
+    sd.n.textContent = String(to);
+    const bubble = el("span", { class: `swap ${tier} ${sd.who}`, "aria-hidden": "true" },
+      flair ? el("span", { class: "swap-what" }, flair) : null,
+      el("span", { class: "swap-points" }, `+${gained}`));
+    sd.num.append(bubble);
+    sd.n.classList.add("aside");
+    if (tier === "big") confetti(sd.num, getComputedStyle(sd.root).color);
+    root.querySelector(`#tab .tab-head .${sd.who} .num`)?.classList.add("cheer");
+    bubble.addEventListener("animationend", (e) => {
+      if (e.target !== bubble) return;
+      bubble.remove();
+      sd.n.classList.remove("aside");
+      replay(sd.n, tier === "small" ? "bump" : "pop");
+    });
   }
 
-  // A big one: a banner sweeps across the bug in the scorer's colour, their
-  // number pops and a ring goes out from it. Several at once, in turn.
-  let queue = Promise.resolve();
-  function celebrate(sd, big) {
-    root.querySelector(`#tab .tab-head .${sd.who} .num`)?.classList.add("cheer");
-    if (calm.matches) return;
-    queue = queue.then(() => new Promise((done) => {
-      const banner = el("div", { class: `flourish ${sd.who}`, "aria-hidden": "true" },
-        el("span", { class: "flourish-what" }, big.flair),
-        big.points ? el("span", { class: "flourish-points" }, `+${big.points}`) : null);
-      // As the banner leaves, the number it was about pops, so the eye
-      // follows it there.
-      banner.addEventListener("animationend", (e) => {
-        if (e.target !== banner) return;
-        banner.remove();
-        replay(sd.n, "pop");
-        const ring = el("span", { class: "ring" });
-        ring.addEventListener("animationend", () => ring.remove());
-        sd.num.append(ring);
-        done();
-      });
-      $("bug").append(banner);
-    }));
+  // The same news at the table, where the eye already is: just above your
+  // hand, or just below your opponent's (Andrew: "somewhere near the middle
+  // of the table ... so if the users' eyes are trained at the middle of the
+  // screen, they'll see who won").
+  function atTable(who, node) {
+    const edge = on.anchor?.(who);
+    if (!edge || calm.matches) return;
+    node.classList.add(who === "you" ? "above" : "below");
+    Object.assign(node.style, { left: `${edge.x}px`, top: `${edge.y}px` });
+    node.addEventListener("animationend", (e) => e.target === node && node.remove());
+    $("afloat").append(node);
+  }
+  function floatScore(who, gained, big) {
+    const tier = tierOf(gained, big.map((b) => b.flair));
+    if (!tier) return;
+    const flair = big.find((b) => b.flair)?.flair;
+    const node = el("div", { class: `float-score ${tier} ${who}`, "aria-hidden": "true" },
+      flair ? el("span", { class: "swap-what" }, flair) : null, el("span", {}, `+${gained}`));
+    atTable(who, node);
+    if (tier === "big") confetti(node, who === "you" ? "#1a1b20" : "#b3261e");
+  }
+  // "Good", "not good", "equal", from whoever answered, coloured by what it
+  // means for you (Andrew: "green or blue if good, red if no good").
+  function floatAnswer(answer, delay) {
+    const node = el("div", { class: `answer ${answer.outcome}`, role: "status" }, answer.text);
+    node.style.animationDelay = `${delay}ms`;
+    atTable(answer.who, node);
   }
 
   // When the table plays a card for you (an aid), say so, and why -- a card
@@ -667,9 +718,9 @@ export function createOverlay(root, on) {
     if (!auto.length) return;
     const cards = auto.map((r) => label(r.slice(6).trim()));
     const text = auto.length > 1 && s.aids.play_winners
-      ? `Played out for you: ${cards.join(" ")} -- every trick left was yours.`
+      ? `Played out for you: ${cards.join(" ")} — every trick left was yours.`
       : `Played for you: ${cards.join(" ")}, the only card you could play.`;
-    const note = el("div", { class: "played-for-you", role: "status" }, text.replace(" -- ", " — "));
+    const note = el("div", { class: "played-for-you", role: "status" }, text);
     note.addEventListener("animationend", (e) => e.animationName === "toast-out" && note.remove());
     root.querySelector(".played-for-you")?.remove();
     $("controls").prepend(note);
@@ -682,18 +733,28 @@ export function createOverlay(root, on) {
       || now.you < bugYou.shown || now.them < bugThem.shown;
     const since = fresh ? s.events.length : seen.events;
     const news = scoredSince(s.events, s.deal, since);
+    if (!fresh) answersSince(s.events, s.deal, since).forEach((answer, i) => later(() => floatAnswer(answer, i * 900)));
     for (const sd of [bugYou, bugThem]) {
       const to = now[sd.who];
-      if (fresh || to === sd.shown) {
-        sd.shown = to;
+      if (fresh || to <= sd.shown) {
+        Object.assign(sd, { shown: to, announced: to, pending: [] });
         sd.n.textContent = String(to);
+        sd.n.classList.remove("aside");
       } else {
-        tick(sd, to);
+        sd.pending.push(...news[sd.who].big);
+        sd.shown = to;
+        later(() => {
+          if (sd.shown !== to) return; // overtaken: the next one tells it all
+          const gained = to - sd.announced;
+          const big = sd.pending;
+          Object.assign(sd, { announced: to, pending: [] });
+          announce(sd, to, gained, big);
+          floatScore(sd.who, gained, big);
+        });
       }
       sd.fill.style.width = `${Math.min(100, to)}%`;
       sd.root.classList.toggle("safe", to >= 100);
       sd.root.querySelector(".rubicon-bar").title = to >= 100 ? "Over the rubicon" : `${100 - to} short of the rubicon`;
-      if (!fresh) for (const big of news[sd.who].big) celebrate(sd, big);
     }
     period.replaceChildren(
       el("span", { class: "period-deal" }, s.phase === "cut" ? "Cut" : `Deal ${now.deal}`),

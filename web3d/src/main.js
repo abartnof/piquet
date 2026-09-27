@@ -196,6 +196,8 @@ async function main() {
 
   const overlay = createOverlay(document.getElementById("overlay"), {
     act,
+    // Where the table speaks from: the edge of a hand, on the screen.
+    anchor: (who) => director.handEdge(who),
     undo: () => act("undo"),
     aid: toggleAid,
     pref: setPref,

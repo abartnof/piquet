@@ -355,6 +355,8 @@ pub struct Holding {
     /// The cards it is made of. For carte blanche, the whole hand, which is
     /// what has to be shown to prove it.
     pub cards: Hand,
+    /// What it scores if it is good -- if the category is won with it.
+    pub score: u32,
 }
 
 /// What a hand is worth in declarations, one holding at a time.
@@ -374,6 +376,7 @@ pub fn holdings(held: Hand) -> Vec<Holding> {
             ),
             category: Category::Point,
             cards: held.in_suit(point.suit),
+            score: point.score(),
         });
     }
     for sequence in sequences(held) {
@@ -389,6 +392,7 @@ pub fn holdings(held: Hand) -> Vec<Holding> {
             ),
             category: Category::Sequences,
             cards: Hand(run),
+            score: sequence.score(),
         });
     }
     for held_set in sets(held) {
@@ -400,6 +404,7 @@ pub fn holdings(held: Hand) -> Vec<Holding> {
             text: format!("{} of {}s", held_set.name(), held_set.rank.name()),
             category: Category::Sets,
             cards: Hand(of_rank),
+            score: held_set.score(),
         });
     }
     // Guarded on non-empty: `is_carte_blanche` is vacuously true of an empty
@@ -409,6 +414,7 @@ pub fn holdings(held: Hand) -> Vec<Holding> {
             text: "carte blanche \u{2014} no court card at all".to_string(),
             category: Category::CarteBlanche,
             cards: held,
+            score: crate::rules::CARTE_BLANCHE_SCORE as u32,
         });
     }
     found
@@ -463,6 +469,39 @@ mod holdings_tests {
         for holding in &found {
             assert_eq!(holding.cards.without(held), Hand::EMPTY, "only cards held");
         }
+    }
+
+    #[test]
+    fn each_holding_says_what_it_scores_if_good() {
+        // Andrew: the worth list should say "point: sequence: set: and then
+        // showed the points you'd get (if you won each declaration)".
+        let held = Hand::parse("AS KS QS JS TS 9S AD KD QD QH 8C 7C").unwrap();
+        let score_of = |text: &str| {
+            holdings(held)
+                .into_iter()
+                .find(|h| h.text.starts_with(text))
+                .unwrap_or_else(|| panic!("no {text}"))
+                .score
+        };
+        assert_eq!(score_of("point of 6"), 6);
+        assert_eq!(score_of("sixième"), 16);
+        assert_eq!(score_of("tierce"), 3);
+        assert_eq!(score_of("trio of queens"), 3);
+        let four = Hand::parse("AS AH AD AC 7S").unwrap();
+        assert_eq!(
+            holdings(four)
+                .iter()
+                .find(|h| h.category == Category::Sets)
+                .unwrap()
+                .score,
+            14
+        );
+        let blank = Hand::parse("AS TS 9S 8S 7S AH TH 9H").unwrap();
+        let carte = holdings(blank)
+            .into_iter()
+            .find(|h| h.category == Category::CarteBlanche)
+            .unwrap();
+        assert_eq!(carte.score, 10);
     }
 
     #[test]

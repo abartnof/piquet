@@ -599,6 +599,7 @@ pub fn state(table: &Table, level: u32, error: Option<&str>) -> String {
                     ("text", text(&h.text)),
                     ("category", category(h.category)),
                     ("cards", hand(h.cards)),
+                    ("score", h.score.to_string()),
                 ])
             })),
         ),

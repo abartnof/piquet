@@ -432,6 +432,27 @@ body {
   letter-spacing: 0.04em;
   color: var(--md-sys-color-on-surface-variant);
 }
+/* By category: its name, what it scores if good, and the holdings that
+   make it up. */
+.worth-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 10px;
+}
+.worth-grid md-chip-set {
+  grid-column: 1 / -1;
+  margin-bottom: 6px;
+}
+.worth-name {
+  font-weight: 650;
+}
+.worth-total {
+  font-size: 18px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
 md-assist-chip {
   --md-assist-chip-container-shape: 10px;
 }
@@ -469,7 +490,7 @@ md-assist-chip.pinned {
   align-items: end;
   gap: 2px 16px;
   padding: 8px 16px 10px;
-  overflow: hidden;
+  overflow: visible;
   background: var(--md-sys-color-surface-container-lowest);
 }
 .side {
@@ -598,163 +619,300 @@ md-assist-chip.pinned {
     transform: scale(1.16);
   }
 }
-/* The +N is a bubble of its own, level with the number and beside it on
-   the inner side, where there is nothing to cover (Andrew: "that should be
-   a text bubble, not text colliding with other text"). */
-.gain {
-  position: absolute;
-  top: 50%;
-  padding: 2px 8px 3px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.2;
-  color: #fff;
-  white-space: nowrap;
-  pointer-events: none;
-  box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
-  animation: gain 1300ms var(--ease-in) both;
+/* A score, as a broadcast shows one: the number steps aside, a +N bubble
+   takes its place -- a point swaps, a handful bounces, a big one wobbles
+   and throws confetti -- and the new total pops in (overlay.js, announce). */
+.n.aside {
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 120ms var(--ease-out), transform 160ms var(--ease-out);
 }
-.side.you .gain {
-  left: calc(100% + 8px);
+/* Anchored on the number's outer edge, so a big one grows toward the middle
+   of the bug and never off the screen. */
+.swap {
+  --tx: 0%;
+  position: absolute;
+  left: 0;
+  top: 50%;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  padding: 2px 12px 4px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 850;
+  line-height: 1.05;
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
+}
+.swap.you,
+.float-score.you {
   background: var(--talk-you);
 }
-.side.them .gain {
-  right: calc(100% + 8px);
+.swap.them,
+.float-score.them {
   background: var(--talk-them);
 }
-@keyframes gain {
+.swap.you {
+  transform-origin: left center;
+}
+.swap.them {
+  left: auto;
+  right: 0;
+  transform-origin: right center;
+}
+.swap.small {
+  font-size: 24px;
+  animation: swap-small 900ms var(--ease) both;
+}
+.swap.medium {
+  font-size: 30px;
+  animation: swap-medium 1300ms var(--ease) both;
+}
+.swap.big {
+  font-size: 34px;
+  padding: 6px 16px 8px;
+  border-radius: 20px;
+  animation: swap-big 1900ms var(--ease) both;
+}
+.swap-what {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-indent: 0.1em; /* the spacing trails the last letter: centre it true */
+  text-transform: uppercase;
+}
+@keyframes swap-small {
   0% {
     opacity: 0;
-    transform: translateY(-50%) scale(0.5);
+    transform: translate(var(--tx), -50%) scale(0.4);
   }
-  16% {
+  20% {
     opacity: 1;
-    transform: translateY(-50%) scale(1.08);
+    transform: translate(var(--tx), -50%) scale(1.08);
   }
-  26% {
-    transform: translateY(-50%) scale(1);
-  }
+  30%,
   72% {
-    opacity: 1;
-    transform: translateY(-50%);
+    transform: translate(var(--tx), -50%) scale(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(-50%) scale(0.9);
+    transform: translate(var(--tx), -50%) scale(0.6);
+  }
+}
+@keyframes swap-medium {
+  0% {
+    opacity: 0;
+    transform: translate(var(--tx), -50%) scale(0.4) rotate(0);
+  }
+  14% {
+    opacity: 1;
+    transform: translate(var(--tx), -50%) scale(1.2) rotate(-7deg);
+  }
+  26% {
+    transform: translate(var(--tx), -50%) scale(1.05) rotate(6deg);
+  }
+  38% {
+    transform: translate(var(--tx), -50%) scale(1.1) rotate(-4deg);
+  }
+  50%,
+  78% {
+    transform: translate(var(--tx), -50%) scale(1.08) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), -50%) scale(0.6);
+  }
+}
+@keyframes swap-big {
+  0% {
+    opacity: 0;
+    transform: translate(var(--tx), -50%) scale(0.3) rotate(0);
+  }
+  10% {
+    opacity: 1;
+    transform: translate(var(--tx), -50%) scale(1.45) rotate(-9deg);
+  }
+  20% {
+    transform: translate(var(--tx), -50%) scale(1.25) rotate(8deg);
+  }
+  30% {
+    transform: translate(var(--tx), -50%) scale(1.35) rotate(-6deg);
+  }
+  40% {
+    transform: translate(var(--tx), -50%) scale(1.28) rotate(4deg);
+  }
+  50% {
+    transform: translate(var(--tx), -50%) scale(1.3) rotate(-2deg);
+  }
+  60%,
+  84% {
+    transform: translate(var(--tx), -50%) scale(1.3) rotate(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--tx), -50%) scale(0.7);
   }
 }
 
-/* A big one: the scorer's number pops and a ring goes out from it ... */
-.n.pop {
-  animation: pop 1000ms var(--ease);
-  animation: pop 1000ms var(--spring);
-}
-@keyframes pop {
-  0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.55);
-  }
-}
-.ring {
+/* Confetti: flakes flung out from where the score is, falling as they fade. */
+.confetti {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0 -32px;
-  border-radius: 50%;
-  border: 3px solid currentColor;
-  pointer-events: none;
-  animation: ring 900ms var(--ease-in) both;
-}
-@keyframes ring {
-  from {
-    opacity: 0.8;
-    transform: scale(0.4);
-  }
-  to {
-    opacity: 0;
-    transform: scale(2.4);
-  }
-}
-/* ... and a banner sweeps across the bug in the scorer's colour. */
-.flourish {
-  position: absolute;
-  inset: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  border-radius: 14px;
-  color: #fff;
-  overflow: hidden;
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
-  animation: flourish 2300ms var(--ease) both;
+  width: 0;
+  height: 0;
+  z-index: 4;
   pointer-events: none;
 }
-.flourish.them {
-  background: var(--talk-them);
-}
-.flourish.you {
-  background: var(--talk-you);
-}
-.flourish-what {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.flourish-points {
-  font-size: 34px;
-  font-weight: 850;
-  font-variant-numeric: tabular-nums;
-  animation: flourish-points 700ms var(--ease) 180ms both;
-  animation: flourish-points 700ms var(--spring) 180ms both;
-}
-.flourish::after {
-  content: "";
+.confetti i {
   position: absolute;
-  inset: -20% auto -20% -40%;
-  width: 30%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
-  transform: skewX(-20deg);
-  animation: sheen 900ms var(--ease-in) 320ms both;
+  width: 7px;
+  height: 11px;
+  margin: -5px 0 0 -3px;
+  border-radius: 2px;
+  animation: flake 1300ms cubic-bezier(0.2, 0.7, 0.4, 1) both;
 }
-@keyframes flourish {
+.confetti i:nth-child(3n) {
+  width: 9px;
+  height: 6px;
+}
+@keyframes flake {
   0% {
-    opacity: 0;
-    transform: translateX(-40%) scale(0.92);
-  }
-  16% {
     opacity: 1;
-    transform: translateX(2%) scale(1.03);
+    transform: translate(0, 0) rotate(0);
   }
-  24% {
-    transform: none;
-  }
-  82% {
+  70% {
     opacity: 1;
-    transform: none;
   }
   100% {
     opacity: 0;
-    transform: translateY(10px) scale(0.94);
+    transform: translate(var(--dx), calc(var(--dy) + 60px)) rotate(var(--spin));
   }
 }
-@keyframes flourish-points {
-  from {
-    transform: scale(0.4);
+
+/* At the table: the same +N just above your hand or just below your
+   opponent's, and the answers to a call, from whoever gave them. */
+.afloat {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+.afloat > * {
+  position: fixed;
+  pointer-events: none;
+}
+.float-score {
+  display: grid;
+  justify-items: center;
+  padding: 3px 14px 5px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 850;
+  font-size: 22px;
+  line-height: 1.05;
+  text-align: center;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
+}
+.float-score.medium {
+  font-size: 28px;
+}
+.float-score.big {
+  font-size: 34px;
+  border-radius: 20px;
+  padding: 6px 18px 8px;
+}
+.above {
+  animation: rise-above 1500ms var(--ease) both;
+}
+.below {
+  animation: rise-below 1500ms var(--ease) both;
+}
+.float-score.big.above,
+.float-score.big.below {
+  animation-duration: 2100ms;
+}
+/* Above your hand the bubble's foot is 14 px over the cards; below theirs,
+   its head 14 px under them -- never over a card. */
+@keyframes rise-above {
+  0% {
     opacity: 0;
+    transform: translate(-50%, calc(-100% - 6px)) scale(0.5);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, calc(-100% - 14px)) scale(1.1);
+  }
+  28%,
+  76% {
+    transform: translate(-50%, calc(-100% - 14px)) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 30px)) scale(0.95);
   }
 }
-@keyframes sheen {
-  to {
-    left: 120%;
+@keyframes rise-below {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.5);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, 14px) scale(1.1);
+  }
+  28%,
+  76% {
+    transform: translate(-50%, 14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 30px) scale(0.95);
   }
 }
+.answer {
+  padding: 6px 16px 8px;
+  border-radius: 18px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
+  animation-duration: 1900ms;
+}
+.answer.above,
+.answer.below {
+  animation-duration: 1900ms;
+}
+.answer.won {
+  background: #2e7d32;
+}
+.answer.lost {
+  background: #b3261e;
+}
+.answer.equal {
+  background: #435e91;
+}
+/* A speech bubble's tail, toward whoever said it. */
+.answer::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+.answer.above::after {
+  bottom: -5px;
+}
+.answer.below::after {
+  top: -5px;
+}
+
 .num.cheer {
   display: inline-block;
   animation: cheer 900ms var(--ease);
@@ -1086,6 +1244,8 @@ kbd {
   .num.cheer,
   .n.bump,
   .n.pop,
+  .swap,
+  .confetti,
   .caption.slide,
   .asked .arriving,
   .popping {

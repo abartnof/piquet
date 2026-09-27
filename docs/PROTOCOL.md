@@ -112,10 +112,12 @@ if one names a card the opponent is still holding.
                                  // reaching 100; null in the first deal
 
   "hand": ["AS", "KS", "9H"],    // yours, spades-hearts-diamonds-clubs, high first
-  "worth": [                     // what it could call, holding by holding
+  "worth": [                     // what it could call, holding by holding,
+                                 // and what each scores if it is good
     { "text": "point of 4 (40) in spades", "category": "point",
-      "cards": ["AS", "KS", "9S", "7S"] },
-    { "text": "trio of aces", "category": "sets", "cards": ["AS", "AH", "AC"] } ],
+      "cards": ["AS", "KS", "9S", "7S"], "score": 4 },
+    { "text": "trio of aces", "category": "sets", "cards": ["AS", "AH", "AC"],
+      "score": 3 } ],
   "discards": ["7C"],            // yours
   "talon_seen": ["8D"],          // talon cards you have legitimately looked at
   "talon_remaining": 3,
