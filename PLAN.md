@@ -255,10 +255,9 @@ installed in P1 (`sudo` works). The Google Cloud billing check is still
 blocked — the VM's gcloud has no billing scope, and `gcloud auth login` needs
 an interactive terminal (Andrew was going to run it over `ssh piquet-dev`).
 
-**27 September closed with `sudo shutdown -h` from inside the VM** — the
-first time that path has been used (`docs/VM.md` calls it expected but
-untested). Next session: check it left the instance `TERMINATED`, and
-record the answer in `docs/VM.md`.
+**Stopping from inside works.** 27 September closed with `sudo shutdown -h`
+on the VM; the boot log shows a clean halt and a fresh boot thirteen hours
+later, so it reached `TERMINATED` (`docs/VM.md`).
 
 
 ### This session, 26 September 2026 — what landed

@@ -50,9 +50,13 @@ You can do the same thing without the wrapper:
 Both have to be run **from the laptop**. The VM cannot stop itself: its
 service account was created without the compute API scope, so `gcloud` there
 fails with *Request had insufficient authentication scopes*. From inside the
-VM the equivalent is `sudo shutdown -h now`, which should drop the instance to
-`TERMINATED` and end the compute charge — that one is expected behaviour
-rather than something tested on this machine.
+VM the equivalent is `sudo shutdown -h now`, which drops the instance to
+`TERMINATED` and ends the compute charge. **Tested 27 September 2026:** the
+boot log (`last -x`, `journalctl --list-boots`) shows a clean shutdown at
+05:11 UTC and a fresh boot at 18:14, thirteen hours later, when the instance
+was next started. `start` only boots an instance that is stopped, so the halt
+did take it to `TERMINATED` rather than leaving a running machine with its
+guest powered off.
 
 Give it 30–60 seconds after `start` before SSH answers. The instance is
 booting while `gcloud` has already returned.
