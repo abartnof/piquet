@@ -871,6 +871,18 @@ throughout.
         question on the table's colour: the candidates "paper / sky / sage"
         are gone.
 
+- [x] **P13 — The voice (27 September, evening).** Everything a player
+      says at the table, said aloud, as Cavendish (1885) has it spoken: the
+      exchange's announcements, the point by length and value, sequences
+      and sets called in full, younger's answers, each player counting
+      aloud, pique, repique, capot, the cards, and a few niceties.
+      `docs/VOICE.md` is the plan and the record (pronunciation with its
+      sources, the inventory, the voices and why, the sizes). Two public-
+      domain voices, Cori and Norman, 241 clips each as Ogg Opus; the page
+      is 4.96 MB. `speech.js` (events -> clips, node-tested) and `voice.js`
+      (playback); Settings: voice, your opponent's voice, your own calls.
+      The browser test proves the page speaks.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
