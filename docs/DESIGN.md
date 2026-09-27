@@ -1002,6 +1002,49 @@ that run predates the split, so where they came from is unknown.
 Two things next: compare variants deal by deal rather than by totals (each ±
 above carries card luck every row shares), then judge on whole parties.
 
+**Paired, and the tail read again (27 September 2026, third session).**
+`settle --out` now records every pair with its pack, `--compare` pairs two
+runs on identical deals, and `--show` replays one pair with the settling
+search's belief about every card beside its value with both hands on the
+table (`SolverAgent::values_in`). Records live in `measurements/settle/`.
+
+- **Ninety worlds against thirty, paired: +0.01 ± 0.79 a deal.** The play
+  differs in 26 pairs of 720 and the settlement in 16. The error is a fifth
+  of either row's own, which is what pairing buys. The reason so little
+  moves: over 2,388 searched decisions, **85% had thirty or fewer consistent
+  opponent hands** (64% with eight cards in hand, median 15; 96% with four).
+  The thirty-world sample is usually the whole set, so a thin sample is
+  ruled out as the cause of anything.
+- **The tail is not one-sided.** Split by size, the same run reads: 11 big
+  wins (+4,444), 255 small wins (+1,776), 20 small losses (−198), 13 big
+  losses (−6,956). A big result is a rubicon flip, ~400 points, and **flips
+  go both ways, 11 against 13** — a coin toss. What settling does
+  *reliably* is the small stuff: about +2.2 a deal, largely by knowing that a
+  rubiconed loser pays the sum, so that a side sure to win and sure to keep
+  the other under a hundred loses nothing by letting them score. The
+  headline −1.30 is the flips' noise laid over that.
+- **Every big loss is a belief error, not a bug.** Replaying all thirteen,
+  each contains a settling choice that was worse in truth than another card
+  it held, and in every case the true values split exactly on whether a side
+  reaches a hundred. In standing 2, deal 18, elder led K♥ believing it worth
+  +310 over his worlds; with her hand in view it was worth +131, where four
+  other cards held her to ninety-nine for +330.
+
+So the settling search does what it was built to do wherever the position
+is legible, and at the rubicon itself — where one card decides a flip — its
+beliefs are no better than the flat search's, so the flips fall either way.
+A search aimed at the threshold ought to win more flips than it loses. That
+it does not is the imperfect information: a **uniform prior over consistent
+hands**, measured to be miscalibrated (aces are hers far more often than it
+believes, sevens far less), and **strategy fusion**, the perfect-information
+search's assumption that it will see through the cards later — both of which
+a step-shaped objective punishes harder than a smooth one.
+
+Bounding the flips directly would take about ten times the deals, some three
+and a half hours of the dev VM. The cheaper lever acts on the flips
+themselves: give the search a calibrated prior, and see whether the
+flips stop being a coin toss.
+
 ### 6.4b Where the uncertainty lives, and what to do about it
 
 Piquet is several different decision problems wearing one coat, and they do not

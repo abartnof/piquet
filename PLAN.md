@@ -217,6 +217,12 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
   named in a live region (`4082ac7`), every key listed in Settings
   (`2ea37ed`); and tablets, whose score tab had been covering the top bar's
   settings button (`540fd46`).
+- **TODO 1, paired and re-read (27 September, third session).** `settle`
+  records pairs, compares runs deal by deal, and replays one with belief
+  beside truth (`0f899e1`, `f6e3bef`; `SolverAgent::estimates` and
+  `values_in`, `fea4e07`). 90 worlds vs 30: +0.01 ± 0.79, because 85% of
+  searches are already exhaustive at 30. Rubicon flips go 11–13, a coin
+  toss; the steady gain is +2.2 a deal. Next: a calibrated world prior.
 - **TODO 1, both suspects measured (27 September).** On the same 720
   mirrored last deals: today's baseline **257–49–414, net −3.40 ± 3.57**
   (reproduced exactly by a second build; the old 248/46/426 predates the
@@ -577,13 +583,32 @@ Ordered by how much they are needed, not by size.
    paired. To reproduce: `cargo build --release`, then
    `target/release/settle 120 30` — the current search, live pique included.
 
+   **Paired, and the tail read again (27 September, third session).**
+   `settle --out FILE` records every pair with its pack; `--compare A B`
+   pairs two runs on identical deals; `--show FILE STANDING DEAL` replays
+   one pair with belief beside truth at every card. Records are in
+   `measurements/settle/`; `docs/DESIGN.md` §6.4a has the reasoning.
+
+   - **90 worlds vs 30, paired: +0.01 ± 0.79** — the play differs in 26 of
+     720 pairs. Because **85% of searched decisions have ≤30 consistent
+     worlds** (64% at eight cards, 96% at four): the sample is already
+     the whole set. World count is not a lever.
+   - **Flips go both ways, 11 big wins against 13 big losses** (~400
+     each). The steady gain is small wins: 255 against 20, **about +2.2 a
+     deal**. The −1.30 net is flip noise over that.
+   - **All 13 big losses are belief errors, not bugs** — a card believed
+     best over the worlds and worse in truth, the truth splitting exactly on
+     who reaches a hundred.
+
    **Next, in order:**
 
-   - **Pair the comparison.** `settle` prints totals only, and each ± above
-     carries the card luck that every row shares, so it overstates the noise
-     *between* rows. Have it print each deal's settlement, or run two
-     variants side by side, and bound the difference itself. A run is ~25
-     minutes on the dev VM.
+   - **A calibrated world prior**, the lever that acts on the flips. Fit a
+     per-rank weight on consistent worlds (a conditional logit on the true
+     hand, fitted on deals the test does not use), give `SolverAgent` an
+     optional prior, and pair settling-with-prior against today's `w30`.
+     If the flips stop being a coin toss, that is the finding. Fitted to
+     rung-4 discards, so it is a diagnostic first; whether it is fair
+     against a human is a question for Andrew before it ships.
    - **Then judge on whole parties**, which is what this TODO has always
      said is the real test: `bin/parties` duels rungs today and needs a
      settling-against-flat mode on `tournament::partie_duel`. Time a small
