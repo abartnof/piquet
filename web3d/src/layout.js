@@ -201,14 +201,16 @@ export function layout(
   slots.push(...pile("their-discards", Array(state.their_discards).fill(null), { x: td.x, z: td.z }));
 
   // The trick on the table: each card in front of whoever played it, yours
-  // upright to you and theirs upright to them.
+  // upright to you and theirs upright to them -- the one that follows lying
+  // a step above the one led, so if their corners meet it is on top (Andrew:
+  // "the cards in the tricks are still clipping each other").
   if (state.trick) {
     const { leader, led, followed } = state.trick;
     const played = [[leader, led], [leader === "you" ? "them" : "you", followed]].filter(([, c]) => c);
     played.forEach(([who, code], i) => {
       const at = who === "you" ? zones.yourPlay : zones.theirPlay;
       const yaw = (who === "you" ? 0 : Math.PI) + jitter(code, 4);
-      slots.push({ zone: "trick", index: i, code, pose: lying({ x: at.x, z: at.z, height: REST, yaw }) });
+      slots.push({ zone: "trick", index: i, code, pose: lying({ x: at.x, z: at.z, height: REST + i * STEP, yaw }) });
     });
   }
 

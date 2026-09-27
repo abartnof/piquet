@@ -183,7 +183,9 @@ const faceNormal = (p) => new Vector3(0, 0, 1).applyQuaternion(p.quaternion);
 function outlineOf(p) {
   const c = cardCorners(p).filter((_, i) => i % 2 === 0);
   const centre = c.reduce((a, q) => a.add(q), new Vector3()).multiplyScalar(0.25);
-  return [c[0], c[1], c[3], c[2]].map((q) => q.clone().sub(centre).multiplyScalar(0.98).add(centre)).map((q) => [q.x, q.z]);
+  // Shrunk by a hair only, so cards that merely touch are apart but a corner
+  // a millimetre over another is not.
+  return [c[0], c[1], c[3], c[2]].map((q) => q.clone().sub(centre).multiplyScalar(0.997).add(centre)).map((q) => [q.x, q.z]);
 }
 function apart(a, b) {
   for (const poly of [a, b]) {
@@ -258,7 +260,6 @@ test("cards lying over one another never share the table, at any moment of any m
       for (let a = 0; a < lying.length; a++) {
         for (let b = a + 1; b < lying.length; b++) {
           const [pa, pb] = [lying[a].p, lying[b].p];
-          if (!byMesh.has(lying[a].id) && !byMesh.has(lying[b].id)) continue; // both at rest: layout's own test
           if (pa.position.distanceTo(pb.position) > 11 || apart(outlineOf(pa), outlineOf(pb))) continue;
           const gap = gapBetween(pa, pb);
           if (gap < CARD.thickness * 0.9) clashes.push(`step ${i} (${states[i - 1].prompt.kind}) t=${Math.round(t)}: cards ${lying[a].id} and ${lying[b].id} ${gap.toFixed(3)} apart`);

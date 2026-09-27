@@ -92,9 +92,9 @@ test("the answers given since a moment: who said it, and what it means for you",
     ev("decided", { category: "sets", winner: null }),
   ];
   assert.deepEqual(answersSince(events, 1, 0), [
-    { who: "them", text: "Good.", outcome: "won", category: "point" },
-    { who: "them", text: "Not good.", outcome: "lost", category: "sequences" },
-    { who: "them", text: "Equal.", outcome: "equal", category: "sets" },
+    { who: "them", text: "Good.", outcome: "won", tone: "good", category: "point" },
+    { who: "them", text: "Not good.", outcome: "lost", tone: "not-good", category: "sequences" },
+    { who: "them", text: "Equal.", outcome: "equal", tone: "equal", category: "sets" },
   ]);
   assert.deepEqual(answersSince(events, 1, 5).map((a) => a.text), ["Equal."], "only what is new");
 
@@ -104,7 +104,9 @@ test("the answers given since a moment: who said it, and what it means for you",
     ev("called", { who: "them", said: "quart", category: "sequences" }),
     ev("decided", { category: "sequences", winner: "them" }),
   ];
-  assert.deepEqual(answersSince(younger, 1, 0), [{ who: "you", text: "Good.", outcome: "lost", category: "sequences" }]);
+  // The colour goes with the word (Andrew: "good=green, not good=red"),
+  // even where "good" is your concession.
+  assert.deepEqual(answersSince(younger, 1, 0), [{ who: "you", text: "Good.", outcome: "lost", tone: "good", category: "sequences" }]);
 });
 
 test("a call of nothing is answered by nobody, so no bubble", () => {

@@ -214,3 +214,24 @@ test("the same state always lays out the same way", () => {
     });
   }
 });
+
+// Andrew: "the cards in the tricks are still clipping each other." Each
+// card of a trick turns a little, as placed by a hand, so their corners may
+// meet: the one played second lies on the first, never at its level.
+test("the card that follows lies on the card led, a card's thickness above it", () => {
+  // A finished trick is taken at once, so both its cards lie on the table
+  // only between two states; build that moment from each trick you answer.
+  let checked = 0;
+  for (const led of states) {
+    if (!led.trick || led.trick.leader !== "them" || !led.hand.length) continue;
+    const s = { ...led, hand: led.hand.slice(1), trick: { ...led.trick, followed: led.hand[0] } };
+    checked += 1;
+    for (const zones of [ZONES, ZONES_PORTRAIT]) {
+      const trick = layout(s, { zones }).filter((x) => x.zone === "trick").sort((a, b) => a.index - b.index);
+      assert.equal(trick.length, 2);
+      const [led, followed] = trick.map((x) => x.pose.position.y);
+      assert.ok(followed - led >= CARD.thickness - 1e-9, `followed ${followed} over led ${led}`);
+    }
+  }
+  assert.ok(checked > 20, `only ${checked} tricks checked`);
+});

@@ -886,10 +886,10 @@ md-assist-chip.pinned {
 .answer.below {
   animation-duration: 1900ms;
 }
-.answer.won {
+.answer.good {
   background: #2e7d32;
 }
-.answer.lost {
+.answer.not-good {
   background: #b3261e;
 }
 .answer.equal {

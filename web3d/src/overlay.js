@@ -699,10 +699,10 @@ export function createOverlay(root, on) {
     atTable(who, node);
     if (tier === "big") confetti(node, who === "you" ? "#1a1b20" : "#b3261e");
   }
-  // "Good", "not good", "equal", from whoever answered, coloured by what it
-  // means for you (Andrew: "green or blue if good, red if no good").
+  // "Good", "not good", "equal", from whoever answered, coloured by the word
+  // (Andrew: "good=green, not good=red").
   function floatAnswer(answer, delay) {
-    const node = el("div", { class: `answer ${answer.outcome}`, role: "status" }, answer.text);
+    const node = el("div", { class: `answer ${answer.tone}`, role: "status" }, answer.text);
     node.style.animationDelay = `${delay}ms`;
     atTable(answer.who, node);
   }
