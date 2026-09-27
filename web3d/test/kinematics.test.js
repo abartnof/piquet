@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { Quaternion, Vector3 } from "three";
 import {
   beforeFlip,
+  bob,
   cardCorners,
   chain,
   fan,
@@ -16,7 +17,9 @@ import {
   pickUp,
   pose,
   pull,
+  rise,
   slide,
+  toss,
   still,
   transfer,
 } from "../src/kinematics.js";
@@ -267,16 +270,99 @@ test("a card played is tugged sharply out of the hand along its own length, then
   assert.ok(at(0.1).distanceTo(held.position) > 0.5 * CARD.height * 0.6, "a tug, not a slow start");
   assert.ok(sameTurn(path(0.08).quaternion, held.quaternion, 1e-3), "held at the hand's angle while it clears");
 
-  // Then carried and set down: never stopping dead on the way, ending flat
-  // on its spot with a vertical final approach.
-  for (let i = 5; i < 90; i++) {
+  // Then tossed: never stopping dead on the way, landing flat on its spot.
+  for (let i = 5; i < 95; i++) {
     const speed = at((i + 1) / 100).distanceTo(at(i / 100)) * 100;
     assert.ok(speed > 2, `hangs at t=${i / 100}: ${speed.toFixed(2)} cm per unit time`);
   }
   assert.ok(near(at(1), target.position));
   assert.ok(sameTurn(path(1).quaternion, target.quaternion));
-  const p90 = at(0.9);
-  const p100 = at(1);
-  assert.ok(Math.hypot(p90.x - p100.x, p90.z - p100.z) < 0.2 * (p90.y - p100.y), "drops onto the spot, not skidding");
   for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
+});
+
+// Andrew: "moving cards should start with strong jerks, then end with
+// gravity-like acceleration. that means a lot of motion-easing."
+const speedAt = (path, t, dt = 1e-4) => path(Math.min(1, t + dt)).position.distanceTo(path(Math.max(0, t - dt)).position) / (Math.min(1, t + dt) - Math.max(0, t - dt));
+const fallAt = (path, t, dt = 1e-4) => -(path(Math.min(1, t + dt)).position.y - path(Math.max(0, t - dt)).position.y) / (Math.min(1, t + dt) - Math.max(0, t - dt));
+
+test("a card tossed onto the table leaves at speed, falls faster and faster, and lands flat", () => {
+  const held = pose([5, 16, 26], new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -15 * DEG));
+  const spot = lying({ x: 0.6, z: -4, height: 0.02, yaw: 4 * DEG });
+  const path = toss(held, spot);
+  assert.ok(near(path(0).position, held.position) && sameTurn(path(0).quaternion, held.quaternion));
+  assert.ok(near(path(1).position, spot.position) && sameTurn(path(1).quaternion, spot.quaternion));
+
+  const length = T.slice(1).reduce((sum, t, i) => sum + path(t).position.distanceTo(path(T[i]).position), 0);
+  assert.ok(speedAt(path, 0.001) > length, "a strong jerk: it leaves faster than its average");
+
+  // From the top of its arc to the table, gravity: the fall only quickens.
+  const top = T.reduce((best, t) => (path(t).position.y > path(best).position.y ? t : best), 0);
+  const landing = T.find((t) => t > top && path(t).position.y <= spot.position.y + 1e-6);
+  assert.ok(landing !== undefined && landing < 1, "it lands before the end, then slides");
+  let last = 0;
+  for (let t = top + 0.01; t < landing - 0.005; t += 0.01) {
+    const fall = fallAt(path, t);
+    assert.ok(fall > last, `the fall slowed at t=${t.toFixed(2)}`);
+    last = fall;
+  }
+  assert.ok(sameTurn(path(landing - 0.01).quaternion, spot.quaternion, 1e-6), "flat before it touches down");
+
+  // Then a short slide, flat on the table, to a dead stop.
+  for (let t = landing; t <= 1; t += 0.01) {
+    assert.ok(Math.abs(path(t).position.y - spot.position.y) < 1e-6, "on the table");
+    assert.ok(sameTurn(path(t).quaternion, spot.quaternion, 1e-6), "flat");
+  }
+  const slid = path(landing).position.distanceTo(spot.position);
+  assert.ok(slid > 0.3 && slid < 4, `slides ${slid.toFixed(2)} cm`);
+  assert.ok(speedAt(path, 1 - 1e-3) < 0.05 * length, "and stops dead");
+  for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
+});
+
+test("a toss clears what lies between, and its horizontal speed never jumps", () => {
+  const from = lying({ x: -7, z: 0, height: 0.2, faceUp: false });
+  const to = lying({ x: 5, z: -17, height: 0.02, faceUp: false });
+  const path = toss(from, to);
+  const highest = Math.max(...T.map((t) => path(t).position.y));
+  assert.ok(highest >= Math.max(from.position.y, to.position.y) + 3 - 1e-9, "at least three centimetres of arc");
+  const flatSpeed = (t) => {
+    const [p, q] = [path(t - 1e-4).position, path(t + 1e-4).position];
+    return Math.hypot(q.x - p.x, q.z - p.z) / 2e-4;
+  };
+  for (let t = 0.02; t < 0.98; t += 0.01) {
+    assert.ok(Math.abs(flatSpeed(t + 0.01) - flatSpeed(t)) < 0.08 * flatSpeed(0.02), `a jump in speed near t=${t.toFixed(2)}`);
+  }
+});
+
+test("a card taken up into a hand is flicked up at speed and slows under gravity into the grip", () => {
+  const onTable = lying({ x: -15, z: -9, height: 0.1, faceUp: false });
+  const held = pose([3, 16, 26], new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -15 * DEG));
+  const path = rise(onTable, held);
+  assert.ok(near(path(0).position, onTable.position) && near(path(1).position, held.position));
+  assert.ok(sameTurn(path(1).quaternion, held.quaternion));
+  assert.ok(speedAt(path, 0.001) > speedAt(path, 0.5), "it leaves fast");
+  let last = Infinity;
+  for (let t = 0.05; t < 1; t += 0.05) {
+    const climb = -fallAt(path, t);
+    assert.ok(climb < last, `the climb quickened at t=${t.toFixed(2)}`);
+    last = climb;
+  }
+  assert.ok(speedAt(path, 1 - 1e-3) < 0.1 * speedAt(path, 0.001), "and comes to rest in the hand");
+  for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
+});
+
+// Andrew: when your opponent declares, "the cards should rise from the deck a
+// bit". A held card flicked up out of the fan, a moment there, and back.
+test("a card bobs up out of the hand along its own length, and falls back into place", () => {
+  const held = pose([2, 12, -22], new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI));
+  const path = bob(held, 2.5);
+  assert.ok(near(path(0).position, held.position) && near(path(1).position, held.position));
+  const highest = T.reduce((best, t) => Math.max(best, path(t).position.clone().sub(held.position).dot(top(held))), 0);
+  assert.ok(Math.abs(highest - 2.5) < 1e-6, `rises ${highest}`);
+  for (const t of T) {
+    const off = path(t).position.clone().sub(held.position);
+    assert.ok(off.clone().sub(top(held).multiplyScalar(off.dot(top(held)))).length() < 1e-9, "only along its length");
+    assert.ok(sameTurn(path(t).quaternion, held.quaternion), "without turning");
+  }
+  assert.ok(speedAt(path, 0.001) > speedAt(path, 0.2), "flicked up");
+  assert.ok(speedAt(path, 0.97) > speedAt(path, 0.8), "and falls back faster and faster");
 });

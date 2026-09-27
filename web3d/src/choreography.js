@@ -24,11 +24,15 @@
 import { Vector3 } from "three";
 import {
   beforeFlip,
+  bob,
   chain,
+  fan,
   flip,
   flipPile,
-  layDown,
   pull,
+  rise,
+  still,
+  toss,
   lying,
   pickUp,
   slide,
@@ -41,13 +45,14 @@ import { CARD, ZONES } from "./units.js";
 export const TIMING = Object.freeze({
   play: 540, // the tug out of the hand, then the carry (kinematics.pull)
   think: 320, // your opponent's pause before answering a card
+  call: 620, // their cards bob up as they call a holding
   read: 900, // a finished trick stays a moment before it is taken
   push: 520,
   discard: 460,
   draw: 380,
   stagger: 90, // between cards moved together
   resort: 260,
-  cutShow: 700,
+  cutShow: 2400, // peeled out, flicked up and looked at, tossed face up
   cutRead: 1600,
   flip: 480,
   sweep: 480,
@@ -67,6 +72,14 @@ const FACE_UP = new Set(["trick", "your-tricks", "their-tricks", "cut"]);
 const ROWS = new Set(["your-tricks", "their-tricks"]);
 
 // A card lying on the table (or on what lies on it), rather than in a hand.
+// A card held up to be looked at, over its cutter's side of the table:
+// facing them and leaning back, as a held hand does.
+function lookingAt(spot, side) {
+  const centre = new Vector3(spot.x, 11, spot.z + side * 7);
+  const facing = centre.clone().add(new Vector3(0, 0, 300 * side));
+  return fan({ count: 1, centre, facing, tilt: (15 * Math.PI) / 180 })[0];
+}
+
 function onTable(pose) {
   const n = new Vector3(0, 0, 1).applyQuaternion(pose.quaternion);
   return Math.abs(n.y) > 0.9 && pose.position.y < 2;
@@ -93,6 +106,16 @@ function turnToward(faceUpPose, goal) {
   const direction = top.z > 0 ? acrossOf(faceUpPose) : top;
   const toGoal = goal.clone().sub(faceUpPose.position).setY(0);
   return toGoal.dot(direction) >= 0 ? direction : direction.negate();
+}
+
+// How many cards a call holds: "point of 5" five, "quart" four, "trio" three.
+const HOLDS = { tierce: 3, quart: 4, quint: 5, sixième: 6, septième: 7, huitième: 8, trio: 3, quatorze: 4 };
+export function cardsNamed(said) {
+  const text = String(said).toLowerCase();
+  const point = text.match(/point of (\d+)/);
+  if (point) return Number(point[1]);
+  const word = Object.keys(HOLDS).find((w) => text.includes(w));
+  return word ? HOLDS[word] : 0;
 }
 
 // The meshes placed straight onto a layout, the first time a state is seen.
@@ -181,8 +204,13 @@ export function stagesBetween(prev, next) {
         s = { ...s, trick: null, tricks_played: [...s.tricks_played, { ...s.trick, winner: e.who }] };
         stages.push({ kind: "trick", state: s, who: e.who });
         break;
+      case "called":
+        // Your opponent's hand stirs as they call (Andrew): as many of its
+        // cards as the call holds rise a little and fall back.
+        if (e.who === "them" && cardsNamed(e.said) > 0) stages.push({ kind: "declare", state: s, count: cardsNamed(e.said) });
+        break;
       default:
-        break; // declarations, scores and the rest move no cards
+        break; // scores and the rest move no cards
     }
   }
   return stages;
@@ -282,7 +310,7 @@ class Plan {
       const moved = !mesh.pose.position.equals(slot.pose.position) || !mesh.pose.quaternion.equals(slot.pose.quaternion);
       const reveal = mesh.code !== slot.code ? (slot.code ? { code: slot.code } : { code: null, atEnd: true }) : undefined;
       if (moved || reveal) {
-        const m = choose(mesh, slot) ?? { path: transfer(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
+        const m = choose(mesh, slot) ?? { path: this.carry(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
         end = Math.max(end, this.add(mesh, m.path, start + m.delay, m.duration, reveal));
       }
       next[id] = { id, zone: slot.zone, index: slot.index, code: slot.code, pose: slot.pose };
@@ -325,6 +353,17 @@ class Plan {
     return end;
   }
 
+  // How a card goes from one pose to another (Andrew: cards "should start
+  // with strong jerks, then end with gravity-like acceleration"): onto the
+  // table it is tossed; up into a hand it rises, slowing under gravity into
+  // the grip; only re-sorting within a hand or a pile keeps a guided glide.
+  carry(from, to, { within = false, clearance } = {}) {
+    if (within) return transfer(from, to, { clearance: clearance ?? 1.2 });
+    if (onTable(to)) return toss(from, to, { clearance });
+    if (onTable(from)) return rise(from, to);
+    return transfer(from, to, { clearance });
+  }
+
   // ---- the stages -------------------------------------------------------------
 
   direct(state) {
@@ -337,13 +376,29 @@ class Plan {
       if (from && !to) {
         return { path: pickUp(mesh.pose, slot.pose, { toward: TOWARD.you }), delay: lifted++ * 40, duration: TIMING.pickUp };
       }
-      if (!from && to) return { path: layDown(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
+      if (!from && to) return { path: toss(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
       return {
-        path: transfer(mesh.pose, slot.pose, { clearance: mesh.zone === slot.zone ? 1.2 : undefined }),
+        path: this.carry(mesh.pose, slot.pose, { within: mesh.zone === slot.zone }),
         delay: 0,
         duration: mesh.zone === slot.zone ? TIMING.resort : TIMING.direct,
       };
     });
+  }
+
+  // A few of your opponent's cards bob up as they call a holding: anonymous
+  // backs, a block of the fan chosen by the call so a replay looks the same,
+  // so nothing is shown that the words did not already say.
+  declare({ count }) {
+    const fan = this.now.filter((m) => m.zone === "their-hand").sort((a, b) => a.index - b.index);
+    const n = Math.min(count, fan.length);
+    if (!n) return;
+    const from = Math.floor(((jitter(`call${count}${fan.length}${this.clock}`, 1) + 1) / 2) * (fan.length - n + 1)) % (fan.length - n + 1);
+    const start = this.clock;
+    let end = start;
+    fan.slice(from, from + n).forEach((mesh, i) => {
+      end = Math.max(end, this.add(mesh, bob(mesh.pose, 2.4), start + i * 45, TIMING.call));
+    });
+    this.clock = end;
   }
 
   play({ state, who }) {
@@ -425,11 +480,27 @@ class Plan {
     for (const e of cuts) {
       const mesh = chosen[e.who];
       const slot = owner.get(e.card);
-      // Slid out face down clear of the spread, then turned up towards it.
-      const toward = turnToward(slot.pose, spreadAt);
-      const down = beforeFlip(slot.pose, toward);
-      const path = chain([slide(mesh.pose, down), 1.4], [flip(down, { toward }), 1]);
-      end = Math.max(end, this.add(mesh, path, start + (e.who === "them" ? 150 : 0), TIMING.cutShow, { code: e.card }));
+      // Andrew: "real people would peel the card out of the deck, then flip
+      // it up and look at it." Peeled out of the spread towards its cutter,
+      // face down, with a sharp start; flicked up into the hand, face to
+      // the cutter, and looked at a moment; then tossed face up onto its
+      // spot, where both can read it.
+      const side = e.who === "you" ? 1 : -1;
+      const peeled = lying({
+        x: mesh.pose.position.x,
+        z: mesh.pose.position.z + side * CARD.height * 0.75,
+        height: REST,
+        faceUp: false,
+        yaw: yawKeeping(mesh.pose, false),
+      });
+      const look = lookingAt(slot.pose.position, side);
+      const path = chain(
+        [slide(mesh.pose, peeled), 0.8],
+        [pickUp(peeled, look, { toward: TOWARD[e.who] }), 1.2],
+        [still(look), 1.1],
+        [toss(look, slot.pose, { clearance: 2 }), 1],
+      );
+      end = Math.max(end, this.add(mesh, path, start + (e.who === "them" ? 250 : 0), TIMING.cutShow, { code: e.card }));
       this.now[mesh.id] = { id: mesh.id, zone: "cut", index: slot.index, code: e.card, pose: slot.pose };
     }
     // The rest of the spread closes up.
@@ -507,7 +578,7 @@ class Plan {
       pack.map((slot, i) => {
         const mesh = this.now[slot.id];
         const onTable = !mesh.zone.endsWith("hand");
-        const path = onTable ? slide(mesh.pose, slot.pose) : transfer(mesh.pose, slot.pose);
+        const path = onTable ? slide(mesh.pose, slot.pose) : toss(mesh.pose, slot.pose);
         return { mesh, pose: slot.pose, path, delay: (i % 8) * 20, duration: TIMING.gather, code: null };
       }),
     );
@@ -529,7 +600,7 @@ class Plan {
           const pose = lying({ x: at.x, z: at.z, height: REST + n * STEP, faceUp: false, yaw: jitter(`deal${who}${n}`, 3) });
           piles[who].push({ mesh, pose });
           const delay = pair * TIMING.dealPair + k * TIMING.dealSecond;
-          dealt.push({ mesh, pose, path: transfer(mesh.pose, pose, { clearance: 3 }), delay, duration: TIMING.dealCard, code: null });
+          dealt.push({ mesh, pose, path: toss(mesh.pose, pose, { clearance: 3 }), delay, duration: TIMING.dealCard, code: null });
         }
         pair++;
       }
@@ -538,7 +609,7 @@ class Plan {
     talonSlots.forEach((slot, i) => {
       const mesh = top.shift();
       const delay = pair * TIMING.dealPair + i * TIMING.dealTalon;
-      dealt.push({ mesh, pose: slot.pose, path: transfer(mesh.pose, slot.pose, { clearance: 3 }), delay, duration: TIMING.dealCard, code: null });
+      dealt.push({ mesh, pose: slot.pose, path: toss(mesh.pose, slot.pose, { clearance: 3 }), delay, duration: TIMING.dealCard, code: null });
       this.now[mesh.id] = { ...this.now[mesh.id], zone: "talon", index: slot.index };
     });
     this.moveEach(dealt);

@@ -131,13 +131,13 @@ export function layDown(from, to, { clearance, ease = minimumJerk, turnBy = 0.85
 // sort of a sharp tug pulling the card from the deck, and then it's placed on
 // the table". So two beats: the fingers snap it out along its own length,
 // clear of its neighbours and still at the hand's angle -- fast from the
-// first instant, slowing as it comes free -- and then it is carried and set
-// down exactly as layDown sets one down. The carry begins a little before
-// the tug has finished, so the card never stops dead between the two.
+// first instant, slowing as it comes free -- and then it is tossed onto its
+// spot (toss). The toss begins a little before the tug has finished, so the
+// card never stops dead between the two.
 export function pull(from, to, { tug = 0.6 * CARD.height, tugShare = 0.3, overlap = 0.1 } = {}) {
   const out = new Vector3(0, 1, 0).applyQuaternion(from.quaternion).multiplyScalar(tug);
   const clear = { position: from.position.clone().add(out), quaternion: from.quaternion.clone() };
-  const carry = layDown(clear, to);
+  const carry = toss(clear, to);
   const carryFrom = tugShare - overlap;
   const snap = (u) => 1 - (1 - u) ** 3; // at full speed at once, easing as it comes clear
   return (t) => {
@@ -150,6 +150,84 @@ export function pull(from, to, { tug = 0.6 * CARD.height, tugShare = 0.3, overla
   };
 }
 
+// A card tossed onto the table. Andrew: "moving cards should start with
+// strong jerks, then end with gravity-like acceleration. that means a lot of
+// motion-easing." So it is thrown, not guided: it leaves at full speed,
+// rises and falls on a parabola -- a cartoon's gravity, strong enough that
+// the arc is only `clearance` high -- turning flat on the way, lands with
+// the speed of its fall, and slides the last little way to a dead stop
+// against friction, its speed along the table unbroken at the touch.
+//
+// The arc is solved exactly: with the top `clearance` above the higher end,
+// in the flight's own time the fall is g = 2(√a + √b)² and the launch
+// 2√a(√a + √b), a and b the drops from the top to each end.
+export function toss(from, to, { clearance, flight = 0.86, turnBy = 0.8 } = {}) {
+  const a = from.position.clone();
+  const b = to.position.clone();
+  // A card that turns over on the way needs the room to turn in.
+  const over = new Vector3(0, 0, 1).applyQuaternion(from.quaternion).dot(new Vector3(0, 0, 1).applyQuaternion(to.quaternion)) < 0;
+  const h = Math.max(clearance ?? clearanceFor(a, b), over ? 0.6 * CARD.height : 0);
+  const top = Math.max(a.y, b.y) + h;
+  const [up, down] = [Math.sqrt(top - a.y), Math.sqrt(top - b.y)];
+  const g = 2 * (up + down) ** 2;
+  const launch = 2 * up * (up + down);
+  // Where it touches down, short of its spot by as far as it then slides: a
+  // slide under friction starts at twice its mean speed, so matching the
+  // flight's speed along the table fixes the distance.
+  const along = new Vector3(b.x - a.x, 0, b.z - a.z);
+  const reach = along.length();
+  const slid = (reach * (1 - flight)) / (1 + flight);
+  if (reach > 0) along.divideScalar(reach);
+  const touch = b.clone().addScaledVector(along, -slid);
+  // The flight carries the jerk; the turn eases in once the card is on its
+  // way and out before it lands, so no edge swings into the table.
+  const turn = (u) => minimumJerk((u - 0.05) / (turnBy - 0.05));
+  return (t) => {
+    if (t < flight) {
+      const u = t / flight;
+      const position = new Vector3(a.x + (touch.x - a.x) * u, a.y + launch * u - (g * u * u) / 2, a.z + (touch.z - a.z) * u);
+      return { position, quaternion: from.quaternion.clone().slerp(to.quaternion, turn(u)) };
+    }
+    const u = Math.min(1, (t - flight) / (1 - flight));
+    return { position: touch.clone().lerp(b, friction(u)), quaternion: to.quaternion.clone() };
+  };
+}
+
+// A card taken up into a hand: flicked up at full speed and slowing under
+// gravity to rest in the grip, as anything thrown upward slows at the top of
+// its rise -- the toss's own curve, with the hand at the top of the arc.
+export function rise(from, to) {
+  const a = from.position.clone();
+  const b = to.position.clone();
+  const lift = Math.max(0, b.y - a.y);
+  // It turns once it is clear of the table, not before.
+  const turn = (u) => minimumJerk((u - 0.15) / 0.7);
+  return (t) => {
+    const u = Math.min(1, Math.max(0, t));
+    const across = friction(u); // along the table too: fast away, easing in
+    const position = new Vector3(a.x + (b.x - a.x) * across, a.y + lift * (2 * u - u * u), a.z + (b.z - a.z) * across);
+    return { position, quaternion: from.quaternion.clone().slerp(to.quaternion, turn(u)) };
+  };
+}
+
+// A held card bobbed up out of its hand along its own length and back --
+// what a player's hand does as they call a holding (Andrew: "the cards
+// should rise from the deck a bit"). Flicked up, held a moment, and let
+// fall back into place, faster and faster.
+export function bob(held, lift, { riseShare = 0.28, holdShare = 0.4 } = {}) {
+  const up = new Vector3(0, 1, 0).applyQuaternion(held.quaternion);
+  const height = (t) => {
+    if (t < riseShare) return 1 - (1 - t / riseShare) ** 3;
+    if (t < riseShare + holdShare) return 1;
+    const u = (t - riseShare - holdShare) / (1 - riseShare - holdShare);
+    return 1 - Math.min(1, u) ** 2;
+  };
+  return (t) => ({
+    position: held.position.clone().addScaledVector(up, lift * height(Math.min(1, Math.max(0, t)))),
+    quaternion: held.quaternion.clone(),
+  });
+}
+
 // From the table to a hand: lift the near edge first, hinged on the far one,
 // the way a fingertip gets under a card; then carry it. `toward` points from
 // the card to whoever is picking it up.
@@ -157,10 +235,11 @@ export function pickUp(from, to, { toward, lift = (20 * Math.PI) / 180, liftShar
   const { side, half } = edgeToward(from, toward.clone().negate()); // the far edge
   const { pivot, axis } = hingeOf(from, side, half);
   const lifted = rotateAbout(from, pivot, axis, lift);
-  const carry = transfer(lifted, to);
+  const carry = rise(lifted, to);
+  const snap = (u) => 1 - (1 - u) ** 3; // the fingertip's flick
   return (t) =>
     t < liftShare
-      ? rotateAbout(from, pivot, axis, lift * minimumJerk(t / liftShare))
+      ? rotateAbout(from, pivot, axis, lift * snap(t / liftShare))
       : carry((t - liftShare) / (1 - liftShare));
 }
 

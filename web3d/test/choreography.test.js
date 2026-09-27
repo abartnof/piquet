@@ -3,7 +3,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { choreograph, initialPlacement, stagesBetween } from "../src/choreography.js";
+import { choreograph, initialPlacement, stagesBetween, cardsNamed } from "../src/choreography.js";
 import { cardCorners } from "../src/kinematics.js";
 import { layout } from "../src/layout.js";
 import { ZONES_PORTRAIT } from "../src/units.js";
@@ -161,4 +161,10 @@ test("the cut: both cards turn up where all can see, and are read before the dea
   if (after.prompt.kind === "choose_dealer") return; // you cut higher: nothing dealt until you choose
   const firstDeal = Math.min(...result.motions.filter((m) => m.reveal && after.hand.includes(m.reveal.code)).map((m) => m.delay));
   assert.ok(firstDeal > Math.max(...shownAt) + 1000, "a beat to read the cut before anything is dealt");
+});
+
+test("a call names how many cards it holds", () => {
+  const cases = [["point of 5", 5], ["point of 6 (56)", 6], ["tierce", 3], ["quart", 4], ["quint to the king", 5],
+    ["sixième", 6], ["septième", 7], ["huitième", 8], ["trio", 3], ["quatorze", 4], ["nothing", 0], ["trio of aces", 3]];
+  for (const [said, n] of cases) assert.equal(cardsNamed(said), n, said);
 });
