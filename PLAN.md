@@ -2,10 +2,12 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated 27 September 2026:
-> the 2D browser table is complete through Andrew's second round of notes,
-> and **the 3D table is built and playable** — `docs/TABLE3D.md`; its look
-> and card art wait on Andrew's choices.
+> holds *where we are and what is left*. Last updated 27 September 2026
+> (third session): **the 3D table has had Andrew's nine notes from playing
+> it** (`docs/TABLE3D.md` P10) — hands at 75°, shadows that follow the
+> cards, the tug, a dialogue box, controls under the hand, animated folds,
+> flourishes for big moments; and **TODO 1 has a calibrated world prior
+> fitted and waiting to be measured**.
 
 ## Where we are
 
@@ -150,7 +152,35 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
-### Resume here: the 3D table is built — Andrew's choices, then onward
+### Resume here (third session, 27 September): two threads
+
+**1. The 3D table — Andrew is playing it and sending notes.** His nine
+from this session are all built and pushed (`docs/TABLE3D.md` P10, commits
+`c8502b7`…`8ef2fe3`); the verbatim notes and what each became are there.
+The overlay is now *information left, buttons under the hand*, a standing
+rule (saved to memory). Whatever he sends next is the backlog. Owed from
+this round: **the phone's table** (small hand, the info strip covering the
+opponent's hand, a heavy shadow blob). His earlier open choices (below)
+still stand.
+
+**2. TODO 1 — a calibrated world prior, fitted, not yet measured.**
+`bin/prior` fits a per-rank weight on the opponent's possible hands
+(`prior.rs`, conditional logit) where the solver searches; the solver takes
+it via `SolverAgent::with_prior` (bit-identical without one). Held out, a
+doubtful seven is hers 12% of the time against a uniform belief of 46%, a
+king 96% against 55%; the fit matches (`measurements/prior-60.txt`). **Next
+step:** give `settle` a `--prior` switch (both agents, the fitted constant
+from `prior-60.txt`), run `settle 120 30 --prior --out
+measurements/settle/w30-prior.tsv` (~21 min on the dev box), and
+`--compare` it against `w30.tsv`: do the rubicon flips stop being a coin
+toss (11–13 today)? It is a diagnostic first — the prior describes rung 4's
+discards, and whether it is fair against a person is Andrew's call.
+
+**Billing check:** still blocked from the VM (its service account has no
+billing scope). Ask Andrew to glance at the Console, or run `gcloud auth
+login` on the VM himself.
+
+### The 3D table before this session — Andrew's choices, then onward
 
 Andrew asked for a three.js table (27 September 2026); **`docs/TABLE3D.md` is
 its plan and its record** — the brief verbatim, the look, the assets and
