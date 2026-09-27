@@ -744,7 +744,9 @@ Ordered by how much they are needed, not by size.
     answer rather than a rule. All of that still lives in docstrings and commit
     messages.
 
-14. **Spoken audio for everything said at the table -- price it before
+14. **Spoken audio for everything said at the table** -- *under way:
+    `docs/VOICE.md` holds the pronunciation table, the inventory and the
+    tools (free: Piper and espeak-ng).* Originally: **price it before
     starting (Andrew, 27 September).** *"price out how much it would cost to
     use google cloud apis to generate audio for ALL of the events that are
     spoken during this game. before we start, a quick set of calculations
