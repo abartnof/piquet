@@ -36,6 +36,23 @@ credits it on screen, not only here.
 The pinned originals, with checksums and measurements, are in
 `web3d/art/source/`.
 
+## The voices
+
+The spoken game (`docs/VOICE.md`) is recorded in two synthetic voices, both
+by **Bryce Beattie** (<https://brycebeattie.com/files/tts/>), each trained
+from scratch on public-domain recordings from **LibriVox**
+(<https://librivox.org>), and released into the **public domain**:
+
+| Voice | Model | Accent | Source |
+|---|---|---|---|
+| Cori | `en_GB-cori-high` | British, female | <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/high> |
+| Norman | `en_US-norman-medium` | American, male | <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/norman/medium> |
+
+Chosen for their lineage as well as their licence: most other Piper voices
+are fine-tuned from "lessac", whose Blizzard 2013 recordings are licensed
+for research only, with no redistribution. The words they say, and how they
+say them, follow Cavendish (below, and `docs/VOICE.md`).
+
 ## Design system
 
 **Material Design 3**, by **Google** — <https://m3.material.io/>. The 3D
@@ -83,9 +100,15 @@ The rules engine and everything else in this repository are the project's own.
 | Material Color Utilities (`@material/material-color-utilities`) | 0.4.0 | Apache-2.0 | Generating the 3D table's colour scheme from one seed (`web3d/tools/scheme.mjs`) |
 | librsvg (`rsvg-convert`) | Debian 12 | LGPL-2.1+ | Rasterising the card art |
 | Pillow | current | MIT-CMU (HPND) | Cropping and encoding the card images |
+| Piper (`piper-tts`) | 1.8.0 | GPL-3.0-or-later | Speaking the voice's phrases (`web3d/tools/voice.py`) |
+| eSpeak NG | Debian 12 | GPL-3.0-or-later | Turning the phrases into phonemes, inside Piper; checking pronunciation |
+| FFmpeg | Debian 12 | LGPL-2.1+ / GPL | Trimming and encoding the voice's clips |
 
 ## Rules, history and method
 
 The sources behind the rules — pagat.com, Cavendish's *Laws of Piquet* (1892),
 Foster's *Complete Hoyle* (1897), Hoyle (1744), Cotton (1674) — and the
-mathematics behind the opponents are credited in `docs/LITERATURE.md`.
+mathematics behind the opponents are credited in `docs/LITERATURE.md`. How
+the game is *spoken* follows Cavendish's treatise in the 1885 edition, read
+from the Internet Archive's scan
+(<https://archive.org/details/lawsofpiquetadop00caveuoft>); public domain.

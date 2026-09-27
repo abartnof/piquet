@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The voice: every phrase said aloud at the table, spoken and encoded.
 
-    .venv/bin/python web3d/tools/voice.py [--voices cori,north] [--only ID,ID]
+    .venv/bin/python web3d/tools/voice.py [--voices cori,norman] [--only ID,ID]
 
 Andrew: "we'll do maximal speaking (anything a human would say, we'll say)".
 The inventory follows Cavendish, *The Laws of Piquet* (1885) -- how the
@@ -27,12 +27,15 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "web3d" / "audio"
 MODELS = Path.home() / "piper-voices"
 
-# The free voices, chosen for their licences (docs/VOICE.md): a female voice
-# trained on public-domain LibriVox recordings, and a male one from OpenSLR 83
-# (CC BY-SA 4.0).
+# The free voices, chosen for their licences and their lineage (docs/VOICE.md):
+# both trained from scratch, by Bryce Beattie, on public-domain LibriVox
+# recordings. Most other Piper voices are fine-tuned from "lessac", whose
+# Blizzard 2013 data is licensed for research only, with no redistribution --
+# so none of those ship. There is no clean British male voice: Norman is
+# American.
 VOICES = {
-    "cori": {"model": "en_GB-cori-high", "gender": "female", "licence": "public domain (LibriVox)"},
-    "north": {"model": "en_GB-northern_english_male-medium", "gender": "male", "licence": "CC BY-SA 4.0 (OpenSLR 83)"},
+    "cori": {"model": "en_GB-cori-high", "gender": "female", "licence": "public domain (LibriVox), trained from scratch"},
+    "norman": {"model": "en_US-norman-medium", "gender": "male", "licence": "public domain (LibriVox), trained from scratch"},
 }
 
 # ---- pronunciation ------------------------------------------------------------

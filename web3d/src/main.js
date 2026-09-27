@@ -12,12 +12,14 @@ import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
 import { decodeBase64, loadEngine } from "./engine.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
+import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
+import { createVoice } from "./voice.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
 
-/* global WASM_BASE64, ART */
+/* global WASM_BASE64, ART, VOICES */
 
 const params = new URL(window.location.href).searchParams;
 const TESTING = params.has("test");
@@ -27,7 +29,12 @@ const PREF_STORE = "piquet3d.prefs";
 // Versioned: "play my winners" became opt-in, and a stored set from before
 // would keep it on without the player ever having chosen it.
 const AID_STORE = "piquet3d.aids.2";
-const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random" };
+const DEFAULT_PREFS = {
+  tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random",
+  // The voice (docs/VOICE.md): on, your opponent speaking as Cori, you in
+  // the other voice.
+  voice: true, opponentVoice: "cori", sayMine: true,
+};
 // Playing out your winners is opt-in: Andrew, finding his cards played for
 // him mid-trick, "i didn't intend for that to happen".
 const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: false, declare_for_me: false };
@@ -160,8 +167,17 @@ async function main() {
     const drew = next.events.slice(prev.events.length).find((e) => e.kind === "drew");
     if (drew) ui.fresh = drew.drew;
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
+    // What was said, said aloud -- only what is new; an undo falls silent.
+    if (next.events.length < prev.events.length) voice.stop();
+    else if (!TESTING) {
+      const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
+      const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
+      voice.say(lines, prefs);
+    }
   }
 
+  const voices = typeof VOICES === "object" ? VOICES : {};
+  const voice = createVoice(voices, Object.values(voices)[0]?.texts ?? {});
   const director = createDirector({
     stage,
     deck,
@@ -300,6 +316,7 @@ async function main() {
     store(PREF_STORE, prefs);
     if (name === "speed") director.timeline.speed = value;
     if (name === "sort") director.rearrange();
+    if (name === "voice" && !value) voice.stop();
     if (name === "surface") {
       // Picking one lays it now, and for good; choosing Random keeps the
       // table in front of you until the page is next opened.
@@ -317,6 +334,7 @@ async function main() {
       return;
     }
     begin(n, randomSeed());
+    voice.stop();
     ui.selected = [];
     ui.lifted = [];
     director.restart();

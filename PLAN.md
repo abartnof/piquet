@@ -152,6 +152,23 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
+### Autonomous stretch, evening of 27 September (Andrew at dinner)
+
+Andrew: *"keep working until i tell you otherwise (or you exhaust the TODO
+list) ... don't do anything silly like deleting the repo."* Nothing that
+spends money. The running log, newest last:
+
+- **The voice** (`docs/VOICE.md`): pronunciation table with sources;
+  Cavendish's 1885 procedure for how piquet is spoken; `web3d/tools/voice.py`
+  (241 atoms a voice, tested) speaking through Piper with phoneme overrides
+  checked by reading espeak-ng's output; `speech.js` (events -> clips,
+  node-tested) and `voice.js` (playback); Settings: voice on/off, your
+  opponent's voice, your own calls. **Voices: Cori (British, female) and
+  Norman (American, male), both public domain and trained from scratch** --
+  every British male voice descends from "lessac", research-only data.
+  Clip generation and size measurement under way.
+- TODO 12 found already done (`docs/LITERATURE.md`).
+
 ### Resume here (third session, 27 September): two threads
 
 **1. The 3D table — Andrew is playing it and sending notes.** His nine
@@ -734,78 +751,12 @@ Ordered by how much they are needed, not by size.
 11. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-12. **Documentation and citations.** *Partly done.* A README now exists and
-    orients a reader who has not read `DESIGN.md` end to end. The statistical
-    bibliography is still owed: Laplace's *rule of succession* (1774) is the
-    ratings prior, Zermelo (1929) is the model Bradley and Terry rediscovered
-    in 1952, Hoyle (1744) computes a hypergeometric tail by hand, and
-    Waldegrave's solution to *Le Her* (1713) is the oldest known mixed-strategy
-    equilibrium and the historical reason to expect sinking to want a *mixed*
-    answer rather than a rule. All of that still lives in docstrings and commit
-    messages.
-
-14. **Spoken audio for everything said at the table** -- *under way:
-    `docs/VOICE.md` holds the pronunciation table, the inventory and the
-    tools (free: Piper and espeak-ng).* Originally: **price it before
-    starting (Andrew, 27 September).** *"price out how much it would cost to
-    use google cloud apis to generate audio for ALL of the events that are
-    spoken during this game. before we start, a quick set of calculations
-    would be in order: cost per phrase, number of phrases necessary,
-    down-res'd so the game doesn't get enormous ... we can also use another
-    option (eg Piper TTS, espeak-ng)."* Talk it through with him before
-    building anything. The calculation:
-    - **The phrase inventory.** Every distinct utterance: the calls (point
-      of 3–8 with their values, tierce … huitième to each top card,
-      trio/quatorze of each rank), the answers (good, not good, equal,
-      making?), what is shown, the table's lines (deals, cuts, the
-      rubicon, the settlement), with or without suits. Enumerate from the
-      engine (`combos`, `talk.js`), and decide what is spliced from parts
-      ("tierce" + "to the" + "king") against what is recorded whole.
-    - **Cost per phrase**: Google Cloud Text-to-Speech is billed per
-      character by voice tier, with a free monthly allowance; characters
-      times phrases gives the one-off cost. It is generated once and
-      bundled, not called at play time (the page must work offline).
-    - **Size, down-res'd**: mono, 16–24 kHz, Opus or low-bitrate MP3, a
-      few kB a phrase -- times the inventory, weighed against the 5 MB
-      guideline (a guideline, not a wall).
-    - **The free alternatives, generated offline**: Piper TTS (neural,
-      MIT-licensed voices, good quality) and espeak-ng (tiny, robotic) --
-      or synthesis in the page itself, at no size at all.
-    - Credit whatever voice is used in `CREDITS.md`.
-
-    **A first inventory (Andrew, pasted 27 September), reviewed.** Three
-    tiers: core declarations (~71 clips), + exchange counts and trick tally
-    (~88), + a spoken number bank 0–101 for running scores (~190); its
-    size table at ~1.5 s a clip gives 0.8–25 MB depending on format.
-    Corrections, measured against the rules rather than taken on trust:
-    - **Sequences are 21, not 42.** Ranks run seven to ace, so a tierce
-      tops at ace…nine (6), a quart ace…ten (5), a quint ace…jack (4), a
-      sixième ace…queen (3), a septième ace or king (2), a huitième only
-      the ace (1). "6 lengths × 7 top cards" counts impossible calls.
-    - **Its bitrates are for music.** Speech is clear in Opus at 16–24
-      kb/s: ~3–4.5 kB for a 1.5 s clip, so even the ~190-clip tier is
-      ~0.6–0.9 MB -- plus a third for base64 inside the single page.
-    - **Point values** ("making forty-eight") run from about 21 to 75, so
-      voicing them needs the number bank anyway.
-    - **Cost** (from memory of Google's published rates -- check the
-      pricing page before relying on it): Standard voices about $4 and
-      WaveNet/Neural2 about $16 per million characters, with a monthly
-      free allowance. ~190 phrases × ~15 characters is ~3,000 characters:
-      under a cent at any tier. Money is not the constraint; the voice's
-      quality, its licence terms and the page's size are.
-    - Real play also counts aloud as the tricks go ("one", "two", …) --
-      the number bank covers it.
-
-15. **Work on the tutorial mode (Andrew, 27 September).** Milestone 9, and
-    a design conversation with him before building. What exists to build
-    on: hints (rung 4 and the solver, from the human's view), the Explain
-    layer (what the rules make of each moment, with this deal's numbers),
-    the dialogue as `talk.js` reads it, and the ladder-based tutoring idea
-    ("a rung-2 player would lead this; a rung-4 player that, because…").
-    Still owed from his original brief: flag bad *and* impossible moves
-    interactively rather than animate a tutorial, and log the agent's moves
-    during training. `explain.rs` -- why one move is better -- is the
-    missing half.
+12. ~~**Documentation and citations.**~~ **Done** -- found so on 27
+    September: `docs/LITERATURE.md` ("The mathematics") carries Laplace
+    (1774), Zermelo (1929), Bradley and Terry (1952), Hunter (2004),
+    Waldegrave's *Le Her* via Montmort (1713) and Hoyle's hypergeometric
+    tail, with a table of where each is used in the code. The plan had not
+    caught up.
 
 13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.

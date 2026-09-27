@@ -209,6 +209,8 @@ export function createOverlay(root, on) {
     ["declare_for_me", "Declare for me", "Call everything, never ask"],
   ];
   const PREFS = [
+    ["voice", "Voice", "Say aloud what is said at the table, as players have said it since Cavendish"],
+    ["sayMine", "Say my own calls", "Voice your calls and your count as well as your opponent's"],
     ["explain", "Explanations", "Say what the rules make of each moment, and how to act (E)"],
     ["tab", "The running score", "Show where the deal stands, stage by stage"],
     ["undo", "Undo", "Allow taking back a decision"],
@@ -246,6 +248,11 @@ export function createOverlay(root, on) {
     [["random", "A new one each time the page opens"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   table.addEventListener("change", () => on.pref("surface", table.value));
+  // Your opponent's voice; you speak in the other.
+  const theirVoice = el("md-outlined-select", { "data-pref": "opponentVoice", label: "Your opponent's voice" },
+    [["cori", "Female (Cori, British)"], ["norman", "Male (Norman, American)"]].map(([v, words]) =>
+      el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
+  theirVoice.addEventListener("change", () => on.pref("opponentVoice", theirVoice.value));
   const again = el("md-text-button", {}, "New partie");
   again.addEventListener("click", () => {
     $("settings").close();
@@ -265,7 +272,7 @@ export function createOverlay(root, on) {
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), aidSwitches,
       el("h3", {}, "The table"), prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, sort, table),
+      el("div", { class: "selects" }, levelInSettings, speed, sort, table, theirVoice),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },
         [["← →", "move along your hand, or the pack when cutting"],
@@ -892,6 +899,7 @@ export function createOverlay(root, on) {
       speed.value = String(prefs.speed);
       sort.value = prefs.sort;
       table.value = prefs.surface ?? "random";
+      theirVoice.value = prefs.opponentVoice ?? "cori";
       scoreChip.replaceChildren(
         el("span", { class: "you" }, String(s.score.you)),
         el("span", { class: "dot" }, "·"),

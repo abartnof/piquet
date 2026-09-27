@@ -99,6 +99,25 @@ def art(way: str) -> str:
     }, separators=(",", ":"))
 
 
+AUDIO = HERE / "audio"
+
+
+def voices(kind: str) -> str:
+    """The recorded phrases (web3d/tools/voice.py) as a JSON object: for each
+    voice, its manifest's particulars and every clip, base64 -- the voice at
+    the table, offline (docs/VOICE.md). Empty if none have been made."""
+    out = {}
+    ext = {"mp3": "mp3", "opus": "ogg"}[kind]
+    for manifest in sorted(AUDIO.glob("*/manifest.json")):
+        spec = json.loads(manifest.read_text())
+        clips = {p.stem: base64.b64encode(p.read_bytes()).decode("ascii") for p in sorted(manifest.parent.glob(f"*.{ext}"))}
+        missing = set(spec["phrases"]) - set(clips)
+        if missing:
+            sys.exit(f"{manifest.parent.name}: no clip for {', '.join(sorted(missing)[:5])}: run web3d/tools/voice.py")
+        out[spec["voice"]] = {"gender": spec["gender"], "format": ext, "clips": clips, "texts": spec["phrases"]}
+    return json.dumps(out, separators=(",", ":"))
+
+
 def fill(template: str, values: dict[str, str]) -> str:
     """Replace every placeholder in one pass, so nothing inserted is rescanned."""
     missing = [k for k in values if k not in template]
@@ -110,6 +129,9 @@ def fill(template: str, values: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the 3D table's single-file page.")
+    parser.add_argument("--audio", choices=["mp3", "opus"], default="opus",
+                        help="the voice's clips as Ogg Opus (the default: 40%% smaller for speech; "
+                             "a browser without it falls back to its own speech) or MP3")
     parser.add_argument("--art", choices=["webp", "svg"], default="webp",
                         help="ship the card art rasterised (webp, the default) or as vectors (svg), "
                              "which writes web3d/piquet3d-svg.html instead")
@@ -122,17 +144,20 @@ def main() -> int:
     style = (SRC / "style.css").read_text()
     engine = base64.b64encode(wasm).decode("ascii")
     cards = art(args.art)
+    speech = voices(args.audio)
     page = fill((SRC / "index.html").read_text(), {
         "/*STYLE*/": style,
         "/*APP*/": code,
         "__WASM_BASE64__": engine,
         "/*ART*/": cards,
+        "/*VOICES*/": speech,
     })
     out.write_text(page)
 
     size = len(page.encode())
     art_name = "the card art (WebP, base64)" if args.art == "webp" else "the card art (SVG)"
     rows = [("the engine (wasm, base64)", len(engine)), (art_name, len(cards.encode())),
+            (f"the voices ({args.audio}, base64)", len(speech.encode())),
             *owned.items(),
             ("stylesheet", len(style.encode()))]
     rows.append(("page skeleton", size - sum(n for _, n in rows)))

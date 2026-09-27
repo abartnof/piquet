@@ -96,4 +96,45 @@ holdings ("quint to the ace, tierce to the king"; "quatorze of aces, trio of
 queens") — so the voice records **atoms** and plays them in turn with a short
 pause, rather than every combination.
 
-(The counts follow in §4 once the inventory is generated.)
+`web3d/tools/voice.py` holds it as code, and `test_voice.py` holds it to
+the rules: **241 atoms a voice** -- the exchange's announcements (8), carte
+blanche (2), the point by length (6) with "What do they make?" and its suit
+(5), the **21** sequences that can be held, the 10 trios and quatorzes of
+tens and above, good / not good / equal and "Nothing" (4), every number to
+**170** for counting aloud (the most a deal can score), "and", "are",
+pique, repique, capot, "And the cards", and nine niceties.
+
+The engine's events become a queue of these atoms in `web3d/src/speech.js`
+(node-tested, including that every clip it asks for over whole parties was
+recorded), and `web3d/src/voice.js` plays them in turn, in the voice of
+whoever speaks.
+
+## 4. The voices
+
+**English, not French.** Andrew raised a French voice, "if the pronunciations
+are hard". Nearly everything said is English -- "Good", "Four aces",
+counting to 170 -- which a French voice would mangle; the six French terms
+are handled exactly with phonemes (§1), read back and correct. So English.
+
+**Free, local, and clean.** Piper (GPL-3.0; a tool, not shipped) speaks;
+espeak-ng underneath decides pronunciation. The voices were chosen by
+licence *and lineage*: most Piper voices -- every British one but Cori --
+are fine-tuned from "lessac", whose Blizzard 2013 data is licensed for
+research only, with no redistribution
+(<https://www.cstr.ed.ac.uk/projects/blizzard/2013/lessac_blizzard2013/license.html>),
+so a clip from them is not ours to ship. The two chosen were both trained
+from scratch on public-domain LibriVox recordings, by Bryce Beattie
+(<https://brycebeattie.com/files/tts/>):
+
+| voice | model | gender, accent | licence |
+|---|---|---|---|
+| Cori | `en_GB-cori-high` | female, British | public domain |
+| Norman | `en_US-norman-medium` | male, American | public domain |
+
+There is no clean British male voice. Rejected: the Northern English male
+(CC BY-SA data, but fine-tuned from lessac), Alan, Alba, Aru, VCTK
+(lessac-derived), Semaine (lessac-derived, non-commercial), Ryan
+(non-commercial).
+
+By default your opponent speaks as Cori and you as Norman; Settings swaps
+them, and can mute your own calls or the voice altogether.
