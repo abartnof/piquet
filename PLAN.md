@@ -210,10 +210,14 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
   (`53bde1e`); **the whole game playable from the keyboard** — ← → and Space,
   named in a live region (`4082ac7`); and tablets, whose score tab had
   been covering the top bar's settings button (`540fd46`).
-- **In flight, 27 September:** TODO 1's cheaper suspect — whether thirty
-  opponent worlds are too thin for the settling objective. `settle` takes a
-  worlds argument now (`6465dc0`); 720 mirrored last deals at 30 worlds (the
-  baseline, ~6 min) and at 90 (~16 min) are running on the dev VM.
+- **In flight, 27 September — TODO 1, both suspects.** Today's baseline
+  (720 mirrored last deals, 30 worlds, `settle 120 30`): **257 won, 49
+  lost, 414 drawn, net −3.40 ± 3.57** — not the 248/46/426 recorded below,
+  because the fourth-leak fix changed what the agents know; compare only
+  against this. Running: 90 worlds (same solver); the **live pique** now
+  modelled in the settling search (`79cfc82`, tested on a two-card
+  endgame); and the no-pique baseline again with `settle`'s new split by
+  bonus (`bb0fc35`), so the split can be compared like for like.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
