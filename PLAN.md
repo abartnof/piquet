@@ -2,9 +2,9 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated 26 September 2026,
-> mid-session: the browser table is playable, the dialogue's fourth leak is
-> fixed, and the "fun" work Andrew asked for is next.
+> holds *where we are and what is left*. Last updated 27 September 2026:
+> the 2D browser table is complete through Andrew's second round of notes,
+> and **the 3D table is designed and ready to build** — `docs/TABLE3D.md`.
 
 ## Where we are
 
@@ -149,6 +149,34 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
+### Resume here: build the 3D table
+
+Andrew asked for a three.js table (27 September 2026) and for it to be planned
+in full before a context clear, so that a fresh session builds it from notes.
+**`docs/TABLE3D.md` is the plan** — the brief verbatim, the look, the assets
+and their licences, the stack, the architecture, the physics of every motion,
+the tests, open questions, and a phased TODO (P0 done; **start at P1**).
+
+Read, in this order: this section; `docs/TABLE3D.md` (all of it); §13 of it
+again as the checklist; `docs/PROTOCOL.md`; `web/src/app.js` (a working client
+to borrow from); `CREDITS.md`.
+
+Rules that bind the work, from Andrew: TDD; atomic commits straight to `main`,
+often; `PLAN.md` updated as each phase lands; `set -e` on multi-step shell
+commands; one self-contained HTML page, under 5 MB, **working offline**;
+Material Design 3 for the controls, bundled; **"your opponent", never a proper
+name**; every aid a toggle; the look is *clean, bright, a bit cartoonish, not
+childish — freed of grubby cards on dirty furniture*; **every third-party
+asset credited in `CREDITS.md` in the commit that brings it in** (MD3
+included); consult him before anything that spends money.
+
+Environment on the VM: `source ~/.cargo/env` for cargo; Playwright in the
+project `.venv`; Node 18 and Chromium from apt; npm and `librsvg2-bin` are
+installed in P1 (`sudo` works). The Google Cloud billing check is still
+blocked — the VM's gcloud has no billing scope, and `gcloud auth login` needs
+an interactive terminal (Andrew was going to run it over `ssh piquet-dev`).
+
+
 ### This session, 26 September 2026 — what landed
 
 In order, all committed and pushed:
@@ -286,6 +314,7 @@ level 5 late in a partie (the page says "Restoring your game…").
 
 ### After that, in rough order of value
 
+0. **The 3D table** — above; `docs/TABLE3D.md`.
 1. **TODO 1, the partie objective** — the live pique first, then `max_worlds`.
 2. **Milestone 9, the training mode** — hints are its first half; `explain.rs`
    (why a move is better, by which rung plays it) is the second.
