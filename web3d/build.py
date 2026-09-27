@@ -32,6 +32,7 @@ SRC = HERE / "src"
 OUT = HERE / "piquet3d.html"
 WASM = ROOT / "target" / "wasm32-unknown-unknown" / "release" / "piquet_wasm.wasm"
 ESBUILD = HERE / "node_modules" / ".bin" / "esbuild"
+CARDS = HERE / "art" / "cards"
 GUIDELINE = 5 * 1024 * 1024
 
 # Where each bundled source file is reported, by path prefix; first match wins.
@@ -77,6 +78,18 @@ def bundle() -> tuple[str, dict[str, int]]:
     return code, owned
 
 
+def art() -> str:
+    """The 33 card images as a JSON object of data URIs, keyed by card code
+    (and "back"). Made by web3d/tools/art.py, committed."""
+    images = sorted(CARDS.glob("*.webp"))
+    if len(images) != 33:
+        sys.exit(f"expected 33 card images in {CARDS}, found {len(images)}: run web3d/tools/art.py")
+    return json.dumps({
+        p.stem: "data:image/webp;base64," + base64.b64encode(p.read_bytes()).decode("ascii")
+        for p in images
+    }, separators=(",", ":"))
+
+
 def fill(template: str, values: dict[str, str]) -> str:
     """Replace every placeholder in one pass, so nothing inserted is rescanned."""
     missing = [k for k in values if k not in template]
@@ -93,15 +106,18 @@ def main() -> int:
         sys.exit("the bundle contains '</script', which would end the inline script early")
     style = (SRC / "style.css").read_text()
     engine = base64.b64encode(wasm).decode("ascii")
+    cards = art()
     page = fill((SRC / "index.html").read_text(), {
         "/*STYLE*/": style,
         "/*APP*/": code,
         "__WASM_BASE64__": engine,
+        "/*ART*/": cards,
     })
     OUT.write_text(page)
 
     size = len(page.encode())
-    rows = [("the engine (wasm, base64)", len(engine)), *owned.items(),
+    rows = [("the engine (wasm, base64)", len(engine)), ("the card art (WebP, base64)", len(cards)),
+            *owned.items(),
             ("stylesheet", len(style.encode()))]
     rows.append(("page skeleton", size - sum(n for _, n in rows)))
     print(f"{OUT.relative_to(ROOT)}: {size:,} bytes")

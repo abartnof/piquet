@@ -278,7 +278,8 @@ the opponent at −z, x runs to the human's right.
   (~140 × 100 cm) whose edge fades into the background, bright and plain,
   receiving shadows. No texture. Its outline, if visible at all, is soft.
 - **Camera**: the human's eyes, about 55 cm above the table and 60 cm back
-  from its centre, looking at a point ~8 cm in front of the centre; vertical
+  from its centre, looking at the centre (the spike tried ~8 cm in front of
+  it, which put your opponent's hand off the top of the screen); vertical
   field of view ~40°. Fixed for now (a slight mouse parallax is an open
   question, §12). Resize and DPR handled; DPR capped at 2.
 - **Zones** (x, y, z; to be tuned in the look spike):
@@ -378,6 +379,26 @@ averaging the normals of vertices that share a position; this is what keeps the
 line unbroken at a card's hard edges, where three.js's stock `OutlineEffect`
 tears. Colour: a deep ink, not pure black (e.g. `#1d2433`).
 
+**Measured in the look spike (P2): Plan A works, with one change.** Pushing
+the hull *on screen* — clip-space x and y, depth kept — fails on a card tilted
+away: moving a vertex sideways while keeping its depth re-slopes every hull
+triangle, and on the far half of the card the hull stands *in front of* the
+face (a 2.5 px stretch over a 50 px triangle spanning 4 cm of depth moves it
+~0.2 cm, against a card 0.03 cm thick). The result was a dark "envelope flap"
+on every card. The fix: push each vertex **in the model, within the card's
+plane**, by whatever distance projects to the ink width in pixels. The hull
+then stays coplanar with the back, depth is exact, and the line is continuous
+at every attitude tried — flat, 20° to 150°, on edge, floating, turned
+(`?angles` shows them). The push is capped at 1 cm so an edge seen end-on
+cannot balloon. The outline normal is the in-plane one for the same reason:
+a slab's face normals push its near and far rims apart.
+
+Cards on the table rest 0.02 cm above it and each card on a pile 0.02 cm above
+the last, so no two surfaces are coplanar and nothing needs a polygon offset
+(a slope-scaled offset would push the hull through its own card at grazing
+angles). The camera's near plane is 20 cm, which keeps a 24-bit depth buffer
+thousands of steps finer than a card's thickness.
+
 **Plan B — post-process edges**, if Plan A misbehaves on the very thin cards
 (test it first, in the look spike): render an object-ID buffer and a depth
 buffer, and draw ink where the ID changes or depth jumps. Robust for any
@@ -390,8 +411,13 @@ the face dims. (The 2D page's colours, carried over.)
 
 ### 8.3 Light and shadow
 A hemisphere light (sky/ground) for the bright, airy base, and one directional
-key light high and to the front-left, casting soft shadows (`PCFSoftShadowMap`,
-2048² map, bias tuned for the thin cards). **Shadows are the depth cue for the
+key light high and to the front-left, casting soft shadows (2048² map, bias
+tuned for the thin cards). **three r186 removed `PCFSoftShadowMap`** — it
+falls back to `PCFShadowMap` with a console warning — so the spike compares
+the two that remain: `PCFShadowMap` (five hardware-filtered taps on a rotated
+disk: a defined edge, slightly soft) and `VSMShadowMap` (a Gaussian blur: a
+soft, light, diffuse shadow, much like Material's elevation shadows).
+Provisionally **VSM**, pending Andrew's eye; `?shadow=pcf` shows the other. **Shadows are the depth cue for the
 floating hands**: their soft shadows on the table say "held above it". The
 table receives; cards cast and receive.
 
@@ -507,13 +533,22 @@ throughout.
       alone is one flat tone from the player's eye — it fills the view — so
       the skeleton floats a placeholder card whose shadow is the proof of
       light. Headless Chromium draws WebGL 2 on SwiftShader.
-- [ ] **P2 — Look spike.** Table surface, hemisphere + directional light,
+- [x] **P2 — Look spike.** Table surface, hemisphere + directional light,
       soft shadows, toon materials, ink outline (Plan A) on a flat card, a
       floating tilted card and the table; a placeholder card texture.
       Screenshots of two or three surface colours for Andrew. *Accept*: the
       ink line is continuous around a flat card and a tilted one at several
       angles; shadows of a floating card are visible and soft; it looks
       bright and clean. Decide Plan A or B here.
+      *Landed*: **Plan A**, pushed in the model rather than on screen (§8.2).
+      Real art rather than a placeholder — the art pipeline came first
+      (`web3d/tools/art.py`). The spike (`web3d/src/spike.js`) sets a table
+      mid-deal by hand; `?surface=paper|sky|sage`, `?shadow=pcf|vsm`,
+      `?ink=<px>`, `?eye=x,y,z&at=x,y,z&fov=deg` and `?angles` vary it.
+      Camera settled at eye (0, 55, 60) looking at the table's centre; your
+      opponent's hand is held **upright** (aimed at their own eye, it was
+      edge-on to you). Provisional defaults, awaiting Andrew: **sky**
+      surface, **VSM** shadows, 2.5 px ink.
 - [ ] **P3 — Card art, both ways.** Build **raster (WebP) and vector (SVG,
       rasterised at load)** behind a build flag (§3.2), take the listed
       measurements, and show Andrew the two side by side — size, load time,

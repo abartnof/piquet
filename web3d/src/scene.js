@@ -1,62 +1,83 @@
 // The scene: renderer, camera, light, and the table the cards rest on.
+//
+// The look (docs/TABLE3D.md section 8): bright and airy. A hemisphere light
+// for the base, one key light high to the front-left casting soft shadows,
+// and a pale surface with no texture that reads as a table only because
+// things rest on it and cast shadows on it. Its far edge fades into the
+// background, so there is no edge to see.
 
 import {
-  BoxGeometry,
   Color,
   DirectionalLight,
+  Fog,
   HemisphereLight,
   Mesh,
   MeshToonMaterial,
-  PCFSoftShadowMap,
+  PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
   SRGBColorSpace,
+  VSMShadowMap,
   WebGLRenderer,
 } from "three";
-import { CAMERA, CARD, TABLE } from "./units.js";
+import { RAMPS } from "./materials.js";
+import { CAMERA } from "./units.js";
 
-export function createScene(canvas) {
+// Candidate surfaces for the table, for Andrew to choose between.
+export const SURFACES = {
+  paper: { table: "#f3efe7", air: "#f7f4ee" }, // warm paper-white
+  sky: { table: "#e3ecf5", air: "#eef3f9" }, // pale sky
+  sage: { table: "#e2eadf", air: "#eef2eb" }, // soft sage
+};
+
+export function createScene(
+  canvas,
+  { surface = "sky", shadow = "vsm", eye = CAMERA.position, at = CAMERA.target, fov = CAMERA.fov } = {},
+) {
+  const colours = SURFACES[surface] || SURFACES.sky;
   const renderer = new WebGLRenderer({ canvas, antialias: true });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = PCFSoftShadowMap;
+  renderer.shadowMap.type = shadow === "vsm" ? VSMShadowMap : PCFShadowMap;
 
   const scene = new Scene();
-  scene.background = new Color("#eef1f5");
+  scene.background = new Color(colours.air);
+  // The table's far reaches fade into the air: no edge, no horizon.
+  scene.fog = new Fog(colours.air, 110, 260);
 
-  const camera = new PerspectiveCamera(CAMERA.fov, 1, CAMERA.near, CAMERA.far);
-  camera.position.set(...CAMERA.position);
-  camera.lookAt(...CAMERA.target);
+  const camera = new PerspectiveCamera(fov, 1, CAMERA.near, CAMERA.far);
+  camera.position.set(...eye);
+  camera.lookAt(...at);
 
-  scene.add(new HemisphereLight("#ffffff", "#c9ced8", 1.6));
-  const key = new DirectionalLight("#ffffff", 1.8);
+  scene.add(new HemisphereLight("#ffffff", "#d8dbe3", 2.3));
+  const key = new DirectionalLight("#ffffff", 1.0);
   key.position.set(-30, 80, 40);
   key.castShadow = true;
   // The shadow camera must cover the table in centimetres; its default box is
   // ten units across and would clip every shadow but the centre's.
-  Object.assign(key.shadow.camera, { left: -75, right: 75, top: 60, bottom: -60, near: 1, far: 250 });
+  Object.assign(key.shadow.camera, { left: -70, right: 70, top: 60, bottom: -60, near: 20, far: 200 });
   key.shadow.mapSize.set(2048, 2048);
+  key.shadow.bias = -0.0004;
+  key.shadow.normalBias = 0.02;
+  key.shadow.radius = shadow === "vsm" ? 12 : 3;
+  key.shadow.blurSamples = 16;
+  key.shadow.intensity = 0.75;
   scene.add(key);
 
   const table = new Mesh(
-    new PlaneGeometry(TABLE.width, TABLE.depth),
-    new MeshToonMaterial({ color: "#f7f5f0" }),
+    new PlaneGeometry(600, 600),
+    new MeshToonMaterial({ color: colours.table, gradientMap: RAMPS.table() }),
   );
   table.rotation.x = -Math.PI / 2;
   table.receiveShadow = true;
   scene.add(table);
 
-  // A placeholder card, floating: its shadow on the table is what makes the
-  // table read as a surface at all. Replaced by the real cards.
-  const card = new Mesh(
-    new BoxGeometry(CARD.width, CARD.thickness, CARD.height),
-    new MeshToonMaterial({ color: "#ffffff" }),
-  );
-  card.position.set(0, 12, 10);
-  card.rotation.set(0.9, 0, 0.15);
-  card.castShadow = true;
-  scene.add(card);
+  const inks = new Set();
+  function registerInk(material) {
+    inks.add(material);
+    renderer.getDrawingBufferSize(material.uniforms.resolution.value);
+  }
 
   function resize() {
     const width = canvas.clientWidth;
@@ -65,6 +86,7 @@ export function createScene(canvas) {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    for (const ink of inks) renderer.getDrawingBufferSize(ink.uniforms.resolution.value);
   }
 
   let frames = 0;
@@ -79,5 +101,5 @@ export function createScene(canvas) {
     render();
   });
 
-  return { scene, camera, renderer, render, frames: () => frames };
+  return { scene, camera, renderer, key, render, registerInk, frames: () => frames };
 }

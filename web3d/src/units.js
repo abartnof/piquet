@@ -22,9 +22,11 @@ export const TABLE = Object.freeze({
 // its centre.
 export const CAMERA = Object.freeze({
   position: Object.freeze([0, 55, 60]),
-  target: Object.freeze([0, 0, 8]),
+  target: Object.freeze([0, 0, 0]),
   fov: 40, // vertical, degrees
-  near: 5,
-  far: 600,
+  // Nothing comes nearer the eye than about 45 cm; a near plane at 20 keeps
+  // the depth buffer fine enough to tell a card from the one it lies on.
+  near: 20,
+  far: 400,
   maxPixelRatio: 2,
 });
