@@ -13,6 +13,7 @@
     "three": "0.186.1"
   },
   "devDependencies": {
+    "@material/material-color-utilities": "0.4.0",
     "esbuild": "0.28.2"
   }
 }

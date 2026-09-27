@@ -12,6 +12,17 @@
 </head>
 <body>
 <canvas id="stage" aria-label="The card table"></canvas>
+<div id="overlay">
+  <header id="topbar" class="surface bar"></header>
+  <aside id="tab" class="surface tab" aria-label="The running score"></aside>
+  <section id="prompt" class="surface prompt" aria-live="polite"></section>
+  <aside id="narration" class="surface narration" hidden>
+    <h2>What has been said</h2>
+    <div id="log" class="log"></div>
+  </aside>
+  <md-dialog id="settings"></md-dialog>
+  <md-dialog id="credits"></md-dialog>
+</div>
 <p id="loading" class="loading">Setting the table…</p>
 <script>
 const WASM_BASE64 = "__WASM_BASE64__";

@@ -42,25 +42,33 @@ The pinned originals, with checksums and measurements, are in
 table's controls follow its components, colour system, shape and motion
 guidance (Andrew: "clear designs, organic motion, and favors smooth lines over
 sharp lines"). The guidelines are Google's; the components are used through
-`@material/web` (below). If the colour scheme is generated with Google's
-Material Color Utilities or icons are drawn from Material Symbols, they are
-added here with their versions and licences (both Apache-2.0) when they come
-in.
+`@material/web` (below), and the colour scheme is generated from one seed
+colour with Google's Material Color Utilities (build tools, below). The
+motion curves and durations are the ones `@material/web` ships as tokens.
+
+The page's few icons (undo, settings, narration, fold and unfold) are simple
+strokes drawn for it; no icon font or Material Symbols is used.
 
 ## Software in the page
 
 The 3D table's single-file page (`web3d/piquet3d.html`; see
-`docs/TABLE3D.md`) bundles these. three.js is in it from the first build;
-Material Web and Lit arrive with the overlay, and the packages they depend on
-are added here when they do. The licences require their notices to travel with
-the copies: the build keeps each library's licence comment at the end of the
-script, and the page carries a credits screen with the licence texts.
+`docs/TABLE3D.md`) bundles exactly these — the list is what esbuild's
+metafile says is in the bundle, not merely what is installed. The licences
+require their notices to travel with the copies: the build keeps each
+library's licence comment at the end of the script, and the page's Credits
+screen (Settings → Credits) names them.
 
-| Package | Version | Licence | Holder |
-|---|---|---|---|
-| three.js | 0.186.1 | MIT | three.js authors |
-| @material/web (Material Design 3 components) | 2.5.0 | Apache-2.0 | Google LLC |
-| Lit | 3.3.3 | BSD-3-Clause | Google LLC |
+| Package | Version | Licence | Holder | In the page |
+|---|---|---|---|---|
+| three.js | 0.186.1 | MIT | three.js authors | 535 KB |
+| @material/web (Material Design 3 components) | 2.5.0 | Apache-2.0 | Google LLC | 191 KB |
+| lit-html (part of Lit 3.3.3) | 3.3.3 | BSD-3-Clause | Google LLC | 10 KB |
+| @lit/reactive-element (part of Lit) | 2.1.2 | BSD-3-Clause | Google LLC | 9 KB |
+| lit-element (part of Lit) | 4.2.2 | BSD-3-Clause | Google LLC | 1 KB |
+| tslib (TypeScript's helpers, used by Material Web) | 2.8.1 | 0BSD | Microsoft Corporation | 0.3 KB |
+
+Installed but not in the page: `@lit/context` (BSD-3-Clause), a dependency of
+Material Web that the bundle never reaches.
 
 The rules engine and everything else in this repository are the project's own.
 
@@ -69,6 +77,7 @@ The rules engine and everything else in this repository are the project's own.
 | Tool | Version | Licence | Use |
 |---|---|---|---|
 | esbuild | 0.28.2 | MIT | Bundling the page's JavaScript |
+| Material Color Utilities (`@material/material-color-utilities`) | 0.4.0 | Apache-2.0 | Generating the 3D table's colour scheme from one seed (`web3d/tools/scheme.mjs`) |
 | librsvg (`rsvg-convert`) | Debian 12 | LGPL-2.1+ | Rasterising the card art |
 | Pillow | current | MIT-CMU (HPND) | Cropping and encoding the card images |
 
