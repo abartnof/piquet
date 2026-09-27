@@ -961,6 +961,47 @@ worth pursuing rather than one that was tried and failed. The mirrored-parties
 harness (`tournament::partie_duel`) exists now, which is what any further
 attempt has to be judged on.
 
+**Both suspects, followed up (26–27 September 2026).** The same 720 mirrored
+last deals throughout, so every comparison is on identical cards.
+
+- **A pique or repique already decided** is now counted in the settlement
+  (`solver::settled_log`). It was a real sixty-point error wherever it
+  applied, and correcting it changed **one deal in 720**. So it was not the
+  tail. Splitting the pairs by the biggest bonus either half held showed where
+  the tail actually was: pique deals lost at about eight times the rate of
+  the rest.
+- The fourth observation-leak fix then changed what both agents know, so the
+  baseline was measured again: **257 won, 49 lost, 414 drawn, net −3.40 ±
+  3.57**. The figures below are against that one, not the table above.
+- **Ninety worlds instead of thirty**, for both agents: **257 won, 44 lost,
+  419 drawn, net −2.51 ± 3.69**. Five fewer losses and 0.9 a deal better —
+  in the right direction, and far inside the noise. If a thin sample is part
+  of the tail, it is a smaller part than this instrument can see. (Tripling
+  the worlds cost only about 1.5× the CPU time, not 3×, so price is no
+  argument against it.)
+- **A pique still live** — elder short of thirty, younger on nothing, which
+  the play can make or deny — is now played for (`solver::piqued_after`, and
+  one more bit in the memo key): **266 won, 33 lost, 421 drawn, net −1.30 ±
+  3.55**. Fewer losses in five of the six standings and a better net in all
+  six. Like for like — the baseline run again with the same split by bonus
+  — pique deals went from **21 lost of 52, costing 1,252 points, to 4 lost
+  of 48, costing 26**. The other deals did not move. (Four deals left the
+  pique class: a search that makes or denies piques moves deals between
+  classes, since a class is what the deal turned out to hold.)
+
+**One suspect was a real piece of the tail; neither was all of it.** The
+live pique is correct by the rules and stays. Sixteen fewer losses is about
+1.8 sigma even treating the two runs as independent, and pairing them on
+identical cards should only tighten that. But the net — the thing that pays —
+is still no distance from zero, so settling at the leaf is not yet shown to
+beat the flat search. What remains of the tail is rubicon flips in deals with
+no bonus at all: 28 losses costing 6,730 points, about 240 each, which the
+live pique did not touch. Ninety worlds shaved five losses on its own, but
+that run predates the split, so where they came from is unknown.
+
+Two things next: compare variants deal by deal rather than by totals (each ±
+above carries card luck every row shares), then judge on whole parties.
+
 ### 6.4b Where the uncertainty lives, and what to do about it
 
 Piquet is several different decision problems wearing one coat, and they do not

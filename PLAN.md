@@ -172,9 +172,15 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
    Record each in §13 of `docs/TABLE3D.md`; delete whichever art page loses.
    Also open: an idle sway (it would mean rendering forever — opt-in?),
    synthesised sound (a toggle?), and the aids' defaults.
-2. Then the plan's order below: **TODO 1, the partie objective**, and
+   **Two things only his own devices can answer:** the art's load time
+   above, and the frame rate on a real GPU — the VM emulates one, so every
+   timing in `docs/TABLE3D.md` is a worst case.
+2. Then the plan's order below: **TODO 1, the partie objective** — both
+   suspects measured today, and the next step is written there — and
    **Milestone 9, the training mode** — the 3D table already has its first
    half (hints, refusals in the engine's words); `explain.rs` is the second.
+   The training mode's shape is a design conversation to have with Andrew
+   before building it.
 
 - **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
   Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
@@ -208,16 +214,16 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
   the VM. Afterwards: **your discards can be picked up and looked at**, as
   the rules allow (`7479a52`); a full hand kept clear of the prompt
   (`53bde1e`); **the whole game playable from the keyboard** — ← → and Space,
-  named in a live region (`4082ac7`); and tablets, whose score tab had
-  been covering the top bar's settings button (`540fd46`).
-- **In flight, 27 September — TODO 1, both suspects.** Today's baseline
-  (720 mirrored last deals, 30 worlds, `settle 120 30`): **257 won, 49
-  lost, 414 drawn, net −3.40 ± 3.57** — not the 248/46/426 recorded below,
-  because the fourth-leak fix changed what the agents know; compare only
-  against this. Running: 90 worlds (same solver); the **live pique** now
-  modelled in the settling search (`79cfc82`, tested on a two-card
-  endgame); and the no-pique baseline again with `settle`'s new split by
-  bonus (`bb0fc35`), so the split can be compared like for like.
+  named in a live region (`4082ac7`), every key listed in Settings
+  (`2ea37ed`); and tablets, whose score tab had been covering the top bar's
+  settings button (`540fd46`).
+- **TODO 1, both suspects measured (27 September).** On the same 720
+  mirrored last deals: today's baseline **257–49–414, net −3.40 ± 3.57**
+  (reproduced exactly by a second build; the old 248/46/426 predates the
+  fourth-leak fix); **ninety worlds** 257–44–419, −2.51; the **live pique**
+  played for (`79cfc82`) **266–33–421, −1.30 ± 3.55**, its whole gain in
+  pique deals (21 of 52 lost → 4 of 48). The net is still no distance from
+  zero. Table, reading and next steps in TODO 1; `docs/DESIGN.md` §6.4a.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
@@ -541,19 +547,43 @@ Ordered by how much they are needed, not by size.
    | pique | 52 | 18 | **18** | −1,228 |
    | repique | 42 | 9 | 1 | −398 |
 
-   **Next, and in this order.** Both are leads, neither measured:
+   **Both leads, measured (27 September).** The fourth-leak fix had changed
+   what both agents know, so the baseline was measured again first. Every
+   row is the same 720 mirrored last deals (`settle 120 <worlds>`):
 
-   - A pique still **live** when the search begins — elder short of thirty,
-     younger on nothing — which the play can make or deny. Pique deals lose
-     at nine times the rate of the rest. `pique_is_live` (TODO 9) is the
-     helper that exists for this; it would need the log's order of
-     precedence carried into the search.
-   - Raise **`max_worlds`** above thirty and see whether the no-bonus tail
-     shrinks. Those losses average ~250 — rubicon flips — and the flat
-     objective forgives a thin sample where this one does not.
+   | settling search | won | lost | drawn | net per deal |
+   |---|---|---|---|---|
+   | baseline, 30 worlds | 257 | 49 | 414 | −3.40 ± 3.57 |
+   | 90 worlds | 257 | 44 | 419 | −2.51 ± 3.69 |
+   | **plays for a live pique** (`79cfc82`), 30 worlds | **266** | **33** | 421 | **−1.30 ± 3.55** |
 
-   Judge any of it on `tournament::partie_duel`, not on deals. The baseline is
-   in "Where we are".
+   **The live pique was a real piece of the tail, and stays** — it is what
+   the rules say anyway. Like for like (both runs split by bonus,
+   `bb0fc35`), pique deals went from 21 lost of 52, costing 1,252 points,
+   to **4 lost of 48, costing 26**; the other deals did not move. Sixteen
+   fewer losses is about 1.8 sigma even treating the runs as independent,
+   and pairing on identical cards should only tighten that. **But the net
+   is still no distance from zero** (0.4 sigma), so settling at the leaf is
+   not yet shown to beat the flat search where it pays.
+
+   What is left of the tail is **28 rubicon flips in no-bonus deals**, 6,730
+   points at ~240 each. Ninety worlds shaved five losses on its own (that
+   run predates the split, so from where is unknown); ninety worlds *with*
+   the live pique is the obvious next variant, once the comparison is
+   paired. To reproduce: `cargo build --release`, then
+   `target/release/settle 120 30` — the current search, live pique included.
+
+   **Next, in order:**
+
+   - **Pair the comparison.** `settle` prints totals only, and each ± above
+     carries the card luck that every row shares, so it overstates the noise
+     *between* rows. Have it print each deal's settlement, or run two
+     variants side by side, and bound the difference itself. A run is ~25
+     minutes on the dev VM.
+   - **Then judge on whole parties**, which is what this TODO has always
+     said is the real test: `bin/parties` duels rungs today and needs a
+     settling-against-flat mode on `tournament::partie_duel`. Time a small
+     run first, and bring Andrew the estimate before a long one.
 
 2. **`rubicon nerve`, the fourth style dimension**, specified in
    `docs/DESIGN.md` §7.1 and now finally possible to implement — `chances`
@@ -602,8 +632,13 @@ Ordered by how much they are needed, not by size.
    points at the ladder instead.
 8. **Re-measure `style.CALIBRATED`.** The ladder moved when the observation
    leaks were closed, and the bands were fitted against the old one.
-9. **`solver.pique_is_live` is still dead code** — a documented intention with
-   no caller. Either the solver should score piques or the helper should go.
+9. ~~**`solver.pique_is_live` is still dead code**~~ — **answered in Rust.**
+   The settling search now plays for a pique still live
+   (`solver::piqued_after`, `79cfc82`), which is the question the helper was
+   written to ask. The flat search still ignores piques by design — its
+   objective is additive and the pique is not — and the Python helper stays
+   dead in the frozen reference. Nothing left to do unless the flat search is
+   ever asked to see them.
 10. **Younger's untaken talon cards.** If she leaves any she may expose them to
    both players after elder leads, or leave them face down. Not modelled.
 11. **Carte blanche's information timing.** Elder must announce how many cards
