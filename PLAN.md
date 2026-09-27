@@ -163,7 +163,9 @@ to borrow from); `CREDITS.md`.
 
 Rules that bind the work, from Andrew: TDD; atomic commits straight to `main`,
 often; `PLAN.md` updated as each phase lands; `set -e` on multi-step shell
-commands; one self-contained HTML page, under 5 MB, **working offline**;
+commands; one self-contained HTML page, **modest in size** (5 MB is a
+guideline, not a hard limit — kept small enough to try the card art both
+raster and vector and choose by eye), **working offline**;
 Material Design 3 for the controls, bundled; **"your opponent", never a proper
 name**; every aid a toggle; the look is *clean, bright, a bit cartoonish, not
 childish — freed of grubby cards on dirty furniture*; **every third-party

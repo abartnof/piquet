@@ -46,7 +46,9 @@ Andrew, 27 September 2026:
 
 Standing rules that still apply (from `PLAN.md` and the project memory): TDD;
 atomic commits straight to `main`, often; `set -e` on multi-step shell
-commands; the single self-contained HTML page under 5 MB; everything offline;
+commands; a single self-contained HTML page that stays modest (5 MB is a
+guideline, not a hard limit — Andrew: "i want this to be rather modest and
+easy to use, but it's not a HARD limit"); everything offline;
 no proper names for the opponent — "your opponent"; every aid a toggle; the
 GUI is a client of the protocol and holds no rules.
 
@@ -92,10 +94,37 @@ checksums and measurements). Credits: `/CREDITS.md`.
   ship is CC BY-SA 3.0** and must be credited **in the game** (a Credits screen
   reachable from the settings), not only in the repository.
 
-### 3.2 The pipeline: rasterise at build time
+### 3.2 The art pipeline: build both ways, and choose by eye
 
-Measured: the 32 piquet cards are 2.16 MB of the 2.33 MB SVG (courts 1.95 MB).
-Shipping vector gains little and costs most of the budget, so:
+Andrew's decision (27 September 2026): **keep the page small enough that we
+can try the card art both ways — rasterised and vector — and see which we
+prefer.** So phase 3 builds both, behind a build flag, and puts them side by
+side before anything is settled. Neither is the default until he has looked.
+
+**What each way buys.** Measured so far: the 32 piquet cards are 2.16 MB of
+the 2.33 MB SVG, the twelve courts alone 1.95 MB.
+
+| | Raster (WebP, made at build time) | Vector (SVG, rasterised in the browser) |
+|---|---|---|
+| File size | Smaller: est. 0.8–1.3 MB for 33 images | Larger: 2.2 MB raw; perhaps ~1–1.3 MB after trimming path precision (SVGO-style), and it gzips well when served |
+| Crispness | Fixed at the chosen resolution (512 px wide) | Rasterised at load at whatever the device needs (DPR 2–3, a close-up of one card) |
+| Recolouring | A separate image set per variant | Trivial — suit colours are fills: e.g. a **four-colour deck** as an accessibility aid (a toggle, like every aid), or a high-contrast deck |
+| First load | Fast (image decode) | Slower: 33 SVGs rasterised on load — measure it, on a phone too |
+| Build | Needs `rsvg-convert` + Pillow on the VM | Needs neither; the browser is the rasteriser |
+| Fidelity | Near-lossless at q≈88 | The artist's original |
+
+Either way the GPU gets raster textures (WebGL samples images, not paths); the
+question is only whether the rasterising happens once at build time or on the
+player's machine at load.
+
+**Measurements to take in phase 3, before choosing** (a scratch script was
+started and stopped; nothing is committed): total size of each variant, raw
+and gzipped; path precision at 2 and 1 decimals with a pixel-diff check that
+the rounding is invisible (Pillow is already in the `.venv`); WebP size of the
+33 raster cards; time to rasterise the 33 SVGs into textures in the browser, on
+the VM and on Andrew's machine; screenshots of the same close-up in each.
+
+**Way A — raster**, as first planned:
 
 - `web3d/tools/art.py` (Python, the project `.venv`):
   1. rasterise the deck SVG once with `rsvg-convert` (apt: `librsvg2-bin`) at
@@ -117,7 +146,16 @@ Resolution: a card in the floating fan is roughly 130–180 CSS px wide on a
 laptop; at DPR 2 that is up to ~360 device px, and a hovered card lifts closer.
 512 px wide with mipmaps is ample; revisit only if screenshots look soft.
 
-### 3.3 Budget (single file, target < 3 MB, hard limit 5 MB)
+**Way B — vector.** At build time, cut the deck SVG down to the 32 piquet cards
+(one standalone SVG per card, viewBox on its 750 × 1050 cell), trim numeric
+precision in path data (never in the transforms, whose scale factors must stay
+exact), and embed them. At load, draw each into a canvas at a size chosen from
+the device pixel ratio and use the canvas as the texture; re-draw one card
+larger if it is ever shown up close. The back is prepared the same way (its
+5:7 re-framing done in SVG). A **four-colour deck** becomes a cheap option: swap
+the suits' fill colours before rasterising.
+
+### 3.3 Budget (single file; kept modest — 5 MB is a guideline, not a wall)
 
 | Part | Estimate | Note |
 |---|---|---|
@@ -126,7 +164,7 @@ laptop; at DPR 2 that is up to ~360 device px, and a hovered card lifts closer.
 | Engine (wasm, base64) | ~425 KB | as today |
 | Card art (32 faces + back, WebP, base64) | 0.8–1.3 MB | measured in phase 3 |
 | App code + CSS | 60–120 KB | |
-| **Total** | **~1.8–2.6 MB** | the build fails over 5 MB |
+| **Total** | **~1.8–2.6 MB raster; ~2.5–3.5 MB vector** | the build reports every part and warns over 5 MB |
 
 No web fonts and no icon font: a system font stack, and a few inline SVG
 icons. (Roboto would be ~100 KB+ per weight; the M3 components work with any
@@ -437,7 +475,8 @@ Floating surfaces over the canvas, nothing modal unless it must be.
   partie can be played by clicking cards through the test hooks; the score
   tab's rows sum to the deal totals; undo, hints, settings, reload; a phone
   viewport; no console errors; screenshots at each stage, read back by eye.
-- **Budget**: the build prints the size of each part and fails over 5 MB.
+- **Budget**: the build prints the size of each part and warns over 5 MB;
+  size is weighed against what it buys, with Andrew, not treated as a wall.
 
 ## 12. Open questions for Andrew (after the look spike)
 
@@ -470,11 +509,14 @@ throughout.
       ink line is continuous around a flat card and a tilted one at several
       angles; shadows of a floating card are visible and soft; it looks
       bright and clean. Decide Plan A or B here.
-- [ ] **P3 — Card art pipeline.** `web3d/tools/art.py`; 32 faces + back as
-      WebP, committed; card geometry with three material groups and UVs
-      (faces upright, the back not mirrored) and `outlineNormal`; the art
-      budget check. *Accept*: every card renders the right face, upright,
-      with the back on the reverse; sizes within budget.
+- [ ] **P3 — Card art, both ways.** Build **raster (WebP) and vector (SVG,
+      rasterised at load)** behind a build flag (§3.2), take the listed
+      measurements, and show Andrew the two side by side — size, load time,
+      a close-up — for him to choose. Card geometry with three material
+      groups and UVs (faces upright, the back not mirrored) and
+      `outlineNormal`. *Accept*: every card renders the right face, upright,
+      with the back on the reverse, in both variants; the comparison is in
+      front of Andrew; his choice recorded here.
 - [ ] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
       `timeline.js` with the invariants in §11. *Accept*: tests green; a
       demo page shows each primitive.
