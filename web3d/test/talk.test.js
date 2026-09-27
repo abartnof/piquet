@@ -111,3 +111,37 @@ test("every event of a partie is told somewhere, or deliberately left to the tab
     }
   }
 });
+
+// Andrew: "think about how during WNBA broadcasts, 3-pointers have a little
+// on-screen animation in the score box. something like that would be fun
+// for special events (not for every event)".
+test("the rare big moments carry a flourish, and ordinary points do not", () => {
+  const t = talk([
+    ev("deal_begins", { elder: "you", you_total: 140, them_total: 20 }), // over already: no rubicon moment
+    ev("scored", { who: "you", amount: 10, what: "carte blanche", category: "carte_blanche" }),
+    ev("scored", { who: "you", amount: 4, what: "point of 4", category: "point" }),
+    ev("scored", { who: "you", amount: 16, what: "sixième to the king", category: "sequences" }),
+    ev("scored", { who: "them", amount: 3, what: "tierce to the ace", category: "sequences" }),
+    ev("scored", { who: "you", amount: 14, what: "quatorze of aces", category: "sets" }),
+    ev("scored", { who: "them", amount: 3, what: "trio of kings", category: "sets" }),
+    ev("scored", { who: "you", amount: 60, what: "repique", category: "bonus" }),
+    ev("scored", { who: "them", amount: 30, what: "pique", category: "bonus" }),
+    ev("scored", { who: "you", amount: 40, what: "capot", category: "cards" }),
+    ev("scored", { who: "them", amount: 10, what: "the cards", category: "cards" }),
+  ], 1);
+  const flair = (half) => t[half].map((l) => l.flair ?? null);
+  assert.deepEqual(flair("you"), ["Carte blanche", null, "Sixième", "Quatorze", "Repique", "Capot"]);
+  assert.deepEqual(flair("them"), [null, null, "Pique", null]);
+});
+
+test("crossing the rubicon is a moment, once, on the point that carries a side over", () => {
+  const t = talk([
+    ev("deal_begins", { elder: "them", you_total: 90, them_total: 60 }),
+    ev("scored", { who: "you", amount: 5, what: "point of 5", category: "point" }),
+    ev("scored", { who: "you", amount: 6, what: "trio of aces, trio of queens", category: "sets" }),
+    ev("scored", { who: "you", amount: 3, what: "tierce", category: "sequences" }),
+    ev("scored", { who: "them", amount: 30, what: "pique", category: "bonus" }),
+  ], 1);
+  assert.deepEqual(t.you.map((l) => l.flair ?? null), [null, "Over the rubicon", null]);
+  assert.deepEqual(t.them.map((l) => l.flair ?? null), ["Pique"], "60 + 30 is still short: the pique is the moment");
+});

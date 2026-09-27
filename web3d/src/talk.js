@@ -16,12 +16,29 @@ const cap = (text) => text.charAt(0).toUpperCase() + text.slice(1);
 const TAKES = { point: "the point", sequences: "sequences", sets: "sets" };
 const NAME = { point: "Point", sequences: "Sequences", sets: "Sets", carte_blanche: "Carte blanche" };
 
+const RUBICON = 100;
+
+// The rare big moments, which the dialogue box celebrates (Andrew: like a
+// three-pointer's graphic in a basketball broadcast's score box -- "for
+// special events (not for every event)"). Everything else is said quietly.
+export function flairOf(e) {
+  const what = String(e.what ?? "").toLowerCase();
+  if (e.category === "bonus") return what.includes("repique") ? "Repique" : "Pique";
+  if (e.category === "carte_blanche") return "Carte blanche";
+  if (e.category === "cards" && e.amount >= 40) return "Capot";
+  if (e.category === "sets" && what.includes("quatorze")) return "Quatorze";
+  const long = what.match(/sixième|septième|huitième/);
+  if (e.category === "sequences" && long) return cap(long[0]);
+  return null;
+}
+
 export function talk(events, deal) {
   const halves = { you: [], them: [], table: [] };
   const total = { you: 0, them: 0 };
   let onTable = 0; // cards on the table in the trick being played
   let elder = null;
   const called = {}; // elder's call in each category, as said
+  const before = { you: 0, them: 0 }; // the partie's totals as the deal began
 
   // The latest line in a half of this kind, still without its points.
   const open = (who, kind, card) =>
@@ -35,6 +52,8 @@ export function talk(events, deal) {
     switch (e.kind) {
       case "deal_begins":
         elder = e.elder;
+        before.you = e.you_total ?? 0;
+        before.them = e.them_total ?? 0;
         say("table", e.text, { kind: e.kind });
         break;
       case "called":
@@ -70,7 +89,12 @@ export function talk(events, deal) {
         onTable = 0;
         break;
       case "scored": {
+        // Carried over the rubicon by this very score: the partie's moment.
+        const standing = who ? before[who] + total[who] : 0;
+        const crossed = who && standing < RUBICON && standing + e.amount >= RUBICON;
         if (who) total[who] += e.amount;
+        const special = flairOf(e);
+        const flair = crossed ? (special ? `${special} — over the rubicon` : "Over the rubicon") : special;
         const what = String(e.what ?? "");
         // A point in the play belongs to the card or the trick that made it.
         const led = what.match(/^leading (.+)$/);
@@ -81,8 +105,10 @@ export function talk(events, deal) {
               ? open(who, "trick")
               : null
           : null;
-        if (home) home.points = e.amount;
-        else say(who ?? "table", cap(what || "points"), { kind: "scored", points: e.amount });
+        if (home) {
+          home.points = e.amount;
+          if (flair) home.flair = flair;
+        } else say(who ?? "table", cap(what || "points"), { kind: "scored", points: e.amount, ...(flair ? { flair } : {}) });
         break;
       }
       case "exchanged":
