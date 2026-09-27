@@ -138,3 +138,41 @@ There is no clean British male voice. Rejected: the Northern English male
 
 By default your opponent speaks as Cori and you as Norman; Settings swaps
 them, and can mute your own calls or the voice altogether.
+
+## 5. Size, measured
+
+All 241 phrases, each voice, trimmed of silence either end:
+
+| | Cori | Norman |
+|---|---|---|
+| MP3, 32 kb/s mono | 1,231 kB | 1,116 kB |
+| **Ogg Opus, 20 kb/s mono (shipped)** | **745 kB** | **688 kB** |
+
+Counting aloud is most of it -- the 170 numbers are 72% of Cori's bytes.
+Opus, a codec made for speech, is clear at 20 kb/s and 40% smaller than
+MP3; with both voices the page is **4.96 MB** (voices 1.98 MB in base64,
+the card art 1.63 MB, the engine 0.43 MB), inside the 5 MB guideline
+(Andrew: "a goal to ensure the game can be easily downloaded/run, nothing
+more"). A browser that cannot play Ogg Opus (Safari before 18.4) speaks the
+same words in its own voice, respelled for the French terms, at no cost in
+size. If the page ever needs room, numbers above ninety-nine could be said
+as "a hundred and" + a smaller number, saving about a third of the voices.
+
+## 6. What is said, in practice
+
+From a real deal (`speech.js`, partie 3/7, deal 1):
+
+    you   I only take three. Five cards.
+    them  What do they make?
+    you   Fifty.
+    them  Good.
+    you   Five. A tierce to a knave.
+    them  Not good.
+    you   Nothing. Six.
+    them  A tierce major. Three. Three aces. Three queens. Nine.
+    you   Seven.
+    them  Ten. Eleven. Twelve. … Twenty-one. And the cards. Thirty-one.
+
+**Open for Andrew:** Cavendish says *knave*, *tierce major*, *quart
+minor*; the captions and the worth card say *jack* and *tierce to the ace*.
+Should the words on screen follow the voice?

@@ -166,7 +166,12 @@ spends money. The running log, newest last:
   opponent's voice, your own calls. **Voices: Cori (British, female) and
   Norman (American, male), both public domain and trained from scratch** --
   every British male voice descends from "lessac", research-only data.
-  Clip generation and size measurement under way.
+  **Done and pushed** (`20646fa`…`9ceef4e`): 241 clips a voice as Ogg Opus,
+  Cori 745 kB and Norman 688 kB; **the page is 4.96 MB** with both. The
+  browser test proves the page speaks (clips bundled, decoded, a point
+  called aloud). Younger answers in the dialogue and names what she won as
+  she reckons it, as Cavendish has it. Open for Andrew: should the captions
+  say *knave* and *tierce major* like the voice?
 - TODO 12 found already done (`docs/LITERATURE.md`).
 
 ### Resume here (third session, 27 September): two threads
