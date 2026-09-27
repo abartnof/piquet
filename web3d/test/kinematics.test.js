@@ -15,6 +15,7 @@ import {
   lying,
   pickUp,
   pose,
+  pull,
   slide,
   still,
   transfer,
@@ -247,4 +248,35 @@ test("a flip is a pile of one", () => {
   for (const t of T) {
     assert.ok(single(t).position.distanceTo(flip(card, { toward })(t).position) < 1e-9);
   }
+});
+
+// Andrew, watching a card played: "there's sort of a sharp tug pulling the
+// card from the deck, and then it's placed on the table".
+test("a card played is tugged sharply out of the hand along its own length, then set down", () => {
+  const held = pose([4, 16, 26], new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -15 * DEG)
+    .multiply(new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -8 * DEG)));
+  const target = lying({ x: 0.6, z: -4, height: 0.02, yaw: 3 * DEG });
+  const path = pull(held, target);
+  const at = (t) => path(t).position;
+
+  // Out along the card's own length, first, and fast: a tenth of the time
+  // takes it most of the way clear of its neighbours, where a hand-guided
+  // move from rest would hardly have started.
+  const early = at(0.02).sub(held.position);
+  assert.ok(early.clone().normalize().dot(top(held)) > 0.95, "leaves along its own length");
+  assert.ok(at(0.1).distanceTo(held.position) > 0.5 * CARD.height * 0.6, "a tug, not a slow start");
+  assert.ok(sameTurn(path(0.08).quaternion, held.quaternion, 1e-3), "held at the hand's angle while it clears");
+
+  // Then carried and set down: never stopping dead on the way, ending flat
+  // on its spot with a vertical final approach.
+  for (let i = 5; i < 90; i++) {
+    const speed = at((i + 1) / 100).distanceTo(at(i / 100)) * 100;
+    assert.ok(speed > 2, `hangs at t=${i / 100}: ${speed.toFixed(2)} cm per unit time`);
+  }
+  assert.ok(near(at(1), target.position));
+  assert.ok(sameTurn(path(1).quaternion, target.quaternion));
+  const p90 = at(0.9);
+  const p100 = at(1);
+  assert.ok(Math.hypot(p90.x - p100.x, p90.z - p100.z) < 0.2 * (p90.y - p100.y), "drops onto the spot, not skidding");
+  for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
 });

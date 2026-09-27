@@ -127,6 +127,29 @@ export function layDown(from, to, { clearance, ease = minimumJerk, turnBy = 0.85
   });
 }
 
+// A card played from a held hand. Andrew, watching the first build: "there's
+// sort of a sharp tug pulling the card from the deck, and then it's placed on
+// the table". So two beats: the fingers snap it out along its own length,
+// clear of its neighbours and still at the hand's angle -- fast from the
+// first instant, slowing as it comes free -- and then it is carried and set
+// down exactly as layDown sets one down. The carry begins a little before
+// the tug has finished, so the card never stops dead between the two.
+export function pull(from, to, { tug = 0.6 * CARD.height, tugShare = 0.3, overlap = 0.1 } = {}) {
+  const out = new Vector3(0, 1, 0).applyQuaternion(from.quaternion).multiplyScalar(tug);
+  const clear = { position: from.position.clone().add(out), quaternion: from.quaternion.clone() };
+  const carry = layDown(clear, to);
+  const carryFrom = tugShare - overlap;
+  const snap = (u) => 1 - (1 - u) ** 3; // at full speed at once, easing as it comes clear
+  return (t) => {
+    const a = snap(Math.min(1, Math.max(0, t / tugShare)));
+    const c = carry(Math.min(1, Math.max(0, (t - carryFrom) / (1 - carryFrom))));
+    return {
+      position: from.position.clone().addScaledVector(out, a).add(c.position).sub(clear.position),
+      quaternion: c.quaternion,
+    };
+  };
+}
+
 // From the table to a hand: lift the near edge first, hinged on the far one,
 // the way a fingertip gets under a card; then carry it. `toward` points from
 // the card to whoever is picking it up.

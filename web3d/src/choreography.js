@@ -28,6 +28,7 @@ import {
   flip,
   flipPile,
   layDown,
+  pull,
   lying,
   pickUp,
   slide,
@@ -38,11 +39,11 @@ import { CARD, ZONES } from "./units.js";
 
 // Starting points, tuned by eye; the speed setting scales them all.
 export const TIMING = Object.freeze({
-  play: 420,
+  play: 540, // the tug out of the hand, then the carry (kinematics.pull)
   think: 320, // your opponent's pause before answering a card
   read: 900, // a finished trick stays a moment before it is taken
   push: 520,
-  discard: 380,
+  discard: 460,
   draw: 380,
   stagger: 90, // between cards moved together
   resort: 260,
@@ -349,7 +350,7 @@ class Plan {
     if (who === "them" && this.motions.length) this.clock += TIMING.think;
     this.stage(layout(state, this.view), (mesh, slot) => {
       if (slot.zone === "trick" && mesh.zone !== "trick") {
-        return { path: layDown(mesh.pose, slot.pose), delay: 0, duration: TIMING.play };
+        return { path: pull(mesh.pose, slot.pose), delay: 0, duration: TIMING.play };
       }
       return { path: transfer(mesh.pose, slot.pose, { clearance: 1.2 }), delay: 0, duration: TIMING.resort };
     });
@@ -368,7 +369,7 @@ class Plan {
     let n = 0;
     this.stage(layout(state, this.view), (mesh, slot) => {
       if (slot.zone.endsWith("discards") && mesh.zone.endsWith("hand")) {
-        return { path: layDown(mesh.pose, slot.pose), delay: n++ * TIMING.stagger, duration: TIMING.discard };
+        return { path: pull(mesh.pose, slot.pose), delay: n++ * TIMING.stagger, duration: TIMING.discard };
       }
       return { path: transfer(mesh.pose, slot.pose, { clearance: 1.2 }), delay: 0, duration: TIMING.resort };
     });
@@ -394,7 +395,7 @@ class Plan {
     const inn = { n: 0 };
     this.stage(target, (mesh, slot) => {
       if (slot.zone === "their-discards" && mesh.zone === "their-hand") {
-        return { path: layDown(mesh.pose, slot.pose), delay: out.n++ * TIMING.stagger, duration: TIMING.discard };
+        return { path: pull(mesh.pose, slot.pose), delay: out.n++ * TIMING.stagger, duration: TIMING.discard };
       }
       if (slot.zone === "their-hand" && mesh.zone === "talon") {
         return { path: pickUp(mesh.pose, slot.pose, { toward: TOWARD.them }), delay: drawAt + inn.n++ * TIMING.stagger, duration: TIMING.draw };
