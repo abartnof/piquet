@@ -51,7 +51,8 @@ export const ZONES = Object.freeze({
   yourCut: Object.freeze({ x: -5, z: 9 }),
   theirCut: Object.freeze({ x: 5, z: -13 }),
   talon: Object.freeze({ x: -18, z: -3 }),
-  yourDiscards: Object.freeze({ x: -31, z: 9 }),
+  // Your discards, and where you hold them up when you look at them.
+  yourDiscards: Object.freeze({ x: -31, z: 9, peek: Object.freeze({ centre: Object.freeze([-26, 11, 17]), radius: 10, spread: 9 }) }),
   theirDiscards: Object.freeze({ x: -31, z: -14 }),
   yourPlay: Object.freeze({ x: 0.6, z: 3 }), // your card in a trick, nearer you
   theirPlay: Object.freeze({ x: -0.6, z: -7 }), // theirs, turned to face them
@@ -75,7 +76,7 @@ export const ZONES_PORTRAIT = Object.freeze({
   yourCut: Object.freeze({ x: -5, z: 9 }),
   theirCut: Object.freeze({ x: 5, z: -13 }),
   talon: Object.freeze({ x: -14, z: -4 }),
-  yourDiscards: Object.freeze({ x: -17, z: 8 }),
+  yourDiscards: Object.freeze({ x: -17, z: 8, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
   theirDiscards: Object.freeze({ x: -17, z: -15 }),
   yourPlay: Object.freeze({ x: 4.5, z: 4 }),
   theirPlay: Object.freeze({ x: 3.3, z: -6 }),

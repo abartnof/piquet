@@ -519,8 +519,15 @@ Floating surfaces over the canvas, nothing modal unless it must be.
 - **Test hooks** (`window.piquet3d`): `screenPoint(code)` gives a card's
   projected screen position, `busy()`, `state()`; the browser test clicks
   cards through them. `?test` makes every motion instant.
-- Later: drag a card to the table to play it; lift your discards to look at
-  them (the rules allow it); click a won trick to examine it.
+- **Your discards**, which the rules let you consult ("Both players keep
+  their own discards beside them and may consult them during play. Neither
+  may look at the other's" — `docs/PIQUET.md`): click the pile and you pick
+  the cards up, near edge first, into a small fan held up face to you; click
+  again, or make any move, and they are laid back down. Built after P9 —
+  the 2D page shows your discards face up, and in 3D they had become the
+  one thing you could no longer see.
+- Later: drag a card to the table to play it; click a won trick to examine
+  it.
 
 ## 11. Testing
 

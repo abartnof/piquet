@@ -144,7 +144,15 @@ function cutLayout(state, zones) {
 
 export function layout(
   state,
-  { sort = "auto", selected = [], lifted = [], fresh = [], eye = new Vector3(...CAMERA.position), zones = ZONES } = {},
+  {
+    sort = "auto",
+    selected = [],
+    lifted = [],
+    fresh = [],
+    peek = false,
+    eye = new Vector3(...CAMERA.position),
+    zones = ZONES,
+  } = {},
 ) {
   if (state.phase === "cut") return cutLayout(state, zones);
 
@@ -166,8 +174,21 @@ export function layout(
     })),
   );
 
+  // Your discards: a pile face down beside you -- or, while you look at them,
+  // held up in a small fan (the rules let you consult your own, never theirs).
   const d = zones.yourDiscards;
-  slots.push(...pile("your-discards", state.discards, { x: d.x, z: d.z }));
+  if (peek && state.discards.length) {
+    fan({
+      count: state.discards.length,
+      centre: new Vector3(...d.peek.centre),
+      facing: eye,
+      radius: d.peek.radius,
+      spread: d.peek.spread * DEG,
+      tilt: 10 * DEG,
+    }).forEach((pose, i) => slots.push({ zone: "your-discards", index: i, code: state.discards[i], pose }));
+  } else {
+    slots.push(...pile("your-discards", state.discards, { x: d.x, z: d.z }));
+  }
   const td = zones.theirDiscards;
   slots.push(...pile("their-discards", Array(state.their_discards).fill(null), { x: td.x, z: td.z }));
 

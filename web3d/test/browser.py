@@ -153,6 +153,21 @@ def take_turn(page, failures, n, checked):
     return True
 
 
+def check_peek(page, failures):
+    """Your own discards may be consulted: a click picks them up, face up,
+    another puts them down."""
+    pile = page.evaluate("window.piquet3d.screenPoint(null, 'your-discards', 0)")
+    page.mouse.click(pile["x"], pile["y"])
+    held = page.evaluate("window.piquet3d.screenPoint(null, 'your-discards', 0)")
+    if held["y"] > pile["y"] - 30:
+        failures.append("clicking your discards did not pick them up to look at")
+    shot(page, "03-peek")
+    page.mouse.click(held["x"], held["y"])
+    back = page.evaluate("window.piquet3d.screenPoint(null, 'your-discards', 0)")
+    if abs(back["y"] - pile["y"]) > 2 or abs(back["x"] - pile["x"]) > 2:
+        failures.append("clicking your discards again did not put them back")
+
+
 def check_undo_hints_settings(page, failures):
     s = state(page)
     if not s["can_undo"]:
@@ -196,6 +211,10 @@ def main() -> int:
                 goto(page, "test&level=3&seed=7", fresh=False)
                 if state(page)["record"] != before:
                     failures.append("a reload did not resume the game in progress")
+            s = state(page)
+            if "peek" not in checked and s["prompt"]["kind"] == "play" and s["discards"]:
+                checked.add("peek")
+                check_peek(page, failures)
             if n == 30:
                 shot(page, "03-play")
             if not take_turn(page, failures, n, checked):

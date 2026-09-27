@@ -94,13 +94,14 @@ async function main() {
   // player has chosen a speed for themselves.
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let prefs = recall(PREF_STORE, { ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
-  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [] };
+  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false };
   let cutDepth = 16;
   const view = () => ({
     sort: prefs.sort,
     selected: ui.selected,
     lifted: ui.lifted,
     fresh: ui.fresh,
+    peek: ui.peek,
     cutDepth,
     pause: prefs.pause,
     eye: stage.camera.position,
@@ -143,6 +144,7 @@ async function main() {
     ui.lifted = [];
     ui.pinned = null;
     ui.pinnedCards = [];
+    ui.peek = false; // any move puts your discards back down
     const drew = next.events.slice(prev.events.length).find((e) => e.kind === "drew");
     if (drew) ui.fresh = drew.drew;
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
@@ -292,6 +294,8 @@ async function main() {
     const kind = s.prompt.kind;
     if (kind === "cut" && hit.zone === "pack") return { kind: "cut", depth: Math.min(Math.max(hit.index + 1, s.prompt.fewest), s.prompt.most) };
     if ((kind === "exchange" || kind === "play") && hit.zone === "your-hand") return { kind, code: hit.code };
+    // Your own discards, which the rules let you consult: pick them up to look.
+    if (hit.zone === "your-discards") return { kind: "peek" };
     return null;
   }
   canvas.addEventListener("pointermove", (e) => {
@@ -312,7 +316,10 @@ async function main() {
     if (!t) return;
     if (t.kind === "cut") act(`cut ${t.depth}`);
     else if (t.kind === "play") act(`play ${t.code}`); // refused ones too: the engine says why
-    else choose(t.code);
+    else if (t.kind === "peek") {
+      ui.peek = !ui.peek;
+      director.rearrange();
+    } else choose(t.code);
   });
 
   function choose(code) {
@@ -344,6 +351,7 @@ async function main() {
     } else if (e.key === "Escape") {
       ui.selected = [];
       ui.lifted = [];
+      ui.peek = false;
       director.rearrange();
       render();
     } else if (e.key === " " && director.busy()) {

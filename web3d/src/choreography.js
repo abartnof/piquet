@@ -65,6 +65,12 @@ const TOWARD = { you: new Vector3(0, 0, 1), them: new Vector3(0, 0, -1) };
 const FACE_UP = new Set(["trick", "your-tricks", "their-tricks", "cut"]);
 const ROWS = new Set(["your-tricks", "their-tricks"]);
 
+// A card lying on the table (or on what lies on it), rather than in a hand.
+function onTable(pose) {
+  const n = new Vector3(0, 0, 1).applyQuaternion(pose.quaternion);
+  return Math.abs(n.y) > 0.9 && pose.position.y < 2;
+}
+
 const topOf = (pose) => new Vector3(0, 1, 0).applyQuaternion(pose.quaternion).setY(0).normalize();
 const acrossOf = (pose) => new Vector3(1, 0, 0).applyQuaternion(pose.quaternion).setY(0).normalize();
 
@@ -322,11 +328,21 @@ class Plan {
 
   direct(state) {
     const target = layout(state, this.view);
-    this.stage(target, (mesh, slot) => ({
-      path: transfer(mesh.pose, slot.pose, { clearance: mesh.zone === slot.zone ? 1.2 : undefined }),
-      delay: 0,
-      duration: mesh.zone === slot.zone ? TIMING.resort : TIMING.direct,
-    }));
+    let lifted = 0;
+    this.stage(target, (mesh, slot) => {
+      // Off the table into a hand, near edge first; out of a hand, set down.
+      const from = onTable(mesh.pose);
+      const to = onTable(slot.pose);
+      if (from && !to) {
+        return { path: pickUp(mesh.pose, slot.pose, { toward: TOWARD.you }), delay: lifted++ * 40, duration: TIMING.pickUp };
+      }
+      if (!from && to) return { path: layDown(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
+      return {
+        path: transfer(mesh.pose, slot.pose, { clearance: mesh.zone === slot.zone ? 1.2 : undefined }),
+        delay: 0,
+        duration: mesh.zone === slot.zone ? TIMING.resort : TIMING.direct,
+      };
+    });
   }
 
   play({ state, who }) {

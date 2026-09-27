@@ -4,8 +4,8 @@
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
 > holds *where we are and what is left*. Last updated 27 September 2026:
 > the 2D browser table is complete through Andrew's second round of notes,
-> and **the 3D table is being built** — `docs/TABLE3D.md`, phases P1–P3 done
-> or waiting on Andrew, P4 next.
+> and **the 3D table is built and playable** — `docs/TABLE3D.md`; its look
+> and card art wait on Andrew's choices.
 
 ## Where we are
 
@@ -150,18 +150,31 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
-### Resume here: build the 3D table
+### Resume here: the 3D table is built — Andrew's choices, then onward
 
-Andrew asked for a three.js table (27 September 2026) and for it to be planned
-in full before a context clear, so that a fresh session builds it from notes.
-**`docs/TABLE3D.md` is the plan** — the brief verbatim, the look, the assets
-and their licences, the stack, the architecture, the physics of every motion,
-the tests, open questions, and a phased TODO.
+Andrew asked for a three.js table (27 September 2026); **`docs/TABLE3D.md` is
+its plan and its record** — the brief verbatim, the look, the assets and
+their licences, the stack, the architecture, the physics of every motion,
+the tests, and a phased TODO with what each phase found.
 
-**Progress, 27 September 2026 (second session).** **The 3D table is
-playable**, by mouse and on a phone: P1, P2 and P4–P8 done; P3 built and
-waiting on Andrew's eye; **P9, polish, is what remains**. Details and
-measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
+**Where it stands (27 September 2026, second session).** `web3d/piquet3d.html`
+is **playable end to end**, by mouse and on a phone held upright: the cut,
+the deal in pairs, the exchange, declarations, every trick, the partie's
+settlement, with the running score tab, hints, undo, your discards to
+consult, and a browser test that plays a whole partie by clicking. P0–P2 and
+P4–P9 done; **P3 waits only on Andrew's choice**.
+
+**Next, in order:**
+1. **Andrew's decisions**, all on the comparison page
+   (https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp): the table's surface,
+   the shadows' softness, the ink weight, and the card art — pictures or
+   drawings, which wants `piquet3d.art().readyMs` from both pages on his Mac.
+   Record each in §13 of `docs/TABLE3D.md`; delete whichever art page loses.
+   Also open: an idle sway (it would mean rendering forever — opt-in?),
+   synthesised sound (a toggle?), and the aids' defaults.
+2. Then the plan's order below: **TODO 1, the partie objective**, and
+   **Milestone 9, the training mode** — the 3D table already has its first
+   half (hints, refusals in the engine's words); `explain.rs` is the second.
 
 - **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
   Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
@@ -187,10 +200,13 @@ measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
   into the intermediate states and animates between their layouts;
   `director.js` plays it on the page. The cut, the deal in pairs, the
   exchange, tricks swept to their winner, all physically checked.
-- **P7–P8**: the Material 3 overlay (`overlay.js`), the app (`main.js`),
-  decoration by ink colour, the phone's portrait layout, and a browser test
-  that plays a whole partie by clicking. **VSM shadows were cut ~8×** (512²,
-  8 samples) after measuring 4.3 s a frame on the VM.
+- **P7–P9** (`680d4cc`, `56b7867`, `f6a6e8e`): the Material 3 overlay
+  (`overlay.js`), the app (`main.js`), decoration by ink colour, the phone's
+  portrait layout, a browser test that plays a whole partie by clicking,
+  reduced motion, a thinking bar, freshly drawn cards standing proud. **VSM
+  shadows were cut ~8×** (512², 8 samples) after measuring 4.3 s a frame on
+  the VM. Afterwards: **your discards can be picked up and looked at**, as
+  the rules allow.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
@@ -360,7 +376,7 @@ level 5 late in a partie (the page says "Restoring your game…").
 
 ### After that, in rough order of value
 
-0. **The 3D table** — above; `docs/TABLE3D.md`.
+0. ~~**The 3D table**~~ — built; its look waits on Andrew (above).
 1. **TODO 1, the partie objective** — the live pique first, then `max_worlds`.
 2. **Milestone 9, the training mode** — hints are its first half; `explain.rs`
    (why a move is better, by which rung plays it) is the second.

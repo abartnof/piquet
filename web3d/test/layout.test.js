@@ -187,6 +187,23 @@ test("cards just drawn stand a little proud of the hand", () => {
   assert.ok(rise > 0.3 && rise < 1.1, `rises ${rise}`);
 });
 
+test("you may pick up your own discards and look at them, and only yours", () => {
+  // "Both players keep their own discards beside them and may consult them
+  // during play. Neither may look at the other's." (docs/PIQUET.md)
+  const s = states.find((x) => x.phase === "play" && x.discards.length >= 2);
+  for (const zones of [ZONES, ZONES_PORTRAIT]) {
+    const slots = layout(s, { peek: true, zones });
+    const mine = slots.filter((x) => x.zone === "your-discards");
+    assert.deepEqual(mine.map((x) => x.code).sort(), [...s.discards].sort());
+    for (const x of mine) {
+      const toEye = EYE.clone().sub(x.pose.position).normalize();
+      assert.ok(normal(x.pose).dot(toEye) > 0.5, "held up, facing you");
+      assert.ok(Math.min(...cardCorners(x.pose).map((c) => c.y)) > 1, "in the hand, off the table");
+    }
+    for (const x of slots.filter((y) => y.zone === "their-discards")) assert.equal(x.code, null);
+  }
+});
+
 test("the same state always lays out the same way", () => {
   for (const s of states.slice(0, 40)) {
     const a = layout(s);

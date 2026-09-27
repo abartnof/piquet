@@ -99,6 +99,17 @@ test("a whole partie animates on a phone held upright too", () => {
   }
 });
 
+test("picking up your discards to look, and putting them down, never goes through the table", () => {
+  const states = parties[0];
+  const s = states.find((x) => x.phase === "play" && x.discards.length >= 3);
+  const placement = initialPlacement(s);
+  const up = choreograph(s, s, placement, { peek: true });
+  run(placement, up, s, "picking up the discards", { peek: true });
+  const down = choreograph(s, s, up.placement, {});
+  run(up.placement, down, s, "putting them down", {});
+  assert.ok(up.motions.length >= s.discards.length && down.motions.length >= s.discards.length);
+});
+
 test("a card played is laid down after the one it answers, with a pause to think", () => {
   const states = parties[0];
   const i = states.findIndex((s, k) => k > 0 && states[k - 1].prompt.kind === "play" && !states[k - 1].trick);

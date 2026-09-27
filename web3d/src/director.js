@@ -70,6 +70,8 @@ export function createDirector({ stage, deck, engine, view, settled, testing = f
         if (legal && !legal.has(m.code)) dim = true;
         if (hovered === m.id && (kind === "exchange" || kind === "play") && !chosen.has(m.code)) goal = HOVER_LIFT;
       }
+      // Your discards, pointed at: a heavier line says you may pick them up.
+      if (m.zone === "your-discards" && hoveredSlot && hoveredSlot.zone === "your-discards" && !timeline.busy()) line = "hover";
       if (kind === "cut" && m.zone === "pack" && hoveredSlot && hoveredSlot.zone === "pack" && m.index <= hoveredSlot.index) {
         goal = PACKET_LIFT; // the packet you would lift
       }
