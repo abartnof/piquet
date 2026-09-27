@@ -285,6 +285,31 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
+        # The voice: clips bundled, decoded by the browser, and the right ones
+        # asked for as the table talks.
+        talk = open_page(browser, "test&voice&level=2&seed=31")
+        for command in ["cut 14", "dealer them"]:
+            talk.evaluate(f"window.piquet3d.send({command!r})")
+        for _ in range(12):
+            s = state(talk)
+            if s["prompt"]["kind"] == "declare":
+                talk.evaluate("window.piquet3d.send('declare 0')")
+            elif s["prompt"]["kind"] == "exchange":
+                talk.evaluate(f"window.piquet3d.send('exchange {s['hand'][0]}')")
+            else:
+                break
+        talk.wait_for_timeout(1500)
+        heard = talk.evaluate("window.piquet3d.voice()")
+        if not heard["recorded"]:
+            failures.append("the page cannot play its own recorded voice")
+        elif not any(line.split(":")[1].startswith("point-") for line in heard["said"]):
+            failures.append(f"no point was called aloud: {heard['said'][:8]}")
+        elif heard["decoded"] == 0 or heard["failed"]:
+            failures.append(f"the voice's clips did not decode: {heard}")
+        if talk.errors:
+            failures.append(f"console errors with the voice on: {talk.errors}")
+        talk.context.close()
+
         # A phone, held upright: it loads, draws, and never scrolls sideways.
         phone = open_page(browser, "test&level=3&seed=7", viewport={"width": 390, "height": 844})
         check_drawn(phone, failures, "on a phone")

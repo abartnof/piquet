@@ -169,7 +169,7 @@ async function main() {
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
     // What was said, said aloud -- only what is new; an undo falls silent.
     if (next.events.length < prev.events.length) voice.stop();
-    else if (!TESTING) {
+    else if (!TESTING || params.has("voice")) {
       const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
       const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
       voice.say(lines, prefs);
@@ -480,6 +480,8 @@ async function main() {
     placement: () => director.placement().map(({ id, zone, index, code }) => ({ id, zone, index, code })),
     // With ?manual: move the animation clock by hand, for stills.
     tick: (ms) => director.tick(ms),
+    // With ?voice (speech is off in tests otherwise): what the voice did.
+    voice: () => voice.stats(),
   };
 }
 

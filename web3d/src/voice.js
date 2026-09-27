@@ -27,6 +27,7 @@ export function createVoice(voices, texts = {}) {
   let next = 0; // when the queue is free, in context time
   let lastWho = null;
   let playing = [];
+  const stats = { said: [], decoded: 0, played: 0, failed: 0 };
 
   // Browsers let sound start only after the player has touched the page;
   // every call comes from a click or a key, so the context is made then.
@@ -45,7 +46,15 @@ export function createVoice(voices, texts = {}) {
     if (!decoded.has(key)) {
       const data = voices[voice]?.clips?.[clip];
       decoded.set(key, data
-        ? audio().decodeAudioData(Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer)
+        ? audio()
+          .decodeAudioData(Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer)
+          .then((clip) => {
+            stats.decoded += 1;
+            return clip;
+          }, () => {
+            stats.failed += 1;
+            return null;
+          })
         : Promise.resolve(null));
     }
     return decoded.get(key);
@@ -57,6 +66,7 @@ export function createVoice(voices, texts = {}) {
     // Queue a speaker's lines: each starts when the one before has ended.
     async say(lines, prefs = {}) {
       if (!prefs.voice || !lines.length) return;
+      stats.said.push(...lines.map((line) => `${line.who}:${line.clip}`));
       if (!recorded) {
         if (!fallback) return;
         for (const line of lines) {
@@ -83,10 +93,13 @@ export function createVoice(voices, texts = {}) {
         source.start(start);
         source.onended = () => (playing = playing.filter((s) => s !== source));
         playing.push(source);
+        stats.played += 1;
         next = start + clip.duration;
         lastWho = line.who;
       });
     },
+    // For the browser test: what was asked for, decoded, played.
+    stats: () => ({ recorded, ...stats }),
     // Undo, a new partie, the voice switched off: silence at once.
     stop() {
       if (fallback) window.speechSynthesis.cancel();
