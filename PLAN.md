@@ -182,7 +182,13 @@ instrument is built (`bin/partieprior`, `f1c2020`; 15.7 s a pair per thread
 with both vCPUs busy, so ~4½ hours on the dev box for 2,000 pairs; a Spot
 VM needs `gcloud auth login` on this VM first, and the free trial likely
 leaves only ~6 spare vCPUs). Also his call: whether to ship the prior
-against people at all.
+against people at all. **Andrew's steer for when it resumes:** use
+fewer pairs — stop early on a conclusive trend. Do it properly: a
+sequential design with the stopping rule fixed beforehand (SPRT, or a
+few group-sequential looks), since peeking at will inflates false
+positives; and aim the pairs where the signal is, since most pairs come
+out level and the effect lives in rare rubicon flips. Talk it through
+with him before running.
 
 *Before the measurements, the setup:*
 `bin/prior` fits a per-rank weight on the opponent's possible hands
