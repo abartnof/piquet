@@ -206,7 +206,14 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
   reduced motion, a thinking bar, freshly drawn cards standing proud. **VSM
   shadows were cut ~8×** (512², 8 samples) after measuring 4.3 s a frame on
   the VM. Afterwards: **your discards can be picked up and looked at**, as
-  the rules allow.
+  the rules allow (`7479a52`); a full hand kept clear of the prompt
+  (`53bde1e`); **the whole game playable from the keyboard** — ← → and Space,
+  named in a live region (`4082ac7`); and tablets, whose score tab had
+  been covering the top bar's settings button (`540fd46`).
+- **In flight, 27 September:** TODO 1's cheaper suspect — whether thirty
+  opponent worlds are too thin for the settling objective. `settle` takes a
+  worlds argument now (`6465dc0`); 720 mirrored last deals at 30 worlds (the
+  baseline, ~6 min) and at 90 (~16 min) are running on the dev VM.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
