@@ -177,9 +177,21 @@ browser build headlessly; `git`, `gh` 2.101, `ripgrep`, and Claude Code. The
 `target/` and `.venv/` directories are already warm, so builds do not start
 from zero.
 
+For the 3D table (`docs/TABLE3D.md`): npm 9.2 and `librsvg2-bin` 2.54
+(`rsvg-convert`, for rasterising the card art), both from apt, added 27
+September 2026. The page's libraries and esbuild are pinned by
+`web3d/package-lock.json`; `node_modules/` is not committed, so run `npm ci`
+in `web3d/` after a fresh clone. Headless Chromium draws WebGL 2 on
+SwiftShader, so the 3D page can be screenshotted without a GPU.
+
     python3 web/build.py                                   # web/piquet.html
     node web/test/ffi.mjs target/wasm32-unknown-unknown/release/piquet_wasm.wasm
     .venv/bin/python web/test/browser.py [screenshot-dir]  # plays it by clicking
+
+    (cd web3d && npm ci)                                   # once, after a clone
+    python3 web3d/build.py                                 # web3d/piquet3d.html
+    (cd web3d && npm test)                                 # the pure modules, in node
+    .venv/bin/python web3d/test/browser.py [screenshot-dir]
 
     source ~/.cargo/env          # once per shell; nothing does this for you
     cargo test --release

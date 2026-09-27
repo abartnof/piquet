@@ -18,3 +18,6 @@ target/
 *.swp
 *.swo
 *~
+
+# the 3D table's libraries: pinned by web3d/package-lock.json, restored by `npm ci`
+node_modules/

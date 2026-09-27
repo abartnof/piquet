@@ -49,9 +49,12 @@ in.
 
 ## Software in the page
 
-The single-file game bundles these (planned for the 3D table; see
-`docs/TABLE3D.md`). Their licences require their notices to travel with the
-copies, so the page carries a credits screen with the licence texts.
+The 3D table's single-file page (`web3d/piquet3d.html`; see
+`docs/TABLE3D.md`) bundles these. three.js is in it from the first build;
+Material Web and Lit arrive with the overlay, and the packages they depend on
+are added here when they do. The licences require their notices to travel with
+the copies: the build keeps each library's licence comment at the end of the
+script, and the page carries a credits screen with the licence texts.
 
 | Package | Version | Licence | Holder |
 |---|---|---|---|

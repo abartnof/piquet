@@ -212,7 +212,7 @@ web3d/src/
   scene.js         renderer, camera, lights, shadows, table surface, resize, DPR
   interact.js      raycasting: hover, click, drag (later); test hooks
   overlay/         Material Web components: prompt, score tab, settings, credits
-  tests/*.test.js  node --test
+  test/*.test.js   node --test (test/browser.py: Playwright)
 ```
 
 ### 5.1 The card model: identities only where the view has them
@@ -495,13 +495,18 @@ throughout.
 
 - [x] **P0 — Assets and credits.** Originals pinned in `web3d/art/source/`
       with checksums and measurements; `CREDITS.md`. (`3be2e5f`)
-- [ ] **P1 — Toolchain and skeleton.** `apt install npm librsvg2-bin`;
+- [x] **P1 — Toolchain and skeleton.** `apt install npm librsvg2-bin`;
       `web3d/package.json` + lockfile (three 0.186.1, @material/web 2.5.0, lit
       3.3.3, esbuild 0.28.2); `web3d/build.py` producing a single
       `web3d/piquet3d.html` with the wasm inlined; an empty three.js scene
       renders; the Playwright test asserts no network requests and a
       non-blank canvas; the size report. *Accept*: the page opens from disk,
       offline, and shows a lit surface.
+      *Landed*: 960 KB — engine 423 KB, three.js 533 KB (the renderer pulls
+      in nearly all of it; tree-shaking saves little), our code 2 KB. A table
+      alone is one flat tone from the player's eye — it fills the view — so
+      the skeleton floats a placeholder card whose shadow is the proof of
+      light. Headless Chromium draws WebGL 2 on SwiftShader.
 - [ ] **P2 — Look spike.** Table surface, hemisphere + directional light,
       soft shadows, toon materials, ink outline (Plan A) on a flat card, a
       floating tilted card and the table; a placeholder card texture.
