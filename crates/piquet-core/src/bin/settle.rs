@@ -56,6 +56,9 @@ fn main() {
 
     let mut overall = (0usize, 0usize, 0usize, 0.0f64);
     let mut all_paid: Vec<f64> = Vec::new();
+    // Deals, won, lost, and the sum of what the losses cost, by the biggest
+    // bonus either half of the pair held: where the loss tail lives.
+    let mut by_bonus = [(0usize, 0usize, 0usize, 0i64); 3];
 
     // The mirror has to cancel TWO advantages, not one. Swapping seats alone
     // leaves the standing in place, and from 88 against 120 you lose heavily
@@ -84,25 +87,43 @@ fn main() {
                 number: 6,
             };
 
-            let elder_settlement = |a: &mut dyn Agent, b: &mut dyn Agent| -> i32 {
+            // The settlement to elder, and the biggest bonus the deal held:
+            // 2 a repique, 1 a pique, 0 neither.
+            let elder_settlement = |a: &mut dyn Agent, b: &mut dyn Agent| -> (i32, usize) {
                 let (deal, _) = play_deal(deal_from(&pack).unwrap(), a, b, Some(standing)).unwrap();
-                settlement_of(
+                let bonus = if deal.log.repique().is_some() {
+                    2
+                } else {
+                    usize::from(deal.log.pique().is_some())
+                };
+                let settlement = settlement_of(
                     mine + deal.log.total(Player::Elder),
                     theirs + deal.log.total(Player::Younger),
-                )
+                );
+                (settlement, bonus)
             };
 
             let mut settling = SolverAgent::new(3).worlds(worlds).settling();
             let mut flat = SolverAgent::new(5).worlds(worlds);
-            let with_settling = elder_settlement(&mut settling, &mut flat);
+            let (with_settling, bonus_a) = elder_settlement(&mut settling, &mut flat);
 
             let mut flat_elder = SolverAgent::new(3).worlds(worlds);
             let mut settling_younger = SolverAgent::new(5).worlds(worlds).settling();
-            let with_flat = elder_settlement(&mut flat_elder, &mut settling_younger);
+            let (with_flat, bonus_b) = elder_settlement(&mut flat_elder, &mut settling_younger);
 
             // Ahead as elder by this much; and by the same again as younger,
             // since the other side's settlement is the negation.
             let paid = 2 * (i64::from(with_settling) - i64::from(with_flat));
+            let class = &mut by_bonus[bonus_a.max(bonus_b)];
+            class.0 += 1;
+            match paid.cmp(&0) {
+                std::cmp::Ordering::Greater => class.1 += 1,
+                std::cmp::Ordering::Less => {
+                    class.2 += 1;
+                    class.3 += paid;
+                }
+                std::cmp::Ordering::Equal => {}
+            }
             net += paid;
             paid_each.push(paid as f64);
             match paid.cmp(&0) {
@@ -146,5 +167,14 @@ fn main() {
         "  net settlement per deal: {mean:+.2} ± {error:.2}  ({:.1} sigma)",
         (mean / error).abs()
     );
+    println!("\n  by the biggest bonus either half of a pair held:");
+    println!(
+        "  {:<10} {:>6} {:>5} {:>5}  {:>14}",
+        "deals", "count", "won", "lost", "sum of losses"
+    );
+    for (name, (count, won, lost, losses)) in ["no bonus", "pique", "repique"].iter().zip(by_bonus)
+    {
+        println!("  {name:<10} {count:>6} {won:>5} {lost:>5}  {losses:>+14}");
+    }
     println!("\n  the linear-weight attempt managed 0 won, 9 lost, 66 drawn over 75.");
 }
