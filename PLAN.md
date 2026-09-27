@@ -163,7 +163,20 @@ this round: **the phone's table** (small hand, the info strip covering the
 opponent's hand, a heavy shadow blob). His earlier open choices (below)
 still stand.
 
-**2. TODO 1 — a calibrated world prior, fitted, not yet measured.**
+**2. TODO 1 — the calibrated prior works; whole parties are next, and
+need Andrew's sign-off.** Measured this session: the prior is worth **+0.68
+a pair** to the solver outright (`bin/priorduel`, 47–11 of decided pairs),
+and with it **settling beats flat by +10.53 ± 3.16 a deal (3.3σ)** on the
+720 last deals, rubicon flips **15–2** where they had been 11–13
+(`measurements/settle/w30-prior.*`; `docs/DESIGN.md` §6.4a). **Whole
+parties:** timed at **9.8 s a mirrored pair** on one core; most pairs come
+out level and the spread is rare flips, so ~2,000 pairs (≈5½ core-hours)
+to see +5 a pair. Options for Andrew: the dev box, ~3 hours on both cores
+(≈$0.20); or a throwaway 16-vCPU Spot VM, ~25 minutes (≈$0.10, plus a few
+minutes' setup). **Do not start it without his yes.** Also his call:
+whether to ship the prior against people at all.
+
+*Before the measurements, the setup:*
 `bin/prior` fits a per-rank weight on the opponent's possible hands
 (`prior.rs`, conditional logit) where the solver searches; the solver takes
 it via `SolverAgent::with_prior` (bit-identical without one). Held out, a

@@ -1045,6 +1045,27 @@ and a half hours of the dev VM. The cheaper lever acts on the flips
 themselves: give the search a calibrated prior, and see whether the
 flips stop being a coin toss.
 
+**The prior, fitted and measured (same session).** `prior.rs` weighs each
+consistent hand by one log-odds per rank, fitted as a conditional logit on
+the hands really held at 8,601 searched decisions (`bin/prior`, deals the
+tests never use; held out, it is calibrated: a doubtful seven is hers 12%
+of the time where the uniform prior believed 46%, a king 96% against 55%).
+
+- **It makes the solver stronger outright:** with it against without it,
+  200 mirrored pairs, 47 decided pairs won and 11 lost, **+0.68 points a
+  pair** (`bin/priorduel`). Twice what the milder Python weighting found.
+- **And it makes settling at the leaf pay:** both agents with the prior,
+  the same 720 last deals, **287 won, 20 lost, net +10.53 ± 3.16 a deal
+  (3.3 sigma)**, where uniform beliefs gave −1.30. The flips went from
+  11–13 to **15–2**. Paired against the uniform run, settling's edge grew
+  by +11.8 ± 4.5 a deal.
+
+So the diagnosis was right: the flips were belief errors, and a search aimed
+at the rubicon wins them once it believes the right things. Two limits.
+These are last deals at standings chosen to be sharp, not whole parties;
+and the prior describes rung 4's discards, which both agents make — against
+a person it is an assumption that people, too, keep their high cards.
+
 ### 6.4b Where the uncertainty lives, and what to do about it
 
 Piquet is several different decision problems wearing one coat, and they do not
