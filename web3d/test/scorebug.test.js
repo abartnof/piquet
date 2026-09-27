@@ -6,7 +6,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { answersSince, caption, live, scoredSince } from "../src/scorebug.js";
+import { answersSince, caption, live, scoredSince, tierOf } from "../src/scorebug.js";
 import { partie } from "./partie.js";
 
 const parties = await Promise.all([[3, 7], [1, 11], [2, 23]].map(([l, s]) => partie(l, s)));
@@ -114,4 +114,17 @@ test("a call of nothing is answered by nobody, so no bubble", () => {
     ev("decided", { category: "sets", winner: "them" }),
   ];
   assert.deepEqual(answersSince(events, 1, 0), []);
+});
+
+// Andrew: "i want all point scoring to work like that. and for big ones (eg
+// winning more than just a single trick), you can add confetti, or the text
+// gets big and sort of wobbles".
+test("how big a score is: a single point, a handful, or a moment", () => {
+  assert.equal(tierOf(1), "small");
+  assert.equal(tierOf(2), "medium");
+  assert.equal(tierOf(9), "medium");
+  assert.equal(tierOf(10), "big");
+  assert.equal(tierOf(60), "big");
+  assert.equal(tierOf(1, ["Over the rubicon"]), "big", "a named moment is big however few its points");
+  assert.equal(tierOf(0), null);
 });

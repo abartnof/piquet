@@ -64,3 +64,14 @@ export function answersSince(events, deal, since) {
       category: line.category,
     }));
 }
+
+// How a score is shown: a single point just ticks, a handful bounces, and
+// ten or more -- or any moment with a name, however few its points -- is
+// celebrated.
+export function tierOf(points, flairs = []) {
+  if (flairs.length) return "big";
+  if (points >= 10) return "big";
+  if (points >= 2) return "medium";
+  if (points >= 1) return "small";
+  return null;
+}

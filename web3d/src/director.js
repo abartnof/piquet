@@ -8,6 +8,7 @@
 // that may not be played is dimmed); and renders only while something moves,
 // so a table at rest costs nothing (docs/TABLE3D.md section 5.4).
 
+import { cardCorners } from "./kinematics.js";
 import { Raycaster, Vector2, Vector3 } from "three";
 import { choreograph, initialPlacement } from "./choreography.js";
 import { Timeline } from "./timeline.js";
@@ -197,7 +198,33 @@ export function createDirector({ stage, deck, engine, view, settled, testing = f
     return { x: rect.left + ((p.x + 1) / 2) * rect.width, y: rect.top + ((1 - p.y) / 2) * rect.height };
   }
 
+  // Where to speak from, on the screen: just above your hand's top edge, or
+  // just below your opponent's lowest -- near the middle of the table, where
+  // the eye already is, never over a card (Andrew). From the cards as they
+  // lie now; before anyone holds any, from where the hand would be.
+  function handEdge(who) {
+    const zone = who === "you" ? "your-hand" : "their-hand";
+    const rect = stage.renderer.domElement.getBoundingClientRect();
+    const toScreen = (p) => {
+      const q = p.clone().project(stage.camera);
+      return { x: rect.left + ((q.x + 1) / 2) * rect.width, y: rect.top + ((1 - q.y) / 2) * rect.height };
+    };
+    const points = placement
+      .filter((m) => m.zone === zone)
+      .flatMap((m) => cardCorners({ position: meshes[m.id].position, quaternion: meshes[m.id].quaternion }).map(toScreen));
+    if (!points.length) {
+      const zones = view().zones;
+      const centre = zones[who === "you" ? "yourHand" : "theirHand"].centre;
+      const at = toScreen(new Vector3(...centre));
+      return { x: at.x, y: at.y, empty: true };
+    }
+    const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+    const y = who === "you" ? Math.min(...points.map((p) => p.y)) : Math.max(...points.map((p) => p.y));
+    return { x, y };
+  }
+
   return {
+    handEdge,
     state: () => state,
     placement: () => placement,
     busy: () => timeline.busy(),

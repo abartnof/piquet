@@ -33,6 +33,7 @@ import { PATTERNS } from "./surfaces.js";
 const THEM = "your opponent";
 const Them = "Your opponent";
 const SUITS = { S: "♠", H: "♥", D: "♦", C: "♣" };
+const SUIT_NAMES = { S: "spades", H: "hearts", D: "diamonds", C: "clubs" };
 const CATEGORY = { point: "Point", sequences: "Sequences", sets: "Sets" };
 
 export const LEVELS = [
@@ -371,12 +372,18 @@ export function createOverlay(root, on) {
       }
       case "choose_dealer":
         return ["You cut higher: you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
-      case "exchange":
+      case "exchange": {
+        // The numbers of this exchange, not the rule's (Andrew: "i don't know
+        // how many cards i can draw when i see that").
+        const left = s.talon_remaining;
+        const how = ui.selected.length
+          ? `You have chosen ${plural(ui.selected.length, "card")}: you will draw ${ui.selected.length}. Click a card again to keep it; Enter throws.`
+          : "Click cards in your hand to choose them, or use ← → and Space.";
         return [`Your exchange. You are ${s.you_are}.`,
-          (s.you_are === "elder"
-            ? `Throw 1 to ${p.limit} cards and draw as many. `
-            : `Throw 1 to ${p.limit} cards — whatever ${THEM} left — and draw as many. `)
-          + (ui.selected.length ? "Click a card again to keep it; Enter throws." : "Click cards in your hand to choose them, or use ← → and Space.")];
+          s.you_are === "elder"
+            ? `The talon holds ${left} cards, and you may take up to ${p.limit} of them. Throw away between 1 and ${p.limit} cards; you draw as many from the top of the talon, and ${THEM} gets what you leave. ${how}`
+            : `${Them} took ${8 - left} of the talon's 8 cards, leaving ${left}. Throw away between 1 and ${p.limit}; you draw the same number from those ${left}. ${how}`];
+      }
       case "declare": {
         const name = CATEGORY[p.category] || p.category;
         return [p.answering
@@ -386,9 +393,10 @@ export function createOverlay(root, on) {
       }
       case "play":
         if (s.trick && s.trick.leader === "them") {
+          const suit = SUIT_NAMES[s.trick.led[1]];
           const narrowed = p.legal.length < s.hand.length;
           return [`${Them} led ${label(s.trick.led)}.`,
-            `${narrowed ? "You must follow suit." : "You cannot follow suit: play anything."} ${how}`];
+            `${narrowed ? `You must follow ${suit}: you hold ${p.legal.length}.` : `You have no ${suit}: play any card.`} ${how}`];
         }
         return ["Your lead.", how];
       // The table has just said how it ended, in the score's caption.
