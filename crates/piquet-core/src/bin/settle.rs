@@ -10,14 +10,16 @@
 //! settlement is exact rather than an expectation over futures.
 
 use piquet_core::agents::Agent;
-use piquet_core::cards::Card;
+use piquet_core::cards::{Card, Hand};
 use piquet_core::chances::settlement_of;
+use piquet_core::declarations::Declaration;
+use piquet_core::observation::View;
 use piquet_core::partie::Standing;
 use piquet_core::play::play_deal;
 use piquet_core::rng::Rng;
 use piquet_core::rules::deal_from;
-use piquet_core::scoring::Player;
-use piquet_core::solver::SolverAgent;
+use piquet_core::scoring::{Category, Player};
+use piquet_core::solver::{settled_log, Estimates, SolverAgent};
 use std::io::Write;
 
 /// Standings chosen for where the two objectives come apart.
@@ -32,9 +34,29 @@ const STANDINGS: [(i32, i32, &str); 6] = [
 
 /// `settle [deals] [worlds] [--out FILE]` runs the measurement, writing one
 /// line per pair to FILE if asked; `settle --compare FIRST SECOND` pairs two
-/// such files deal by deal.
+/// such files deal by deal; `settle --show FILE STANDING DEAL` replays one
+/// recorded pair and says what the settling search believed at each card.
 fn main() {
     let mut args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("--show") {
+        let parsed = match args.as_slice() {
+            [_, path, standing, deal] => standing
+                .parse()
+                .ok()
+                .zip(deal.parse().ok())
+                .map(|(s, d)| (path.clone(), s, d)),
+            _ => None,
+        };
+        let Some((path, standing, deal)) = parsed else {
+            eprintln!("usage: settle --show FILE STANDING DEAL");
+            std::process::exit(2);
+        };
+        if let Err(e) = show(&path, standing, deal) {
+            eprintln!("settle: {e}");
+            std::process::exit(1);
+        }
+        return;
+    }
     if args.first().map(String::as_str) == Some("--compare") {
         if let [_, first, second] = args.as_slice() {
             if let Err(e) = compare(first, second) {
@@ -141,12 +163,10 @@ fn main() {
                 )
             };
 
-            let mut settling = SolverAgent::new(3).worlds(worlds).settling();
-            let mut flat = SolverAgent::new(5).worlds(worlds);
+            let [mut settling, mut flat] = seats(worlds, true);
             let (half_a, bonus_a) = play_half(&mut settling, &mut flat);
 
-            let mut flat_elder = SolverAgent::new(3).worlds(worlds);
-            let mut settling_younger = SolverAgent::new(5).worlds(worlds).settling();
+            let [mut flat_elder, mut settling_younger] = seats(worlds, false);
             let (half_b, bonus_b) = play_half(&mut flat_elder, &mut settling_younger);
 
             // Ahead as elder by this much; and by the same again as younger,
@@ -333,6 +353,203 @@ struct Paired {
     /// The mean of (first − second) per pair, and its standard error.
     mean: f64,
     error: f64,
+}
+
+/// The two agents of a half, elder first. Seeds belong to the chair, so both
+/// halves draw identical worlds until the objectives first disagree.
+fn seats(worlds: usize, settling_elder: bool) -> [SolverAgent; 2] {
+    let elder = SolverAgent::new(3).worlds(worlds);
+    let younger = SolverAgent::new(5).worlds(worlds);
+    if settling_elder {
+        [elder.settling(), younger]
+    } else {
+        [elder, younger.settling()]
+    }
+}
+
+/// A solver that keeps, for every play, the view it played from, what an
+/// identical copy of it estimated there, and the card it played.
+struct Traced {
+    agent: SolverAgent,
+    steps: Vec<(View, Option<Estimates>, Card)>,
+}
+
+impl Agent for Traced {
+    fn name(&self) -> &str {
+        self.agent.name()
+    }
+
+    fn exchange(&mut self, view: &View) -> Hand {
+        self.agent.exchange(view)
+    }
+
+    fn declare(&mut self, view: &View, category: Category) -> Declaration {
+        self.agent.declare(view, category)
+    }
+
+    fn play(&mut self, view: &View) -> Card {
+        let believed = self.agent.clone().estimates(view);
+        let played = self.agent.play(view);
+        self.steps.push((view.clone(), believed, played));
+        played
+    }
+}
+
+/// Replay one recorded pair and set, beside every card the settling search
+/// chose from, what it believed each card was worth against what it was
+/// worth with both hands on the table.
+fn show(path: &str, standing_index: usize, deal_index: usize) -> Result<(), String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+    let worlds: usize = text
+        .lines()
+        .next()
+        .and_then(|line| line.strip_prefix("# settle "))
+        .and_then(|rest| rest.split_whitespace().nth(1))
+        .and_then(|w| w.parse().ok())
+        .ok_or("the file has no '# settle DEALS WORLDS' header")?;
+    let record = read_records(path)?
+        .into_iter()
+        .find(|r| r.standing == standing_index && r.deal == deal_index)
+        .ok_or(format!(
+            "no standing {standing_index} deal {deal_index} in {path}"
+        ))?;
+    let pack: Vec<Card> = record
+        .pack
+        .as_bytes()
+        .chunks(2)
+        .map(|code| Card::parse(std::str::from_utf8(code).unwrap_or("?")))
+        .collect::<Result<_, _>>()?;
+    let (mine, theirs, label) = STANDINGS[standing_index];
+    let standing = Standing {
+        mine,
+        theirs,
+        deals_left: 1,
+        number: 6,
+    };
+
+    println!("  standing {standing_index}, {label}: elder's side on {mine}, younger's on {theirs}");
+    println!(
+        "  deal {deal_index}, {worlds} worlds; paid {:+} to settling\n",
+        record.paid
+    );
+
+    for (name, settling_elder, recorded) in [("A", true, record.a), ("B", false, record.b)] {
+        let [elder_agent, younger_agent] = seats(worlds, settling_elder);
+        let mut elder = Traced {
+            agent: elder_agent,
+            steps: Vec::new(),
+        };
+        let mut younger = Traced {
+            agent: younger_agent,
+            steps: Vec::new(),
+        };
+        let (deal, _) = play_deal(deal_from(&pack)?, &mut elder, &mut younger, Some(standing))?;
+        let totals = (
+            mine + deal.log.total(Player::Elder),
+            theirs + deal.log.total(Player::Younger),
+        );
+        if totals != (recorded.elder, recorded.younger) {
+            return Err(format!(
+                "half {name} replays to {totals:?}, but the record says {:?}",
+                (recorded.elder, recorded.younger)
+            ));
+        }
+
+        let who = if settling_elder { "elder" } else { "younger" };
+        println!(
+            "  half {name}: settling sits {who}; finishes {} / {}, settlement to elder {:+}",
+            totals.0, totals.1, recorded.settlement
+        );
+        let tricks: Vec<String> = deal
+            .tricks
+            .iter()
+            .map(|t| {
+                let won = if t.winner() == Ok(Player::Elder) {
+                    "E"
+                } else {
+                    "Y"
+                };
+                let lead = if t.leader == Player::Elder { "E" } else { "Y" };
+                format!(
+                    "{lead}{}{}{won}",
+                    t.led.code(),
+                    t.followed.map_or("--".into(), |c| c.code())
+                )
+            })
+            .collect();
+        println!("    tricks  {}", tricks.join(" "));
+
+        // Each seat's twelve cards, read back off the finished tricks.
+        let twelve = |seat: Player| -> u32 {
+            deal.tricks.iter().fold(0u32, |bits, t| {
+                let card = if t.leader == seat {
+                    t.led
+                } else {
+                    t.followed.expect("a finished deal's tricks are complete")
+                };
+                bits | 1 << card.0
+            })
+        };
+
+        let settler = if settling_elder { &elder } else { &younger };
+        for (view, believed, played) in &settler.steps {
+            let Some(believed) = believed else { continue };
+            let mut theirs_now = twelve(view.opponent());
+            for t in view.tricks.iter().chain(view.current_trick.iter()) {
+                for card in [Some(t.led), t.followed].into_iter().flatten() {
+                    theirs_now &= !(1 << card.0);
+                }
+            }
+            let truth = settler.agent.values_in(view, Hand(theirs_now))?;
+            let banked = settled_log(view);
+            let (my_side, their_side) = (
+                view.partie.map_or(0, |p| p.mine),
+                view.partie.map_or(0, |p| p.theirs),
+            );
+            let me = view.me;
+            println!(
+                "    trick {:>2}, {} to {}: banked {} / {}, over {} worlds",
+                view.tricks.len() + 1,
+                if me == Player::Elder {
+                    "elder"
+                } else {
+                    "younger"
+                },
+                if view.current_trick.is_some() {
+                    "follow"
+                } else {
+                    "lead"
+                },
+                my_side + banked.total(me),
+                their_side + banked.total(me.opponent()),
+                believed.worlds
+            );
+            let best_true = truth
+                .iter()
+                .map(|(_, v)| *v)
+                .fold(f64::NEG_INFINITY, f64::max);
+            for (card, total) in &believed.totals {
+                let true_value = truth
+                    .iter()
+                    .find(|(c, _)| c == card)
+                    .map_or(f64::NAN, |x| x.1);
+                let mark = match (card == played, true_value < best_true) {
+                    (true, true) => "  played, and worse than the best in truth",
+                    (true, false) => "  played",
+                    (false, _) if true_value == best_true => "  best in truth",
+                    _ => "",
+                };
+                println!(
+                    "      {}  believed {:>+8.1}   true {:>+6.0}{mark}",
+                    card.code(),
+                    total / believed.worlds as f64,
+                    true_value
+                );
+            }
+        }
+        println!();
+    }
+    Ok(())
 }
 
 const HEADER: &str = "# standing\tdeal\tbonus\tpack\t\
