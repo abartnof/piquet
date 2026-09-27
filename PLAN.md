@@ -771,6 +771,40 @@ Ordered by how much they are needed, not by size.
       or synthesis in the page itself, at no size at all.
     - Credit whatever voice is used in `CREDITS.md`.
 
+    **A first inventory (Andrew, pasted 27 September), reviewed.** Three
+    tiers: core declarations (~71 clips), + exchange counts and trick tally
+    (~88), + a spoken number bank 0–101 for running scores (~190); its
+    size table at ~1.5 s a clip gives 0.8–25 MB depending on format.
+    Corrections, measured against the rules rather than taken on trust:
+    - **Sequences are 21, not 42.** Ranks run seven to ace, so a tierce
+      tops at ace…nine (6), a quart ace…ten (5), a quint ace…jack (4), a
+      sixième ace…queen (3), a septième ace or king (2), a huitième only
+      the ace (1). "6 lengths × 7 top cards" counts impossible calls.
+    - **Its bitrates are for music.** Speech is clear in Opus at 16–24
+      kb/s: ~3–4.5 kB for a 1.5 s clip, so even the ~190-clip tier is
+      ~0.6–0.9 MB -- plus a third for base64 inside the single page.
+    - **Point values** ("making forty-eight") run from about 21 to 75, so
+      voicing them needs the number bank anyway.
+    - **Cost** (from memory of Google's published rates -- check the
+      pricing page before relying on it): Standard voices about $4 and
+      WaveNet/Neural2 about $16 per million characters, with a monthly
+      free allowance. ~190 phrases × ~15 characters is ~3,000 characters:
+      under a cent at any tier. Money is not the constraint; the voice's
+      quality, its licence terms and the page's size are.
+    - Real play also counts aloud as the tricks go ("one", "two", …) --
+      the number bank covers it.
+
+15. **Work on the tutorial mode (Andrew, 27 September).** Milestone 9, and
+    a design conversation with him before building. What exists to build
+    on: hints (rung 4 and the solver, from the human's view), the Explain
+    layer (what the rules make of each moment, with this deal's numbers),
+    the dialogue as `talk.js` reads it, and the ladder-based tutoring idea
+    ("a rung-2 player would lead this; a rung-4 player that, because…").
+    Still owed from his original brief: flag bad *and* impossible moves
+    interactively rather than animate a tutorial, and log the agent's moves
+    during training. `explain.rs` -- why one move is better -- is the
+    missing half.
+
 13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
