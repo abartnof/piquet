@@ -115,3 +115,12 @@ The rules engine, the opponents, the terminal table and a browser table
 (`web/piquet.html`, one file, open it from disk) are complete and the game is
 playable. Still to come: the training mode, and a mixed strategy for
 declarations. `PLAN.md` has the detail.
+
+**A three-dimensional table** — `web3d/piquet3d.html`, again one file that
+works offline — is playable too: the same engine, drawn with three.js as
+cel-shaded cards with ink outlines over a bright, plain table, every move
+animated the way a hand would make it (cards dealt two at a time, turned over
+on the table along an edge, tricks swept to their winner), with Material
+Design 3 controls, a running score tab, hints and undo. Its design, the
+physics of every motion and what was measured along the way are in
+`docs/TABLE3D.md`; `?demo` on the page shows the motions on a loop.

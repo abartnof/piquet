@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The 3D table in a real browser, offline.
+"""The 3D table in a real browser, offline, played by clicking.
 
     python3 web3d/build.py
     .venv/bin/python web3d/test/browser.py [screenshot-dir]
@@ -10,13 +10,17 @@ no GPU is needed. The page is opened from a file:// URL with `?test`, which
 makes every motion instant.
 
 Checks what only a browser can show: that the page makes **no network request
-of any kind** -- it is one file and must work offline; that the engine loads
-and answers through the test hooks; that the canvas is actually drawn on, a
-lit surface rather than one flat colour; and that nothing is written to the
-console in error.
+of any kind** -- it is one file and must work offline; that a whole partie can
+be played the way a person plays it, by clicking the spread, the cards and the
+buttons; that the running score tab agrees with the engine at every step;
+that a card that may not be played is refused on screen in the engine's
+words; that undo, the hints key, settings and a reload all work; that the
+motion demo runs; that a phone gets a working page with no sideways scroll;
+and that nothing is ever written to the console in error.
 """
 
 import io
+import re
 import sys
 from pathlib import Path
 
@@ -34,7 +38,7 @@ def shot(page, name):
         page.screenshot(path=str(SHOTS / f"{name}.png"))
 
 
-def open_page(browser, query="test", viewport=None):
+def open_page(browser, query="test", viewport=None, fresh=True):
     """A fresh context, offline, recording every request the page makes."""
     context = browser.new_context(viewport=viewport or {"width": 1280, "height": 800})
     context.set_offline(True)
@@ -44,9 +48,20 @@ def open_page(browser, query="test", viewport=None):
     page.on("request", lambda r: page.requests.append(r.url))
     page.on("console", lambda m: m.type == "error" and page.errors.append(m.text))
     page.on("pageerror", lambda e: page.errors.append(str(e)))
-    page.goto(f"{PAGE.as_uri()}?{query}")
-    page.wait_for_function("window.piquet3d && window.piquet3d.ready()", timeout=60_000)
+    goto(page, query, fresh)
     return page
+
+
+def goto(page, query, fresh=True):
+    page.goto(f"{PAGE.as_uri()}?{query}")
+    if fresh:
+        page.evaluate("localStorage.clear()")
+        page.goto(f"{PAGE.as_uri()}?{query}")
+    page.wait_for_function("window.piquet3d && window.piquet3d.ready()", timeout=120_000)
+
+
+def state(page):
+    return page.evaluate("window.piquet3d.state()")
 
 
 def canvas_image(page):
@@ -57,57 +72,105 @@ def check_offline(page, failures):
     remote = [u for u in page.requests if not u.startswith(LOCAL)]
     if remote:
         failures.append(f"the page asked the network for {len(remote)} things: {remote[:5]}")
-    pages = [u for u in page.requests if u.startswith("file:")]
+    pages = {u.split("?")[0] for u in page.requests if u.startswith("file:")}
     if len(pages) != 1:
         failures.append(f"expected the page to load exactly one file, it loaded {pages}")
 
 
-def check_engine(page, failures):
-    s = page.evaluate("window.piquet3d.state()")
-    if s.get("protocol") != 2:
-        failures.append(f"the engine answered protocol {s.get('protocol')!r}, expected 2")
-    if s["prompt"]["kind"] != "cut":
-        failures.append(f"a new partie should open on the cut, not {s['prompt']['kind']!r}")
-
-
-def check_drawn(page, failures):
-    """A lit surface: the canvas is not one colour, and is not mostly black
-    (the colour of WebGL that failed)."""
-    image = canvas_image(page)
-    small = image.resize((160, 100))
+def check_drawn(page, failures, where=""):
+    """A lit table: the canvas is not one colour, and not mostly black (the
+    colour of WebGL that failed)."""
+    small = canvas_image(page).resize((160, 100))
     colours = small.getcolors(maxcolors=160 * 100)
     dark = sum(n for n, (r, g, b) in colours if r + g + b < 60)
     if len(colours) < 4:
-        failures.append(f"the canvas is nearly flat: {len(colours)} colours")
+        failures.append(f"the canvas is nearly flat {where}: {len(colours)} colours")
     if dark > 0.5 * 160 * 100:
-        failures.append("the canvas is mostly black -- WebGL may have failed")
+        failures.append(f"the canvas is mostly black {where} -- WebGL may have failed")
 
 
-DULL = """(s, n) => { const p = s.prompt; switch (p.kind) {
-  case 'cut': return 'cut ' + (2 + (n * 7) % 29);
-  case 'choose_dealer': return n % 2 ? 'dealer them' : 'dealer you';
-  case 'exchange': return 'exchange ' + s.hand.slice(-(1 + n % Math.min(p.limit, 3))).join(' ');
-  case 'declare': return 'declare ' + (n % 3 === 2 ? p.options.length - 1 : 0);
-  case 'play': return 'play ' + (n % 2 ? p.legal[p.legal.length - 1] : p.legal[0]);
-  case 'next_deal': return 'next';
-  default: return null; } }"""
+def click_card(page, code=None, zone=None, index=0):
+    point = page.evaluate("([c, z, i]) => window.piquet3d.screenPoint(c, z, i)", [code, zone, index])
+    if point is None:
+        raise AssertionError(f"no card {code or zone} to click")
+    page.mouse.click(point["x"], point["y"])
 
 
-def check_whole_partie(page, failures):
-    """A whole partie through the director -- every state choreographed onto
-    the cards -- must never throw, and must come to rest after every move."""
-    for n in range(400):
-        command = page.evaluate(f"({DULL})(window.piquet3d.state(), {n})")
-        if command is None:
-            break
-        if not page.evaluate(f"window.piquet3d.send({command!r})"):
-            failures.append(f"the engine refused {command!r}")
-            return
-        if page.evaluate("window.piquet3d.busy()"):
-            failures.append(f"still moving after {command!r} in test mode")
-            return
-    if page.evaluate("window.piquet3d.state().prompt.kind") != "over":
-        failures.append("a whole partie did not reach its end")
+def button(page, name):
+    return page.get_by_role("button", name=name)
+
+
+def check_tab(page, failures, where):
+    """The running tab's deal total is the engine's score for the deal."""
+    s = state(page)
+    if s["phase"] == "cut":
+        return
+    totals = page.locator(".tab-grid .stage.total.run").all_inner_texts()
+    if totals and [int(x) for x in totals] != [s["score"]["you"], s["score"]["them"]]:
+        failures.append(f"the tab says {totals} at {where}, the engine {s['score']}")
+    head = page.locator(".tab-head").first.inner_text()
+    if f"{s['score']['you']}" not in head or f"{s['score']['them']}" not in head:
+        failures.append(f"the tab's first line {head!r} disagrees with {s['score']} at {where}")
+
+
+def take_turn(page, failures, n, checked):
+    """One human decision, made by clicking. False once the partie is over."""
+    s = state(page)
+    kind = s["prompt"]["kind"]
+    if kind == "cut":
+        click_card(page, zone="pack", index=14)
+    elif kind == "choose_dealer":
+        button(page, "Deal first").click()
+    elif kind == "exchange":
+        for code in s["hand"][: 1 + n % 3]:
+            click_card(page, code=code)
+        chosen = page.evaluate("window.piquet3d.placement().filter((m) => m.zone === 'your-hand').length")
+        if chosen != 12:
+            failures.append("choosing cards to throw moved them out of the hand")
+        button(page, re.compile(r"^Throw")).click()
+    elif kind == "declare":
+        page.keyboard.press("1")
+    elif kind == "play":
+        legal = s["prompt"]["legal"]
+        illegal = [c for c in s["hand"] if c not in legal]
+        if illegal and "illegal" not in checked:
+            checked.add("illegal")
+            click_card(page, code=illegal[0])
+            refused = state(page)
+            if not refused["error"] or not page.locator("#prompt .error").is_visible():
+                failures.append("a card that may not be played was not refused on screen")
+            elif refused["error"] not in page.locator("#prompt .error").inner_text():
+                failures.append("the refusal on screen is not the engine's")
+        click_card(page, code=legal[0])
+    elif kind == "next_deal":
+        button(page, "Deal the next hand").click()
+    else:
+        return False
+    after = state(page)
+    if after["record"] == s["record"] and kind != "play":
+        failures.append(f"clicking through a {kind} prompt did nothing")
+    check_tab(page, failures, f"{kind} {n}")
+    return True
+
+
+def check_undo_hints_settings(page, failures):
+    s = state(page)
+    if not s["can_undo"]:
+        return
+    page.keyboard.press("u")
+    back = state(page)
+    if len(back["record"]) >= len(s["record"]):
+        failures.append("U did not take anything back")
+    hints = back["aids"]["hints"]
+    page.keyboard.press("h")
+    if state(page)["aids"]["hints"] == hints:
+        failures.append("H did not toggle hints")
+    page.keyboard.press("h")
+    page.locator("#settings-open").click()
+    page.wait_for_selector("md-dialog#settings[open]")
+    shot(page, "05-settings")
+    button(page, "Done").click()
+    page.wait_for_function("!document.querySelector('md-dialog#settings[open]')")
 
 
 def main() -> int:
@@ -117,32 +180,54 @@ def main() -> int:
     with sync_playwright() as p:
         browser = p.chromium.launch(executable_path="/usr/bin/chromium", args=["--no-sandbox"])
 
-        page = open_page(browser)
+        page = open_page(browser, "test&level=3&seed=7")
+        check_drawn(page, failures, "at the cut")
+        if state(page)["prompt"]["kind"] != "cut":
+            failures.append("a new partie should open on the cut")
+        shot(page, "01-cut")
+
+        checked = set()
+        for n in range(400):
+            if n == 3:
+                shot(page, "02-early")
+                check_undo_hints_settings(page, failures)
+                # A reload resumes the game in progress exactly.
+                before = state(page)["record"]
+                goto(page, "test&level=3&seed=7", fresh=False)
+                if state(page)["record"] != before:
+                    failures.append("a reload did not resume the game in progress")
+            if n == 30:
+                shot(page, "03-play")
+            if not take_turn(page, failures, n, checked):
+                break
+        final = state(page)
+        if final["prompt"]["kind"] != "over":
+            failures.append(f"the partie did not finish by clicking: stuck at {final['prompt']['kind']}")
+        check_drawn(page, failures, "at the end")
+        shot(page, "04-over")
         check_offline(page, failures)
-        check_engine(page, failures)
-        check_drawn(page, failures)
-        shot(page, "01-opened")
-        check_whole_partie(page, failures)
-        check_drawn(page, failures)
-        shot(page, "02-partie-over")
         if page.errors:
-            failures.append(f"console errors: {page.errors}")
+            failures.append(f"console errors: {page.errors[:5]}")
         page.context.close()
 
         # The motion demo: every primitive, frozen part-way and at the end.
-        demo = open_page(browser, query="test&demo")
+        demo = open_page(browser, "test&demo")
         for t in (0.37, 1):
             demo.evaluate(f"window.piquet3d.demoAt({t})")
-            check_drawn(demo, failures)
-        shot(demo, "03-demo")
+            check_drawn(demo, failures, "in the demo")
+        shot(demo, "06-demo")
         if demo.errors:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
-        # A phone, held upright: the page must still load and draw.
-        phone = open_page(browser, viewport={"width": 390, "height": 844})
-        check_drawn(phone, failures)
-        shot(phone, "04-phone")
+        # A phone, held upright: it loads, draws, and never scrolls sideways.
+        phone = open_page(browser, "test&level=3&seed=7", viewport={"width": 390, "height": 844})
+        check_drawn(phone, failures, "on a phone")
+        take_turn(phone, failures, 0, {"illegal"})
+        width = phone.evaluate("document.documentElement.scrollWidth")
+        if width > 390:
+            failures.append(f"a phone scrolls sideways: the page is {width}px wide")
+        shot(phone, "07-phone")
         if phone.errors:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()

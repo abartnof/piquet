@@ -200,6 +200,26 @@ fields by kind for a client that wants to animate rather than print:
 Younger's calls, showings and scores appear only once elder has led to the
 first trick, because that is when she makes them.
 
+### Animating between two states
+
+One accepted command can carry the table a long way — your card, your
+opponent's answer, the trick taken, their next lead; or the cut, the deal and
+elder's exchange — and the state shows only where it ended. The events added
+since the previous state say what happened, in order, and they are enough to
+rebuild every state in between: `played` moves a card from a hand to the
+trick, `took_trick` moves the trick to its winner, `drew` names your discards
+and your draw, `exchanged` counts your opponent's, `deal_begins` deals.
+
+The 3D table (`web3d/src/choreography.js`) does exactly that: a small reducer
+replays the new events from the previous state, lays out each intermediate
+state, and animates from one to the next, so every waypoint is a true
+position rather than a guess. Two rules make it safe: if the events are not
+a continuation of the previous state's — an undo, a new partie — the client
+jumps straight to the new state; and whatever the replay produced, it ends by
+settling on the state the engine returned, which is the only truth. Any
+change to these events' fields is therefore a change a client would notice,
+and bumps `protocol`.
+
 ## WebAssembly
 
 The module has no imports and exports four functions and its memory:

@@ -446,7 +446,20 @@ falls back to `PCFShadowMap` with a console warning — so the spike compares
 the two that remain: `PCFShadowMap` (five hardware-filtered taps on a rotated
 disk: a defined edge, slightly soft) and `VSMShadowMap` (a Gaussian blur: a
 soft, light, diffuse shadow, much like Material's elevation shadows).
-Provisionally **VSM**, pending Andrew's eye; `?shadow=pcf` shows the other. **Shadows are the depth cue for the
+Provisionally **VSM**, pending Andrew's eye; `?shadow=pcf` shows the other.
+
+**What VSM costs, measured (P8).** The click-driven browser test crawled —
+13 to 27 s a turn — and the cause was not the test: every frame re-renders
+the shadow map and blurs all of it twice, so the cost goes with the map's
+area times the blur's samples. On the software-rendered VM: 2048² with 16
+samples, **4.3 s a frame**; PCF, 0.45 s; anisotropic filtering, no
+difference at all. The softness is the blur radius in *centimetres*, so a
+smaller map at a proportionally smaller radius in texels looks the same:
+2048/16, 1024/8 and 512/8 could not be told apart by eye in the same crop.
+**Default now 512² with 8 samples: 0.5 s a frame there**, nearly an
+eighth of the work — on a real GPU a few hundred microseconds either way,
+but on a phone it is battery. `?shadowmap=` and `?blur=` vary it. And a
+table at rest renders nothing at all, whatever the shadows cost. **Shadows are the depth cue for the
 floating hands**: their soft shadows on the table say "held above it". The
 table receives; cards cast and receive.
 
@@ -661,16 +674,74 @@ throughout.
       swept to the winner). Timings in `TIMING`; the cut-to-first-hand
       ceremony is about 7 s, most of it the deal — a speed setting and
       skip-on-click are P7's.
-- [ ] **P7 — Interaction and the overlay.** Raycasting, hover, select, play;
+- [x] **P7 — Interaction and the overlay.** Raycasting, hover, select, play;
       the M3 overlay: prompt, top bar, **score tab** (§9), narration, settings,
       credits; keyboard; hints as cyan ink. *Accept*: a human can play a whole
       partie with the mouse; the score tab tracks every stage live.
-- [ ] **P8 — The whole game, tested in a browser.** The Playwright suite in
+      *Landed*: `overlay.js` (Material Web: buttons, switches, selects,
+      dialogs; icons are simple strokes drawn for the page, so no icon font),
+      `main.js` as the app (preferences, aids and the game kept in
+      `localStorage` and resumed by replay, as on the 2D page), and the
+      director's **decoration**: a card pointed at rises and takes a heavier
+      line, hinted cards a cyan one, cards chosen to throw an amber one and
+      stand clear of the hand, cards that may not be played are dimmed; the
+      cut's spread lifts the packet you would take. A click while cards move
+      finishes the move (Space too). Colours: `web3d/tools/scheme.mjs`
+      generates the M3 scheme from one seed (#2f5da8) with Google's
+      Material Color Utilities, used at build time only, plus harmonised
+      amber and teal for you and your opponent. Material Web + Lit weigh
+      197 KB. Layout lessons: the prompt sits beside the hand, sized from the
+      window (`(100vw − 76vh) / 2` is what the fan leaves), and the won-trick
+      rows moved toward the middle so the tab never covers them (Law 60 —
+      examinable at any time). Two bugs found on the way: the tab called the
+      stage being declared "done", and **`pointer-events: none` on the
+      overlay is inherited**, which left every button in the settings dialog
+      unclickable until the browser test tried to press "Done".
+- [x] **P8 — The whole game, tested in a browser.** The Playwright suite in
       §11, offline; phone layout. *Accept*: green, no console errors,
       screenshots reviewed.
-- [ ] **P9 — Polish.** Idle sway, reduced motion, render on demand, DPR,
+      *Landed*: `web3d/test/browser.py` plays **a whole partie by clicking**
+      — the spread to cut, cards by their on-screen position
+      (`piquet3d.screenPoint`), the Material buttons by name, declarations
+      by key — and checks at every step that the tab's figures are the
+      engine's; that an illegal card is refused on screen in the engine's
+      words; undo (U), hints (H), the settings dialog, a reload resuming
+      exactly; the motion demo; a phone; no network request of any kind;
+      no console error. About four minutes on the VM. **The phone got a
+      layout of its own**: below an aspect of 0.85 the table uses
+      `ZONES_PORTRAIT` — zones stacked down the table, not spread across
+      it — under `CAMERA_PORTRAIT`, and turning the phone re-lays the
+      table; every layout and choreography invariant is tested on both
+      arrangements. On a phone the running score is a chip in the top bar
+      that opens the tab, and the opponent and New partie live in
+      settings. A landscape window narrower than 16:10 widens the view to
+      keep the table's width. Three things only a real browser showed:
+      the soft shadows' cost (§8.3); the dialog's buttons made unclickable
+      by an inherited `pointer-events: none`; and headless Chromium
+      painting the prompt card's background over the opponent's hand when
+      the card was a scroll container — found by elimination, fixed by not
+      making it one. Whether real phones share that last one is unknown
+      and does not matter now.
+- [x] **P9 — Polish.** Idle sway, reduced motion, render on demand, DPR,
       the cut ceremony's details, the talon crossed five-over-three, README
       and PROTOCOL notes, `PLAN.md`.
+      *Landed*: reduced motion (the system's preference makes cards simply
+      arrive, unless the player has chosen a speed); rendering only while
+      something moves; ink and textures scaled to the pixel ratio; the
+      talon five crossed over three; README and `docs/PROTOCOL.md` ("Animating
+      between two states"); cards just drawn stand a little proud of the
+      hand until play begins (as the 2D page marks them "new"); a thinking
+      bar while the engine decides for your opponent, which runs on the
+      page's own thread. **The cut differs from §7.3**: rather than lifting
+      two packets to show their bottom cards, the cut cards slide out of the
+      spread face down and roll over on the table where both players can
+      read them, then roll back — the same information, and every turn of a
+      card on the table, as Andrew asked. **Left open, for Andrew**: the
+      idle sway would mean rendering every frame forever, the very cost the
+      rest of the page avoids (render on demand), so it is not built; it
+      could be an opt-in "a living table" setting. And sound — a soft snap
+      as a card lands, a whisper as one slides — could be synthesised in
+      the page with no files at all, if he wants it.
 
 ## 14. Notes for the implementer
 

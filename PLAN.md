@@ -158,9 +158,10 @@ in full before a context clear, so that a fresh session builds it from notes.
 and their licences, the stack, the architecture, the physics of every motion,
 the tests, open questions, and a phased TODO.
 
-**Progress, 27 September 2026 (second session).** P1, P2, P4 and P5 done;
-P3 built and waiting on Andrew's eye; **next is P6, the choreography**.
-Details and measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
+**Progress, 27 September 2026 (second session).** **The 3D table is
+playable**, by mouse and on a phone: P1, P2 and P4–P8 done; P3 built and
+waiting on Andrew's eye; **P9, polish, is what remains**. Details and
+measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
 
 - **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
   Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
@@ -182,6 +183,14 @@ Details and measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
   the human may know them, tested over four whole parties
   (`web3d/test/partie.js` plays them through the wasm). The page now shows
   the real game at rest; `?spike` keeps the hand-set table.
+- **P6** (`7bb0b09`): `choreography.js` replays the events between two states
+  into the intermediate states and animates between their layouts;
+  `director.js` plays it on the page. The cut, the deal in pairs, the
+  exchange, tricks swept to their winner, all physically checked.
+- **P7–P8**: the Material 3 overlay (`overlay.js`), the app (`main.js`),
+  decoration by ink colour, the phone's portrait layout, and a browser test
+  that plays a whole partie by clicking. **VSM shadows were cut ~8×** (512²,
+  8 samples) after measuring 4.3 s a frame on the VM.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
