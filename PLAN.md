@@ -158,9 +158,9 @@ in full before a context clear, so that a fresh session builds it from notes.
 and their licences, the stack, the architecture, the physics of every motion,
 the tests, open questions, and a phased TODO.
 
-**Progress, 27 September 2026 (second session).** P1 and P2 done; P3 built
-and waiting on Andrew's eye; **next is P4, the motion library**. Details and
-measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
+**Progress, 27 September 2026 (second session).** P1, P2, P4 and P5 done;
+P3 built and waiting on Andrew's eye; **next is P6, the choreography**.
+Details and measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
 
 - **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
   Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
@@ -174,6 +174,14 @@ measurements are in `docs/TABLE3D.md` §3.2, §8 and §13.
   table mid-deal, to be replaced by the real layout.
 - **P3** (`51c4a32`, `b2e6e53`): vector art (`build.py --art svg`) measured
   against raster; both pages committed so Andrew can time them on his Mac.
+- **P4** (`ceaff44`): `easing.js`, `kinematics.js` (transfer, lay-down,
+  pick-up, the rolling two-pivot flip that crests without stopping, slide,
+  fan), `timeline.js`; `?demo` loops them, `piquet3d.demoAt(t)` freezes them
+  for filmstrips.
+- **P5** (`e7c88e7`): `layout.js` — 32 slots from any state, faces only where
+  the human may know them, tested over four whole parties
+  (`web3d/test/partie.js` plays them through the wasm). The page now shows
+  the real game at rest; `?spike` keeps the hand-set table.
 - **Andrew's four choices are on a comparison page:**
   https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
   (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
