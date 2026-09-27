@@ -1,0 +1,24 @@
+  mirrored LAST deals, scored in settlement
+  settling-at-the-leaf against the flat deal objective
+  (positive means settling is ahead)
+
+  90 opponent worlds a decision, for both agents
+
+  standing (mine / theirs)             won  lost  drew      net per deal
+  both short, me closer                 84     3    33     -10.9 ± 14.2 
+  both short, them closer               83     3    34      +7.3 ± 8.2  
+  both a whisker short                  35     8    77      -2.6 ± 7.6  
+  both a whisker short, mirrored        14     7    99      +0.4 ± 8.3  
+  I am safe, they are not               35     5    80      +1.1 ± 6.7  
+  they are safe, I am not               11     6   103      -3.1 ± 5.8  
+
+  overall: 262 won, 32 lost, 426 drawn over 720 deals
+  net settlement per deal: -1.29 ± 3.62  (0.4 sigma)
+
+  by the biggest bonus either half of a pair held:
+  deals       count   won  lost   sum of losses
+  no bonus      630   226    27           -6726
+  pique          48    23     4             -26
+  repique        42    13     1            -398
+
+  the linear-weight attempt managed 0 won, 9 lost, 66 drawn over 75.
