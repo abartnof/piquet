@@ -173,8 +173,13 @@ parties:** timed at **9.8 s a mirrored pair** on one core; most pairs come
 out level and the spread is rare flips, so ~2,000 pairs (≈5½ core-hours)
 to see +5 a pair. Options for Andrew: the dev box, ~3 hours on both cores
 (≈$0.20); or a throwaway 16-vCPU Spot VM, ~25 minutes (≈$0.10, plus a few
-minutes' setup). **Do not start it without his yes.** Also his call:
-whether to ship the prior against people at all.
+minutes' setup). **Shelved by Andrew (27 September)** in favour of the
+score display — not urgent, and it does not touch how the game feels. The
+instrument is built (`bin/partieprior`, `f1c2020`; 15.7 s a pair per thread
+with both vCPUs busy, so ~4½ hours on the dev box for 2,000 pairs; a Spot
+VM needs `gcloud auth login` on this VM first, and the free trial likely
+leaves only ~6 spare vCPUs). Also his call: whether to ship the prior
+against people at all.
 
 *Before the measurements, the setup:*
 `bin/prior` fits a per-rank weight on the opponent's possible hands
