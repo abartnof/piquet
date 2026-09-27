@@ -12,6 +12,7 @@ use piquet_core::declarations::Declaration;
 use piquet_core::observation::View;
 use piquet_core::partie::Standing;
 use piquet_core::play::play_deal;
+use piquet_core::prior::RankPrior;
 use piquet_core::rng::Rng;
 use piquet_core::rules::deal_from;
 use piquet_core::scoring::Category;
@@ -63,9 +64,12 @@ impl Agent for Checked {
                     "one estimate per legal card, in legal order"
                 );
                 assert!(estimates.worlds > 0);
+                if self.inner.prior.is_none() {
+                    assert_eq!(estimates.weight, estimates.worlds as f64);
+                }
                 for (card, total) in &estimates.totals {
                     let mean = estimates.mean(*card).unwrap();
-                    assert!((mean * estimates.worlds as f64 - total).abs() < 1e-9);
+                    assert!((mean * estimates.weight - total).abs() < 1e-6 * total.abs().max(1.0));
                 }
             }
             None => {
@@ -265,4 +269,93 @@ fn the_true_world_is_valued_in_the_agents_own_objective() {
             "{settling:?}"
         );
     }
+}
+
+#[test]
+fn a_prior_weighs_the_worlds_it_reports_on() {
+    // Sevens unlikely, aces likely: far from uniform, so the weight of the
+    // worlds and their count come apart.
+    let prior = RankPrior([-2.0, -1.5, -1.0, 0.0, 0.5, 1.0, 1.5, 2.0]);
+    let searched = duel(
+        SolverAgent::new(3).worlds(8).with_prior(prior),
+        SolverAgent::new(5).worlds(8).settling().with_prior(prior),
+        6,
+        Some(Standing {
+            mine: 95,
+            theirs: 88,
+            deals_left: 1,
+            number: 6,
+        }),
+    );
+    assert!(searched > 30, "only {searched} searched decisions checked");
+}
+
+#[test]
+fn a_uniform_prior_changes_nothing_at_all() {
+    /// Plays by the agent without a prior, and checks at every decision
+    /// that the same agent with a uniform prior reports identical totals.
+    struct Twin(SolverAgent, SolverAgent, usize);
+    impl Agent for Twin {
+        fn name(&self) -> &str {
+            self.0.name()
+        }
+        fn exchange(&mut self, view: &View) -> Hand {
+            self.1.exchange(view);
+            self.0.exchange(view)
+        }
+        fn declare(&mut self, view: &View, category: Category) -> Declaration {
+            self.1.declare(view, category);
+            self.0.declare(view, category)
+        }
+        fn play(&mut self, view: &View) -> Card {
+            let plain = self.0.clone().estimates(view);
+            let uniform = self.1.clone().estimates(view);
+            match (plain, uniform) {
+                (Some(a), Some(b)) => {
+                    assert_eq!(a.totals, b.totals, "bit for bit");
+                    assert_eq!(a.weight, b.weight);
+                    self.2 += 1;
+                }
+                (None, None) => {}
+                _ => panic!("one searched and the other did not"),
+            }
+            let card = self.0.play(view);
+            assert_eq!(self.1.play(view), card);
+            card
+        }
+    }
+
+    let mut rng = Rng::seeded(23);
+    let mut checked = 0;
+    for settling in [false, true] {
+        for _ in 0..3 {
+            let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
+            rng.shuffle(&mut pack);
+            let make = |seed: u32| {
+                let agent = SolverAgent::new(seed).worlds(8);
+                if settling {
+                    agent.settling()
+                } else {
+                    agent
+                }
+            };
+            let mut elder = Twin(make(3), make(3).with_prior(RankPrior::UNIFORM), 0);
+            let mut younger = Twin(make(5), make(5).with_prior(RankPrior::UNIFORM), 0);
+            let standing = Standing {
+                mine: 82,
+                theirs: 70,
+                deals_left: 1,
+                number: 6,
+            };
+            play_deal(
+                deal_from(&pack).unwrap(),
+                &mut elder,
+                &mut younger,
+                Some(standing),
+            )
+            .unwrap();
+            checked += elder.2 + younger.2;
+        }
+    }
+    assert!(checked > 30, "only {checked} decisions compared");
 }

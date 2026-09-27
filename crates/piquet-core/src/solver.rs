@@ -425,6 +425,7 @@ use crate::declarations::Declaration;
 use crate::heuristics::HeuristicAgent;
 use crate::inference::possible_hands;
 use crate::observation::View;
+use crate::prior::RankPrior;
 use crate::scoring::{Category, Player, ScoreLog};
 use crate::util::first_max_by;
 
@@ -454,6 +455,10 @@ pub struct SolverAgent {
     /// attempt at the same idea measured to lose and shipped off for that
     /// reason.
     pub partie_aware: bool,
+    /// How likely each consistent opponent hand is. `None` weighs them all
+    /// alike, which is what the solver always did; `prior::RankPrior` says
+    /// why that is wrong.
+    pub prior: Option<RankPrior>,
     /// Its own name, and not the fallback's.
     ///
     /// Delegating to the fallback made it report `L4`, which is not cosmetic:
@@ -471,6 +476,7 @@ impl SolverAgent {
             exact_from: 8,
             max_worlds: 30,
             partie_aware: false,
+            prior: None,
             label: "solver8".to_string(),
         }
     }
@@ -496,6 +502,14 @@ impl SolverAgent {
 
     pub fn worlds(mut self, worlds: usize) -> SolverAgent {
         self.max_worlds = worlds;
+        self
+    }
+
+    /// Weigh the opponent's possible hands by `prior` rather than alike.
+    /// Renamed, so a tournament cannot merge it with the unweighted agent.
+    pub fn with_prior(mut self, prior: RankPrior) -> SolverAgent {
+        self.prior = Some(prior);
+        self.label = format!("{}+prior", self.label);
         self
     }
 }
@@ -526,14 +540,17 @@ impl Agent for SolverAgent {
 }
 
 /// What each legal card is worth to a `SolverAgent`, summed over the opponent
-/// hands it sampled: in points, or in settlement if it settles, and always to
-/// whoever is to play, so larger is better for the mover.
+/// hands it sampled, each weighted by its prior: in points, or in settlement
+/// if it settles, and always to whoever is to play, so larger is better for
+/// the mover.
 #[derive(Clone, Debug)]
 pub struct Estimates {
-    /// Every legal card, in legal order, with its total over the worlds.
+    /// Every legal card, in legal order, with its weighted total.
     pub totals: Vec<(Card, f64)>,
     /// The sampled worlds the search could evaluate.
     pub worlds: usize,
+    /// Their summed weight: the count again, when there is no prior.
+    pub weight: f64,
 }
 
 impl Estimates {
@@ -553,12 +570,13 @@ impl Estimates {
         .expect("a searched position has a legal card")
     }
 
-    /// A card's average over the worlds, or `None` if it is not legal.
+    /// A card's weighted average over the worlds, or `None` if it is not
+    /// legal.
     pub fn mean(&self, card: Card) -> Option<f64> {
         self.totals
             .iter()
             .find(|(c, _)| *c == card)
-            .map(|(_, total)| total / self.worlds as f64)
+            .map(|(_, total)| total / self.weight)
     }
 }
 
@@ -583,14 +601,19 @@ impl SolverAgent {
 
         let mut totals: Vec<(Card, f64)> = legal.iter().map(|c| (*c, 0.0)).collect();
         let mut searched = 0usize;
+        let mut weight = 0.0f64;
         for opponent_hand in worlds {
             let Ok(values) = self.values_in(view, opponent_hand) else {
                 continue;
             };
             searched += 1;
+            // Without a prior every world weighs exactly one, and `1.0 * v`
+            // is `v` bit for bit, so the unweighted search is unchanged.
+            let w = self.prior.map_or(1.0, |p| p.weight(opponent_hand));
+            weight += w;
             for (card, value) in values {
                 if let Some(slot) = totals.iter_mut().find(|(c, _)| *c == card) {
-                    slot.1 += value;
+                    slot.1 += w * value;
                 }
             }
         }
@@ -601,6 +624,7 @@ impl SolverAgent {
         Some(Estimates {
             totals,
             worlds: searched.max(1),
+            weight: if searched == 0 { 1.0 } else { weight },
         })
     }
 
