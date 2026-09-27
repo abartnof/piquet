@@ -34,12 +34,21 @@ fn main() {
         .nth(1)
         .and_then(|a| a.parse().ok())
         .unwrap_or(75);
+    // Opponent worlds each solver samples per decision. Both agents get the
+    // same number, so only the objective differs: the question it serves is
+    // whether settling -- which is non-linear where the flat objective is
+    // nearly linear -- needs a thicker sample than thirty (PLAN.md TODO 1).
+    let worlds: usize = std::env::args()
+        .nth(2)
+        .and_then(|a| a.parse().ok())
+        .unwrap_or(30);
 
     println!(
         "  mirrored LAST deals, scored in settlement\n\
          \x20 settling-at-the-leaf against the flat deal objective\n\
          \x20 (positive means settling is ahead)\n"
     );
+    println!("  {worlds} opponent worlds a decision, for both agents\n");
     println!(
         "  {:<34} {:>5} {:>5} {:>5}  {:>16}",
         "standing (mine / theirs)", "won", "lost", "drew", "net per deal"
@@ -83,12 +92,12 @@ fn main() {
                 )
             };
 
-            let mut settling = SolverAgent::new(3).settling();
-            let mut flat = SolverAgent::new(5);
+            let mut settling = SolverAgent::new(3).worlds(worlds).settling();
+            let mut flat = SolverAgent::new(5).worlds(worlds);
             let with_settling = elder_settlement(&mut settling, &mut flat);
 
-            let mut flat_elder = SolverAgent::new(3);
-            let mut settling_younger = SolverAgent::new(5).settling();
+            let mut flat_elder = SolverAgent::new(3).worlds(worlds);
+            let mut settling_younger = SolverAgent::new(5).worlds(worlds).settling();
             let with_flat = elder_settlement(&mut flat_elder, &mut settling_younger);
 
             // Ahead as elder by this much; and by the same again as younger,
