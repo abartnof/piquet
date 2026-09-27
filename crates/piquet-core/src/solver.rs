@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::hash::{BuildHasherDefault, Hasher};
 
 use crate::cards::Hand;
+use crate::scoring::{PIQUE_BONUS, PIQUE_THRESHOLD};
 
 pub const TRICKS: u32 = 12;
 pub const CARDS_BONUS: i64 = 10;
@@ -680,15 +681,35 @@ pub struct Settling {
     pub elder_first_next: bool,
 }
 
-/// The settlement to elder's **side**, in points, at the end of the deal.
+/// Whether elder has won a pique by this point in the play.
 ///
-/// A pique or repique already decided arrives in `ctx`. What is left out is a
-/// pique still *live* when the search begins -- elder short of thirty, younger
-/// still on nothing -- which the play could yet make or deny. It depends on
-/// Law 67's order of precedence over the whole log, which the search does not
-/// carry. `solver::pique_is_live` exists in the Python as a documented
-/// intention with no caller (`PLAN.md` TODO 9).
-fn settle(elder_tricks: u32, elder_pts: i32, younger_pts: i32, ctx: &Settling) -> f64 {
+/// A pique or repique already decided arrives in `ctx`, banked. One still
+/// *live* when the search begins -- younger on nothing, elder short of thirty
+/// -- is made or denied by the play, in order: the declarations are all
+/// reckoned before a card is led (Law 67), so from here on elder wins it at
+/// the first point that brings him to thirty while younger's count is still
+/// nothing, and loses it at her first point. The same rule as
+/// `ScoreLog::pique`, walked one point at a time. Only the settling search
+/// counts it; the flat search stays as it was, bit for bit with the golden
+/// vectors.
+#[inline]
+fn piqued_after(already: bool, elder_pts: i32, younger_pts: i32, ctx: &Settling) -> bool {
+    already
+        || (ctx.younger_so_far == 0
+            && younger_pts == 0
+            && ctx.elder_so_far < PIQUE_THRESHOLD
+            && ctx.elder_so_far + elder_pts >= PIQUE_THRESHOLD)
+}
+
+/// The settlement to elder's **side**, in points, at the end of the deal,
+/// counting a pique made in the play (`piqued_after`).
+fn settle(
+    elder_tricks: u32,
+    elder_pts: i32,
+    younger_pts: i32,
+    piqued: bool,
+    ctx: &Settling,
+) -> f64 {
     let (elder_bonus, younger_bonus) = if elder_tricks == TRICKS {
         (CAPOT_BONUS as i32, 0)
     } else if elder_tricks == 0 {
@@ -701,7 +722,8 @@ fn settle(elder_tricks: u32, elder_pts: i32, younger_pts: i32, ctx: &Settling) -
         (0, 0)
     };
 
-    let elder_deal = ctx.elder_so_far + elder_pts + elder_bonus;
+    let pique = if piqued { PIQUE_BONUS } else { 0 };
+    let elder_deal = ctx.elder_so_far + elder_pts + elder_bonus + pique;
     let younger_deal = ctx.younger_so_far + younger_pts + younger_bonus;
 
     crate::chances::expected_settlement(
@@ -713,6 +735,7 @@ fn settle(elder_tricks: u32, elder_pts: i32, younger_pts: i32, ctx: &Settling) -
 }
 
 #[inline]
+#[allow(clippy::too_many_arguments)]
 fn settlement_key(
     elder: u32,
     younger: u32,
@@ -721,10 +744,12 @@ fn settlement_key(
     elder_tricks: u32,
     elder_pts: i32,
     younger_pts: i32,
+    piqued: bool,
 ) -> u128 {
     memo_key(elder, younger, leader, led, elder_tricks)
         | ((elder_pts as u128 & 0x3F) << 75)
         | ((younger_pts as u128 & 0x3F) << 81)
+        | (u128::from(piqued) << 87)
 }
 
 type SettlementMemo = std::collections::HashMap<u128, f64, BuildHasherDefault<KeyHasher>>;
@@ -738,11 +763,12 @@ fn search_settlement(
     elder_tricks: u32,
     elder_pts: i32,
     younger_pts: i32,
+    piqued: bool,
     memo: &mut SettlementMemo,
     ctx: &Settling,
 ) -> f64 {
     if elder == 0 && younger == 0 && led == NO_CARD {
-        return settle(elder_tricks, elder_pts, younger_pts, ctx);
+        return settle(elder_tricks, elder_pts, younger_pts, piqued, ctx);
     }
 
     let key = settlement_key(
@@ -753,6 +779,7 @@ fn search_settlement(
         elder_tricks,
         elder_pts,
         younger_pts,
+        piqued,
     );
     if let Some(&cached) = memo.get(&key) {
         return cached;
@@ -787,6 +814,7 @@ fn search_settlement(
                 elder_tricks,
                 e,
                 y,
+                piqued_after(piqued, e, y, ctx),
                 memo,
                 ctx,
             )
@@ -812,6 +840,7 @@ fn search_settlement(
                 elder_tricks + u32::from(winner == ELDER),
                 e,
                 y,
+                piqued_after(piqued, e, y, ctx),
                 memo,
                 ctx,
             )
@@ -865,6 +894,7 @@ pub fn card_settlements(
                 elder_tricks,
                 e,
                 y,
+                piqued_after(false, e, y, ctx),
                 &mut memo,
                 ctx,
             )
@@ -890,6 +920,7 @@ pub fn card_settlements(
                 elder_tricks + u32::from(winner == ELDER),
                 e,
                 y,
+                piqued_after(false, e, y, ctx),
                 &mut memo,
                 ctx,
             )

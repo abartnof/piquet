@@ -112,3 +112,86 @@ fn nothing_is_banked_before_younger_has_declared() {
         assert_eq!(settled.total(seat), first_lead.log.total(seat));
     }
 }
+
+// ---------------------------------------------------------------------------
+// A pique still live when the search begins.
+//
+// Elder wins a pique by reaching thirty before younger scores anything, in
+// Law 67's order of precedence, and the play can make it or deny it: every
+// card led scores a point, and so does a trick won against the lead. The
+// settling search counted a pique already decided (`settled_log`) but not one
+// still in the balance -- and pique deals lost at nine times the rate of the
+// rest (PLAN.md TODO 1).
+
+use piquet_core::cards::parse_card;
+use piquet_core::solver::{card_settlements, Settling, ELDER};
+
+/// Elder on 28, younger on nothing, two cards each, elder to lead. Leading the
+/// ace keeps the lead, so the next card led is elder's thirtieth point before
+/// younger has scored: a pique, thirty more, and in the last deal at fifty
+/// apiece that carries elder over the rubicon. Leading the seven lets
+/// younger's eight take the trick, and her point kills the pique -- though in
+/// plain deal points that line is a point better for elder.
+fn live_pique_values() -> (f64, f64) {
+    let ctx = Settling {
+        elder_side: 50,
+        younger_side: 50,
+        elder_so_far: 28,
+        younger_so_far: 0,
+        deals_left: 1,
+        elder_first_next: false,
+    };
+    let elder = Hand::parse("AS 7H").unwrap();
+    let younger = Hand::parse("KS 8H").unwrap();
+    // Five tricks each already: whoever takes one more of these two draws the
+    // cards, so no ten for the cards muddies either line.
+    let values = card_settlements(elder, younger, ELDER, None, 5, &ctx).unwrap();
+    let of = |code: &str| {
+        values
+            .iter()
+            .find(|(c, _)| *c == parse_card(code).unwrap())
+            .unwrap()
+            .1
+    };
+    (of("AS"), of("7H"))
+}
+
+#[test]
+fn the_settling_search_plays_for_a_live_pique() {
+    let (ace, seven) = live_pique_values();
+    assert!(
+        ace > seven,
+        "leading the ace makes the pique and should be worth more than the seven: {ace} against {seven}"
+    );
+}
+
+#[test]
+fn a_pique_already_dead_is_not_played_for() {
+    // Younger has scored: no pique is possible, and the extra point of the
+    // seven line is simply better.
+    let ctx = Settling {
+        elder_side: 50,
+        younger_side: 50,
+        elder_so_far: 28,
+        younger_so_far: 1,
+        deals_left: 1,
+        elder_first_next: false,
+    };
+    let values = card_settlements(
+        Hand::parse("AS 7H").unwrap(),
+        Hand::parse("KS 8H").unwrap(),
+        ELDER,
+        None,
+        5,
+        &ctx,
+    )
+    .unwrap();
+    let of = |code: &str| {
+        values
+            .iter()
+            .find(|(c, _)| *c == parse_card(code).unwrap())
+            .unwrap()
+            .1
+    };
+    assert!(of("7H") >= of("AS"));
+}
