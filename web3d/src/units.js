@@ -46,4 +46,8 @@ export const ZONES = Object.freeze({
   theirPlay: Object.freeze({ x: -0.6, z: -7 }), // theirs, turned to face them
   yourTricks: Object.freeze({ x: 15, z: 9, span: 26 }),
   theirTricks: Object.freeze({ x: 15, z: -14, span: 26 }),
+  // Only in passing, while dealing: the pack squared in front of the dealer,
+  // and the pile dealt before each player.
+  pack: Object.freeze({ you: Object.freeze({ x: -7, z: 10 }), them: Object.freeze({ x: -7, z: -12 }) }),
+  dealt: Object.freeze({ you: Object.freeze({ x: 5, z: 13 }), them: Object.freeze({ x: 5, z: -15 }) }),
 });

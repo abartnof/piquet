@@ -23,11 +23,12 @@ export function sortMode(state, preference) {
 // The hand as groups of cards, in the order they are laid out.
 export function arrange(state, mode) {
   if (mode === "combos") {
+    const held = new Set(state.hand);
     const placed = new Set();
     const groups = [];
     for (const holding of state.worth) {
       if (holding.category === "carte_blanche") continue; // it is the whole hand
-      const cards = holding.cards.filter((c) => !placed.has(c)).sort(bySuit);
+      const cards = holding.cards.filter((c) => held.has(c) && !placed.has(c)).sort(bySuit);
       if (!cards.length) continue;
       cards.forEach((c) => placed.add(c));
       groups.push(cards);

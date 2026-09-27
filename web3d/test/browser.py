@@ -83,6 +83,33 @@ def check_drawn(page, failures):
         failures.append("the canvas is mostly black -- WebGL may have failed")
 
 
+DULL = """(s, n) => { const p = s.prompt; switch (p.kind) {
+  case 'cut': return 'cut ' + (2 + (n * 7) % 29);
+  case 'choose_dealer': return n % 2 ? 'dealer them' : 'dealer you';
+  case 'exchange': return 'exchange ' + s.hand.slice(-(1 + n % Math.min(p.limit, 3))).join(' ');
+  case 'declare': return 'declare ' + (n % 3 === 2 ? p.options.length - 1 : 0);
+  case 'play': return 'play ' + (n % 2 ? p.legal[p.legal.length - 1] : p.legal[0]);
+  case 'next_deal': return 'next';
+  default: return null; } }"""
+
+
+def check_whole_partie(page, failures):
+    """A whole partie through the director -- every state choreographed onto
+    the cards -- must never throw, and must come to rest after every move."""
+    for n in range(400):
+        command = page.evaluate(f"({DULL})(window.piquet3d.state(), {n})")
+        if command is None:
+            break
+        if not page.evaluate(f"window.piquet3d.send({command!r})"):
+            failures.append(f"the engine refused {command!r}")
+            return
+        if page.evaluate("window.piquet3d.busy()"):
+            failures.append(f"still moving after {command!r} in test mode")
+            return
+    if page.evaluate("window.piquet3d.state().prompt.kind") != "over":
+        failures.append("a whole partie did not reach its end")
+
+
 def main() -> int:
     if SHOTS:
         SHOTS.mkdir(parents=True, exist_ok=True)
@@ -95,6 +122,9 @@ def main() -> int:
         check_engine(page, failures)
         check_drawn(page, failures)
         shot(page, "01-opened")
+        check_whole_partie(page, failures)
+        check_drawn(page, failures)
+        shot(page, "02-partie-over")
         if page.errors:
             failures.append(f"console errors: {page.errors}")
         page.context.close()

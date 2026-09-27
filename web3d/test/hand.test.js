@@ -45,3 +45,10 @@ test("every mode keeps every card exactly once", () => {
     assert.deepEqual(arrange(state(), mode).flat().sort(), [...state().hand].sort());
   }
 });
+
+test("a holding naming cards not in the hand places only those that are", () => {
+  // Mid-exchange the holdings can be the ones the hand is about to have.
+  const s = state({ hand: ["AS", "KS", "9H", "7C"] });
+  const groups = arrange(s, "combos");
+  assert.deepEqual(groups.flat().sort(), ["7C", "9H", "AS", "KS"]);
+});

@@ -5,10 +5,10 @@
 // docs/TABLE3D.md.
 
 import { loadTextures } from "./art.js";
-import { createDeck, place } from "./deck.js";
+import { createDeck } from "./deck.js";
 import { buildDemo } from "./demo.js";
 import { decodeBase64, loadEngine } from "./engine.js";
-import { layout } from "./layout.js";
+import { createDirector } from "./director.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 
@@ -38,18 +38,18 @@ async function main() {
   const demo = params.has("demo") ? buildDemo(stage, deck, { slow: Number(params.get("slow") || 1) }) : null;
   if (params.has("spike") || params.has("angles")) buildSpike(stage, deck, { angles: params.has("angles") });
 
-  // The table at rest: all 32 cards where the state puts them. (Until the
-  // choreography lands, a new state simply appears.)
-  const table = params.has("spike") || params.has("angles") || demo ? null : Array.from({ length: 32 }, () => deck.card(null));
-  const show = () => {
-    if (!table) return;
-    layout(engine.state(), { eye: stage.camera.position }).forEach((slot, i) => {
-      deck.reveal(table[i], slot.code);
-      place(table[i], slot.pose);
-    });
-    stage.render();
-  };
-  show();
+  // The game: the engine's states, choreographed onto the cards.
+  const view = { sort: "auto", selected: [], lifted: [], cutDepth: 16 };
+  const director = params.has("spike") || params.has("angles") || demo
+    ? null
+    : createDirector({
+        stage,
+        deck,
+        engine,
+        view: () => ({ ...view, eye: stage.camera.position }),
+        testing: TESTING && !params.has("manual"),
+        manual: params.has("manual"),
+      });
   stage.render();
   // Ready means the first frame has reached the screen, which is later than
   // render() returning: a browser may defer rasterising an SVG drawn to a
@@ -62,13 +62,15 @@ async function main() {
   // Test hooks: the browser test drives and inspects the table through these.
   window.piquet3d = {
     ready: () => stage.frames() > 0,
-    busy: () => false,
+    busy: () => (director ? director.busy() : false),
     state: () => engine.state(),
     send: (command) => {
-      const accepted = engine.send(command);
-      show();
-      return accepted;
+      const cut = /^cut (\d+)$/.exec(command);
+      if (cut) view.cutDepth = Number(cut[1]);
+      return director.send(command);
     },
+    // With ?manual: move the animation clock by hand, for stills.
+    tick: (ms) => director.tick(ms),
     // The motion demo, frozen at one moment for all its stations.
     demoAt: (t) => demo && demo.at(t),
     art: () => ({

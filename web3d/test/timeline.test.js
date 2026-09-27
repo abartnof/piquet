@@ -106,3 +106,32 @@ test("a motion can say when it has landed", () => {
   timeline.tick(200);
   assert.deepEqual(landed, ["a"], "exactly once");
 });
+
+test("a motion can say when it has begun, once, before its first pose", () => {
+  const order = [];
+  const timeline = new Timeline({ apply: (target, pose) => order.push(`pose ${pose.t}`) });
+  timeline.add({ target: "a", path: trace, delay: 100, duration: 100, onStart: () => order.push("start") }, 0);
+  timeline.tick(50);
+  timeline.tick(150);
+  timeline.tick(160);
+  assert.deepEqual(order, ["start", "pose 0.5", "pose 0.6"]);
+});
+
+test("skipping still says a motion began", () => {
+  const order = [];
+  const timeline = new Timeline({ apply: () => {} });
+  timeline.add({ target: "a", path: trace, delay: 100, duration: 100, onStart: () => order.push("start"), onDone: () => order.push("done") }, 0);
+  timeline.skip();
+  assert.deepEqual(order, ["start", "done"]);
+});
+
+test("one card's motions finish in order: hidden as one lands, then shown as the next begins", () => {
+  for (const drive of [(tl) => tl.skip(), (tl) => tl.tick(1000)]) {
+    let face = "AS";
+    const timeline = new Timeline({ apply: () => {} });
+    timeline.add({ target: "a", path: trace, delay: 0, duration: 100, onDone: () => (face = null) }, 0);
+    timeline.add({ target: "a", path: trace, delay: 100, duration: 100, onStart: () => (face = "KD") }, 0);
+    drive(timeline);
+    assert.equal(face, "KD");
+  }
+});

@@ -5,14 +5,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Quaternion, Vector3 } from "three";
 import {
+  beforeFlip,
   cardCorners,
+  chain,
   fan,
   flip,
+  flipPile,
   layDown,
   lying,
   pickUp,
   pose,
   slide,
+  still,
   transfer,
 } from "../src/kinematics.js";
 import { CARD } from "../src/units.js";
@@ -190,4 +194,57 @@ test("a fan of one card is the card at the centre, upright", () => {
   const [only] = fan({ count: 1, centre: new Vector3(0, 15, 27), facing: new Vector3(0, 55, 60), tilt: 0 });
   assert.ok(near(only.position, new Vector3(0, 15, 27)));
   assert.ok(top(only).y > 0.5);
+});
+
+test("a flip can be aimed: beforeFlip gives the pose it must start from to land on a target", () => {
+  for (const [target, toward] of [
+    [lying({ x: -5, z: 9, height: 0.02, faceUp: true, yaw: 0.07 }), new Vector3(1, 0, 0)],
+    [lying({ x: 5, z: -13, height: 0.02, faceUp: true, yaw: Math.PI - 0.05 }), new Vector3(-1, 0, 0)],
+    [lying({ x: 0, z: 0, height: 0.3, faceUp: false, yaw: 0.4 }), new Vector3(0, 0, 1)],
+  ]) {
+    const start = beforeFlip(target, toward);
+    assert.ok(normal(start).y * normal(target).y < 0, "it starts the other side up");
+    const end = flip(start, { toward })(1);
+    assert.ok(near(end.position, target.position, 1e-6));
+    assert.ok(sameTurn(end.quaternion, target.quaternion, 1e-9));
+  }
+});
+
+test("chained paths run one after another, each for its share of the time", () => {
+  const a = lying({ x: 0, z: 0 });
+  const b = lying({ x: 10, z: 0 });
+  const c = lying({ x: 10, z: 10 });
+  const path = chain([slide(a, b), 1], [still(b), 1], [slide(b, c), 2]);
+  assert.ok(near(path(0).position, a.position));
+  assert.ok(near(path(0.25).position, b.position));
+  assert.ok(near(path(0.4).position, b.position), "holding still");
+  assert.ok(near(path(1).position, c.position));
+  assert.ok(path(0.75).position.z > 0 && path(0.75).position.z < 10);
+});
+
+test("a squared pile turns over as one block, rolling over its own height", () => {
+  const pile = Array.from({ length: 6 }, (_, i) => lying({ x: 12, z: 9, height: 0.02 + i * 0.05, faceUp: true, yaw: i % 2 ? Math.PI : 0 }));
+  const paths = flipPile(pile, { toward: new Vector3(-1, 0, 0) });
+  const gap = (t, a, b) => paths[a](t).position.distanceTo(paths[b](t).position);
+  for (const t of T) {
+    for (const path of paths) assert.ok(lowest(path(t)) >= 0.02 - EPS, `below the pile's base at t=${t}`);
+    // Rigid: the cards keep their distances from one another all the way over.
+    assert.ok(Math.abs(gap(t, 0, 5) - gap(0, 0, 5)) < 1e-6 && Math.abs(gap(t, 1, 4) - gap(0, 1, 4)) < 1e-6);
+  }
+  const end = paths.map((path) => path(1));
+  for (const p of end) assert.ok(normal(p).y < -0.999, "face down");
+  // The order reverses: what was on top is now at the bottom.
+  assert.ok(end[5].position.y < end[0].position.y);
+  assert.ok(Math.abs(Math.min(...end.map(lowest)) - 0.02) < 1e-6, "resting on the table where the pile did");
+  const height = 5 * 0.05 + CARD.thickness;
+  assert.ok(Math.abs(end[0].position.x - (12 - CARD.width - height)) < 1e-6, "one width and one pile-height over");
+});
+
+test("a flip is a pile of one", () => {
+  const card = lying({ x: 0, z: 0, height: 0.2, faceUp: false, yaw: 0.3 });
+  const toward = new Vector3(0, 0, 1);
+  const [single] = flipPile([card], { toward });
+  for (const t of T) {
+    assert.ok(single(t).position.distanceTo(flip(card, { toward })(t).position) < 1e-9);
+  }
 });

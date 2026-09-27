@@ -627,9 +627,40 @@ throughout.
       rule is simply "nothing in their hand, the talon or their discards
       has a face". Zone positions live in `units.js`. The page now shows
       the real game at rest (`?spike` keeps the hand-set table).
-- [ ] **P6 — Choreography (node-tested).** Each event kind animated and
+- [x] **P6 — Choreography (node-tested).** Each event kind animated and
       ending at the layout; speed setting; skip-to-end. *Accept*: a scripted
       partie animates end to end with every step ending at its layout.
+      *Landed*: `choreography.js` — a reducer replays the events between two
+      states into the intermediate states the engine never shows (you
+      played, they followed, they took it, they led), and `layout` gives
+      each one, so every stage runs between two true layouts; a final
+      settle lands exactly on `layout(next)`, and an undo or anything
+      unfollowable is one direct transition. `director.js` runs it on the
+      page: the timeline, faces turned as motions begin and land, rendering
+      only while something moves, `?manual` for hand-driven stills.
+      Tested over every step of five parties: the reducer rebuilds each
+      state exactly; every card lands on its slot; **no motion starts
+      anywhere but where its card is**; no card is in two motions at once;
+      no face appears that the destination does not allow; nothing dips
+      below the table mid-flight. Mutation-checked (a teleporting slide, a
+      frozen face). The browser test plays a whole partie through it.
+      Found by the tests, all physical: **a card must never spin while
+      tilted** — sliding off the shingled spread with a half turn dipped a
+      corner half a millimetre into the table — so a flip's edge is chosen
+      to leave a face-down card the standard way (a short edge reverses
+      its top, a long one keeps it); **a pile about to be turned must be
+      squared exactly**, or corners proud of the hinge dip as it stands;
+      **won tricks keep each card as it was played** (yours upright to
+      you, theirs to them), as a gathered trick does; and **a squared row
+      turns over as one rigid block** (`flipPile`), rolling over its own
+      height. The timeline finishes each motion before the next starts, so
+      a card hidden as it lands and shown as it rises ends up shown.
+      The ceremony, filmed: the cut (cards slide out face down and roll
+      over on the table, a beat to read them), the gather, the deal in
+      pairs, the pick-up; a trick (laid down, a pause, the answer, a beat,
+      swept to the winner). Timings in `TIMING`; the cut-to-first-hand
+      ceremony is about 7 s, most of it the deal — a speed setting and
+      skip-on-click are P7's.
 - [ ] **P7 — Interaction and the overlay.** Raycasting, hover, select, play;
       the M3 overlay: prompt, top bar, **score tab** (§9), narration, settings,
       credits; keyboard; hints as cyan ink. *Accept*: a human can play a whole

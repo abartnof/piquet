@@ -143,26 +143,36 @@ export function pickUp(from, to, { toward, lift = (20 * Math.PI) / 180, liftShar
 
 // Turning a card over on the table (Andrew: "one side must be constrained by
 // the table"). It turns about its edge lying furthest in `toward` and ends one
-// width over, the other side up.
+// width over, the other side up. A flip is a pile of one; see flipPile.
+export function flip(from, options = {}) {
+  return flipPile([from], options)[0];
+}
+
+// A squared pile turned over on the table as one rigid block, about its
+// bottom card's edge lying furthest in `toward`.
 //
-// A card rolls over its own thickness: it pivots on one bottom corner of the
+// A block rolls over its own thickness: it pivots on one bottom corner of the
 // edge until it stands upright, then on the other as it falls, so it never
-// sinks into the table and lands exactly at its height. Rising, a finger's
-// push dies away and it slows, evenly, to `crest` times its mean rising speed
-// as it passes upright -- slowest there, but never stopped, or it would hang;
-// falling, gravity speeds it evenly from that same speed, so there is no jolt
-// at the top. The fall takes `1 - riseShare` of the time.
-export function flip(from, { toward, riseShare = 1 / 1.6, crest = 0.3 } = {}) {
-  const { side, half } = edgeToward(from, toward);
-  const { pivot, axis } = hingeOf(from, side, half);
-  const upright = rotateAbout(from, pivot, axis, HALF_PI);
-  const secondPivot = pivot.clone().addScaledVector(side, CARD.thickness);
+// sinks into the table and lands exactly at its height, its order reversed.
+// Rising, a finger's push dies away and it slows, evenly, to `crest` times its
+// mean rising speed as it passes upright -- slowest there, but never stopped,
+// or it would hang; falling, gravity speeds it evenly from that same speed, so
+// there is no jolt at the top. The fall takes `1 - riseShare` of the time.
+export function flipPile(poses, { toward, riseShare = 1 / 1.6, crest = 0.3 } = {}) {
+  const bottom = poses.reduce((low, p) => (p.position.y < low.position.y ? p : low));
+  const { side, half } = edgeToward(bottom, toward);
+  const { pivot, axis } = hingeOf(bottom, side, half);
+  const top = Math.max(...poses.map((p) => p.position.y)) + CARD.thickness / 2;
+  const secondPivot = pivot.clone().addScaledVector(side, top - pivot.y);
   const rise = evenly(2 - crest);
   const fall = evenly((crest * (1 - riseShare)) / riseShare); // the same angular speed at the crest
-  return (t) => {
-    if (t < riseShare) return rotateAbout(from, pivot, axis, HALF_PI * rise(t / riseShare));
-    return rotateAbout(upright, secondPivot, axis, HALF_PI * fall((t - riseShare) / (1 - riseShare)));
-  };
+  return poses.map((from) => {
+    const upright = rotateAbout(from, pivot, axis, HALF_PI);
+    return (t) => {
+      if (t < riseShare) return rotateAbout(from, pivot, axis, HALF_PI * rise(t / riseShare));
+      return rotateAbout(upright, secondPivot, axis, HALF_PI * fall((t - riseShare) / (1 - riseShare)));
+    };
+  });
 }
 
 // Pushed across the table and let go: flat all the way, slowing evenly under
@@ -208,4 +218,39 @@ export function fan({
     });
   }
   return poses;
+}
+
+// A pose held: the path of a card that waits its turn.
+export function still(p) {
+  return () => ({ position: p.position.clone(), quaternion: p.quaternion.clone() });
+}
+
+// Paths one after another: chain([path, weight], ...), each running for its
+// weight's share of the time.
+export function chain(...parts) {
+  const total = parts.reduce((sum, [, w]) => sum + w, 0);
+  return (t) => {
+    let start = 0;
+    for (let i = 0; i < parts.length; i++) {
+      const [path, w] = parts[i];
+      const end = start + w / total;
+      if (t <= end || i === parts.length - 1) return path(Math.min(1, Math.max(0, (t - start) / (end - start))));
+      start = end;
+    }
+    return parts[parts.length - 1][0](1);
+  };
+}
+
+// Where a card must lie, the other side up, for flip(_, { toward }) to land
+// it exactly on `target`: one extent plus a thickness back from it, turned
+// half over about the hinge's direction. (A half turn is its own inverse.)
+export function beforeFlip(target, toward) {
+  const { side, half } = edgeToward(target, toward.clone().negate());
+  const outward = side.clone().negate(); // the direction the flip will travel
+  const axis = new Vector3().crossVectors(outward.clone().negate(), UP).normalize();
+  const turn = new Quaternion().setFromAxisAngle(axis, Math.PI);
+  return {
+    position: target.position.clone().addScaledVector(outward, -(2 * half + CARD.thickness)),
+    quaternion: turn.multiply(target.quaternion.clone()),
+  };
 }

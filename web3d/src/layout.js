@@ -51,22 +51,27 @@ function row(entries, { x, z, spacing, faceUp = true, yaw = 0 }) {
   const lean = Math.atan(STEP / spacing);
   const tilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -lean); // left edge up
   const height = REST + (CARD.width / 2) * Math.sin(lean) + (CARD.thickness / 2) * Math.cos(lean);
-  return entries.map(({ zone, code, dz = 0 }, i) => {
-    const flat = lying({ x: x + i * spacing, z: z + dz, height: 0, faceUp, yaw });
+  return entries.map(({ zone, code, dz = 0, yaw: own }, i) => {
+    const flat = lying({ x: x + i * spacing, z: z + dz, height: 0, faceUp, yaw: own ?? yaw });
     flat.quaternion.premultiply(tilt);
     flat.position.y = height;
     return { zone, index: i, code, pose: flat };
   });
 }
 
-// Tricks won, in the winner's row: led card then followed, in play order.
-function wonRow(zone, tricks, { x, z, span }, { yaw, toward }) {
+// Tricks won, in the winner's row: led card then followed, in play order,
+// each still lying the way it was played -- yours upright to you, theirs to
+// them, as a gathered trick does at a real table. Cards print their index at
+// both ends, so every one still shows a readable corner.
+const uprightTo = (who) => (who === "you" ? 0 : Math.PI);
+
+function wonRow(zone, tricks, { x, z, span }, { toward }) {
   const entries = tricks.flatMap((t) => [
-    { zone, code: t.led },
-    { zone, code: t.followed, dz: toward * PAIR_OFFSET },
+    { zone, code: t.led, yaw: uprightTo(t.leader) },
+    { zone, code: t.followed, dz: toward * PAIR_OFFSET, yaw: uprightTo(t.leader === "you" ? "them" : "you") },
   ]);
   const spacing = Math.min(1.3, Math.max(1.0, span / Math.max(1, entries.length - 1)));
-  return row(entries, { x, z, spacing, yaw });
+  return row(entries, { x, z, spacing });
 }
 
 function yourHand(state, view) {
@@ -176,7 +181,7 @@ export function layout(state, { sort = "auto", selected = [], lifted = [], eye =
   // Tricks won lie face up in front of their winner, and either player may
   // look at them at any time (Cavendish, Law 60).
   const won = (who) => state.tricks_played.filter((x) => x.winner === who);
-  slots.push(...wonRow("your-tricks", won("you"), ZONES.yourTricks, { yaw: 0, toward: 1 }));
-  slots.push(...wonRow("their-tricks", won("them"), ZONES.theirTricks, { yaw: Math.PI, toward: -1 }));
+  slots.push(...wonRow("your-tricks", won("you"), ZONES.yourTricks, { toward: 1 }));
+  slots.push(...wonRow("their-tricks", won("them"), ZONES.theirTricks, { toward: -1 }));
   return slots;
 }
