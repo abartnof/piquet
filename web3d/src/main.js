@@ -12,6 +12,7 @@ import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
 import { decodeBase64, loadEngine } from "./engine.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
+import { chooseSurface } from "./surfaces.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
@@ -24,7 +25,7 @@ const TESTING = params.has("test");
 const GAME_STORE = "piquet3d.game";
 const PREF_STORE = "piquet3d.prefs";
 const AID_STORE = "piquet3d.aids";
-const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true };
+const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random" };
 const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: true, declare_for_me: false };
 
 function recall(key, fallback) {
@@ -49,7 +50,12 @@ async function main() {
   const engine = await loadEngine(decodeBase64(WASM_BASE64));
   const numbers = (name) => (params.get(name) ? params.get(name).split(",").map(Number) : undefined);
   const stage = createScene(document.getElementById("stage"), {
-    surface: params.get("surface") || "sky",
+    // The table top: your own pick, else the one the partie in progress
+    // began with, else a new one at random (surfaces.js; ?table= to try one).
+    table: chooseSurface({
+      chosen: params.get("table") ?? recall(PREF_STORE, DEFAULT_PREFS).surface,
+      saved: recall(GAME_STORE, {}).surface,
+    }),
     shadow: params.get("shadow") || "vsm",
     shadowMap: Number(params.get("shadowmap")) || undefined,
     blurSamples: Number(params.get("blur")) || undefined,
@@ -171,7 +177,7 @@ async function main() {
 
   function keep() {
     const s = engine.state();
-    store(GAME_STORE, { level: s.level, seed: s.seed, record: s.record });
+    store(GAME_STORE, { level: s.level, seed: s.seed, record: s.record, surface: stage.surface });
     const url = new URL(window.location.href);
     url.searchParams.set("level", s.level);
     url.searchParams.set("seed", s.seed);
@@ -288,6 +294,12 @@ async function main() {
     store(PREF_STORE, prefs);
     if (name === "speed") director.timeline.speed = value;
     if (name === "sort") director.rearrange();
+    if (name === "surface") {
+      // Picking one lays it now; choosing Random keeps this partie's table.
+      if (value !== "random") stage.setSurface(value);
+      keep();
+      stage.render();
+    }
     render();
   }
 
@@ -299,6 +311,8 @@ async function main() {
       return;
     }
     begin(n, randomSeed());
+    // A new partie, a new table -- unless you have picked one.
+    stage.setSurface(chooseSurface({ chosen: prefs.surface, saved: null }));
     ui.selected = [];
     ui.lifted = [];
     director.restart();

@@ -28,6 +28,7 @@ import "@material/web/switch/switch.js";
 import "@material/web/labs/segmentedbutton/outlined-segmented-button.js";
 import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
 import { caption, live, scoredSince } from "./scorebug.js";
+import { PATTERNS } from "./surfaces.js";
 
 const THEM = "your opponent";
 const Them = "Your opponent";
@@ -197,6 +198,11 @@ export function createOverlay(root, on) {
     [["auto", "Automatically"], ["suit", "By suit"], ["rank", "By rank"], ["combos", "By combination"]].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   sort.addEventListener("change", () => on.pref("sort", sort.value));
+  // The table top: one chosen at random for each partie, or your own.
+  const table = el("md-outlined-select", { "data-pref": "surface", label: "The table" },
+    [["random", "A new one each partie"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
+      el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
+  table.addEventListener("change", () => on.pref("surface", table.value));
   const again = el("md-text-button", {}, "New partie");
   again.addEventListener("click", () => {
     $("settings").close();
@@ -216,7 +222,7 @@ export function createOverlay(root, on) {
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), aidSwitches,
       el("h3", {}, "The table"), prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, sort),
+      el("div", { class: "selects" }, levelInSettings, speed, sort, table),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },
         [["← →", "move along your hand, or the pack when cutting"],
@@ -361,7 +367,7 @@ export function createOverlay(root, on) {
       case "cut": {
         const again = s.events.length && s.events[s.events.length - 1].kind === "cut_again";
         return [again ? "The cuts were equal — cut again." : "Cut the pack for the deal.",
-          "Click the spread to lift the cards above, or use ← → and Space. The higher card chooses who deals; aces are high."];
+          "Click the spread to lift the cards above it, or use ← → and Space — or let the button cut for you. The higher card chooses who deals; aces are high."];
       }
       case "choose_dealer":
         return ["You cut higher: you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
@@ -395,6 +401,8 @@ export function createOverlay(root, on) {
   }
 
   let shownLayers = { explain: null, hints: null };
+  let lastKind = null;
+  const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   function renderPrompt(s, ui, prefs) {
     const box = $("prompt");
     const p = s.prompt;
@@ -427,6 +435,14 @@ export function createOverlay(root, on) {
     if (ui.focusText) parts.push(el("p", { class: "keyboard-focus", "aria-live": "polite" }, ui.focusText));
     if (s.error) parts.push(el("div", { class: "error", role: "alert" }, s.error));
     switch (p.kind) {
+      // Cutting is the player's own act, if they want it; if not, a button
+      // where the pointer rests (Andrew: "it should be optional to actually
+      // pick a card").
+      case "cut": {
+        const lift = p.fewest + Math.floor(Math.random() * (p.most - p.fewest + 1));
+        actions(button("filled-tonal", "Cut for me", () => on.act(`cut ${lift}`), { class: "primary" }));
+        break;
+      }
       case "choose_dealer":
         actions(
           button("filled", "Deal first", () => on.act("dealer you"), { class: "primary" }),
@@ -467,6 +483,24 @@ export function createOverlay(root, on) {
         actions(button("filled", "Play another partie", () => on.newPartie(true), { class: "primary" }));
         break;
     }
+    // The buttons spring in when a new question brings them, and the old
+    // ones shrink away where they stood rather than vanish.
+    const buttons = parts.find((part) => part.matches?.(".actions, .options"));
+    const kind = `${p.kind}:${p.category ?? ""}`;
+    const before = box.querySelector(".actions, .options");
+    if (kind !== lastKind) {
+      if (before && !calmMotion.matches) {
+        const rect = before.getBoundingClientRect();
+        const ghost = before.cloneNode(true);
+        Object.assign(ghost.style, { position: "fixed", left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, margin: "0" });
+        ghost.classList.add("leaving");
+        ghost.inert = true;
+        ghost.addEventListener("animationend", () => ghost.remove());
+        root.append(ghost);
+      }
+      if (buttons) buttons.classList.add("popping");
+    }
+    lastKind = kind;
     box.replaceChildren(...parts);
   }
 
@@ -688,6 +722,7 @@ export function createOverlay(root, on) {
       for (const sw of root.querySelectorAll("md-switch[data-pref]")) sw.selected = !!prefs[sw.dataset.pref];
       speed.value = String(prefs.speed);
       sort.value = prefs.sort;
+      table.value = prefs.surface ?? "random";
       scoreChip.replaceChildren(
         el("span", { class: "you" }, String(s.score.you)),
         el("span", { class: "dot" }, "·"),

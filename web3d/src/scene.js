@@ -1,51 +1,45 @@
 // The scene: renderer, camera, light, and the table the cards rest on.
 //
 // The look (docs/TABLE3D.md section 8): bright and airy. A hemisphere light
-// for the base, one key light high to the front-left casting soft shadows,
-// and a pale surface with no texture that reads as a table only because
-// things rest on it and cast shadows on it. Its far edge fades into the
-// background, so there is no edge to see.
+// for the base and one key light high to the front-left casting soft
+// shadows, on the cards; the table is unlit, a pale procedural pattern
+// (surfaces.js) whose far reaches fade into the air, so there is no edge.
 
 import {
+  CanvasTexture,
   Color,
   DirectionalLight,
   Fog,
   HemisphereLight,
   Mesh,
-  MeshToonMaterial,
+  MeshBasicMaterial,
   PCFShadowMap,
   PerspectiveCamera,
   PlaneGeometry,
+  RepeatWrapping,
   Scene,
+  ShadowMaterial,
   SRGBColorSpace,
   VSMShadowMap,
   WebGLRenderer,
 } from "three";
 import { aim } from "./framing.js";
-import { RAMPS } from "./materials.js";
+import { BASE, PATTERNS, drawSurface } from "./surfaces.js";
 import { CAMERA } from "./units.js";
-
-// Candidate surfaces for the table, for Andrew to choose between.
-export const SURFACES = {
-  paper: { table: "#f3efe7", air: "#f7f4ee" }, // warm paper-white
-  sky: { table: "#e3ecf5", air: "#eef3f9" }, // pale sky
-  sage: { table: "#e2eadf", air: "#eef2eb" }, // soft sage
-};
 
 export function createScene(
   canvas,
-  { surface = "sky", shadow = "vsm", shadowMap = 512, blurSamples = 8, eye, at, fov, lighting = {} } = {},
+  { table: pattern = "plain", shadow = "vsm", shadowMap = 512, blurSamples = 8, eye, at, fov, lighting = {} } = {},
 ) {
-  const colours = SURFACES[surface] || SURFACES.sky;
   const renderer = new WebGLRenderer({ canvas, antialias: true });
   renderer.outputColorSpace = SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = shadow === "vsm" ? VSMShadowMap : PCFShadowMap;
 
   const scene = new Scene();
-  scene.background = new Color(colours.air);
+  scene.background = new Color(BASE);
   // The table's far reaches fade into the air: no edge, no horizon.
-  scene.fog = new Fog(colours.air, 110, 260);
+  scene.fog = new Fog(BASE, 110, 260);
 
   const camera = new PerspectiveCamera(CAMERA.fov, 1, CAMERA.near, CAMERA.far);
   let portrait = null;
@@ -109,13 +103,33 @@ export function createScene(
   key.shadow.intensity = 0.8;
   scene.add(key);
 
-  const table = new Mesh(
-    new PlaneGeometry(600, 600),
-    new MeshToonMaterial({ color: colours.table, gradientMap: RAMPS.table() }),
-  );
+  // The table (Andrew's spec): unlit, a procedural pattern in one ink over a
+  // light base (surfaces.js) -- the cards, not the table, take the light.
+  // The shadows are laid over it by a sheet that draws nothing else, so a
+  // card still says where it is by the shadow it casts on the pattern.
+  const surface = new CanvasTexture(document.createElement("canvas"));
+  surface.wrapS = RepeatWrapping;
+  surface.wrapT = RepeatWrapping;
+  surface.colorSpace = SRGBColorSpace;
+  surface.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  const TABLE_CM = 600;
+  const TILE_CM = 48; // one 1024-pixel tile: a dot grid's 46 px is 2.2 cm
+  surface.repeat.set(TABLE_CM / TILE_CM, TABLE_CM / TILE_CM);
+  const table = new Mesh(new PlaneGeometry(TABLE_CM, TABLE_CM), new MeshBasicMaterial({ map: surface }));
   table.rotation.x = -Math.PI / 2;
-  table.receiveShadow = true;
   scene.add(table);
+  const shade = new Mesh(new PlaneGeometry(TABLE_CM, TABLE_CM), new ShadowMaterial({ color: "#14161a", opacity: 0.3 }));
+  shade.rotation.x = -Math.PI / 2;
+  shade.position.y = 0.005; // above the table, below the lowest card
+  shade.receiveShadow = true;
+  scene.add(shade);
+  function setSurface(id) {
+    const chosen = PATTERNS.find((p) => p.id === id) ?? PATTERNS[0];
+    drawSurface(surface.image, chosen);
+    surface.needsUpdate = true;
+    stage.surface = chosen.id;
+  }
+  setSurface(pattern);
 
   // The ink width is given in CSS pixels and drawn in device pixels, so a
   // line keeps its weight on a sharp screen.
@@ -162,5 +176,5 @@ export function createScene(
     return true;
   }
 
-  return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, setInset, frames: () => frames });
+  return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, setInset, setSurface, frames: () => frames });
 }

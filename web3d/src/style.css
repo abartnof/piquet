@@ -75,7 +75,7 @@ body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #eef3f9;
+  background: #edeef0; /* the table's base (surfaces.js) */
   color: var(--md-sys-color-on-surface);
   font: 15px/1.4 var(--font);
 }
@@ -766,6 +766,31 @@ md-assist-chip.pinned {
   }
 }
 
+/* Buttons a new question brings spring in; the old ones shrink away. */
+.popping {
+  animation: pop-in 520ms var(--ease-in);
+  animation: pop-in 520ms var(--spring);
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+  }
+}
+.leaving {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+  animation: pop-out 220ms var(--ease-out) both;
+}
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+}
+
 /* The question put to you, over the buttons under your hand. */
 .asked {
   max-width: min(640px, 100%);
@@ -1039,7 +1064,8 @@ kbd {
   .n.bump,
   .n.pop,
   .caption.slide,
-  .asked .arriving {
+  .asked .arriving,
+  .popping {
     animation: none;
   }
   .chevron,
