@@ -168,3 +168,105 @@ test("a call names how many cards it holds", () => {
     ["sixième", 6], ["septième", 7], ["huitième", 8], ["trio", 3], ["quatorze", 4], ["nothing", 0], ["trio of aces", 3]];
   for (const [said, n] of cases) assert.equal(cardsNamed(said), n, said);
 });
+
+// Andrew: "one card should always be on top if two cards collide, so we
+// should always see one card fully cell-shaded above the other. i'm seeing
+// the cell shading breaking down during the tricks part." Two cards lying
+// over one another on the table, at any moment of any motion, must be a
+// card's thickness apart where they overlap -- or the two fight over which
+// is drawn, and the ink and the shading break up.
+import { Vector3 } from "three";
+import { CARD } from "../src/units.js";
+
+const UP = new Vector3(0, 1, 0);
+const faceNormal = (p) => new Vector3(0, 0, 1).applyQuaternion(p.quaternion);
+function outlineOf(p) {
+  const c = cardCorners(p).filter((_, i) => i % 2 === 0);
+  const centre = c.reduce((a, q) => a.add(q), new Vector3()).multiplyScalar(0.25);
+  return [c[0], c[1], c[3], c[2]].map((q) => q.clone().sub(centre).multiplyScalar(0.98).add(centre)).map((q) => [q.x, q.z]);
+}
+function apart(a, b) {
+  for (const poly of [a, b]) {
+    for (let i = 0; i < poly.length; i++) {
+      const [x1, z1] = poly[i];
+      const [x2, z2] = poly[(i + 1) % poly.length];
+      const axis = [z1 - z2, x2 - x1];
+      const along = (p) => p.map(([x, z]) => x * axis[0] + z * axis[1]);
+      const [pa, pb] = [along(a), along(b)];
+      if (Math.max(...pa) <= Math.min(...pb) || Math.max(...pb) <= Math.min(...pa)) return true;
+    }
+  }
+  return false;
+}
+// The height of a card's mid-plane above a point of the table.
+function surfaceAt(p, x, z) {
+  const n = faceNormal(p);
+  return p.position.y - (n.x * (x - p.position.x) + n.z * (z - p.position.z)) / n.y;
+}
+// Where two outlines overlap, sample points and take the smallest gap.
+function gapBetween(a, b) {
+  const [oa, ob] = [outlineOf(a), outlineOf(b)];
+  const inside = (poly, [x, z]) => poly.every(([x1, z1], i) => {
+    const [x2, z2] = poly[(i + 1) % poly.length];
+    return (x2 - x1) * (z - z1) - (z2 - z1) * (x - x1) >= 0;
+  }) || poly.every(([x1, z1], i) => {
+    const [x2, z2] = poly[(i + 1) % poly.length];
+    return (x2 - x1) * (z - z1) - (z2 - z1) * (x - x1) <= 0;
+  });
+  let least = Infinity;
+  const [minX, maxX] = [Math.min(...oa.map((q) => q[0])), Math.max(...oa.map((q) => q[0]))];
+  const [minZ, maxZ] = [Math.min(...oa.map((q) => q[1])), Math.max(...oa.map((q) => q[1]))];
+  for (let i = 0; i <= 8; i++) {
+    for (let j = 0; j <= 8; j++) {
+      const pt = [minX + ((maxX - minX) * i) / 8, minZ + ((maxZ - minZ) * j) / 8];
+      if (inside(oa, pt) && inside(ob, pt)) least = Math.min(least, Math.abs(surfaceAt(a, ...pt) - surfaceAt(b, ...pt)));
+    }
+  }
+  return least;
+}
+
+test("cards lying over one another never share the table, at any moment of any motion", () => {
+  const clashes = [];
+  for (const states of [parties[0], parties[3]]) {
+  let placement = initialPlacement(states[0]);
+  for (let i = 1; i < states.length; i++) {
+    const result = choreograph(states[i - 1], states[i], placement);
+    const byMesh = new Map();
+    for (const m of result.motions) {
+      if (!byMesh.has(m.id)) byMesh.set(m.id, []);
+      byMesh.get(m.id).push(m);
+    }
+    const end = Math.max(0, ...result.motions.map((m) => m.delay + m.duration));
+    const poseAt = (id, t) => {
+      const motions = byMesh.get(id);
+      if (!motions) return placement[id].pose;
+      let pose = placement[id].pose;
+      for (const m of motions.sort((a, b) => a.delay - b.delay)) {
+        if (t < m.delay) break;
+        pose = m.path(Math.min(1, (t - m.delay) / Math.max(1e-9, m.duration)));
+      }
+      return pose;
+    };
+    for (let k = 1; k <= 24; k++) {
+      const t = (end * k) / 24;
+      const poses = placement.map((m) => poseAt(m.id, t));
+      // Only cards on or near the table, lying flat enough to be read as
+      // lying: a held hand is in the air, and a card mid-toss is above all.
+      const lying = poses
+        .map((p, id) => ({ p, id }))
+        .filter(({ p }) => p.position.y < 1.2 && Math.abs(faceNormal(p).dot(UP)) > 0.9);
+      for (let a = 0; a < lying.length; a++) {
+        for (let b = a + 1; b < lying.length; b++) {
+          const [pa, pb] = [lying[a].p, lying[b].p];
+          if (!byMesh.has(lying[a].id) && !byMesh.has(lying[b].id)) continue; // both at rest: layout's own test
+          if (pa.position.distanceTo(pb.position) > 11 || apart(outlineOf(pa), outlineOf(pb))) continue;
+          const gap = gapBetween(pa, pb);
+          if (gap < CARD.thickness * 0.9) clashes.push(`step ${i} (${states[i - 1].prompt.kind}) t=${Math.round(t)}: cards ${lying[a].id} and ${lying[b].id} ${gap.toFixed(3)} apart`);
+        }
+      }
+    }
+    placement = result.placement;
+  }
+  }
+  assert.deepEqual(clashes.slice(0, 8), [], `${clashes.length} clashes`);
+});

@@ -72,6 +72,14 @@ const FACE_UP = new Set(["trick", "your-tricks", "their-tricks", "cut"]);
 const ROWS = new Set(["your-tricks", "their-tricks"]);
 
 // A card lying on the table (or on what lies on it), rather than in a hand.
+// How high a card rides as it slides: over anything lying on the table,
+// and over every card that will end up beneath it -- higher up a pile, and
+// further right along a shingled row, where each card lies on the one
+// before -- so no two movers ever share a level on the way.
+function ride(to) {
+  return 0.3 + 4 * Math.max(0, to.position.y) + 0.02 * (to.position.x + 60);
+}
+
 // A card held up to be looked at, over its cutter's side of the table:
 // facing them and leaning back, as a held hand does.
 function lookingAt(spot, side) {
@@ -414,7 +422,7 @@ class Plan {
   trick({ state }) {
     if (this.pause) this.clock += TIMING.read;
     this.stage(layout(state, this.view), (mesh, slot) => ({
-      path: slide(mesh.pose, slot.pose),
+      path: slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }),
       delay: slot.index % 2 ? 40 : 0,
       duration: TIMING.push,
     }));
@@ -488,14 +496,14 @@ class Plan {
       const side = e.who === "you" ? 1 : -1;
       const peeled = lying({
         x: mesh.pose.position.x,
-        z: mesh.pose.position.z + side * CARD.height * 0.75,
+        z: mesh.pose.position.z + side * (CARD.height + 1), // clear of the spread before it turns
         height: REST,
         faceUp: false,
         yaw: yawKeeping(mesh.pose, false),
       });
       const look = lookingAt(slot.pose.position, side);
       const path = chain(
-        [slide(mesh.pose, peeled), 0.8],
+        [slide(mesh.pose, peeled, { lift: 0.5 }), 0.8],
         [pickUp(peeled, look, { toward: TOWARD[e.who] }), 1.2],
         [still(look), 1.1],
         [toss(look, slot.pose, { clearance: 2 }), 1],
@@ -508,7 +516,7 @@ class Plan {
     const spread = this.now.filter((m) => m.zone === "pack").sort((a, b) => a.index - b.index);
     spread.forEach((mesh, i) => {
       const slot = rest[i];
-      end = Math.max(end, this.add(mesh, slide(mesh.pose, slot.pose), start + 200, TIMING.resort));
+      end = Math.max(end, this.add(mesh, slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }), start + 200, TIMING.resort));
       this.now[mesh.id] = { id: mesh.id, zone: slot.zone, index: slot.index, code: null, pose: slot.pose };
     });
     this.clock = end + (this.pause ? TIMING.cutRead : 0);
@@ -517,7 +525,7 @@ class Plan {
   uncut({ state }) {
     this.turnDown(new Vector3(this.zones.ribbon.x - 15.5 * this.zones.ribbon.spacing, 0, this.zones.ribbon.z));
     for (const m of this.now) if (m.zone === "pack-pending") this.now[m.id] = { ...m, zone: "cut" };
-    this.stage(layout(state, this.view), (mesh, slot) => ({ path: slide(mesh.pose, slot.pose), delay: 0, duration: TIMING.gather }));
+    this.stage(layout(state, this.view), (mesh, slot) => ({ path: slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }), delay: 0, duration: TIMING.gather }));
   }
 
   // Every face-up card on the table turns over where it lies. A row is
@@ -544,7 +552,7 @@ class Plan {
       const first = sorted[0].pose.position;
       const cards = sorted.map((mesh, i) => {
         const pose = lying({ x: first.x, z: first.z, height: REST + i * STEP, faceUp: true, yaw: yawKeeping(mesh.pose, true) });
-        sweep.push({ mesh, pose, path: slide(mesh.pose, pose), delay: i * 15, duration: TIMING.sweep });
+        sweep.push({ mesh, pose, path: slide(mesh.pose, pose, { lift: ride(pose) }), delay: i * 15, duration: TIMING.sweep });
         return { mesh, pose };
       });
       piles.push({ cards, row: true });
@@ -572,14 +580,18 @@ class Plan {
     //    in front of the dealer.
     const packAt = this.zones.pack[dealer];
     this.turnDown(new Vector3(packAt.x, 0, packAt.z));
-    const order = [...this.now].sort((a, b) => a.pose.position.y - b.pose.position.y || a.id - b.id);
+    // Whatever lies on top leaves first -- higher up a pile, further right
+    // along a shingled row -- or a card drawn out from under another would
+    // pass through it; and the first to leave goes to the bottom of the new
+    // pack, so each arrival lands on those before it, riding above them.
+    const order = [...this.now].sort((a, b) => ride(b.pose) - ride(a.pose) || a.id - b.id);
     const pack = this.virtual("pack", order, packAt);
     this.moveEach(
-      pack.map((slot, i) => {
+      pack.map((slot, k) => {
         const mesh = this.now[slot.id];
         const onTable = !mesh.zone.endsWith("hand");
-        const path = onTable ? slide(mesh.pose, slot.pose) : toss(mesh.pose, slot.pose);
-        return { mesh, pose: slot.pose, path, delay: (i % 8) * 20, duration: TIMING.gather, code: null };
+        const path = onTable ? slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }) : toss(mesh.pose, slot.pose);
+        return { mesh, pose: slot.pose, path, delay: k * 14, duration: TIMING.gather, code: null };
       }),
     );
     pack.forEach((slot) => (this.now[slot.id] = { ...this.now[slot.id], zone: "pack", index: slot.index }));
@@ -627,7 +639,9 @@ class Plan {
           mesh,
           pose: slot.pose,
           path: pickUp(from, slot.pose, { toward: TOWARD[who] }),
-          delay: i * 35 + (who === "them" ? 60 : 0),
+          // Off the top of the pile first: a card lifted from under others
+          // would pass through them.
+          delay: (piles[who].length - 1 - i) * 35 + (who === "them" ? 60 : 0),
           duration: TIMING.pickUp,
           code: slot.code,
           reveal: slot.code ? { code: slot.code } : undefined,

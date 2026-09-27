@@ -277,13 +277,17 @@ export function flipPile(poses, { toward, riseShare = 1 / 1.6, crest = 0.3 } = {
   });
 }
 
-// Pushed across the table and let go: flat all the way, slowing evenly under
-// friction to a dead stop.
-export function slide(from, to, { ease = friction } = {}) {
+// Pushed across the table and let go: slowing evenly under friction to a
+// dead stop. It rides `lift` above the table at the middle of its way and
+// settles onto its place, so it passes over whatever it crosses rather than
+// through it -- two cards at one height fight over which is drawn, and the
+// ink and the shading break up (Andrew: "one card should always be on top").
+export function slide(from, to, { ease = friction, lift = 0 } = {}) {
   return (t) => {
     const s = ease(t);
+    const u = Math.min(1, Math.max(0, t));
     return {
-      position: from.position.clone().lerp(to.position, s),
+      position: from.position.clone().lerp(to.position, s).addScaledVector(UP, 4 * lift * u * (1 - u)),
       quaternion: from.quaternion.clone().slerp(to.quaternion, s),
     };
   };
