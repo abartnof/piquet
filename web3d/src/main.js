@@ -5,9 +5,10 @@
 // docs/TABLE3D.md.
 
 import { loadTextures } from "./art.js";
-import { createDeck } from "./deck.js";
+import { createDeck, place } from "./deck.js";
 import { buildDemo } from "./demo.js";
 import { decodeBase64, loadEngine } from "./engine.js";
+import { layout } from "./layout.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 
@@ -19,7 +20,7 @@ const TESTING = params.has("test");
 async function main() {
   if (TESTING) document.body.classList.add("testing");
   const engine = await loadEngine(decodeBase64(WASM_BASE64));
-  engine.start(3, 1);
+  engine.start(Number(params.get("level") || 3), Number(params.get("seed") || 1));
 
   const numbers = (name) => (params.get(name) ? params.get(name).split(",").map(Number) : undefined);
   const stage = createScene(document.getElementById("stage"), {
@@ -35,7 +36,20 @@ async function main() {
   });
   const deck = createDeck(stage, textures, { inkWidth: Number(params.get("ink") || 2.5) });
   const demo = params.has("demo") ? buildDemo(stage, deck, { slow: Number(params.get("slow") || 1) }) : null;
-  if (!demo) buildSpike(stage, deck, { angles: params.has("angles") });
+  if (params.has("spike") || params.has("angles")) buildSpike(stage, deck, { angles: params.has("angles") });
+
+  // The table at rest: all 32 cards where the state puts them. (Until the
+  // choreography lands, a new state simply appears.)
+  const table = params.has("spike") || params.has("angles") || demo ? null : Array.from({ length: 32 }, () => deck.card(null));
+  const show = () => {
+    if (!table) return;
+    layout(engine.state(), { eye: stage.camera.position }).forEach((slot, i) => {
+      deck.reveal(table[i], slot.code);
+      place(table[i], slot.pose);
+    });
+    stage.render();
+  };
+  show();
   stage.render();
   // Ready means the first frame has reached the screen, which is later than
   // render() returning: a browser may defer rasterising an SVG drawn to a
@@ -50,6 +64,11 @@ async function main() {
     ready: () => stage.frames() > 0,
     busy: () => false,
     state: () => engine.state(),
+    send: (command) => {
+      const accepted = engine.send(command);
+      show();
+      return accepted;
+    },
     // The motion demo, frozen at one moment for all its stations.
     demoAt: (t) => demo && demo.at(t),
     art: () => ({

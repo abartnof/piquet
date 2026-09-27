@@ -179,10 +179,12 @@ export function slide(from, to, { ease = friction } = {}) {
 
 // A hand held up and fanned toward `facing` (its holder's eye, or a point in
 // front of them): the cards turn about a pivot `radius` below the hand's
-// centre, `spread` apart, each `step` in front of the one before so every
-// corner index shows; the whole hand leans back by `tilt`.
+// centre, `spread` apart -- or at the given `angles` -- each `step` in front
+// of the one before so every corner index shows; the whole hand leans back by
+// `tilt`.
 export function fan({
   count,
+  angles,
   centre,
   facing,
   radius = 16,
@@ -190,14 +192,15 @@ export function fan({
   tilt = (14 * Math.PI) / 180,
   step = 0.06,
 }) {
+  const turns = angles ?? Array.from({ length: count }, (_, i) => (i - (count - 1) / 2) * spread);
   const forward = facing.clone().sub(centre).normalize();
   const right = new Vector3().crossVectors(UP, forward).normalize();
   const up = new Vector3().crossVectors(forward, right);
   const frame = new Quaternion().setFromRotationMatrix(new Matrix4().makeBasis(right, up, forward));
   frame.multiply(new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -tilt));
   const poses = [];
-  for (let i = 0; i < count; i++) {
-    const theta = (i - (count - 1) / 2) * spread;
+  for (let i = 0; i < turns.length; i++) {
+    const theta = turns[i];
     const local = new Vector3(radius * Math.sin(theta), radius * Math.cos(theta) - radius, i * step);
     poses.push({
       position: local.applyQuaternion(frame).add(centre),

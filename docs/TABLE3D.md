@@ -607,9 +607,26 @@ throughout.
       `deck.js` makes the card meshes and assigns faces; `?demo` loops every
       primitive (`&slow=3`), and `piquet3d.demoAt(t)` freezes them for
       filmstrips — the way to check motion from a headless browser.
-- [ ] **P5 — Layout (node-tested).** `layout.js` from protocol states, with
+- [x] **P5 — Layout (node-tested).** `layout.js` from protocol states, with
       the anonymity test. *Accept*: every zone right for scripted states
       across a partie; no hidden face ever assigned.
+      *Landed*: `layout(state, view)` → 32 slots `{ zone, index, code,
+      pose }`, tested over every state of four real parties played through
+      the wasm by a scripted human (`test/partie.js`): the count, each
+      zone's count, anonymity, which way every card faces, no two resting
+      cards interpenetrating (a separating-axis test on their footprints),
+      nothing below the table, the hand's order, lifting. Mutation-checked:
+      leaking `talon_seen` into the talon and flattening the piles are both
+      caught. Two decisions: **rows are shingled**, as cards spread on a
+      table are — each rests on the one before, tilted ~2° to clear it —
+      so a row of 24 won cards stays on the table instead of climbing a
+      centimetre; and **the cut is a ribbon spread** across the table rather
+      than a squared pack whose edge you hover (§7.3): 32 targets 1.45 cm
+      wide instead of one edge 1.3 cm tall. `talon_seen` cards that younger
+      takes are *known* but held backs-to-you, so they stay faceless — the
+      rule is simply "nothing in their hand, the talon or their discards
+      has a face". Zone positions live in `units.js`. The page now shows
+      the real game at rest (`?spike` keeps the hand-set table).
 - [ ] **P6 — Choreography (node-tested).** Each event kind animated and
       ending at the layout; speed setting; skip-to-end. *Accept*: a scripted
       partie animates end to end with every step ending at its layout.
