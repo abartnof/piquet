@@ -31,6 +31,7 @@ pub mod opponents;
 pub mod options;
 pub mod partie;
 pub mod play;
+pub mod prior;
 pub mod rng;
 pub mod rules;
 pub mod scoring;
