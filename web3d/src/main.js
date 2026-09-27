@@ -24,7 +24,7 @@ const TESTING = params.has("test");
 const GAME_STORE = "piquet3d.game";
 const PREF_STORE = "piquet3d.prefs";
 const AID_STORE = "piquet3d.aids";
-const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1 };
+const DEFAULT_PREFS = { tab: true, undo: true, pause: true, sort: "auto", speed: 1, hintOpen: false };
 const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: true, declare_for_me: false };
 
 function recall(key, fallback) {
@@ -234,7 +234,18 @@ async function main() {
         : `${labelOf(f.code)}${s.prompt.kind === "play" && !s.prompt.legal.includes(f.code) ? ", which you may not play" : ""} (Space to ${s.prompt.kind === "play" ? "play" : ui.selected.includes(f.code) ? "keep" : "throw"})`
       : null;
     overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus } });
+    reframe();
   }
+
+  // The table is framed beside the information column, across the table;
+  // on a phone the column runs along the top instead, and the table has the
+  // whole width (framing.js).
+  const info = document.getElementById("info");
+  function reframe() {
+    const beside = getComputedStyle(info).getPropertyValue("--beside").trim() === "1";
+    if (stage.setInset(beside ? info.getBoundingClientRect().right + 8 : 0)) stage.render();
+  }
+  window.addEventListener("resize", reframe);
 
   // Carry out a command. The engine answers for your opponent on this
   // thread, so outside the tests the page first shows that they are thinking
@@ -398,7 +409,12 @@ async function main() {
         act("undo");
       }
     } else if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey) {
-      toggleAid("hints");
+      // Open or close the hint; with hints off, turn them on and open it.
+      if (engine.state().aids.hints) overlay.toggleHint();
+      else {
+        setPref("hintOpen", true);
+        toggleAid("hints");
+      }
     } else if (e.key === "Escape") {
       ui.selected = [];
       ui.lifted = [];

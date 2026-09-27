@@ -156,9 +156,10 @@ export function createScene(
   function setInset(pixels) {
     const width = canvas.clientWidth || 1;
     const next = Math.max(0, Math.min(0.4, pixels / width));
-    if (Math.abs(next - inset) < 1e-3) return;
+    if (Math.abs(next - inset) < 1e-3) return false;
     inset = next;
     frame(width / (canvas.clientHeight || 1));
+    return true;
   }
 
   return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, setInset, frames: () => frames });

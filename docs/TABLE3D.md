@@ -765,6 +765,62 @@ throughout.
       as a card lands, a whisper as one slides — could be synthesised in
       the page with no files at all, if he wants it.
 
+- [x] **P10 — Andrew's notes from playing it (27 September 2026).** Nine,
+      given while he played the first build, all built:
+      1. *"sorting your hand should always be an option, with a md3 ...
+         Segmented button near the deck (below?)"* — Material Web's
+         outlined segmented button (labs), Auto / Suit / Rank /
+         Combinations, always under the hand.
+      2. *"we speak a LOT in piquet- those things we say during gameplay are
+         a part of the game ... a text box ... split into two
+         vertically-stacked halves"* — the dialogue box: your opponent's
+         words and points above in red, yours below in black, the table's
+         between. `talk.js` (node-tested) turns the protocol's events into
+         lines, using the books' own replies — *good*, *not good*,
+         *equal* — and one line for a card and its point ("Leads A♥ +1").
+         What is asked of you is the last line of your half.
+      3. *"the hands are sort of tilted away from the player at ~75
+         degrees. the shadows should reflect that"* — both hands at 75° to
+         the table (a phone's overhead eye keeps yours at 50°); the light
+         rebalanced toward the key, so a shadow is a third darker than the
+         table where it had been a fifth, and a card's follows it down.
+      4. *"a sharp tug pulling the card from the deck, and then it's placed
+         on the table"* — `kinematics.pull`: snapped out along its own
+         length, then carried and set down, the beats overlapping.
+      5. *"the cards on the table should be placed a little further back"*
+         — `staging.test.js` looks through the page's own camera
+         (`framing.js`) at five window shapes and fails if any card on the
+         table overlaps any held card on screen, every card raised; the
+         zones are moved back and in until it passes.
+      6. *"hints should work like lists in MD3- with a toggle"* — the hint
+         is a fold under the hand that floats up when opened (H too);
+         closed by default, remembered.
+      7. *"those elements are animated. animate those with a lot of motion
+         easing"* — every chevron turns and every fold grows on Material 3
+         Expressive's spatial spring (damping 0.8, a point and a half of
+         overshoot), sampled into CSS `linear()`; closing uses M3's
+         emphasized accelerate, quicker, as M3 has things leave.
+      8. *"any information display should be on the left, or top; any area
+         with buttons that influence gameplay should be on the
+         right/bottom ... right below the deck"* — the score tab, the
+         dialogue and what your hand is worth down the left; the prompt's
+         buttons, the sort, undo and the hint under the hand; the table
+         framed beside the column by a lens shift (`camera.filmOffset`),
+         so its perspective does not change. On a phone the column runs
+         along the top.
+      9. *"how during WNBA broadcasts, 3-pointers have a little on-screen
+         animation in the score box ... for special events (not for every
+         event)"* — a repique, pique, capot, carte blanche, quatorze,
+         sixième or longer, or crossing the rubicon (`talk.flairOf`) sweeps
+         a slab in the scorer's colour into their half, with a sheen and
+         their figure in the tab popping; the line stays marked. Nothing
+         replays on reload; nothing moves under reduced motion.
+      One colour per side everywhere now — your opponent red, you black —
+      where the tab had used amber and teal.
+      **Left for later:** the phone's table wants its own pass: the hand is
+      small, the information strip covers the opponent's hand, and the held
+      hand's shadow reads as a heavy blob from the overhead eye.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

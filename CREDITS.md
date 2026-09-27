@@ -44,7 +44,10 @@ guidance (Andrew: "clear designs, organic motion, and favors smooth lines over
 sharp lines"). The guidelines are Google's; the components are used through
 `@material/web` (below), and the colour scheme is generated from one seed
 colour with Google's Material Color Utilities (build tools, below). The
-motion curves and durations are the ones `@material/web` ships as tokens.
+motion curves and durations are the ones `@material/web` ships as tokens, and the
+folds' spring is Material 3 Expressive's spatial spring (damping ratio 0.8), sampled
+for CSS `linear()` — <https://m3.material.io/styles/motion/overview>. The hand's sort
+is Material Web's outlined segmented button, from its `labs`.
 
 The page's few icons (undo, settings, narration, fold and unfold) are simple
 strokes drawn for it; no icon font or Material Symbols is used.

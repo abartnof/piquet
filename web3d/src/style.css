@@ -56,6 +56,18 @@
   --elevation-2: 0 1px 2px rgb(0 0 0 / 0.18), 0 3px 10px 2px rgb(0 0 0 / 0.08);
   --ease: cubic-bezier(0.2, 0, 0, 1); /* M3 standard */
   --ease-in: cubic-bezier(0.05, 0.7, 0.1, 1); /* M3 emphasized decelerate */
+  --ease-out: cubic-bezier(0.3, 0, 0.8, 0.15); /* M3 emphasized accelerate */
+  /* Material 3 Expressive's spatial spring, damping ratio 0.8: organic,
+     with an overshoot of a point and a half -- felt, not seen as a bounce.
+     Sampled for CSS's linear(); browsers without it keep --ease. */
+  --spring: linear(0, 0.0201, 0.0719, 0.1441, 0.2281, 0.3173, 0.4069, 0.4933, 0.5741, 0.6478, 0.7137, 0.7716, 0.8215, 0.8638, 0.8991, 0.9281, 0.9514, 0.9699, 0.9842, 0.995, 1.0029, 1.0084, 1.012, 1.0141, 1.015, 1.0151, 1.0146, 1.0137, 1.0125, 1.0112, 1.0099, 1.0085, 1.0072, 1.006, 1.005, 1.004, 1.0032, 1.0025, 1.0019, 1.0014, 1);
+  /* The dialogue: your opponent in red, you in black (Andrew). */
+  --talk-them: #b3261e;
+  --talk-them-soft: #fbeae8;
+  --talk-you: #1a1b20;
+  --talk-you-soft: #ecedf3;
+  /* The information column, down the left across the table. */
+  --info-width: clamp(250px, 24vw, 320px);
 }
 
 html,
@@ -159,22 +171,85 @@ body {
   stroke-linejoin: round;
 }
 
-/* ---- the running tab ------------------------------------------------------ */
+/* ---- the information column ------------------------------------------------ */
 
-.tab {
-  top: 12px;
-  right: 12px;
-  width: 288px;
-  font-size: 13.5px;
-  max-height: calc(100vh - 24px);
-  overflow: auto;
-  padding: 6px 0 8px;
+.info {
+  --beside: 1; /* read by main.js: the table is framed beside this column */
+  position: absolute;
+  left: 12px;
+  top: 76px;
+  bottom: 12px;
+  width: var(--info-width);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
 }
-.tab-head {
+.info > .surface {
+  position: relative;
+  flex: 0 0 auto;
+}
+.info > [hidden] {
+  display: none;
+}
+
+/* ---- folds: Material 3's expanding list item, animated ----------------------
+   The body grows from nothing on the spring as the chevron turns a half
+   turn on it; closing, both go quicker, as M3 has things leave faster than
+   they arrive. */
+
+.fold-head {
   all: unset;
   box-sizing: border-box;
   cursor: pointer;
   width: 100%;
+}
+.fold-head:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: -2px;
+  border-radius: 14px;
+}
+.chevron {
+  justify-self: end;
+  transition: transform 260ms var(--ease-out);
+}
+.fold.open > .fold-head .chevron {
+  transform: rotate(180deg);
+  transition: transform 560ms var(--ease);
+  transition: transform 560ms var(--spring);
+}
+.fold-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms var(--ease-out);
+}
+.fold.open > .fold-body {
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 520ms var(--ease);
+  transition: grid-template-rows 520ms var(--spring);
+}
+.fold-inner {
+  min-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 160ms var(--ease-out), transform 260ms var(--ease-out);
+}
+.fold.open > .fold-body > .fold-inner {
+  opacity: 1;
+  transform: none;
+  transition: opacity 320ms var(--ease-in) 60ms, transform 520ms var(--ease-in);
+}
+
+/* ---- the running tab ------------------------------------------------------ */
+
+.tab {
+  font-size: 13.5px;
+  padding: 6px 0 8px;
+  max-height: 46vh;
+  overflow: auto;
+}
+.tab-head {
   display: grid;
   grid-template-columns: 1fr auto auto auto 22px;
   align-items: center;
@@ -202,11 +277,13 @@ body {
 .dot {
   color: var(--md-sys-color-outline);
 }
+/* One colour for each side everywhere: your opponent red, you black, as
+   in the dialogue (Andrew). */
 .you {
-  color: var(--piquet-you);
+  color: var(--talk-you);
 }
 .them {
-  color: var(--piquet-them);
+  color: var(--talk-them);
 }
 .tab-grid,
 .partie-grid {
@@ -275,34 +352,57 @@ body {
   color: var(--md-sys-color-on-surface-variant);
 }
 
-/* ---- the prompt ------------------------------------------------------------ */
+/* ---- under your hand: the prompt's buttons, and the tools --------------------
+   Centred in the play area beside the information column, in the strip the
+   hand is kept clear of (web3d/test/staging.test.js), so the mouse hardly
+   moves between the cards and the buttons that go with them. */
 
+.controls {
+  position: absolute;
+  left: calc(var(--info-width) + 20px);
+  right: 12px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+.controls > * {
+  pointer-events: auto;
+}
 .prompt {
-  right: 16px;
-  bottom: 16px;
-  /* Beside the hand, not over it: the fan is about 76% of the window's
-     height wide, whatever its width, so what is left either side is known. */
-  width: clamp(280px, calc((100vw - 76vh) / 2 - 28px), 380px);
-  padding: 16px 18px 14px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 10px;
-  background: var(--md-sys-color-surface-container-lowest);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
 }
 .prompt:empty {
   display: none;
+}
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 88%, transparent);
+  box-shadow: var(--elevation-2);
+}
+.tools[hidden],
+.tools > [hidden] {
+  display: none;
+}
+.sort {
+  --md-outlined-segmented-button-container-height: 36px;
+  --md-outlined-segmented-button-shape: 18px;
 }
 .thinking {
   --md-linear-progress-track-shape: 4px;
   margin: -4px 0 2px;
 }
-.ask {
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.3;
-}
 .note {
-  margin: -4px 0 0;
   color: var(--md-sys-color-on-surface-variant);
 }
 .actions,
@@ -312,8 +412,7 @@ body {
   gap: 8px;
 }
 .options {
-  flex-direction: column;
-  align-items: stretch;
+  justify-content: center;
 }
 .options > * {
   --md-filled-button-container-shape: 14px;
@@ -323,17 +422,12 @@ body {
   --md-outlined-button-outline-color: #009fb7;
   --md-outlined-button-outline-width: 2px;
 }
-.worth-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0; /* let the chips scroll rather than widen the card */
+.worth-card {
+  padding: 10px 12px 12px 16px;
+  display: grid;
+  gap: 6px;
 }
-.worth-row md-chip-set {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-.worth-label {
+.card-title {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--md-sys-color-on-surface-variant);
@@ -345,18 +439,45 @@ md-assist-chip.pinned {
   --md-assist-chip-outline-color: #e8900c;
   --md-assist-chip-label-text-color: #8a4f00;
 }
-.hint {
-  display: flex;
-  flex-wrap: wrap;
+/* The hint: a fold whose body floats up over the hand from its button. */
+.hint-fold {
+  position: relative;
+}
+.hint-head {
+  display: inline-flex;
   align-items: center;
-  gap: 2px 4px;
-  padding: 6px 4px 6px 12px;
-  border-radius: 14px;
-  background: #e0f6f9;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px 0 12px;
+  border-radius: 18px;
   color: #004f5b;
 }
+.hint-head:hover {
+  background: #e0f6f9;
+}
+.hint-fold > .fold-body {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  width: 300px;
+}
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 10px 10px 16px;
+  border-radius: 16px;
+  background: #e0f6f9;
+  color: #004f5b;
+  box-shadow: var(--elevation-2);
+}
 .hint-text {
-  flex: 1 1 100%;
+  flex: 1 1 auto;
+}
+.fold.hint-fold .fold-inner {
+  /* room for the card's own shadow inside the clipped body */
+  padding: 4px;
+  margin: -4px;
 }
 .keyboard-focus {
   margin: 0;
@@ -364,10 +485,242 @@ md-assist-chip.pinned {
   color: var(--md-sys-color-primary);
 }
 .error {
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-radius: 12px;
   background: var(--md-sys-color-error-container);
   color: var(--md-sys-color-on-error-container);
+  box-shadow: var(--elevation-2);
+}
+.keyboard-focus {
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--md-sys-color-surface-container-lowest);
+}
+
+/* ---- the dialogue box -------------------------------------------------------
+   Your opponent's words and points above, in red; yours below, in black;
+   what the table says between them. Each half keeps the whole deal and
+   shows its newest lines, the latest arriving on the spring. */
+
+.talk {
+  flex: 1 1 auto !important;
+  min-height: 180px;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 0;
+  overflow: hidden;
+  background: var(--md-sys-color-surface-container-lowest);
+}
+.half {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 8px 12px 8px 16px;
+}
+.half.them {
+  color: var(--talk-them);
+  background: var(--talk-them-soft);
+}
+.half.you {
+  color: var(--talk-you);
+}
+.half-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.8;
+  position: relative;
+}
+.half-head .thinking {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -4px;
+  --md-linear-progress-active-indicator-color: var(--talk-them);
+  --md-linear-progress-track-color: transparent;
+}
+.half-total {
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+}
+.lines {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  overflow: auto;
+  min-height: 0;
+  flex: 1 1 auto;
+  scrollbar-width: thin;
+}
+/* Once a half runs over, its oldest lines fade out at the top edge. */
+.lines.over {
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22px);
+}
+.line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 1px 0;
+  font-size: 14px;
+}
+.line .words {
+  flex: 1 1 auto;
+}
+.line.said .words,
+.line.answer .words {
+  font-weight: 650;
+}
+.points {
+  font-weight: 750;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.line.fresh {
+  animation: said 520ms var(--ease-in);
+  animation: said 520ms var(--spring);
+}
+@keyframes said {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+/* A rare big moment (talk.js, flairOf): the line stays marked ... */
+.line.flair {
+  margin: 2px -6px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.line.flair .words {
+  font-weight: 700;
+}
+/* ... and, as it is scored, a slab sweeps in over the half and gives way. */
+.half {
+  position: relative;
+}
+.flourish {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 18px 12px;
+  border-radius: 18px;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.22);
+  animation: flourish 2300ms var(--ease) both;
+  pointer-events: none;
+}
+.half.them .flourish {
+  background: var(--talk-them);
+}
+.half.you .flourish {
+  background: var(--talk-you);
+}
+.flourish-what {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.flourish-points {
+  font-size: 30px;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+  animation: flourish-points 700ms var(--ease) 180ms both;
+  animation: flourish-points 700ms var(--spring) 180ms both;
+}
+.flourish::after {
+  content: "";
+  position: absolute;
+  inset: -20% auto -20% -40%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.45), transparent);
+  transform: skewX(-20deg);
+  animation: sheen 900ms var(--ease-in) 320ms both;
+}
+@keyframes flourish {
+  0% {
+    opacity: 0;
+    transform: translateX(-40%) scale(0.92);
+  }
+  16% {
+    opacity: 1;
+    transform: translateX(2%) scale(1.03);
+  }
+  24% {
+    transform: none;
+  }
+  82% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.94);
+  }
+}
+@keyframes flourish-points {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+@keyframes sheen {
+  to {
+    left: 120%;
+  }
+}
+.num.cheer {
+  display: inline-block;
+  animation: cheer 900ms var(--ease);
+  animation: cheer 900ms var(--spring);
+}
+@keyframes cheer {
+  from {
+    transform: scale(1.6);
+  }
+}
+
+.between {
+  margin: 0;
+  padding: 4px 16px;
+  font-size: 12.5px;
+  color: var(--md-sys-color-on-surface-variant);
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface-container-low);
+}
+.between:empty {
+  display: none;
+}
+.asked {
+  border-top: 1px dashed var(--md-sys-color-outline-variant);
+  margin-top: 6px;
+  padding-top: 6px;
+}
+.asked:empty {
+  display: none;
+}
+.asked .ask {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 650;
+  font-style: italic;
+}
+.asked .note {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--md-sys-color-on-surface-variant);
 }
 
 /* ---- the narration ------------------------------------------------------------ */
@@ -399,10 +752,10 @@ md-assist-chip.pinned {
   margin: 3px 0;
 }
 .log p.you {
-  color: var(--piquet-you);
+  color: var(--talk-you);
 }
 .log p.them {
-  color: var(--piquet-them);
+  color: var(--talk-them);
 }
 .fold summary {
   cursor: pointer;
@@ -488,7 +841,9 @@ kbd {
   }
 }
 
-/* A phone -- or a tablet held upright -- gets the compact overlay. */
+/* A phone -- or a tablet held upright -- gets the compact overlay: the
+   information runs along the top instead of down the side, and the table
+   has the whole width. */
 @media (max-width: 700px), (orientation: portrait) and (max-width: 1100px) {
   /* One row of controls; the opponent is chosen in settings. */
   .bar {
@@ -502,41 +857,106 @@ kbd {
   .bar md-outlined-select {
     display: none;
   }
-  .switch-label span {
-    display: none;
-  }
-  /* Folded, the tab is a small tag in the corner, clear of the hands. */
-  .tab {
-    top: 64px;
+  .info {
+    --beside: 0;
+    left: 8px;
     right: 8px;
-    width: min(250px, calc(100vw - 16px));
+    top: 62px;
+    bottom: auto;
+    width: auto;
+    gap: 6px;
+  }
+  /* Folded, the running score is a chip in the top bar; a tap opens it. */
+  .tab {
+    position: absolute !important;
+    top: 0;
+    right: 0;
+    width: min(250px, 100%);
     max-height: 50vh;
     font-size: 13px;
+    z-index: 2;
+  }
+  .tab:not(.open) {
+    display: none !important;
   }
   .tab-head {
     padding: 4px 10px 4px 14px;
   }
-  .note {
+  /* The dialogue keeps its two halves, the newest two lines of each. */
+  .talk {
+    min-height: 0;
+    grid-template-rows: auto auto auto;
+  }
+  .half {
+    padding: 3px 10px 4px 12px;
+  }
+  .half-head {
+    font-size: 10.5px;
+  }
+  .lines {
+    max-height: 2.9em;
+    flex: 0 0 auto;
+  }
+  .line {
+    font-size: 13px;
+  }
+  .asked {
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+  .asked .ask {
+    font-size: 13.5px;
+  }
+  .asked .note,
+  .between {
     display: none;
   }
-  .worth-row md-chip-set {
+  .worth-card {
+    padding: 6px 10px;
+  }
+  .worth-card .card-title {
+    display: none;
+  }
+  .worth-card md-chip-set {
     flex-wrap: nowrap;
     overflow-x: auto;
   }
-  /* Not a scroll container: headless Chromium painted a scrolling card's
-     background at the top of the screen, over the opponent's hand. Its
-     contents are kept short enough not to need one. */
-  .prompt {
+  .controls {
     left: 8px;
     right: 8px;
     bottom: 8px;
-    width: auto;
-    max-width: 560px;
-    margin: 0 auto; /* a bottom sheet, centred where the screen is wide */
-    padding: 12px 14px 10px;
-    gap: 6px;
   }
-  /* The running score folds into the top bar; the tab opens on a tap. */
+  .tools {
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+  }
+  .hint-head span {
+    display: none;
+  }
+  /* The hint pops up centred over the tools, not from its button, so it
+     stays on a narrow screen. */
+  .tools {
+    position: relative;
+  }
+  .hint-fold {
+    position: static;
+  }
+  .hint-fold > .fold-body {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(300px, calc(100vw - 32px));
+  }
+  .options {
+    gap: 4px;
+  }
+  .options > * {
+    --md-filled-button-container-height: 32px;
+    --md-outlined-button-container-height: 32px;
+    --md-filled-button-label-text-size: 13px;
+    --md-outlined-button-label-text-size: 13px;
+  }
   .brand,
   #new {
     display: none;
@@ -544,16 +964,20 @@ kbd {
   .score-chip {
     display: inline-flex;
   }
-  .tab:not(.open) {
-    display: none;
-  }
-  .ask {
-    font-size: 15.5px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .num.changed {
+  .num.changed,
+  .num.cheer,
+  .line.fresh {
     animation: none;
+  }
+  .chevron,
+  .fold-body,
+  .fold-inner,
+  .fold.open > .fold-head .chevron,
+  .fold.open > .fold-body,
+  .fold.open > .fold-body > .fold-inner {
+    transition: none !important;
   }
 }

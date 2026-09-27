@@ -191,11 +191,33 @@ def check_undo_hints_settings(page, failures):
     back = state(page)
     if len(back["record"]) >= len(s["record"]):
         failures.append("U did not take anything back")
-    hints = back["aids"]["hints"]
-    page.keyboard.press("h")
-    if state(page)["aids"]["hints"] == hints:
-        failures.append("H did not toggle hints")
-    page.keyboard.press("h")
+    # H opens and closes the hint, like an M3 list item (Andrew); with hints
+    # off it turns them on first.
+    if not back["aids"]["hints"]:
+        page.keyboard.press("h")
+        if not state(page)["aids"]["hints"]:
+            failures.append("H with hints off did not turn them on")
+    elif state(page)["hint"]:
+        was = page.locator(".hint-fold.open").count()
+        page.keyboard.press("h")
+        if page.locator(".hint-fold.open").count() == was:
+            failures.append("H did not open or close the hint")
+        page.keyboard.press("h")
+        if page.locator(".hint-fold.open").count() != was:
+            failures.append("H twice did not leave the hint as it was")
+    # Sorting is always to hand, as a segmented button under it.
+    sort = page.locator("md-outlined-segmented-button[data-sort='rank']")
+    if not sort.is_visible():
+        failures.append("the sort is not under the hand")
+    else:
+        sort.click()
+        if not page.evaluate("document.querySelector(\"md-outlined-segmented-button[data-sort='rank']\").selected"):
+            failures.append("choosing Rank did not select it")
+        page.locator("md-outlined-segmented-button[data-sort='auto']").click()
+    # What is said is in view: both halves of the dialogue have spoken.
+    for who in ("them", "you"):
+        if page.locator(f"#talk .half.{who} .line").count() == 0:
+            failures.append(f"nothing said in the {who} half of the dialogue")
     page.locator("#settings-open").click()
     page.wait_for_selector("md-dialog#settings[open]")
     shot(page, "05-settings")
