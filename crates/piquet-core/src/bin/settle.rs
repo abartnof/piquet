@@ -16,6 +16,7 @@ use piquet_core::declarations::Declaration;
 use piquet_core::observation::View;
 use piquet_core::partie::Standing;
 use piquet_core::play::play_deal;
+use piquet_core::prior::RUNG4;
 use piquet_core::rng::Rng;
 use piquet_core::rules::deal_from;
 use piquet_core::scoring::{Category, Player};
@@ -32,7 +33,7 @@ const STANDINGS: [(i32, i32, &str); 6] = [
     (88, 120, "they are safe, I am not"),
 ];
 
-/// `settle [deals] [worlds] [--out FILE]` runs the measurement, writing one
+/// `settle [deals] [worlds] [--prior] [--out FILE]` runs the measurement, writing one
 /// line per pair to FILE if asked; `settle --compare FIRST SECOND` pairs two
 /// such files deal by deal; `settle --show FILE STANDING DEAL` replays one
 /// recorded pair and says what the settling search believed at each card.
@@ -68,6 +69,14 @@ fn main() {
         eprintln!("usage: settle --compare FIRST SECOND");
         std::process::exit(2);
     }
+    // Both agents weigh the opponent's hands by the fitted prior (prior.rs).
+    let prior = match args.iter().position(|a| a == "--prior") {
+        Some(at) => {
+            args.remove(at);
+            true
+        }
+        None => false,
+    };
     let out_path = match args.iter().position(|a| a == "--out") {
         Some(at) if at + 1 < args.len() => {
             let path = args.remove(at + 1);
@@ -92,7 +101,12 @@ fn main() {
         let mut file = std::io::BufWriter::new(
             std::fs::File::create(&path).unwrap_or_else(|e| panic!("{path}: {e}")),
         );
-        writeln!(file, "# settle {deals} {worlds}").expect("the record is writable");
+        let header = Header {
+            deals,
+            worlds,
+            prior,
+        };
+        writeln!(file, "{}", header.line()).expect("the record is writable");
         writeln!(file, "{HEADER}").expect("the record is writable");
         file
     });
@@ -102,7 +116,14 @@ fn main() {
          \x20 settling-at-the-leaf against the flat deal objective\n\
          \x20 (positive means settling is ahead)\n"
     );
-    println!("  {worlds} opponent worlds a decision, for both agents\n");
+    println!(
+        "  {worlds} opponent worlds a decision, for both agents{}\n",
+        if prior {
+            ", weighed by the fitted prior"
+        } else {
+            ""
+        }
+    );
     println!(
         "  {:<34} {:>5} {:>5} {:>5}  {:>16}",
         "standing (mine / theirs)", "won", "lost", "drew", "net per deal"
@@ -163,10 +184,10 @@ fn main() {
                 )
             };
 
-            let [mut settling, mut flat] = seats(worlds, true);
+            let [mut settling, mut flat] = seats(worlds, true, prior);
             let (half_a, bonus_a) = play_half(&mut settling, &mut flat);
 
-            let [mut flat_elder, mut settling_younger] = seats(worlds, false);
+            let [mut flat_elder, mut settling_younger] = seats(worlds, false, prior);
             let (half_b, bonus_b) = play_half(&mut flat_elder, &mut settling_younger);
 
             // Ahead as elder by this much; and by the same again as younger,
@@ -357,9 +378,16 @@ struct Paired {
 
 /// The two agents of a half, elder first. Seeds belong to the chair, so both
 /// halves draw identical worlds until the objectives first disagree.
-fn seats(worlds: usize, settling_elder: bool) -> [SolverAgent; 2] {
-    let elder = SolverAgent::new(3).worlds(worlds);
-    let younger = SolverAgent::new(5).worlds(worlds);
+fn seats(worlds: usize, settling_elder: bool, prior: bool) -> [SolverAgent; 2] {
+    let weigh = |agent: SolverAgent| {
+        if prior {
+            agent.with_prior(RUNG4)
+        } else {
+            agent
+        }
+    };
+    let elder = weigh(SolverAgent::new(3).worlds(worlds));
+    let younger = weigh(SolverAgent::new(5).worlds(worlds));
     if settling_elder {
         [elder.settling(), younger]
     } else {
@@ -400,13 +428,8 @@ impl Agent for Traced {
 /// worth with both hands on the table.
 fn show(path: &str, standing_index: usize, deal_index: usize) -> Result<(), String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
-    let worlds: usize = text
-        .lines()
-        .next()
-        .and_then(|line| line.strip_prefix("# settle "))
-        .and_then(|rest| rest.split_whitespace().nth(1))
-        .and_then(|w| w.parse().ok())
-        .ok_or("the file has no '# settle DEALS WORLDS' header")?;
+    let header = Header::read(text.lines().next().unwrap_or(""))?;
+    let worlds = header.worlds;
     let record = read_records(path)?
         .into_iter()
         .find(|r| r.standing == standing_index && r.deal == deal_index)
@@ -434,7 +457,7 @@ fn show(path: &str, standing_index: usize, deal_index: usize) -> Result<(), Stri
     );
 
     for (name, settling_elder, recorded) in [("A", true, record.a), ("B", false, record.b)] {
-        let [elder_agent, younger_agent] = seats(worlds, settling_elder);
+        let [elder_agent, younger_agent] = seats(worlds, settling_elder, header.prior);
         let mut elder = Traced {
             agent: elder_agent,
             steps: Vec::new(),
@@ -550,6 +573,41 @@ fn show(path: &str, standing_index: usize, deal_index: usize) -> Result<(), Stri
         println!();
     }
     Ok(())
+}
+
+/// How a run was made, as the first line of its record: enough for `--show`
+/// to seat exactly the same agents again.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Header {
+    deals: usize,
+    worlds: usize,
+    /// Both agents weigh the opponent's hands by the fitted prior.
+    prior: bool,
+}
+
+impl Header {
+    fn line(self) -> String {
+        let prior = if self.prior { " prior" } else { "" };
+        format!("# settle {} {}{prior}", self.deals, self.worlds)
+    }
+
+    fn read(line: &str) -> Result<Header, String> {
+        let rest = line
+            .strip_prefix("# settle ")
+            .ok_or("the file has no '# settle DEALS WORLDS' header")?;
+        let words: Vec<&str> = rest.split_whitespace().collect();
+        let number = |i: usize| -> Result<usize, String> {
+            words
+                .get(i)
+                .and_then(|w| w.parse().ok())
+                .ok_or(format!("a malformed header: {line:?}"))
+        };
+        Ok(Header {
+            deals: number(0)?,
+            worlds: number(1)?,
+            prior: words.get(2) == Some(&"prior"),
+        })
+    }
 }
 
 const HEADER: &str = "# standing\tdeal\tbonus\tpack\t\
@@ -709,6 +767,25 @@ mod tests {
         let line = original.line();
         assert!(!line.contains('\n'));
         assert_eq!(Record::read(&line), Ok(original));
+    }
+
+    #[test]
+    fn a_header_says_how_the_run_was_made() {
+        assert_eq!(
+            Header::read("# settle 120 30"),
+            Ok(Header {
+                deals: 120,
+                worlds: 30,
+                prior: false
+            })
+        );
+        let with = Header {
+            deals: 12,
+            worlds: 90,
+            prior: true,
+        };
+        assert_eq!(Header::read(&with.line()), Ok(with));
+        assert!(Header::read("# standing\tdeal").is_err());
     }
 
     #[test]

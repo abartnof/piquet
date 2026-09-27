@@ -38,6 +38,13 @@ impl RankPrior {
     }
 }
 
+/// Fitted by `bin/prior 60` on 8,601 searched decisions from 720 mirrored
+/// last deals, rung-4 exchanges on both sides, ridge 1, fitted on half the
+/// deals and scored on the other (`measurements/prior-60.txt`): held out, a
+/// doubtful seven is hers 12% of the time, as this believes, where a uniform
+/// prior believes 46%; a king 96% against 55%. A statement about rung 4.
+pub const RUNG4: RankPrior = RankPrior([-2.753, -2.235, -1.72, -0.299, 0.723, 1.257, 2.212, 2.815]);
+
 /// One observation: every hand she could have held, and the one she held.
 #[derive(Clone, Debug)]
 pub struct Sample {
