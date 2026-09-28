@@ -899,6 +899,29 @@ Ordered by how much they are needed, not by size.
 13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
     is replaced.
 
+14. **The voice, done properly — or not at all.** The Piper voice was built
+    and audited (`docs/VOICE.md`) and then unwired (28 September): Andrew,
+    *"i don't want the html to have any audio"*, then *"i think the audio is
+    a nice feature, but it all sounds really tinny."* The page ships no
+    sound; `web3d/build.py --audio opus` puts the Piper voice back. His
+    direction for a second try: two voices (your opponent's, yours), one
+    recording per event, "maximal" — whole utterances, not spliced parts —
+    from a first-class producer such as Google Cloud TTS (**spending needs
+    his sign-off**). Estimate given 28 September: whole utterances with the
+    counts kept separate come to about 400 a voice; fused with their counts,
+    thousands (1,090 seen in 400 parties and still climbing). Also owed if
+    it returns: "Two cards." for a two-card point was never recorded.
+
+15. **Tutorial mode.** Andrew's standing request: an interactive training
+    mode that flags bad and impossible moves rather than animating a
+    tutorial. Wants a design conversation with him first; `explain.rs`
+    (why a move is better, by which rung plays it) is its second half.
+
+16. **The declaration dialogue boxes — built, for Andrew to review.** Each
+    line of the declarations in a box by its speaker's hand, the tail
+    pointing to them (`docs/TABLE3D.md` P17). They run silently now,
+    timed as the voice would have been; the score waits for them.
+
 ## Code review findings
 
 ### Second pass, after Milestone 5 — four bugs, all fixed

@@ -202,7 +202,7 @@ async function main() {
     if (next.events.length < prev.events.length) return;
     const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
     const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
-    const heard = { ...prefs, voice: prefs.voice && (!TESTING || params.has("voice")) };
+    const heard = { ...prefs, voice: prefs.voice && voice.audible() && (!TESTING || params.has("voice")) };
     const timedLines = lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 }));
     // The score waits until the last line of the dialogue has been said.
     const last = timedLines.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
@@ -216,8 +216,10 @@ async function main() {
   const voice = createVoice(voices);
   // Sound may start, and be woken, from a click or a key; and when the page
   // is shown again after another window had it.
-  for (const kind of ["pointerdown", "keydown"]) document.addEventListener(kind, () => prefs.voice && voice.wake(), { capture: true });
-  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && prefs.voice && voice.wake());
+  if (voice.audible()) {
+    for (const kind of ["pointerdown", "keydown"]) document.addEventListener(kind, () => prefs.voice && voice.wake(), { capture: true });
+    document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && prefs.voice && voice.wake());
+  }
   const director = createDirector({
     stage,
     deck,
@@ -255,6 +257,8 @@ async function main() {
     act,
     // Where the table speaks from: the edge of a hand, on the screen.
     anchor: (who) => director.handEdge(who),
+    // Whether the page has a voice at all (the default build has none).
+    audible: voice.audible(),
     undo: () => act("undo"),
     aid: toggleAid,
     pref: setPref,

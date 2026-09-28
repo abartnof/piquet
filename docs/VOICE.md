@@ -1,5 +1,13 @@
 # The voice — what the table says aloud, and how it is said
 
+> **28 September: unwired.** Andrew: *"i don't want the html to have any
+> audio"*, then *"i think the audio is a nice feature, but it all sounds
+> really tinny."* The page ships no sound; the code, the recordings and the
+> phrase bank stay here, and `web3d/build.py --audio opus` puts this voice
+> back. The declaration dialogue boxes use the bank's words, silently. A
+> second try — whole utterances from a first-class voice — is `PLAN.md`
+> TODO 14.
+
 > Andrew, 27 September 2026: *"price out how much it would cost … to
 > generate audio for ALL of the events that are spoken during this game …
 > down-res'd so the game doesn't get enormous … we can also use another

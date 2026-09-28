@@ -106,8 +106,18 @@ def voices(kind: str) -> str:
     """The recorded phrases (web3d/tools/voice.py) as a JSON object: for each
     voice, its manifest's particulars, every recording (base64), and the
     groups the page picks among -- the voice at the table, offline
-    (docs/VOICE.md, docs/PHRASES.md). Empty if none have been made."""
+    (docs/VOICE.md, docs/PHRASES.md). Empty if none have been made.
+
+    With `none`, the default, no sound at all: only the words of the
+    phrases, for the declarations' dialogue boxes (Andrew: "i don't want the
+    html to have any audio")."""
     out = {}
+    if kind == "none":
+        manifest = next(iter(sorted(AUDIO.glob("*/manifest.json"))), None)
+        if manifest:
+            spec = json.loads(manifest.read_text())
+            out["words"] = {"groups": spec["groups"], "texts": spec["files"]}
+        return json.dumps(out, separators=(",", ":"), ensure_ascii=False)
     ext = {"mp3": "mp3", "opus": "ogg"}[kind]
     for manifest in sorted(AUDIO.glob("*/manifest.json")):
         spec = json.loads(manifest.read_text())
@@ -132,9 +142,10 @@ def fill(template: str, values: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the 3D table's single-file page.")
-    parser.add_argument("--audio", choices=["mp3", "opus"], default="opus",
-                        help="the voice's clips as Ogg Opus (the default: 40%% smaller for speech; "
-                             "a browser without it falls back to its own speech) or MP3")
+    parser.add_argument("--audio", choices=["none", "opus", "mp3"], default="none",
+                        help="no sound, only the phrases' words for the dialogue boxes (the default: "
+                             "Andrew, 'i don't want the html to have any audio'); or the voice's "
+                             "clips as Ogg Opus or MP3")
     parser.add_argument("--art", choices=["webp", "svg"], default="webp",
                         help="ship the card art rasterised (webp, the default) or as vectors (svg), "
                              "which writes web3d/piquet3d-svg.html instead")
@@ -160,7 +171,7 @@ def main() -> int:
     size = len(page.encode())
     art_name = "the card art (WebP, base64)" if args.art == "webp" else "the card art (SVG)"
     rows = [("the engine (wasm, base64)", len(engine)), (art_name, len(cards.encode())),
-            (f"the voices ({args.audio}, base64)", len(speech.encode())),
+            ("the dialogue's words" if args.audio == "none" else f"the voices ({args.audio}, base64)", len(speech.encode())),
             *owned.items(),
             ("stylesheet", len(style.encode()))]
     rows.append(("page skeleton", size - sum(n for _, n in rows)))

@@ -216,7 +216,9 @@ export function createOverlay(root, on) {
     s.addEventListener("change", () => on.aid(aid));
     return row(title, words, s);
   });
-  const prefSwitches = PREFS.map(([pref, title, words]) => {
+  // Without a voice in the page (the default build), no voice settings.
+  const VOICE_PREFS = new Set(["voice", "sayMine"]);
+  const prefSwitches = PREFS.filter(([pref]) => on.audible || !VOICE_PREFS.has(pref)).map(([pref, title, words]) => {
     const s = el("md-switch", { "data-pref": pref });
     s.addEventListener("change", () => on.pref(pref, s.selected));
     return row(title, words, s);
@@ -273,7 +275,7 @@ export function createOverlay(root, on) {
     el("div", { slot: "headline" }, "Settings"),
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), aidSwitches,
-      el("h3", {}, "The table"), prefSwitches.slice(0, 2), voiceRow, prefSwitches.slice(2),
+      el("h3", {}, "The table"), on.audible ? [prefSwitches.slice(0, 2), voiceRow, prefSwitches.slice(2)] : prefSwitches,
       el("div", { class: "selects" }, levelInSettings, speed, sort, table),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },

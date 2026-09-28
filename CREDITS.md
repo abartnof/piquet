@@ -38,7 +38,8 @@ The pinned originals, with checksums and measurements, are in
 
 ## The voices
 
-The spoken game (`docs/VOICE.md`) is recorded in two synthetic voices, both
+The spoken game (`docs/VOICE.md`) — kept in the repository, not shipped in
+the page since 28 September — is recorded in two synthetic voices, both
 by **Bryce Beattie** (<https://brycebeattie.com/files/tts/>), each trained
 from scratch on public-domain recordings from **LibriVox**
 (<https://librivox.org>), and released into the **public domain**:

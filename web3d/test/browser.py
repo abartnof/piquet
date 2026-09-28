@@ -306,11 +306,13 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
-        # The voice: clips bundled, decoded by the browser, and the right ones
-        # asked for as the table talks.
-        talk = open_page(browser, "test&voice&level=2&seed=31")
-        # Every dialogue box the declarations put up, as it appears.
+        # No sound of any kind (Andrew: "i don't want the html to have any
+        # audio"): no recordings in the page, no audio made, no speech -- but
+        # the declarations still come as a dialogue, in boxes.
+        talk = open_page(browser, "test&level=2&seed=31")
         talk.evaluate("""() => {
+            window.__sound = { contexts: 0, spoken: 0 };
+            if (window.speechSynthesis) window.speechSynthesis.speak = () => window.__sound.spoken++;
             window.__boxes = [];
             new MutationObserver((changes) => changes.forEach((c) => c.addedNodes.forEach((n) => {
                 if (!n.classList || !n.classList.contains("dialogue")) return;
@@ -318,6 +320,7 @@ def main() -> int:
                 window.__boxes.push({ who: n.classList.contains("you") ? "you" : "them", text: n.textContent, top: r.top, bottom: r.bottom });
             }))).observe(document.getElementById("afloat"), { childList: true });
         }""")
+        talk.mouse.click(10, 790)
         for command in ["cut 14", "dealer them"]:
             talk.evaluate(f"window.piquet3d.send({command!r})")
         for _ in range(12):
@@ -328,26 +331,17 @@ def main() -> int:
                 talk.evaluate(f"window.piquet3d.send('exchange {s['hand'][0]}')")
             else:
                 break
-        talk.wait_for_timeout(1500)
+        talk.wait_for_timeout(4000)
         heard = talk.evaluate("window.piquet3d.voice()")
-        if not heard["recorded"]:
-            failures.append("the page cannot play its own recorded voice")
-        elif not any(line.split(":")[1].startswith("point-") for line in heard["said"]):
-            failures.append(f"no point was called aloud: {heard['said'][:8]}")
-        elif heard["decoded"] == 0 or heard["failed"]:
-            failures.append(f"the voice's clips did not decode: {heard}")
-        # Each thing said was said one of its ways (docs/PHRASES.md): a
-        # recording of that group, never nothing.
-        bank = talk.evaluate("Object.values(VOICES)[0].groups")
-        # Only your opponent's lines are heard: your own calls are off
-        # unless you turn them on.
-        groups = [line.split(":")[1] for line in heard["said"] if line.startswith("them:")]
-        wrong = [(g, k) for g, k in zip(groups, heard["picked"]) if k not in bank.get(g, [])]
-        if len(heard["picked"]) != len(groups) or wrong:
-            failures.append(f"the voice did not pick a way of saying each thing: {wrong[:4] or heard['picked'][:8]}")
+        clips = talk.evaluate("Object.values(VOICES).some((v) => v.clips)")
+        if clips or heard["recorded"] or heard["state"] is not None or heard["played"]:
+            failures.append(f"the page carries or makes sound: clips {clips}, {heard}")
+        if talk.evaluate("window.__sound.spoken"):
+            failures.append("the page spoke through the browser's own voice")
+        if talk.locator("md-switch[data-pref=voice]").count() or talk.locator(".voice-choice").count():
+            failures.append("settings still offer a voice the page does not have")
         # The declarations as a dialogue (Andrew: "two dialogue boxes to pop
         # up every move"): both speak, in boxes by their own hands.
-        talk.wait_for_timeout(4000)
         boxes = talk.evaluate("window.__boxes")
         mine = [b for b in boxes if b["who"] == "you"]
         theirs = [b for b in boxes if b["who"] == "them"]
@@ -358,7 +352,7 @@ def main() -> int:
         elif any(not b["text"].strip() for b in boxes):
             failures.append(f"an empty dialogue box: {boxes[:6]}")
         if talk.errors:
-            failures.append(f"console errors with the voice on: {talk.errors}")
+            failures.append(f"console errors at the dialogue: {talk.errors}")
         talk.context.close()
 
         # A phone, held upright: it loads, draws, and never scrolls sideways.

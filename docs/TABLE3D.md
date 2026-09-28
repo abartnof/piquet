@@ -962,6 +962,13 @@ throughout.
       from a box it would cover. The coloured Good/Not good bubbles are
       retired (*"don't worry about the color-coding"*).
 
+- [x] **P18 — The sound unwired (28 September).** Andrew: *"i don't want
+      the html to have any audio"* — and then, *"it all sounds really
+      tinny."* The default build embeds no recordings and makes no sound of
+      any kind, not even the browser's own speech; the voice settings go
+      with it. The dialogue boxes stay, silent, with the bank's words. The
+      page is 3.0 MB. `build.py --audio opus` restores the voice.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

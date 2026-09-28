@@ -44,7 +44,9 @@ export function createVoice(voices) {
   const format = Object.values(voices)[0]?.format;
   const probe = typeof document !== "undefined" ? document.createElement("audio") : null;
   const recorded = !!format && !!probe && probe.canPlayType(format === "ogg" ? 'audio/ogg; codecs="opus"' : "audio/mpeg") !== "";
-  const fallback = !recorded && typeof window !== "undefined" && "speechSynthesis" in window;
+  // Only a page that carries recordings speaks: one with the words alone,
+  // for the dialogue boxes, makes no sound of any kind.
+  const fallback = !recorded && !!format && typeof window !== "undefined" && "speechSynthesis" in window;
   const decoded = new Map(); // `${voice}/${key}` -> Promise<AudioBuffer|null>, oldest first
   let next = 0; // when the queue is free, in context time
   let lastWho = null;
@@ -207,6 +209,8 @@ export function createVoice(voices) {
     wake() {
       if (recorded) audio();
     },
+    // Whether this page can make any sound at all.
+    audible: () => recorded || fallback,
     // For the browser test: what was asked for, decoded, played.
     stats: () => ({ recorded, state: context?.state ?? null, ...stats }),
     // Undo, a new partie, the voice switched off: silence at once, and
