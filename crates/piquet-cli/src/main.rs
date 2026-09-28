@@ -1,9 +1,13 @@
 //! A table a person can sit down at.
 //!
-//! `piquet` deals you a partie of six against a named opponent. The engine
-//! lives in `piquet-core`; this is only the furniture, and it is deliberately
-//! plain -- `docs/DESIGN.md` defers the real interface and says basic graphics
-//! are acceptable until then.
+//! `piquet` deals you a partie of six against your opponent. The engine lives
+//! in `piquet-core`, and so does the session: this is a client of
+//! [`piquet_core::table::Table`], as the browser's page is. It prints what the
+//! session says has happened and answers what it asks -- so the terminal cuts
+//! for the deal as the page does, and the same seed at the same level, cut
+//! the same way, is the same partie in both. Deliberately plain:
+//! `docs/DESIGN.md` defers the real interface and says basic graphics are
+//! acceptable until then.
 
 mod render;
 
@@ -14,24 +18,21 @@ use piquet_core::cards::{Card, Hand};
 use piquet_core::chances::{chance_of_the_rubicon, in_words};
 use piquet_core::declarations::Declaration;
 use piquet_core::observation::View;
-use piquet_core::opponents::{opponent, seat};
 use piquet_core::options::declaration_options;
-use piquet_core::partie::{Partie, Side};
-use piquet_core::play::play_deal;
-use piquet_core::rng::Rng;
-use piquet_core::rules::{deal_from, Deal};
-use piquet_core::scoring::{Category, Player};
+use piquet_core::partie::Side;
+use piquet_core::scoring::Category;
+use piquet_core::table::{Action, Event, Prompt, Table, Who, DEEPEST_CUT, SHALLOWEST_CUT};
 
 /// Where the table reads and writes: the terminal, or in the tests a script
 /// and a buffer.
-struct Table {
+struct Console {
     input: Box<dyn BufRead>,
     output: Box<dyn Write>,
     /// What running out of input means. At the terminal, walking away.
     leave: fn() -> !,
 }
 
-impl Table {
+impl Console {
     fn say(&mut self, line: &str) {
         writeln!(self.output, "{line}").ok();
     }
@@ -53,17 +54,75 @@ fn walk_away() -> ! {
     std::process::exit(0)
 }
 
+/// Whoever answers the session's questions, and hears what happened: the
+/// person at the terminal, or in the tests a machine in their chair.
+trait Seat: Agent {
+    fn say(&mut self, line: &str);
+    fn cut(&mut self) -> usize;
+    fn choose_dealer(&mut self) -> Who;
+    fn next_deal(&mut self);
+}
+
 /// The human, as an [`Agent`]. The engine cannot tell the difference, which is
 /// what makes the training mode possible later.
 struct HumanAgent {
-    table: Table,
+    console: Console,
     opponent: String,
 }
 
 impl HumanAgent {
     fn show(&mut self, view: &View, legal: Option<Hand>) {
-        self.table.say("");
-        self.table.say(&render::hand(view.hand, legal));
+        self.console.say("");
+        self.console.say(&render::hand(view.hand, legal));
+    }
+}
+
+impl Seat for HumanAgent {
+    fn say(&mut self, line: &str) {
+        self.console.say(line);
+    }
+
+    /// Cut for the deal: how many cards to lift. Cutting is the person's own
+    /// act if they want it, and not a chore if they do not (Andrew: "it
+    /// should be optional to actually pick a card") -- an empty answer cuts
+    /// the middle of the pack.
+    fn cut(&mut self) -> usize {
+        self.console.say(&format!(
+            "\n  cut for the deal: lift {SHALLOWEST_CUT} to {DEEPEST_CUT} cards \
+             — the higher card shown chooses who deals first"
+        ));
+        loop {
+            let raw = self.console.ask("  lift (enter to cut the middle): ");
+            if raw.is_empty() {
+                return 16;
+            }
+            match raw.parse::<usize>() {
+                Ok(n) if (SHALLOWEST_CUT..=DEEPEST_CUT).contains(&n) => return n,
+                _ => self.console.say(&format!(
+                    "  a number from {SHALLOWEST_CUT} to {DEEPEST_CUT}: at least two lifted, and two left"
+                )),
+            }
+        }
+    }
+
+    /// The person cut higher: who deals first?
+    fn choose_dealer(&mut self) -> Who {
+        self.console.say(&format!(
+            "\n  who deals first?\n    1) you — it makes you elder in the sixth deal, when it matters most\n    2) {}",
+            self.opponent
+        ));
+        loop {
+            match self.console.ask("  which: ").as_str() {
+                "" | "1" => return Who::You,
+                "2" => return Who::Them,
+                _ => self.console.say("  1 or 2"),
+            }
+        }
+    }
+
+    /// Between deals: a pause, so the deal's ending can be read.
+    fn next_deal(&mut self) {
+        self.console.ask("\n  enter for the next deal: ");
     }
 }
 
@@ -76,35 +135,35 @@ impl Agent for HumanAgent {
         let limit = view.exchange_limit;
         self.show(view, None);
         let combos = render::combinations(view.hand);
-        self.table.say(&format!("    {combos}"));
-        self.table.say(&format!(
+        self.console.say(&format!("    {combos}"));
+        self.console.say(&format!(
             "\n  name 1 to {limit} cards to throw, and draw as many back \
              — like {}",
             render::for_example(view.hand)
         ));
         loop {
-            let raw = self.table.ask("  discard: ").replace(',', " ");
+            let raw = self.console.ask("  discard: ").replace(',', " ");
             let tokens: Vec<&str> = raw.split_whitespace().collect();
             if tokens.is_empty() || tokens.len() > limit {
-                self.table.say(&format!(
+                self.console.say(&format!(
                     "  between 1 and {limit} cards, and at least one is compulsory"
                 ));
                 continue;
             }
             let parsed: Result<Vec<Card>, _> = tokens.iter().map(|t| Card::parse(t)).collect();
             let Ok(cards) = parsed else {
-                self.table.say(&format!(
+                self.console.say(&format!(
                     "  name each card by rank and suit, like {}",
                     render::for_example(view.hand)
                 ));
                 continue;
             };
             let Ok(discard) = Hand::of(&cards) else {
-                self.table.say("  each card once");
+                self.console.say("  each card once");
                 continue;
             };
             if !discard.without(view.hand).is_empty() {
-                self.table.say("  you do not hold all of those");
+                self.console.say("  you do not hold all of those");
                 continue;
             }
             return discard;
@@ -115,11 +174,11 @@ impl Agent for HumanAgent {
         let full = Declaration::full(view.hand, category);
         self.show(view, None);
         if let Some(heard) = view.awaiting_answer {
-            self.table
+            self.console
                 .say(&format!("    {} calls {}", self.opponent, heard.spoken()));
         }
         if full.is_empty() {
-            self.table.say(&format!(
+            self.console.say(&format!(
                 "    you have no {} to call",
                 category.name().to_lowercase().replace('_', " ")
             ));
@@ -127,7 +186,7 @@ impl Agent for HumanAgent {
         }
 
         let options = declaration_options(view.hand, category);
-        self.table.say(&format!(
+        self.console.say(&format!(
             "\n  {}:",
             category.name().to_lowercase().replace('_', " ")
         ));
@@ -143,17 +202,17 @@ impl Agent for HumanAgent {
             } else {
                 format!("call only {} — sinking the rest", option.describe())
             };
-            self.table.say(&format!("    {}) {label}", number + 1));
+            self.console.say(&format!("    {}) {label}", number + 1));
         }
         loop {
-            let raw = self.table.ask("  which: ");
+            let raw = self.console.ask("  which: ");
             let raw = if raw.is_empty() { "1".to_string() } else { raw };
             if let Ok(choice) = raw.parse::<usize>() {
                 if (1..=options.len()).contains(&choice) {
                     return options[choice - 1].clone();
                 }
             }
-            self.table
+            self.console
                 .say(&format!("  a number from 1 to {}", options.len()));
         }
     }
@@ -162,23 +221,23 @@ impl Agent for HumanAgent {
         let legal = view.legal_plays;
         self.show(view, Some(legal));
         if let Some(line) = render::trick(view, "you", &self.opponent) {
-            self.table.say(&line);
+            self.console.say(&line);
         }
         if legal != view.hand {
-            self.table
+            self.console
                 .say("    the bracketed cards are the ones you may play");
         }
         loop {
-            let raw = self.table.ask("  your card: ");
+            let raw = self.console.ask("  your card: ");
             let Ok(card) = Card::parse(&raw) else {
-                self.table.say(&format!(
+                self.console.say(&format!(
                     "  name a card by rank and suit, like {}",
                     render::for_example(view.hand)
                 ));
                 continue;
             };
             if !view.hand.holds(card) {
-                self.table.say("  you do not hold that one");
+                self.console.say("  you do not hold that one");
                 continue;
             }
             if !legal.holds(card) {
@@ -187,7 +246,7 @@ impl Agent for HumanAgent {
                     .expect("a trick is in progress")
                     .led
                     .suit();
-                self.table.say(&format!(
+                self.console.say(&format!(
                     "  you must follow {} while you can",
                     render::suit_name(led)
                 ));
@@ -198,10 +257,83 @@ impl Agent for HumanAgent {
     }
 }
 
-fn shuffled(rng: &mut Rng) -> Vec<Card> {
-    let mut pack: Vec<Card> = (0u8..32).map(Card).collect();
-    rng.shuffle(&mut pack);
-    pack
+/// No proper names at the table: the machine is "your opponent".
+const THEM: &str = "your opponent";
+
+/// One line of what happened, as the terminal tells it.
+fn narrate(seat: &mut dyn Seat, session: &Table, event: &Event) {
+    match event {
+        Event::DealBegins { .. } => {
+            let partie = session.partie();
+            let odds = if partie.number() > 1 {
+                let chance = chance_of_the_rubicon(partie, Side::A);
+                Some((chance, in_words(chance)))
+            } else {
+                None
+            };
+            seat.say(&format!("\n  ── deal {} of six ──", partie.number()));
+            seat.say(&render::standing(session.standing(), odds));
+        }
+        Event::DealEnds { .. } => {
+            // A post-mortem: the deal is over and every score in it was said
+            // aloud, so the whole log is the human's to read.
+            let finished = session.deal();
+            let (mine, theirs) = (session.you(), session.you().opponent());
+            seat.say("\n  the deal is over:");
+            seat.say(&render::events(&finished.log, mine, "you", THEM));
+            seat.say(&format!(
+                "\n    you {}  ·  {THEM} {}",
+                finished.log.total(mine),
+                finished.log.total(theirs)
+            ));
+            return;
+        }
+        // The hand and the trick are drawn at each decision; the moves in
+        // between are narrated.
+        _ => {}
+    }
+    seat.say(&format!("  {}", event.text()));
+}
+
+/// A whole partie at the session's table: tell the seat what happened, ask
+/// it what the session asks, and carry on until the partie is settled.
+fn run(session: &mut Table, seat: &mut dyn Seat) -> Result<(), String> {
+    let mut told = 0;
+    loop {
+        let events = session.events().to_vec();
+        for event in &events[told..] {
+            narrate(seat, session, event);
+        }
+        told = events.len();
+
+        let view = session.view();
+        let action = match session.prompt() {
+            Prompt::Cut => Action::Cut(seat.cut()),
+            Prompt::ChooseDealer => Action::FirstDealer(seat.choose_dealer()),
+            Prompt::Exchange { .. } => Action::Exchange(seat.exchange(&view)),
+            Prompt::Declare {
+                category, options, ..
+            } => {
+                let called = seat.declare(&view, category);
+                let index = options
+                    .iter()
+                    .position(|option| *option == called)
+                    .ok_or_else(|| format!("the call {called:?} was not one of the choices"))?;
+                Action::Declare(index)
+            }
+            Prompt::Play { .. } => Action::Play(seat.play(&view)),
+            Prompt::NextDeal => {
+                seat.next_deal();
+                Action::NextDeal
+            }
+            Prompt::Over => return Ok(()),
+        };
+        // Every answer was checked against the view before it was given, so
+        // the session refusing one is a bug, not a typing mistake.
+        session
+            .act(action)
+            .map_err(|why| format!("the table refused that: {why}"))?;
+    }
 }
 
 fn main() {
@@ -224,134 +356,22 @@ fn main() {
                 .unwrap_or(1674)
         });
 
-    let who = opponent(level);
-    // No proper names at the table: the machine is "your opponent".
-    let (opponent_name, gloss) = ("your opponent", who.gloss);
-    let mut rng = Rng::seeded(seed);
-
-    let table = Table {
-        input: Box::new(io::stdin().lock()),
-        output: Box::new(io::stdout()),
-        leave: walk_away,
-    };
+    let mut session = Table::new(level, seed);
     println!("\n  Piquet — a partie of six deals");
-    println!("  your opponent {gloss}");
-    println!("  (seed {seed}; pass --seed to replay, --level 1..5 to change opponent)\n");
+    println!("  your opponent {}", session.opponent().gloss);
+    println!("  (seed {seed}; pass --seed to replay, --level 1..5 to change opponent)");
 
     let mut human = HumanAgent {
-        table,
-        opponent: opponent_name.to_string(),
+        console: Console {
+            input: Box::new(io::stdin().lock()),
+            output: Box::new(io::stdout()),
+            leave: walk_away,
+        },
+        opponent: THEM.to_string(),
     };
-    let mut machine = seat(who.level, &mut rng);
-
-    // The human is side A and deals first, so the machine is elder in deal one
-    // -- the dealer is not elder.
-    let mut partie = Partie::new(Side::A);
-    while !partie.complete() {
-        let number = partie.number();
-        let elder_side = partie.elder();
-        let standing = partie.standing();
-
-        println!("\n  ── deal {number} of six ──");
-        let odds = if number > 1 {
-            let chance = chance_of_the_rubicon(&partie, Side::A);
-            Some((chance, in_words(chance)))
-        } else {
-            None
-        };
-        // `Partie::standing` reports from ELDER's chair, and elder alternates
-        // every deal -- so showing it unflipped labelled the human's score as
-        // the opponent's on every second deal. The engine wants elder's view
-        // (`view_for` flips it for younger); the table wants the human's.
-        let mine = if elder_side == Side::A {
-            standing
-        } else {
-            standing.reversed()
-        };
-        println!("{}", render::standing(mine, odds));
-        println!(
-            "  you are {}",
-            if elder_side == Side::A {
-                "elder — you lead"
-            } else {
-                "younger — you deal"
-            }
-        );
-
-        let pack = shuffled(&mut rng);
-        let deal = match deal_from(&pack) {
-            Ok(deal) => deal,
-            Err(why) => {
-                eprintln!("  the pack was wrong: {why}");
-                return;
-            }
-        };
-
-        let finished: Deal = {
-            let (elder, younger): (&mut dyn Agent, &mut dyn Agent) = match elder_side {
-                Side::A => (&mut human, &mut machine),
-                Side::B => (&mut machine, &mut human),
-            };
-            match play_deal(deal, elder, younger, Some(standing)) {
-                Ok((deal, _)) => deal,
-                Err(why) => {
-                    eprintln!("  the deal could not be finished: {why}");
-                    return;
-                }
-            }
-        };
-
-        let (my_seat, their_seat) = match elder_side {
-            Side::A => (Player::Elder, Player::Younger),
-            Side::B => (Player::Younger, Player::Elder),
-        };
-        println!("\n  the deal is over:");
-        println!(
-            "{}",
-            render::events(&finished.log, my_seat, "you", opponent_name)
-        );
-        println!(
-            "\n    you {}  ·  {opponent_name} {}",
-            finished.log.total(my_seat),
-            finished.log.total(their_seat)
-        );
-
-        partie = match partie.record_scores(
-            finished.log.total(Player::Elder),
-            finished.log.total(Player::Younger),
-        ) {
-            Ok(partie) => partie,
-            Err(why) => {
-                eprintln!("  {why}");
-                return;
-            }
-        };
-    }
-
-    let (mine, theirs) = partie.totals();
-    let settlement = partie.settlement().expect("a complete partie settles");
-    println!("\n  ── the partie ──");
-    println!("    you {mine}  ·  {opponent_name} {theirs}");
-    match settlement.winner {
-        None => println!("    drawn."),
-        Some(Side::A) => println!(
-            "    you win, and {opponent_name} pays {}{}",
-            settlement.points,
-            if settlement.rubicon {
-                " — rubiconed, so the sum and not the difference"
-            } else {
-                ""
-            }
-        ),
-        Some(Side::B) => println!(
-            "    your opponent wins, and you pay {}{}",
-            settlement.points,
-            if settlement.rubicon {
-                " — you were rubiconed, so the sum and not the difference"
-            } else {
-                ""
-            }
-        ),
+    if let Err(why) = run(&mut session, &mut human) {
+        eprintln!("  {why}");
+        std::process::exit(1);
     }
     println!();
 }
@@ -364,7 +384,8 @@ mod tests {
 
     use super::*;
     use piquet_core::observation::view_for;
-    use piquet_core::rules::Phase;
+    use piquet_core::rules::{deal_from, Deal, Phase};
+    use piquet_core::scoring::Player;
     use std::cell::RefCell;
     use std::io::Cursor;
     use std::rc::Rc;
@@ -396,13 +417,13 @@ mod tests {
     fn human(lines: &[&str]) -> (HumanAgent, Shown) {
         let shown = Shown::default();
         let script = lines.iter().map(|l| format!("{l}\n")).collect::<String>();
-        let table = Table {
+        let console = Console {
             input: Box::new(Cursor::new(script)),
             output: Box::new(shown.clone()),
             leave: ran_out,
         };
         let agent = HumanAgent {
-            table,
+            console,
             opponent: "your opponent".to_string(),
         };
         (agent, shown)
@@ -655,5 +676,72 @@ mod tests {
         let deal = skip_declarations(declaring(ELDER, YOUNGER));
         let (mut you, _) = human(&[]);
         you.play(&view_for(&deal, Player::Elder, None));
+    }
+
+    // -- a whole partie, through the session --
+
+    /// A machine in the person's chair, remembering what it was told.
+    struct Machine {
+        agent: piquet_core::heuristics::HeuristicAgent,
+        heard: Vec<String>,
+    }
+
+    impl Agent for Machine {
+        fn name(&self) -> &str {
+            "you"
+        }
+        fn exchange(&mut self, view: &View) -> Hand {
+            self.agent.exchange(view)
+        }
+        fn declare(&mut self, view: &View, category: Category) -> Declaration {
+            self.agent.declare(view, category)
+        }
+        fn play(&mut self, view: &View) -> Card {
+            self.agent.play(view)
+        }
+    }
+
+    impl Seat for Machine {
+        fn say(&mut self, line: &str) {
+            self.heard.push(line.to_string());
+        }
+        fn cut(&mut self) -> usize {
+            16
+        }
+        fn choose_dealer(&mut self) -> Who {
+            Who::You
+        }
+        fn next_deal(&mut self) {}
+    }
+
+    #[test]
+    fn the_terminal_plays_a_whole_partie_through_the_session() {
+        for seed in [7, 1674, 2026] {
+            let mut session = Table::new(3, seed);
+            let mut seat = Machine {
+                agent: piquet_core::heuristics::HeuristicAgent::new(4, seed).unwrap(),
+                heard: Vec::new(),
+            };
+            run(&mut session, &mut seat).unwrap();
+            assert_eq!(session.prompt(), Prompt::Over);
+            let heard = seat.heard.join("\n");
+            let deals = session.partie().number().min(6);
+            for n in 1..=deals {
+                assert!(
+                    heard.contains(&format!("── deal {n} of six ──")),
+                    "seed {seed}: no deal {n}"
+                );
+            }
+            assert!(
+                heard.matches("the deal is over:").count() >= 6,
+                "seed {seed}"
+            );
+            assert!(heard.contains("Final score"), "seed {seed}");
+            // Cut for the deal, as the page does, before the first deal.
+            assert!(
+                heard.find(" cut").unwrap() < heard.find("── deal 1").unwrap(),
+                "seed {seed}"
+            );
+        }
     }
 }

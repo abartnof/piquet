@@ -180,7 +180,12 @@ spends money. The running log, newest last:
 - `round_robin` and `format_table` ported, with their printed forms as
   vectors.
 - The CLI's interactive half tested: sixteen scripted-console tests of
-  `HumanAgent`'s prompts and refusals, through a `Table` seam.
+  `HumanAgent`'s prompts and refusals, through a console seam.
+- **The terminal is a client of the core session** (`Table`), as the page
+  is: it cuts for the deal, narrates your opponent's moves between your
+  decisions, and a test plays three whole parties through it with a machine
+  in your chair. The cut's limits are now public constants the page's wasm
+  reads too.
 - **The phone's own pass** (`docs/TABLE3D.md` P14). Measured first: at
   390 x 844 the strips took 564 of 844 px. Top strip 325 -> 138 px (the
   score in one row beside two stacked buttons, a tap on it opens the tab;
@@ -423,9 +428,12 @@ tested and pushed, and `web/piquet.html` is current (`a5f2e34`).
 
 Loose ends from the round:
 
-- The **terminal** does not cut yet; it still deals the human first. The same
-  seed gives the same packs everywhere, and the same game whenever the human
-  ends up dealing first.
+- ~~The **terminal** does not cut yet.~~ **It does** (28 September): the CLI
+  is now a client of the core session, `piquet_core::table::Table`, as the
+  page is -- it narrates the session's events and answers its prompts -- so
+  it cuts for the deal, and the same seed at the same level, cut the same
+  way, is the same partie at the terminal and on the page. An empty answer
+  cuts the middle of the pack (the page's "Cut for me").
 - On a phone a combination group can break across the wrap of the hand.
 - A pushed page briefly read "Worth: [object Object]" — a patch that failed
   silently (`2b30cbd`). The browser test now reads the worth line, and every

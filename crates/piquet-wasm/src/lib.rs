@@ -30,7 +30,9 @@ use piquet_core::combos::holdings;
 use piquet_core::declarations::Declaration;
 use piquet_core::rules::Trick;
 use piquet_core::scoring::{Category, Player};
-use piquet_core::table::{said, Action, Aids, Event, Prompt, Table, Who};
+use piquet_core::table::{
+    said, Action, Aids, Event, Prompt, Table, Who, DEEPEST_CUT, SHALLOWEST_CUT,
+};
 
 /// Bumped whenever the state changes shape in a way a client would notice.
 pub const PROTOCOL: u32 = 2;
@@ -311,8 +313,8 @@ fn prompt(prompt: &Prompt, held: Hand) -> String {
     match prompt {
         Prompt::Cut => object(&[
             ("kind", text("cut")),
-            ("fewest", "2".to_string()),
-            ("most", "30".to_string()),
+            ("fewest", SHALLOWEST_CUT.to_string()),
+            ("most", DEEPEST_CUT.to_string()),
         ]),
         Prompt::ChooseDealer => object(&[("kind", text("choose_dealer"))]),
         Prompt::Exchange { limit } => {

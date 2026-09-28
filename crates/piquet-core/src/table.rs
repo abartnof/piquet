@@ -433,8 +433,8 @@ struct Cutting {
 
 /// The fewest cards a cut may lift, and the most: at least two lifted and at
 /// least two left (Cavendish, Law 3).
-const SHALLOWEST_CUT: usize = 2;
-const DEEPEST_CUT: usize = 30;
+pub const SHALLOWEST_CUT: usize = 2;
+pub const DEEPEST_CUT: usize = 30;
 
 impl Table {
     /// Sit down against the opponent at `level`, with everything drawn from
