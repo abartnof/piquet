@@ -339,3 +339,62 @@ running total; and that no line strays into another deal.
   table counts aloud only when a score is made.
 - A good point's suit ("In spades.") is not said: the engine's events do
   not carry it.
+
+## 8. A second try, costed (28 September)
+
+Andrew: *"what about if there was 2 genders (one for opponent, one for
+player), 1 phase per event, one recording per event. think maximally- that
+means 'I have 21' and 'i have 20' are two wholly distinct recordings. we'd do
+it on a first-class voice-producer, like google"*; then *"make sure you have
+a full count of *all* utterances ... every event each player does, and how
+they might respond ... important state transitions as well (start, win,
+congrats, oh well maybe next time, etc). then do another count where numbers
+are distinct ... price it out to use a google first-rate voice product"*.
+
+**The count** — `web3d/tools/utterances.py`, derived from the rules rather
+than sampled (tested, `test_utterances.py`). Every event either player
+makes and every reply: the cut and the choice of deal, each deal and the
+last, the exchange (elder and younger), carte blanche, the point, sequences
+and sets called, asked about and answered, reckoning, counting aloud, pique,
+repique, the cards, capot, the last trick, the rubicon crossed, a deal won
+or lost heavily, the partie won, lost, rubiconed or drawn, and a few words
+while thinking. Every sequence a twelve-card hand can hold (as lists: 912),
+every set of trios and quatorzes (135), every point value (49), every count
+to 170. Both voices need the game's lines, since either player can be
+elder; each has its own few.
+
+| | per voice | speech, both voices | 16 kb/s | 24 kb/s | 32 kb/s | 48 kb/s |
+|---|---|---|---|---|---|---|
+| **Maximal** — each event one recording, its count fused in ("Three aces and three queens: nine.") | ~24,100 | ~61 h | 457 MB | 679 MB | 900 MB | 1.34 GB |
+| **Numbers apart** — each event whole, the count its own recording | ~1,300 | 2.5 h | 19 MB | 28 MB | 37 MB | 55 MB |
+| **Phrases** — each holding and each count its own whole recording, said in turn | ~280 | 12 min | 1.5 MB | 2.2 MB | 2.8 MB | 4.1 MB |
+
+Sizes are the recordings as files, as they would sit in the repository;
+embedded in the page they are a third larger (base64), on a page of 3.0 MB
+without them. Speech is taken at 78 ms a character, measured on the Piper
+recordings. The maximal count is an upper bound — it allows every count
+the rules allow before each reckoning, without checking that twelve cards
+could hold both — and 400 simulated parties turned up 1,090 of its kind
+(§7's run), still climbing; either way it is thousands. Almost all of the
+difference between the second and third rows is the lists: a hand's
+sequences said as one sentence come in 912 forms, and its sets in 135;
+said one holding at a time, they are 21 and 10. Every utterance of the
+second and third plans is written down in `docs/UTTERANCES.tsv`
+(`utterances.py --list` writes the maximal one too).
+
+**The price** — Google Cloud Text-to-Speech, as its pricing page stood on
+28 September 2026 (characters count spaces and punctuation):
+
+| | Chirp 3: HD (1M characters a month free, then $30 a million) | Gemini 2.5 Pro TTS ($1 a million text tokens, $20 a million audio tokens, 25 a second) |
+|---|---|---|
+| Maximal, 2.84M characters, ~61 h | ~$55 (or free, spread over three months) | ~$112 |
+| Numbers apart, 116k characters, 2.5 h | free | ~$4.50 |
+| Phrases, 8.5k characters, 12 min | free | ~$0.35 |
+
+Each extra take made to choose the best multiplies these. Other voices,
+for comparison: Studio $160 a million after 1M free; Neural2 $16 after 1M
+free; WaveNet and Standard $4 after 4M free; Gemini 2.5 Flash TTS half
+Gemini Pro's price. To call it from this VM, the Text-to-Speech API must be
+enabled on `abartnof-piquet` and the VM given the cloud-platform scope (its
+service account lacks it — it cannot even read the billing), or a user
+credential used. Spending is Andrew's decision.
