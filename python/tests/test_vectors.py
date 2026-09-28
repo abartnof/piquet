@@ -1516,17 +1516,22 @@ def test_the_move_log_still_records_these_decisions():
 
 
 def test_results_and_ratings_come_out_as_recorded():
-    from piquet.tournament import DuelResult, PartieResult, ratings
+    from piquet.tournament import DuelResult, PartieResult, format_table, ratings
 
     vec = load("tournament")
     for case in vec["properties"]:
         r = DuelResult(**case["result"])
         assert r.a_win_rate == pytest.approx(case["a_win_rate"], abs=1e-12), case
         assert r.margin == pytest.approx(case["margin"], abs=1e-12), case
+        assert str(r) == case["text"]
     for case in vec["partie_properties"]:
         r = PartieResult(**case["result"])
         assert r.a_win_rate == pytest.approx(case["a_win_rate"], abs=1e-12), case
         assert r.margin == pytest.approx(case["margin"], abs=1e-12), case
+        assert str(r) == case["text"]
+    for table in vec["tables"]:
+        group = [DuelResult(**r) for r in vec["results"][table["results"]]]
+        assert format_table(group, anchor=table["anchor"]) == table["text"], table["results"]
     for fit in vec["fits"]:
         group = [DuelResult(**r) for r in vec["results"][fit["results"]]]
         got = ratings(group, anchor=fit["anchor"])

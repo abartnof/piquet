@@ -177,6 +177,8 @@ spends money. The running log, newest last:
   three Rust port defects found and fixed -- the move log's bonus lost its
   player, `ratings` panicked on an unknown anchor, and no pairs rated 0
   instead of an even 0.5.
+- `round_robin` and `format_table` ported, with their printed forms as
+  vectors.
 - **The phone's own pass** (`docs/TABLE3D.md` P14). Measured first: at
   390 x 844 the strips took 564 of 844 px. Top strip 325 -> 138 px (the
   score in one row beside two stacked buttons, a tap on it opens the tab;
@@ -612,8 +614,11 @@ should not have to rediscover them.
 - ~~`tournament.partie_duel` and `PartieResult` are not ported.~~ **Ported
   since** (`2bdd7df`), with `bin/parties` and `bin/settle` as the instruments
   built on it.
-- **`round_robin` and `format_table` are not ported.** The round-robin loop is
-  inlined in `bin/ladder.rs`, so it works but is not reusable.
+- ~~**`round_robin` and `format_table` are not ported.**~~ **Ported** (28
+  September), with `Display` for both result types; `bin/ladder` now uses
+  `round_robin` and prints exactly what it printed before. The printed forms
+  are golden vectors, rounding ties included (both languages round half to
+  even from the exact binary value -- measured, not assumed).
 - **Colour is not ported.** `terminal.Palette` and `detect_palette` do ANSI
   colour when the stream supports it; `piquet-cli` is plain throughout.
 - **`chances::density` and `survival` take no custom table.** The Python

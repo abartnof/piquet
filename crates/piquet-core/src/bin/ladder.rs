@@ -11,7 +11,8 @@
 
 use piquet_core::agents::{Agent, RandomAgent};
 use piquet_core::heuristics::HeuristicAgent;
-use piquet_core::tournament::{duel, ratings, DuelResult};
+use piquet_core::partie::Side;
+use piquet_core::tournament::{ratings, round_robin};
 
 fn main() {
     let pairs: usize = std::env::args()
@@ -23,30 +24,24 @@ fn main() {
     // paired comparison rather than each duel separately.
     let deal_seed = 1674u32;
 
-    let build = |which: usize, seed: u32| -> Box<dyn Agent> {
+    // Random play, then the four rungs; each side of a pairing seeded apart.
+    let build = |which: usize, side: Side| -> Box<dyn Agent> {
+        let seed = which as u32 + if side == Side::A { 11 } else { 29 };
         match which {
             0 => Box::new(RandomAgent::new(seed)),
             level => Box::new(HeuristicAgent::new(level as u32, seed).expect("a valid level")),
         }
     };
-    let entrants = [0usize, 1, 2, 3, 4];
 
-    let mut results: Vec<DuelResult> = Vec::new();
-    for (i, a) in entrants.iter().enumerate() {
-        for b in entrants.iter().skip(i + 1) {
-            let mut agent_a = build(*a, 11 + *a as u32);
-            let mut agent_b = build(*b, 29 + *b as u32);
-            let result = duel(agent_a.as_mut(), agent_b.as_mut(), pairs, deal_seed)
-                .expect("a duel completes");
-            println!(
-                "  {:>6} vs {:<6} {:5.1}%  margin {:+6.1} per pair",
-                result.name_a,
-                result.name_b,
-                100.0 * result.a_win_rate(),
-                result.margin()
-            );
-            results.push(result);
-        }
+    let results = round_robin(5, pairs, deal_seed, build).expect("every duel completes");
+    for result in &results {
+        println!(
+            "  {:>6} vs {:<6} {:5.1}%  margin {:+6.1} per pair",
+            result.name_a,
+            result.name_b,
+            100.0 * result.a_win_rate(),
+            result.margin()
+        );
     }
 
     println!("\n  ratings, anchored on random play ({pairs} pairs per pairing):");

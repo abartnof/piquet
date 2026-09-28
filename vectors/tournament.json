@@ -1,7 +1,7 @@
 {
   "module": "tournament",
   "generator": "tools/emit_vectors.py",
-  "note": "Duel and partie results' win rates and margins, and the Bradley-Terry ratings (500 sweeps, prior 0.5) of sets of results, with and without an anchor. Ratings are floats: compare within 1e-9. With no pairs a result is even -- a win rate of one half, not zero. An anchor that played nobody is ignored, and the geometric mean is the zero.",
+  "note": "Duel and partie results' win rates and margins, and the Bradley-Terry ratings (500 sweeps, prior 0.5) of sets of results, with and without an anchor. Ratings are floats: compare within 1e-9. With no pairs a result is even -- a win rate of one half, not zero. An anchor that played nobody is ignored, and the geometric mean is the zero. `text` and `tables` are the printed forms, exactly: figures are rounded half to even from their exact binary values.",
   "results": {
     "even": [
       {
@@ -104,6 +104,38 @@
         "a_points": 300,
         "b_points": 290
       }
+    ],
+    "ties at the rounding": [
+      {
+        "name_a": "L1",
+        "name_b": "L2",
+        "pairs": 4,
+        "a_wins": 1,
+        "b_wins": 3,
+        "drawn": 0,
+        "a_points": 101,
+        "b_points": 100
+      },
+      {
+        "name_a": "L1",
+        "name_b": "L3",
+        "pairs": 16,
+        "a_wins": 1,
+        "b_wins": 15,
+        "drawn": 0,
+        "a_points": 100,
+        "b_points": 101
+      },
+      {
+        "name_a": "L2",
+        "name_b": "L3",
+        "pairs": 8,
+        "a_wins": 3,
+        "b_wins": 4,
+        "drawn": 1,
+        "a_points": 100,
+        "b_points": 103
+      }
     ]
   },
   "properties": [
@@ -119,7 +151,8 @@
         "b_points": 300
       },
       "a_win_rate": 0.5,
-      "margin": 0.0
+      "margin": 0.0,
+      "text": "L1 vs L2: 50.0% (5-5-0), margin +0.0 points per pair"
     },
     {
       "result": {
@@ -133,7 +166,8 @@
         "b_points": 1480
       },
       "a_win_rate": 0.3,
-      "margin": -9.5
+      "margin": -9.5,
+      "text": "L1 vs L2: 30.0% (10-26-4), margin -9.5 points per pair"
     },
     {
       "result": {
@@ -147,7 +181,8 @@
         "b_points": 900
       },
       "a_win_rate": 0.0,
-      "margin": -25.0
+      "margin": -25.0,
+      "text": "L1 vs L4: 0.0% (0-20-0), margin -25.0 points per pair"
     },
     {
       "result": {
@@ -161,7 +196,8 @@
         "b_points": 0
       },
       "a_win_rate": 0.5,
-      "margin": 0.0
+      "margin": 0.0,
+      "text": "L1 vs L2: 50.0% (0-0-0), margin +0.0 points per pair"
     },
     {
       "result": {
@@ -175,7 +211,8 @@
         "b_points": 910
       },
       "a_win_rate": 0.4166666666666667,
-      "margin": -3.0
+      "margin": -3.0,
+      "text": "L1 vs L2: 41.7% (11-16-3), margin -3.0 points per pair"
     },
     {
       "result": {
@@ -189,7 +226,8 @@
         "b_points": 1010
       },
       "a_win_rate": 0.3,
-      "margin": -8.333333333333334
+      "margin": -8.333333333333334,
+      "text": "L1 vs L3: 30.0% (8-20-2), margin -8.3 points per pair"
     },
     {
       "result": {
@@ -203,7 +241,8 @@
         "b_points": 930
       },
       "a_win_rate": 0.45,
-      "margin": -2.0
+      "margin": -2.0,
+      "text": "L2 vs L3: 45.0% (12-15-3), margin -2.0 points per pair"
     },
     {
       "result": {
@@ -217,7 +256,8 @@
         "b_points": 320
       },
       "a_win_rate": 0.35,
-      "margin": -7.0
+      "margin": -7.0,
+      "text": "L1 vs L2: 35.0% (3-6-1), margin -7.0 points per pair"
     },
     {
       "result": {
@@ -231,7 +271,53 @@
         "b_points": 290
       },
       "a_win_rate": 0.5,
-      "margin": 1.0
+      "margin": 1.0,
+      "text": "L1 vs L2: 50.0% (5-5-0), margin +1.0 points per pair"
+    },
+    {
+      "result": {
+        "name_a": "L1",
+        "name_b": "L2",
+        "pairs": 4,
+        "a_wins": 1,
+        "b_wins": 3,
+        "drawn": 0,
+        "a_points": 101,
+        "b_points": 100
+      },
+      "a_win_rate": 0.25,
+      "margin": 0.25,
+      "text": "L1 vs L2: 25.0% (1-3-0), margin +0.2 points per pair"
+    },
+    {
+      "result": {
+        "name_a": "L1",
+        "name_b": "L3",
+        "pairs": 16,
+        "a_wins": 1,
+        "b_wins": 15,
+        "drawn": 0,
+        "a_points": 100,
+        "b_points": 101
+      },
+      "a_win_rate": 0.0625,
+      "margin": -0.0625,
+      "text": "L1 vs L3: 6.2% (1-15-0), margin -0.1 points per pair"
+    },
+    {
+      "result": {
+        "name_a": "L2",
+        "name_b": "L3",
+        "pairs": 8,
+        "a_wins": 3,
+        "b_wins": 4,
+        "drawn": 1,
+        "a_points": 100,
+        "b_points": 103
+      },
+      "a_win_rate": 0.4375,
+      "margin": -0.375,
+      "text": "L2 vs L3: 43.8% (3-4-1), margin -0.4 points per pair"
     }
   ],
   "partie_properties": [
@@ -246,7 +332,8 @@
         "a_settlement": 530
       },
       "a_win_rate": 0.625,
-      "margin": 44.166666666666664
+      "margin": 44.166666666666664,
+      "text": "A vs B: 62.5% (7-4-1), +44.2 settlement points per pair"
     },
     {
       "result": {
@@ -259,7 +346,8 @@
         "a_settlement": 0
       },
       "a_win_rate": 0.5,
-      "margin": 0.0
+      "margin": 0.0,
+      "text": "A vs B: 50.0% (0-0-0), +0.0 settlement points per pair"
     },
     {
       "result": {
@@ -272,7 +360,8 @@
         "a_settlement": -900
       },
       "a_win_rate": 0.0,
-      "margin": -180.0
+      "margin": -180.0,
+      "text": "A vs B: 0.0% (0-5-0), -180.0 settlement points per pair"
     }
   ],
   "fits": [
@@ -398,6 +487,95 @@
         "L1": -25.595902452805547,
         "L2": 25.595902452805557
       }
+    },
+    {
+      "results": "ties at the rounding",
+      "anchor": null,
+      "ratings": {
+        "L1": -220.66214475909547,
+        "L2": 69.33283412787132,
+        "L3": 151.32931063122416
+      }
+    },
+    {
+      "results": "ties at the rounding",
+      "anchor": "L1",
+      "ratings": {
+        "L1": 0.0,
+        "L2": 289.9949788869668,
+        "L3": 371.99145539031963
+      }
+    },
+    {
+      "results": "ties at the rounding",
+      "anchor": "nobody",
+      "ratings": {
+        "L1": -220.66214475909547,
+        "L2": 69.33283412787132,
+        "L3": 151.32931063122416
+      }
+    }
+  ],
+  "tables": [
+    {
+      "results": "even",
+      "anchor": null,
+      "text": "L1 vs L2: 50.0% (5-5-0), margin +0.0 points per pair\n\nagent                rating\nL1                        0\nL2                        0"
+    },
+    {
+      "results": "even",
+      "anchor": "L2",
+      "text": "L1 vs L2: 50.0% (5-5-0), margin +0.0 points per pair\n\nagent                rating\nL1                        0\nL2                        0"
+    },
+    {
+      "results": "one side better",
+      "anchor": null,
+      "text": "L1 vs L2: 30.0% (10-26-4), margin -9.5 points per pair\n\nagent                rating\nL2                       72\nL1                      -72"
+    },
+    {
+      "results": "one side better",
+      "anchor": "L2",
+      "text": "L1 vs L2: 30.0% (10-26-4), margin -9.5 points per pair\n\nagent                rating\nL2                        0\nL1                     -145"
+    },
+    {
+      "results": "a shut-out",
+      "anchor": null,
+      "text": "L1 vs L4: 0.0% (0-20-0), margin -25.0 points per pair\n\nagent                rating\nL4                      328\nL1                     -328"
+    },
+    {
+      "results": "a shut-out",
+      "anchor": "L4",
+      "text": "L1 vs L4: 0.0% (0-20-0), margin -25.0 points per pair\n\nagent                rating\nL4                        0\nL1                     -655"
+    },
+    {
+      "results": "a round robin",
+      "anchor": null,
+      "text": "L1 vs L2: 41.7% (11-16-3), margin -3.0 points per pair\nL1 vs L3: 30.0% (8-20-2), margin -8.3 points per pair\nL2 vs L3: 45.0% (12-15-3), margin -2.0 points per pair\n\nagent                rating\nL3                       59\nL2                        8\nL1                      -67"
+    },
+    {
+      "results": "a round robin",
+      "anchor": "L3",
+      "text": "L1 vs L2: 41.7% (11-16-3), margin -3.0 points per pair\nL1 vs L3: 30.0% (8-20-2), margin -8.3 points per pair\nL2 vs L3: 45.0% (12-15-3), margin -2.0 points per pair\n\nagent                rating\nL3                        0\nL2                      -51\nL1                     -126"
+    },
+    {
+      "results": "a pairing played twice",
+      "anchor": null,
+      "text": "L1 vs L2: 35.0% (3-6-1), margin -7.0 points per pair\nL1 vs L2: 50.0% (5-5-0), margin +1.0 points per pair\n\nagent                rating\nL2                       26\nL1                      -26"
+    },
+    {
+      "results": "a pairing played twice",
+      "anchor": "L2",
+      "text": "L1 vs L2: 35.0% (3-6-1), margin -7.0 points per pair\nL1 vs L2: 50.0% (5-5-0), margin +1.0 points per pair\n\nagent                rating\nL2                        0\nL1                      -51"
+    },
+    {
+      "results": "ties at the rounding",
+      "anchor": null,
+      "text": "L1 vs L2: 25.0% (1-3-0), margin +0.2 points per pair\nL1 vs L3: 6.2% (1-15-0), margin -0.1 points per pair\nL2 vs L3: 43.8% (3-4-1), margin -0.4 points per pair\n\nagent                rating\nL3                      151\nL2                       69\nL1                     -221"
+    },
+    {
+      "results": "ties at the rounding",
+      "anchor": "L3",
+      "text": "L1 vs L2: 25.0% (1-3-0), margin +0.2 points per pair\nL1 vs L3: 6.2% (1-15-0), margin -0.1 points per pair\nL2 vs L3: 43.8% (3-4-1), margin -0.4 points per pair\n\nagent                rating\nL3                        0\nL2                      -82\nL1                     -372"
     }
   ]
 }

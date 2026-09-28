@@ -44,6 +44,22 @@ impl DuelResult {
     }
 }
 
+impl std::fmt::Display for DuelResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} vs {}: {:.1}% ({}-{}-{}), margin {:+.1} points per pair",
+            self.name_a,
+            self.name_b,
+            100.0 * self.a_win_rate(),
+            self.a_wins,
+            self.b_wins,
+            self.drawn,
+            self.margin()
+        )
+    }
+}
+
 /// Play each deal twice with the seats swapped.
 ///
 /// The deals come from their **own** generator. Drawing them from the one the
@@ -177,6 +193,43 @@ pub fn ratings(
         .collect()
 }
 
+/// Every entrant against every other, once, over one shared set of deals --
+/// so the whole table is a paired comparison, not just each duel within it.
+///
+/// Each duel gets fresh agents from `build`, told which side of the pairing
+/// the agent will sit on, so an instrument can seed its two sides apart.
+pub fn round_robin(
+    entrants: usize,
+    pairs: usize,
+    deal_seed: u32,
+    mut build: impl FnMut(usize, Side) -> Box<dyn Agent>,
+) -> Result<Vec<DuelResult>, String> {
+    let mut results = Vec::new();
+    for a in 0..entrants {
+        for b in a + 1..entrants {
+            let mut agent_a = build(a, Side::A);
+            let mut agent_b = build(b, Side::B);
+            results.push(duel(agent_a.as_mut(), agent_b.as_mut(), pairs, deal_seed)?);
+        }
+    }
+    Ok(results)
+}
+
+/// A readable summary: the pairwise results, then the fitted ratings,
+/// strongest first.
+pub fn format_table(results: &[DuelResult], anchor: Option<&str>) -> String {
+    let mut lines: Vec<String> = results.iter().map(DuelResult::to_string).collect();
+    lines.push(String::new());
+    lines.push(format!("{:<18}{:>9}", "agent", "rating"));
+    let mut scores = ratings(results, anchor, 500, 0.5);
+    // Stable, as the oracle's sort is: equal ratings keep their order.
+    scores.sort_by(|a, b| b.1.partial_cmp(&a.1).expect("no NaN in a rating"));
+    for (name, rating) in scores {
+        lines.push(format!("{name:<18}{rating:>9.0}"));
+    }
+    lines.join("\n")
+}
+
 // -- one level up: mirrored parties ------------------------------------------
 
 /// A pairing measured over whole parties, scored in settlement.
@@ -207,6 +260,22 @@ impl PartieResult {
             return 0.0;
         }
         f64::from(self.a_settlement) / self.pairs as f64
+    }
+}
+
+impl std::fmt::Display for PartieResult {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{} vs {}: {:.1}% ({}-{}-{}), {:+.1} settlement points per pair",
+            self.name_a,
+            self.name_b,
+            100.0 * self.a_win_rate(),
+            self.a_wins,
+            self.b_wins,
+            self.drawn,
+            self.margin()
+        )
     }
 }
 

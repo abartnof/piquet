@@ -2274,7 +2274,7 @@ fn the_move_log_records_exactly_the_recorded_decisions() {
 
 // -- tournament: the arithmetic of strength --------------------------------------
 
-use piquet_core::tournament::{ratings, DuelResult, PartieResult};
+use piquet_core::tournament::{format_table, ratings, DuelResult, PartieResult};
 
 fn duel_result(r: &serde_json::Value) -> DuelResult {
     DuelResult {
@@ -2294,6 +2294,7 @@ fn results_have_the_recorded_win_rates_and_margins() {
     let vec = vectors("tournament.json");
     for case in vec["properties"].as_array().unwrap() {
         let r = duel_result(&case["result"]);
+        assert_eq!(r.to_string(), case["text"].as_str().unwrap());
         assert!(
             (r.a_win_rate() - case["a_win_rate"].as_f64().unwrap()).abs() < 1e-12,
             "{case}"
@@ -2314,6 +2315,7 @@ fn results_have_the_recorded_win_rates_and_margins() {
             drawn: f["drawn"].as_u64().unwrap() as usize,
             a_settlement: f["a_settlement"].as_i64().unwrap() as i32,
         };
+        assert_eq!(r.to_string(), case["text"].as_str().unwrap());
         assert!(
             (r.a_win_rate() - case["a_win_rate"].as_f64().unwrap()).abs() < 1e-12,
             "{case}"
@@ -2347,5 +2349,27 @@ fn ratings_fit_as_recorded() {
                 "{name}, anchored on {anchor:?}: {agent} rates {value}, not {expected}"
             );
         }
+    }
+}
+
+#[test]
+fn the_table_prints_exactly_as_recorded() {
+    // Printed figures round half to even from their exact binary values,
+    // as the oracle's do: 6.25% is "6.2", a margin of 0.25 is "+0.2".
+    let vec = vectors("tournament.json");
+    for table in vec["tables"].as_array().unwrap() {
+        let name = table["results"].as_str().unwrap();
+        let group: Vec<DuelResult> = vec["results"][name]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(duel_result)
+            .collect();
+        let anchor = table["anchor"].as_str();
+        assert_eq!(
+            format_table(&group, anchor),
+            table["text"].as_str().unwrap(),
+            "{name}, anchored on {anchor:?}"
+        );
     }
 }

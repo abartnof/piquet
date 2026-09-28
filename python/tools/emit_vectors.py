@@ -45,7 +45,7 @@ from piquet.inference import (  # noqa: E402
     possible_hands,
 )
 from piquet.match import DealRecord, play_deal  # noqa: E402
-from piquet.tournament import DuelResult, PartieResult, ratings  # noqa: E402
+from piquet.tournament import DuelResult, PartieResult, format_table, ratings  # noqa: E402
 from piquet.style import BALANCED  # noqa: E402
 from piquet.solver import (  # noqa: E402
     SolverAgent,
@@ -1904,12 +1904,21 @@ def emit_tournament() -> dict:
             duel_result("L1", "L2", 10, 3, 6, 1, 250, 320),
             duel_result("L1", "L2", 10, 5, 5, 0, 300, 290),
         ],
+        # Figures that land exactly on a rounding tie when printed: 6.25%,
+        # 43.75%, a margin of 0.25 and of -0.375. Python rounds the exact
+        # binary value half to even.
+        "ties at the rounding": [
+            duel_result("L1", "L2", 4, 1, 3, 0, 101, 100),
+            duel_result("L1", "L3", 16, 1, 15, 0, 100, 101),
+            duel_result("L2", "L3", 8, 3, 4, 1, 100, 103),
+        ],
     }
     properties = [
         {
             "result": _duel(r),
             "a_win_rate": r.a_win_rate,
             "margin": r.margin,
+            "text": str(r),
         }
         for group in results.values()
         for r in group
@@ -1924,6 +1933,7 @@ def emit_tournament() -> dict:
                 )),
                 "a_win_rate": r.a_win_rate,
                 "margin": r.margin,
+                "text": str(r),
             }
         )
     fits = []
@@ -1938,6 +1948,12 @@ def emit_tournament() -> dict:
                     "ratings": ratings(group, anchor=anchor),
                 }
             )
+    tables = [
+        {"results": name, "anchor": anchor, "text": format_table(group, anchor=anchor)}
+        for name, group in results.items()
+        if name != "no pairs at all"
+        for anchor in (None, group[-1].name_b)
+    ]
     return {
         "module": "tournament",
         "generator": "tools/emit_vectors.py",
@@ -1946,12 +1962,15 @@ def emit_tournament() -> dict:
             "ratings (500 sweeps, prior 0.5) of sets of results, with and without "
             "an anchor. Ratings are floats: compare within 1e-9. With no pairs a "
             "result is even -- a win rate of one half, not zero. An anchor that "
-            "played nobody is ignored, and the geometric mean is the zero."
+            "played nobody is ignored, and the geometric mean is the zero. "
+            "`text` and `tables` are the printed forms, exactly: figures are "
+            "rounded half to even from their exact binary values."
         ),
         "results": {name: [_duel(r) for r in group] for name, group in results.items()},
         "properties": properties,
         "partie_properties": partie_properties,
         "fits": fits,
+        "tables": tables,
     }
 
 
