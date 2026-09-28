@@ -509,6 +509,14 @@ level 5 late in a partie (the page says "Restoring your game…").
       them instead of re-deciding them. Needs care — the opponent's generator
       would then not have advanced, so the game would stop being reproducible
       from seed and human actions alone.
+      **Measured 28 September** (node on the VM, replaying a record to the
+      start of deal 6): levels 1–4 replay in **about 10 ms**; only level 5,
+      the exact solver, is slow — **1.4 s and 3.6 s** on two seeds, about as
+      long as playing it took. So it is a level-5 problem only, and on a
+      phone likely a few times worse. One way that keeps reproducibility:
+      save the opponent's moves *and* its generator's state as a cache that
+      a reload trusts and a full replay can always re-derive. A choice about
+      the saved format, so Andrew's.
 - [ ] Say *why*, not just what: the hint's second half, `explain.rs`,
       Milestone 9.
 
