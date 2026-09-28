@@ -2243,3 +2243,109 @@ fn the_move_log_survives_the_suit_symbols_in_it() {
         serde_json::from_str(&record.as_json()).expect("quotes must be escaped");
     assert_eq!(parsed["elder_agent"], "a\"quoted\" name");
 }
+
+// -- match: the move log -------------------------------------------------------
+
+use piquet_core::play::DealRecord;
+
+#[test]
+fn the_move_log_records_exactly_the_recorded_decisions() {
+    // The training log (Andrew: "so the correlation between training epochs
+    // and skill gained can be analyzed later"), compared as parsed JSON: the
+    // two writers may differ in whether they escape non-ASCII, and both parse
+    // to the same log.
+    let vec = vectors("match.json");
+    let packs = vec["packs"].as_object().unwrap();
+    for game in vec["games"].as_array().unwrap() {
+        let pack_name = game["pack"].as_str().unwrap();
+        let pack = pack_of(&packs[pack_name]);
+        let e = game["elder_level"].as_u64().unwrap() as u32;
+        let y = game["younger_level"].as_u64().unwrap() as u32;
+        let (elder_name, younger_name) = (format!("L{e}"), format!("L{y}"));
+        let mut elder = HeuristicAgent::new(e, 1).unwrap().named(&elder_name);
+        let mut younger = HeuristicAgent::new(y, 2).unwrap().named(&younger_name);
+        let (deal, decisions) = play_pack(&pack, &mut elder, &mut younger, None).unwrap();
+        let record = DealRecord::of(3, &deal, &elder_name, &younger_name, decisions);
+        let line: serde_json::Value =
+            serde_json::from_str(&record.as_json()).expect("the log is JSON");
+        assert_eq!(line, game["record"], "{pack_name}: L{e} against L{y}");
+    }
+}
+
+// -- tournament: the arithmetic of strength --------------------------------------
+
+use piquet_core::tournament::{ratings, DuelResult, PartieResult};
+
+fn duel_result(r: &serde_json::Value) -> DuelResult {
+    DuelResult {
+        name_a: r["name_a"].as_str().unwrap().to_string(),
+        name_b: r["name_b"].as_str().unwrap().to_string(),
+        pairs: r["pairs"].as_u64().unwrap() as usize,
+        a_wins: r["a_wins"].as_u64().unwrap() as usize,
+        b_wins: r["b_wins"].as_u64().unwrap() as usize,
+        drawn: r["drawn"].as_u64().unwrap() as usize,
+        a_points: r["a_points"].as_i64().unwrap() as i32,
+        b_points: r["b_points"].as_i64().unwrap() as i32,
+    }
+}
+
+#[test]
+fn results_have_the_recorded_win_rates_and_margins() {
+    let vec = vectors("tournament.json");
+    for case in vec["properties"].as_array().unwrap() {
+        let r = duel_result(&case["result"]);
+        assert!(
+            (r.a_win_rate() - case["a_win_rate"].as_f64().unwrap()).abs() < 1e-12,
+            "{case}"
+        );
+        assert!(
+            (r.margin() - case["margin"].as_f64().unwrap()).abs() < 1e-12,
+            "{case}"
+        );
+    }
+    for case in vec["partie_properties"].as_array().unwrap() {
+        let f = &case["result"];
+        let r = PartieResult {
+            name_a: f["name_a"].as_str().unwrap().to_string(),
+            name_b: f["name_b"].as_str().unwrap().to_string(),
+            pairs: f["pairs"].as_u64().unwrap() as usize,
+            a_wins: f["a_wins"].as_u64().unwrap() as usize,
+            b_wins: f["b_wins"].as_u64().unwrap() as usize,
+            drawn: f["drawn"].as_u64().unwrap() as usize,
+            a_settlement: f["a_settlement"].as_i64().unwrap() as i32,
+        };
+        assert!(
+            (r.a_win_rate() - case["a_win_rate"].as_f64().unwrap()).abs() < 1e-12,
+            "{case}"
+        );
+        assert!(
+            (r.margin() - case["margin"].as_f64().unwrap()).abs() < 1e-12,
+            "{case}"
+        );
+    }
+}
+
+#[test]
+fn ratings_fit_as_recorded() {
+    let vec = vectors("tournament.json");
+    for fit in vec["fits"].as_array().unwrap() {
+        let name = fit["results"].as_str().unwrap();
+        let group: Vec<DuelResult> = vec["results"][name]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(duel_result)
+            .collect();
+        let anchor = fit["anchor"].as_str();
+        let got = ratings(&group, anchor, 500, 0.5);
+        let want = fit["ratings"].as_object().unwrap();
+        assert_eq!(got.len(), want.len(), "{name}, anchored on {anchor:?}");
+        for (agent, value) in got {
+            let expected = want[&agent].as_f64().unwrap();
+            assert!(
+                (value - expected).abs() < 1e-9,
+                "{name}, anchored on {anchor:?}: {agent} rates {value}, not {expected}"
+            );
+        }
+    }
+}

@@ -1488,3 +1488,48 @@ def test_the_solver_agent_still_plays_these_cards():
             t.followed.code for t in finished.tricks
         ]
         assert played == game["cards_played"], where
+
+
+# -- match: the move log ---------------------------------------------------------
+
+
+def test_the_move_log_still_records_these_decisions():
+    """The training log, decision by decision, compared as parsed JSON."""
+    from piquet.heuristics import HeuristicAgent
+    from piquet.match import DealRecord, play_deal
+    from piquet.rules import deal_from
+    from piquet.style import BALANCED
+
+    vec = load("match")
+    for game in vec["games"]:
+        pack = [Card.parse(code) for code in vec["packs"][game["pack"]]]
+        e, y = game["elder_level"], game["younger_level"]
+        elder = HeuristicAgent(level=e, style=BALANCED, erraticism=0.0, name=f"L{e}")
+        younger = HeuristicAgent(level=y, style=BALANCED, erraticism=0.0, name=f"L{y}")
+        record = DealRecord(deal=3, elder_agent=elder.name, younger_agent=younger.name)
+        _, record = play_deal(elder, younger, deal=deal_from(pack), record=record)
+        line = json.dumps(record.as_dict(), separators=(",", ":"))
+        assert json.loads(line) == game["record"], f"{game['pack']}: L{e} vs L{y}"
+
+
+# -- tournament: the arithmetic of strength ----------------------------------------
+
+
+def test_results_and_ratings_come_out_as_recorded():
+    from piquet.tournament import DuelResult, PartieResult, ratings
+
+    vec = load("tournament")
+    for case in vec["properties"]:
+        r = DuelResult(**case["result"])
+        assert r.a_win_rate == pytest.approx(case["a_win_rate"], abs=1e-12), case
+        assert r.margin == pytest.approx(case["margin"], abs=1e-12), case
+    for case in vec["partie_properties"]:
+        r = PartieResult(**case["result"])
+        assert r.a_win_rate == pytest.approx(case["a_win_rate"], abs=1e-12), case
+        assert r.margin == pytest.approx(case["margin"], abs=1e-12), case
+    for fit in vec["fits"]:
+        group = [DuelResult(**r) for r in vec["results"][fit["results"]]]
+        got = ratings(group, anchor=fit["anchor"])
+        assert got.keys() == fit["ratings"].keys(), fit
+        for name, value in fit["ratings"].items():
+            assert got[name] == pytest.approx(value, abs=1e-9), (fit["results"], fit["anchor"], name)

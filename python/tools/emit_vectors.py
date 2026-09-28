@@ -44,7 +44,8 @@ from piquet.inference import (  # noqa: E402
     opponent_played,
     possible_hands,
 )
-from piquet.match import play_deal  # noqa: E402
+from piquet.match import DealRecord, play_deal  # noqa: E402
+from piquet.tournament import DuelResult, PartieResult, ratings  # noqa: E402
 from piquet.style import BALANCED  # noqa: E402
 from piquet.solver import (  # noqa: E402
     SolverAgent,
@@ -1819,6 +1820,149 @@ def emit_inference() -> dict:
     }
 
 
+def emit_match() -> dict:
+    """The move log: every decision in a deal, as `play_deal` records it.
+
+    The heuristics vectors pin what the ladder *plays*; these pin what the
+    log *says* about it -- each decision's ply, seat, phase, agent, hand,
+    choice, options and forgone, and the deal's summary -- which is the
+    training log Andrew asked for, "so the correlation between training
+    epochs and skill gained can be analyzed later". Deterministic on the
+    same seam as the heuristics vectors: erraticism zero, BALANCED.
+
+    The packs are chosen for what the record must carry: the pack in index
+    order gives elder a repique and a declaration spelled with a non-ASCII
+    letter ("sixième"); every 23rd card gives a pique.
+    """
+    deck = full_deck()
+    packs = {
+        "the pack in index order": _pack_identity(),
+        "the pack reversed": _pack_reversed(),
+        "the pack taken every 7th card": [deck[(i * 7) % 32].code for i in range(32)],
+        "the pack taken every 23rd card": [deck[(i * 23) % 32].code for i in range(32)],
+    }
+    games = []
+    for pack_name, pack_codes in packs.items():
+        for elder_level, younger_level in ((1, 4), (4, 1), (3, 2)):
+            elder = HeuristicAgent(
+                level=elder_level, style=BALANCED, erraticism=0.0, name=f"L{elder_level}"
+            )
+            younger = HeuristicAgent(
+                level=younger_level, style=BALANCED, erraticism=0.0, name=f"L{younger_level}"
+            )
+            record = DealRecord(deal=3, elder_agent=elder.name, younger_agent=younger.name)
+            deal = deal_from([Card.parse(c) for c in pack_codes])
+            _, record = play_deal(elder, younger, deal=deal, record=record)
+            games.append(
+                {
+                    "pack": pack_name,
+                    "elder_level": elder_level,
+                    "younger_level": younger_level,
+                    "record": record.as_dict(),
+                }
+            )
+    bonuses = {g["record"]["bonus"] for g in games}
+    assert {"elder repique", "elder pique"} <= bonuses, bonuses
+    return {
+        "module": "match",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "The move log of whole deals, decision by decision, on written-down "
+            "packs between deterministic agents (erraticism 0, BALANCED). The "
+            "record is compared as parsed JSON: a writer may escape non-ASCII "
+            "or not, and both parse to the same log. `deal` is the number the "
+            "caller gave the record (3 here), not something the deal knows."
+        ),
+        "packs": packs,
+        "games": games,
+    }
+
+
+def emit_tournament() -> dict:
+    """The arithmetic of measuring strength: win rates, margins, ratings.
+
+    The duels themselves draw their deals from a seeded generator, which no
+    two languages share, so what is pinned is everything after the cards:
+    what a result's win rate and margin are, and the Bradley-Terry ratings a
+    set of results fits to -- with Laplace's prior keeping a shut-out finite,
+    an anchor setting the zero, and an anchor that played nobody ignored.
+    """
+    def duel_result(a, b, pairs, a_wins, b_wins, drawn, a_points, b_points):
+        return DuelResult(a, b, pairs, a_wins, b_wins, drawn, a_points, b_points)
+
+    results = {
+        "even": [duel_result("L1", "L2", 10, 5, 5, 0, 300, 300)],
+        "one side better": [duel_result("L1", "L2", 40, 10, 26, 4, 1100, 1480)],
+        "a shut-out": [duel_result("L1", "L4", 20, 0, 20, 0, 400, 900)],
+        "no pairs at all": [duel_result("L1", "L2", 0, 0, 0, 0, 0, 0)],
+        "a round robin": [
+            duel_result("L1", "L2", 30, 11, 16, 3, 820, 910),
+            duel_result("L1", "L3", 30, 8, 20, 2, 760, 1010),
+            duel_result("L2", "L3", 30, 12, 15, 3, 870, 930),
+        ],
+        "a pairing played twice": [
+            duel_result("L1", "L2", 10, 3, 6, 1, 250, 320),
+            duel_result("L1", "L2", 10, 5, 5, 0, 300, 290),
+        ],
+    }
+    properties = [
+        {
+            "result": _duel(r),
+            "a_win_rate": r.a_win_rate,
+            "margin": r.margin,
+        }
+        for group in results.values()
+        for r in group
+    ]
+    partie_properties = []
+    for fields in (("A", "B", 12, 7, 4, 1, 530), ("A", "B", 0, 0, 0, 0, 0), ("A", "B", 5, 0, 5, 0, -900)):
+        r = PartieResult(*fields)
+        partie_properties.append(
+            {
+                "result": dict(zip(
+                    ("name_a", "name_b", "pairs", "a_wins", "b_wins", "drawn", "a_settlement"), fields
+                )),
+                "a_win_rate": r.a_win_rate,
+                "margin": r.margin,
+            }
+        )
+    fits = []
+    for name, group in results.items():
+        if name == "no pairs at all":
+            continue  # nothing to fit, and the oracle divides by zero games
+        for anchor in (None, group[0].name_a, "nobody"):
+            fits.append(
+                {
+                    "results": name,
+                    "anchor": anchor,
+                    "ratings": ratings(group, anchor=anchor),
+                }
+            )
+    return {
+        "module": "tournament",
+        "generator": "tools/emit_vectors.py",
+        "note": (
+            "Duel and partie results' win rates and margins, and the Bradley-Terry "
+            "ratings (500 sweeps, prior 0.5) of sets of results, with and without "
+            "an anchor. Ratings are floats: compare within 1e-9. With no pairs a "
+            "result is even -- a win rate of one half, not zero. An anchor that "
+            "played nobody is ignored, and the geometric mean is the zero."
+        ),
+        "results": {name: [_duel(r) for r in group] for name, group in results.items()},
+        "properties": properties,
+        "partie_properties": partie_properties,
+        "fits": fits,
+    }
+
+
+def _duel(r: DuelResult) -> dict:
+    return {
+        "name_a": r.name_a, "name_b": r.name_b, "pairs": r.pairs,
+        "a_wins": r.a_wins, "b_wins": r.b_wins, "drawn": r.drawn,
+        "a_points": r.a_points, "b_points": r.b_points,
+    }
+
+
 def main() -> int:
     VECTORS.mkdir(exist_ok=True)
     for name, build in (
@@ -1834,6 +1978,8 @@ def main() -> int:
         ("chances", emit_chances),
         ("heuristics", emit_heuristics),
         ("inference", emit_inference),
+        ("match", emit_match),
+        ("tournament", emit_tournament),
     ):
         path = VECTORS / f"{name}.json"
         path.write_text(json.dumps(build(), indent=2, ensure_ascii=False) + "\n")

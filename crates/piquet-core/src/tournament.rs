@@ -26,9 +26,11 @@ pub struct DuelResult {
 }
 
 impl DuelResult {
+    /// Draws count as half, as they do in chess; with no pairs at all the
+    /// result is even.
     pub fn a_win_rate(&self) -> f64 {
         if self.pairs == 0 {
-            return 0.0;
+            return 0.5;
         }
         (self.a_wins as f64 + 0.5 * self.drawn as f64) / self.pairs as f64
     }
@@ -159,8 +161,10 @@ pub fn ratings(
         strength = updated.iter().map(|v| v * scale).collect();
     }
 
+    // An anchor that played nobody is ignored, as the oracle ignores it.
     let base = anchor
-        .map(|name| strength[index(name)])
+        .and_then(|name| names.iter().position(|n| n == name))
+        .map(|i| strength[i])
         .filter(|s| *s != 0.0)
         .unwrap_or_else(|| {
             (strength.iter().map(|v| v.ln()).sum::<f64>() / names.len() as f64).exp()
@@ -189,9 +193,10 @@ pub struct PartieResult {
 }
 
 impl PartieResult {
+    /// As a duel's: draws count half, and no pairs is even.
     pub fn a_win_rate(&self) -> f64 {
         if self.pairs == 0 {
-            return 0.0;
+            return 0.5;
         }
         (self.a_wins as f64 + 0.5 * self.drawn as f64) / self.pairs as f64
     }

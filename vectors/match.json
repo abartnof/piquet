@@ -1,0 +1,4177 @@
+{
+  "module": "match",
+  "generator": "tools/emit_vectors.py",
+  "note": "The move log of whole deals, decision by decision, on written-down packs between deterministic agents (erraticism 0, BALANCED). The record is compared as parsed JSON: a writer may escape non-ASCII or not, and both parse to the same log. `deal` is the number the caller gave the record (3 here), not something the deal knows.",
+  "packs": {
+    "the pack in index order": [
+      "7C",
+      "8C",
+      "9C",
+      "TC",
+      "JC",
+      "QC",
+      "KC",
+      "AC",
+      "7D",
+      "8D",
+      "9D",
+      "TD",
+      "JD",
+      "QD",
+      "KD",
+      "AD",
+      "7H",
+      "8H",
+      "9H",
+      "TH",
+      "JH",
+      "QH",
+      "KH",
+      "AH",
+      "7S",
+      "8S",
+      "9S",
+      "TS",
+      "JS",
+      "QS",
+      "KS",
+      "AS"
+    ],
+    "the pack reversed": [
+      "AS",
+      "KS",
+      "QS",
+      "JS",
+      "TS",
+      "9S",
+      "8S",
+      "7S",
+      "AH",
+      "KH",
+      "QH",
+      "JH",
+      "TH",
+      "9H",
+      "8H",
+      "7H",
+      "AD",
+      "KD",
+      "QD",
+      "JD",
+      "TD",
+      "9D",
+      "8D",
+      "7D",
+      "AC",
+      "KC",
+      "QC",
+      "JC",
+      "TC",
+      "9C",
+      "8C",
+      "7C"
+    ],
+    "the pack taken every 7th card": [
+      "7C",
+      "AC",
+      "KD",
+      "QH",
+      "JS",
+      "TC",
+      "9D",
+      "8H",
+      "7S",
+      "AS",
+      "KC",
+      "QD",
+      "JH",
+      "TS",
+      "9C",
+      "8D",
+      "7H",
+      "AH",
+      "KS",
+      "QC",
+      "JD",
+      "TH",
+      "9S",
+      "8C",
+      "7D",
+      "AD",
+      "KH",
+      "QS",
+      "JC",
+      "TD",
+      "9H",
+      "8S"
+    ],
+    "the pack taken every 23rd card": [
+      "7C",
+      "AH",
+      "KD",
+      "QC",
+      "JS",
+      "TH",
+      "9D",
+      "8C",
+      "7S",
+      "AD",
+      "KC",
+      "QS",
+      "JH",
+      "TD",
+      "9C",
+      "8S",
+      "7H",
+      "AC",
+      "KS",
+      "QH",
+      "JD",
+      "TC",
+      "9S",
+      "8H",
+      "7D",
+      "AS",
+      "KH",
+      "QD",
+      "JC",
+      "TS",
+      "9H",
+      "8D"
+    ]
+  },
+  "games": [
+    {
+      "pack": "the pack in index order",
+      "elder_level": 1,
+      "younger_level": 4,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L1",
+        "younger_agent": "L4",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L1",
+            "hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+            "choice": "7C 8C 9C 7D 8D",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L4",
+            "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+            "choice": "7H 8H 9H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC 9D TD 7S 8S 9S TS JS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC 9D TD 7S 8S 9S TS JS",
+            "choice": "quint to the ace, quint to the jack",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "quint to the ace, quart to the ace, tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC 9D TD 7S 8S 9S TS JS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC 9D TD 7S 8S 9S TS JS",
+            "choice": "AC",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "TH",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC 9D TD 7S 8S 9S TS JS",
+            "choice": "KC",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JD QD KD AD JH QH KH AH QS KS AS",
+            "choice": "JD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC 9D TD 7S 8S 9S TS JS",
+            "choice": "QC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD AD JH QH KH AH QS KS AS",
+            "choice": "JH",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC 9D TD 7S 8S 9S TS JS",
+            "choice": "JS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD AD QH KH AH QS KS AS",
+            "choice": "QS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD AD QH KH AH KS AS",
+            "choice": "AD",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC 9D TD 7S 8S 9S TS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD QH KH AH KS AS",
+            "choice": "AH",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC 9D 7S 8S 9S TS",
+            "choice": "JC",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD QH KH KS AS",
+            "choice": "AS",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC 9D 7S 8S 9S TS",
+            "choice": "TS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD QH KH KS",
+            "choice": "KD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC 9D 7S 8S 9S",
+            "choice": "9D",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD QH KH KS",
+            "choice": "KH",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC 7S 8S 9S",
+            "choice": "TC",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD QH KS",
+            "choice": "KS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7S 8S 9S",
+            "choice": "9S",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD QH",
+            "choice": "QD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7S 8S",
+            "choice": "8S",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QH",
+            "choice": "QH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7S",
+            "choice": "7S",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 4,
+        "younger_score": 29,
+        "elder_tricks": 3,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack in index order",
+      "elder_level": 4,
+      "younger_level": 1,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L4",
+        "younger_agent": "L1",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L4",
+            "hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+            "choice": "7C 8C 7D 8D 9D",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L1",
+            "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+            "choice": "7H 8H 9H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "point of 6 (60)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "sixième to the ace, quint to the jack",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "quint to the ace, quart to the ace, tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "AC",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "AS",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JC QC KC TD 7S 8S 9S TS JS",
+            "choice": "KC",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS",
+            "choice": "AH",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JC QC TD 7S 8S 9S TS JS",
+            "choice": "QC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD AD TH JH QH KH QS KS",
+            "choice": "AD",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JC TD 7S 8S 9S TS JS",
+            "choice": "JC",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD TH JH QH KH QS KS",
+            "choice": "KS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC TD 7S 8S 9S TS JS",
+            "choice": "TC",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD TH JH QH KH QS",
+            "choice": "KH",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TD 7S 8S 9S TS JS",
+            "choice": "9C",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD KD TH JH QH QS",
+            "choice": "KD",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TD 7S 8S 9S TS JS",
+            "choice": "JS",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD TH JH QH QS",
+            "choice": "QS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD TH JH QH",
+            "choice": "QH",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TD 7S 8S 9S TS",
+            "choice": "7S",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD QD TH JH",
+            "choice": "QD",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TD 8S 9S TS",
+            "choice": "TD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD TH JH",
+            "choice": "JH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "8S 9S TS",
+            "choice": "8S",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JD TH",
+            "choice": "JD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9S TS",
+            "choice": "9S",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TH",
+            "choice": "TH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 104,
+        "younger_score": 16,
+        "elder_tricks": 6,
+        "bonus": "elder repique"
+      }
+    },
+    {
+      "pack": "the pack in index order",
+      "elder_level": 3,
+      "younger_level": 2,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L3",
+        "younger_agent": "L2",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L3",
+            "hand": "7C 8C 9C TC JC QC KC AC 7D 8D 9D TD",
+            "choice": "7C 8C 7D 8D 9D",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L2",
+            "hand": "JD QD KD AD 7H 8H 9H TH JH QH KH AH",
+            "choice": "7H 8H 9H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L3",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "point of 6 (60)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L2",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L3",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "sixième to the ace, quint to the jack",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L2",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "quint to the ace, quart to the ace, tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L3",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L2",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TC JC QC KC AC TD 7S 8S 9S TS JS",
+            "choice": "AC",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "JD QD KD AD TH JH QH KH AH QS KS AS",
+            "choice": "TH",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TC JC QC KC TD 7S 8S 9S TS JS",
+            "choice": "KC",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "JD QD KD AD JH QH KH AH QS KS AS",
+            "choice": "JD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TC JC QC TD 7S 8S 9S TS JS",
+            "choice": "QC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QD KD AD JH QH KH AH QS KS AS",
+            "choice": "JH",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TC JC TD 7S 8S 9S TS JS",
+            "choice": "JC",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QD KD AD QH KH AH QS KS AS",
+            "choice": "QD",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TC TD 7S 8S 9S TS JS",
+            "choice": "TC",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD AD QH KH AH QS KS AS",
+            "choice": "QH",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9C TD 7S 8S 9S TS JS",
+            "choice": "9C",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD AD KH AH QS KS AS",
+            "choice": "QS",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TD 7S 8S 9S TS JS",
+            "choice": "JS",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD AD KH AH KS AS",
+            "choice": "KS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD AD KH AH AS",
+            "choice": "AD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TD 7S 8S 9S TS",
+            "choice": "TD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD KH AH AS",
+            "choice": "AH",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7S 8S 9S TS",
+            "choice": "7S",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD KH AS",
+            "choice": "AS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "8S 9S TS",
+            "choice": "8S",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD KH",
+            "choice": "KD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "9S TS",
+            "choice": "9S",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KH",
+            "choice": "KH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 104,
+        "younger_score": 16,
+        "elder_tricks": 6,
+        "bonus": "elder repique"
+      }
+    },
+    {
+      "pack": "the pack reversed",
+      "elder_level": 1,
+      "younger_level": 4,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L1",
+        "younger_agent": "L4",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L1",
+            "hand": "JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+            "choice": "JH 7S 8S 9S TS",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L4",
+            "hand": "7D 8D 9D TD JD QD KD AD 7H 8H 9H TH",
+            "choice": "7H 8H 9H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH AH JS QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "point of 8 (75)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH AH JS QS KS AS",
+            "choice": "quint to the ace, quart to the ace, tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "huitième to the ace, tierce to the nine",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH AH JS QS KS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH AH JS QS KS AS",
+            "choice": "AS",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "7C",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH AH JS QS KS",
+            "choice": "AH",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "TH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC AC QH KH JS QS KS",
+            "choice": "AC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "8C 9C 7D 8D 9D TD JD QD KD AD",
+            "choice": "8C",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC QH KH JS QS KS",
+            "choice": "KS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C 7D 8D 9D TD JD QD KD AD",
+            "choice": "7D",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC QH KH JS QS",
+            "choice": "KH",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C 8D 9D TD JD QD KD AD",
+            "choice": "9C",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC KC QH JS QS",
+            "choice": "KC",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "8D 9D TD JD QD KD AD",
+            "choice": "8D",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC QH JS QS",
+            "choice": "QS",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9D TD JD QD KD AD",
+            "choice": "9D",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC QH JS",
+            "choice": "QH",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TD JD QD KD AD",
+            "choice": "TD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC QC JS",
+            "choice": "QC",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JD QD KD AD",
+            "choice": "JD",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC JS",
+            "choice": "JS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QD KD AD",
+            "choice": "QD",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC JC",
+            "choice": "JC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "KD AD",
+            "choice": "AD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "TC",
+            "choice": "TC",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "KD",
+            "choice": "KD",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 62,
+        "younger_score": 29,
+        "elder_tricks": 12,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack reversed",
+      "elder_level": 4,
+      "younger_level": 1,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L4",
+        "younger_agent": "L1",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L4",
+            "hand": "JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+            "choice": "JH QH 7S 8S 9S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L1",
+            "hand": "7D 8D 9D TD JD QD KD AD 7H 8H 9H TH",
+            "choice": "7D 8D 7H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "7C 8C 9C 9D TD JD QD KD AD 8H 9H TH",
+            "choice": "point of 6 (60)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "quint to the ace, quint to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "7C 8C 9C 9D TD JD QD KD AD 8H 9H TH",
+            "choice": "sixième to the ace, tierce to the ten, tierce to the nine",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "trio of aces, trio of kings",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "7C 8C 9C 9D TD JD QD KD AD 8H 9H TH",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "AC",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7C 8C 9C 9D TD JD QD KD AD 8H 9H TH",
+            "choice": "9C",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC QC KC KH AH TS JS QS KS AS",
+            "choice": "AS",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7C 8C 9D TD JD QD KD AD 8H 9H TH",
+            "choice": "AD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC QC KC KH AH TS JS QS KS",
+            "choice": "KC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7C 8C 9D TD JD QD KD 8H 9H TH",
+            "choice": "8C",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC QC KH AH TS JS QS KS",
+            "choice": "KS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7C 9D TD JD QD KD 8H 9H TH",
+            "choice": "KD",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC QC KH AH TS JS QS",
+            "choice": "QC",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7C 9D TD JD QD 8H 9H TH",
+            "choice": "7C",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC KH AH TS JS QS",
+            "choice": "QS",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D TD JD QD 8H 9H TH",
+            "choice": "QD",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC KH AH TS JS",
+            "choice": "AH",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D TD JD 8H 9H TH",
+            "choice": "TH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC JC KH TS JS",
+            "choice": "JC",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D TD JD 8H 9H",
+            "choice": "JD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC KH TS JS",
+            "choice": "JS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D TD 8H 9H",
+            "choice": "TD",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC KH TS",
+            "choice": "KH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D 8H 9H",
+            "choice": "9H",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TC TS",
+            "choice": "TC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9D 8H",
+            "choice": "9D",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "8H",
+            "choice": "8H",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 59,
+        "younger_score": 28,
+        "elder_tricks": 12,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack reversed",
+      "elder_level": 3,
+      "younger_level": 2,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L3",
+        "younger_agent": "L2",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L3",
+            "hand": "JH QH KH AH 7S 8S 9S TS JS QS KS AS",
+            "choice": "JH QH 7S 8S 9S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L2",
+            "hand": "7D 8D 9D TD JD QD KD AD 7H 8H 9H TH",
+            "choice": "7H 8H 9H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L3",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "point of 5 (51)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L2",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "point of 8 (75)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L3",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "quint to the ace, quint to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L2",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "huitième to the ace, tierce to the nine",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L3",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "trio of aces, trio of kings",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L2",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC QC KC AC KH AH TS JS QS KS AS",
+            "choice": "AC",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "7C 8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "7C",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC QC KC KH AH TS JS QS KS AS",
+            "choice": "AS",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "8C 9C 7D 8D 9D TD JD QD KD AD TH",
+            "choice": "7D",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC QC KC KH AH TS JS QS KS",
+            "choice": "KC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "8C 9C 8D 9D TD JD QD KD AD TH",
+            "choice": "8C",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC QC KH AH TS JS QS KS",
+            "choice": "KS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C 8D 9D TD JD QD KD AD TH",
+            "choice": "8D",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC QC KH AH TS JS QS",
+            "choice": "QC",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C 9D TD JD QD KD AD TH",
+            "choice": "9C",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC KH AH TS JS QS",
+            "choice": "QS",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9D TD JD QD KD AD TH",
+            "choice": "9D",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC KH AH TS JS",
+            "choice": "AH",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TD JD QD KD AD TH",
+            "choice": "TH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC JC KH TS JS",
+            "choice": "JC",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TD JD QD KD AD",
+            "choice": "TD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC KH TS JS",
+            "choice": "JS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "JD QD KD AD",
+            "choice": "JD",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC KH TS",
+            "choice": "KH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QD KD AD",
+            "choice": "QD",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TC TS",
+            "choice": "TC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "KD AD",
+            "choice": "KD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "AD",
+            "choice": "AD",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 59,
+        "younger_score": 29,
+        "elder_tricks": 12,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack taken every 7th card",
+      "elder_level": 1,
+      "younger_level": 4,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L1",
+        "younger_agent": "L4",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L1",
+            "hand": "7C TC KC AC 9D QD KD 8H QH 7S JS AS",
+            "choice": "7C TC 9D 8H 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L4",
+            "hand": "8C 9C QC 8D JD 7H TH JH AH 9S TS KS",
+            "choice": "8C 8D 7H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "point of 4 (40)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "tierce to the jack, tierce to the ten",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "AS",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "8S",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS",
+            "choice": "AD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C QC TD JD 9H TH JH AH 9S TS KS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC AC 7D QD KD QH KH JS QS",
+            "choice": "AC",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C QC JD 9H TH JH AH 9S TS KS",
+            "choice": "9C",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC 7D QD KD QH KH JS QS",
+            "choice": "KH",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QC JD 9H TH JH AH 9S TS KS",
+            "choice": "AH",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QC JD 9H TH JH 9S TS KS",
+            "choice": "KS",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC 7D QD KD QH JS QS",
+            "choice": "QS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QC JD 9H TH JH 9S TS",
+            "choice": "JH",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC 7D QD KD QH JS",
+            "choice": "QH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC 7D QD KD JS",
+            "choice": "KD",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QC JD 9H TH 9S TS",
+            "choice": "JD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC KC 7D QD JS",
+            "choice": "KC",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QC 9H TH 9S TS",
+            "choice": "QC",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC 7D QD JS",
+            "choice": "QD",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9H TH 9S TS",
+            "choice": "9H",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC 7D JS",
+            "choice": "JS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TH 9S TS",
+            "choice": "9S",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC 7D",
+            "choice": "JC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TH TS",
+            "choice": "TH",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7D",
+            "choice": "7D",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 34,
+        "younger_score": 7,
+        "elder_tricks": 10,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack taken every 7th card",
+      "elder_level": 4,
+      "younger_level": 1,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L4",
+        "younger_agent": "L1",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L4",
+            "hand": "7C TC KC AC 9D QD KD 8H QH 7S JS AS",
+            "choice": "7C TC 9D 8H 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L1",
+            "hand": "8C 9C QC 8D JD 7H TH JH AH 9S TS KS",
+            "choice": "8C 8D 7H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "point of 4 (40)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "tierce to the jack, tierce to the ten",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "AD",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "JD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC KC AC 7D QD KD QH KH JS QS AS",
+            "choice": "AC",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C QC TD 9H TH JH AH 8S 9S TS KS",
+            "choice": "QC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC KC 7D QD KD QH KH JS QS AS",
+            "choice": "KD",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TD 9H TH JH AH 8S 9S TS KS",
+            "choice": "TD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC KC 7D QD QH KH JS QS AS",
+            "choice": "KC",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C 9H TH JH AH 8S 9S TS KS",
+            "choice": "9C",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC 7D QD QH KH JS QS AS",
+            "choice": "AS",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH JH AH 8S 9S TS KS",
+            "choice": "KS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC 7D QD QH KH JS QS",
+            "choice": "QS",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH JH AH 8S 9S TS",
+            "choice": "TS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC 7D QD QH KH JS",
+            "choice": "QD",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH JH AH 8S 9S",
+            "choice": "AH",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC 7D QH KH JS",
+            "choice": "JC",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH JH 8S 9S",
+            "choice": "JH",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "7D QH KH JS",
+            "choice": "JS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH 8S 9S",
+            "choice": "9S",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "7D QH KH",
+            "choice": "7D",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H TH 8S",
+            "choice": "TH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QH KH",
+            "choice": "KH",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H 8S",
+            "choice": "9H",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "QH",
+            "choice": "QH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "8S",
+            "choice": "8S",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 65,
+        "younger_score": 4,
+        "elder_tricks": 12,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack taken every 7th card",
+      "elder_level": 3,
+      "younger_level": 2,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L3",
+        "younger_agent": "L2",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L3",
+            "hand": "7C TC KC AC 9D QD KD 8H QH 7S JS AS",
+            "choice": "7C TC 9D 8H 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L2",
+            "hand": "8C 9C QC 8D JD 7H TH JH AH 9S TS KS",
+            "choice": "8C 8D 7H",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L3",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L2",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "point of 4 (40)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L3",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "tierce to the ace",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L2",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "tierce to the jack, tierce to the ten",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L3",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L2",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC KC AC 7D QD KD AD QH KH JS QS AS",
+            "choice": "AD",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C QC TD JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC KC AC 7D QD KD QH KH JS QS AS",
+            "choice": "AC",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C QC JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "9C",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC KC 7D QD KD QH KH JS QS AS",
+            "choice": "KD",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QC JD 9H TH JH AH 8S 9S TS KS",
+            "choice": "JD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC KC 7D QD QH KH JS QS AS",
+            "choice": "AS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QC 9H TH JH AH 8S 9S TS KS",
+            "choice": "8S",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC KC 7D QD QH KH JS QS",
+            "choice": "KC",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "QC 9H TH JH AH 9S TS KS",
+            "choice": "QC",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC 7D QD QH KH JS QS",
+            "choice": "QD",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9H TH JH AH 9S TS KS",
+            "choice": "9H",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC 7D QH KH JS QS",
+            "choice": "JC",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH JH AH 9S TS KS",
+            "choice": "9S",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7D QH KH JS QS",
+            "choice": "KH",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH JH AH TS KS",
+            "choice": "AH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH JH TS KS",
+            "choice": "KS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7D QH JS QS",
+            "choice": "JS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH JH TS",
+            "choice": "JH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7D QH QS",
+            "choice": "QH",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7D QS",
+            "choice": "QS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "7D",
+            "choice": "7D",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TH",
+            "choice": "TH",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 34,
+        "younger_score": 7,
+        "elder_tricks": 10,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack taken every 23rd card",
+      "elder_level": 1,
+      "younger_level": 4,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L1",
+        "younger_agent": "L4",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L1",
+            "hand": "7C 8C QC KC 9D KD AD TH AH 7S JS QS",
+            "choice": "7C 8C 9D TH 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L4",
+            "hand": "9C TC AC TD JD 7H 8H JH QH 8S 9S KS",
+            "choice": "7H 8H 8S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "point of 3 (30)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "tierce to the ace, tierce to the king",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "AS",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "9S",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS",
+            "choice": "AH",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD 9H JH QH TS KS",
+            "choice": "9H",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD AD KH JS QS",
+            "choice": "AD",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC 8D TD JD JH QH TS KS",
+            "choice": "8D",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD KH JS QS",
+            "choice": "KH",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC TD JD JH QH TS KS",
+            "choice": "JH",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD KD JS QS",
+            "choice": "KD",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC TD JD QH TS KS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC KC 7D QD JS QS",
+            "choice": "KC",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC AC JD QH TS KS",
+            "choice": "AC",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JD QH TS KS",
+            "choice": "KS",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC 7D QD JS QS",
+            "choice": "QS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JD QH TS",
+            "choice": "QH",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC 7D QD JS",
+            "choice": "QD",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C TC JD TS",
+            "choice": "TC",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC QC 7D JS",
+            "choice": "QC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC 7D JS",
+            "choice": "JS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C JD TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "JC 7D",
+            "choice": "JC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "9C JD",
+            "choice": "9C",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "7D",
+            "choice": "7D",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JD",
+            "choice": "JD",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 39,
+        "younger_score": 6,
+        "elder_tricks": 8,
+        "bonus": null
+      }
+    },
+    {
+      "pack": "the pack taken every 23rd card",
+      "elder_level": 4,
+      "younger_level": 1,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L4",
+        "younger_agent": "L1",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L4",
+            "hand": "7C 8C QC KC 9D KD AD TH AH 7S JS QS",
+            "choice": "7C 8C 9D TH 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L1",
+            "hand": "9C TC AC TD JD 7H 8H JH QH 8S 9S KS",
+            "choice": "7H 8H 8S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L1",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "point of 3 (30)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "tierce to the ace, tierce to the king",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L1",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L1",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "AD",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "JD",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KD KH AH JS QS AS",
+            "choice": "KD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D TD 9H JH QH 9S TS KS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KH AH JS QS AS",
+            "choice": "AH",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D 9H JH QH 9S TS KS",
+            "choice": "QH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KH JS QS AS",
+            "choice": "AS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D 9H JH 9S TS KS",
+            "choice": "KS",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KH JS QS",
+            "choice": "QS",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D 9H JH 9S TS",
+            "choice": "TS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D QD KH JS",
+            "choice": "QD",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 8D 9H JH 9S",
+            "choice": "8D",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D KH JS",
+            "choice": "KH",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 9H JH 9S",
+            "choice": "JH",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D JS",
+            "choice": "JS",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 9H 9S",
+            "choice": "9S",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC 7D",
+            "choice": "7D",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC AC 9H",
+            "choice": "AC",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC KC",
+            "choice": "KC",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C TC 9H",
+            "choice": "TC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC QC",
+            "choice": "QC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9C 9H",
+            "choice": "9C",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L4",
+            "hand": "JC",
+            "choice": "JC",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L1",
+            "hand": "9H",
+            "choice": "9H",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 102,
+        "younger_score": 0,
+        "elder_tricks": 12,
+        "bonus": "elder pique"
+      }
+    },
+    {
+      "pack": "the pack taken every 23rd card",
+      "elder_level": 3,
+      "younger_level": 2,
+      "record": {
+        "deal": 3,
+        "elder_agent": "L3",
+        "younger_agent": "L2",
+        "decisions": [
+          {
+            "ply": 1,
+            "player": "elder",
+            "phase": "elder_exchange",
+            "agent": "L3",
+            "hand": "7C 8C QC KC 9D KD AD TH AH 7S JS QS",
+            "choice": "7C 8C 9D TH 7S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 2,
+            "player": "younger",
+            "phase": "younger_exchange",
+            "agent": "L2",
+            "hand": "9C TC AC TD JD 7H 8H JH QH 8S 9S KS",
+            "choice": "7H 8H 8S",
+            "options": null,
+            "forgone": null
+          },
+          {
+            "ply": 3,
+            "player": "elder",
+            "phase": "declare_point",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "point of 4 (38)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 4,
+            "player": "younger",
+            "phase": "declare_point",
+            "agent": "L2",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "point of 3 (30)",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 5,
+            "player": "elder",
+            "phase": "declare_sequences",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "tierce to the ace, tierce to the king",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 6,
+            "player": "younger",
+            "phase": "declare_sequences",
+            "agent": "L2",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "sunk",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 7,
+            "player": "elder",
+            "phase": "declare_sets",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "trio of aces, trio of kings, trio of queens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 8,
+            "player": "younger",
+            "phase": "declare_sets",
+            "agent": "L2",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "trio of tens",
+            "options": null,
+            "forgone": 0
+          },
+          {
+            "ply": 9,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KD AD KH AH JS QS AS",
+            "choice": "AD",
+            "options": 12,
+            "forgone": null
+          },
+          {
+            "ply": 10,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC 8D TD JD 9H JH QH 9S TS KS",
+            "choice": "8D",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 11,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KD KH AH JS QS AS",
+            "choice": "KD",
+            "options": 11,
+            "forgone": null
+          },
+          {
+            "ply": 12,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC TD JD 9H JH QH 9S TS KS",
+            "choice": "TD",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 13,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KH AH JS QS AS",
+            "choice": "AH",
+            "options": 10,
+            "forgone": null
+          },
+          {
+            "ply": 14,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC JD 9H JH QH 9S TS KS",
+            "choice": "9H",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 15,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KH JS QS AS",
+            "choice": "AS",
+            "options": 9,
+            "forgone": null
+          },
+          {
+            "ply": 16,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC JD JH QH 9S TS KS",
+            "choice": "9S",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 17,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D QD KH JS QS",
+            "choice": "QD",
+            "options": 8,
+            "forgone": null
+          },
+          {
+            "ply": 18,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC JD JH QH TS KS",
+            "choice": "JD",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 19,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D KH JS QS",
+            "choice": "KH",
+            "options": 7,
+            "forgone": null
+          },
+          {
+            "ply": 20,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC JH QH TS KS",
+            "choice": "JH",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 21,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC 7D JS QS",
+            "choice": "7D",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 22,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "9C TC AC QH TS KS",
+            "choice": "9C",
+            "options": 6,
+            "forgone": null
+          },
+          {
+            "ply": 23,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC KC JS QS",
+            "choice": "KC",
+            "options": 5,
+            "forgone": null
+          },
+          {
+            "ply": 24,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TC AC QH TS KS",
+            "choice": "AC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 25,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TC QH TS KS",
+            "choice": "KS",
+            "options": 4,
+            "forgone": null
+          },
+          {
+            "ply": 26,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC JS QS",
+            "choice": "JS",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 27,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TC QH TS",
+            "choice": "QH",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 28,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "JC QC QS",
+            "choice": "JC",
+            "options": 3,
+            "forgone": null
+          },
+          {
+            "ply": 29,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TC TS",
+            "choice": "TC",
+            "options": 2,
+            "forgone": null
+          },
+          {
+            "ply": 30,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "QC QS",
+            "choice": "QC",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 31,
+            "player": "elder",
+            "phase": "play",
+            "agent": "L3",
+            "hand": "QS",
+            "choice": "QS",
+            "options": 1,
+            "forgone": null
+          },
+          {
+            "ply": 32,
+            "player": "younger",
+            "phase": "play",
+            "agent": "L2",
+            "hand": "TS",
+            "choice": "TS",
+            "options": 1,
+            "forgone": null
+          }
+        ],
+        "elder_score": 40,
+        "younger_score": 4,
+        "elder_tricks": 9,
+        "bonus": null
+      }
+    }
+  ]
+}

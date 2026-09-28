@@ -257,12 +257,16 @@ impl DealRecord {
         younger_agent: &str,
         decisions: Vec<Decision>,
     ) -> DealRecord {
+        // Who took it and what it was, "elder repique", as the original
+        // writes it -- and the last one, as its loop leaves it (a deal holds
+        // one at most: a repique and a pique cannot both be made).
         let bonus = deal
             .log
             .events
             .iter()
+            .rev()
             .find(|e| e.category == crate::scoring::Category::Bonus)
-            .map(|e| e.detail.clone());
+            .map(|e| format!("{} {}", e.player.name(), e.detail));
         DealRecord {
             deal: number,
             elder_agent: elder_agent.to_string(),
