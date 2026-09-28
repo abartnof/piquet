@@ -11,6 +11,7 @@ import { createDeck } from "./deck.js";
 import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
 import { decodeBase64, loadEngine } from "./engine.js";
+import { STRIPS } from "./framing.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
@@ -482,6 +483,8 @@ async function main() {
     tick: (ms) => director.tick(ms),
     // With ?voice (speech is off in tests otherwise): what the voice did.
     voice: () => voice.stats(),
+    // The heights the phone's table is framed between (framing.js).
+    strips: () => STRIPS,
   };
 }
 

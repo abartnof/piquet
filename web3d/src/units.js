@@ -34,12 +34,15 @@ export const CAMERA = Object.freeze({
   widthTan: 0.44,
 });
 
-// The eye for a phone held upright: higher and nearer overhead, with a
-// wider view, over the stacked arrangement of ZONES_PORTRAIT.
+// The eye for a phone held upright, over the stacked arrangement of
+// ZONES_PORTRAIT. Its field is not fixed: framing.js fits it to the band the
+// overlay leaves, from `reach` -- how far the table's cards reach from the
+// eye's axis, up, down and to the side, as tangents, over whole parties
+// (the staging test measures it, and holds it to the table).
 export const CAMERA_PORTRAIT = Object.freeze({
-  position: Object.freeze([0, 85, 48]),
-  target: Object.freeze([0, 0, 8]),
-  fov: 56,
+  position: Object.freeze([0, 60, 62]),
+  target: Object.freeze([0, 0, 2]),
+  reach: Object.freeze({ up: 0.305, down: -0.344, across: 0.261 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
@@ -74,25 +77,27 @@ export const ZONES = Object.freeze({
   dealt: Object.freeze({ you: Object.freeze({ x: 5, z: 0 }), them: Object.freeze({ x: 5, z: -17 }) }),
 });
 
-// The same table for a phone held upright: everything drawn in within about
-// 24 cm either side, and stacked down the table instead of spread across it
-// -- their hand, their won tricks, the talon and the discards, the trick,
-// yours -- so the cards stay big enough to read on a narrow screen.
+// The same table for a phone held upright, seen from its own lower eye:
+// everything drawn in within about 20 cm either side, and stacked down the
+// table instead of spread across it -- their hand; their discards and their
+// won tricks in one row; the talon and the trick; your discards and your
+// won tricks; your hand -- so the cards stay big enough to read on a narrow
+// screen, and nothing lies behind your hand.
 export const ZONES_PORTRAIT = Object.freeze({
-  // A phone's eye is nearly overhead, and a hand at 75 degrees would be seen
-  // almost edge on; held up at 50 degrees it still reads.
+  // Held up at 50 degrees rather than 75, so the eye sees the faces nearly
+  // square on and the hand reads large.
   yourHand: Object.freeze({ centre: Object.freeze([0, 12, 33]), radius: 14, spread: 4.4, groupGap: 2, lean: 40 }),
-  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -27]), radius: 14, spread: 3.8, lean: 15 }),
-  ribbon: Object.freeze({ x: 16.5, z: -2, spacing: 1.05 }),
-  yourCut: Object.freeze({ x: -5, z: 9 }),
+  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -20]), radius: 14, spread: 3.8, lean: 15 }),
+  ribbon: Object.freeze({ x: 16.5, z: -3, spacing: 1.05 }),
+  yourCut: Object.freeze({ x: -5, z: 7 }),
   theirCut: Object.freeze({ x: 5, z: -13 }),
-  talon: Object.freeze({ x: -14, z: -4 }),
-  yourDiscards: Object.freeze({ x: -17, z: 8, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
-  theirDiscards: Object.freeze({ x: -17, z: -15 }),
-  yourPlay: Object.freeze({ x: 4.5, z: 4 }),
-  theirPlay: Object.freeze({ x: 3.3, z: -6 }),
-  yourTricks: Object.freeze({ x: -10, z: 17.5, span: 22 }),
-  theirTricks: Object.freeze({ x: -10, z: -19.5, span: 22 }),
-  pack: Object.freeze({ you: Object.freeze({ x: 9, z: 9 }), them: Object.freeze({ x: 9, z: -12 }) }),
-  dealt: Object.freeze({ you: Object.freeze({ x: -2, z: 17.5 }), them: Object.freeze({ x: -2, z: -19.5 }) }),
+  talon: Object.freeze({ x: -15, z: -5 }),
+  yourDiscards: Object.freeze({ x: -16, z: 10, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
+  theirDiscards: Object.freeze({ x: -17, z: -18 }),
+  yourPlay: Object.freeze({ x: 4.5, z: 0.5 }),
+  theirPlay: Object.freeze({ x: 1.5, z: -8 }),
+  yourTricks: Object.freeze({ x: -8, z: 10, span: 22 }),
+  theirTricks: Object.freeze({ x: -8, z: -18, span: 22 }),
+  pack: Object.freeze({ you: Object.freeze({ x: 9, z: 8 }), them: Object.freeze({ x: 9, z: -14 }) }),
+  dealt: Object.freeze({ you: Object.freeze({ x: -2, z: 8 }), them: Object.freeze({ x: -2, z: -17 }) }),
 });

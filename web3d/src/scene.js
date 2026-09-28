@@ -50,7 +50,7 @@ export function createScene(
   // Place the eye for this window: upright, or across. Explicit eye, at and
   // fov (from the page's query, for tuning) win.
   function frame(aspect) {
-    const { upright } = aim(camera, aspect, inset);
+    const { upright } = aim(camera, aspect, inset, canvas.clientHeight || undefined);
     if (eye || at || fov) {
       if (eye) camera.position.set(...eye);
       if (at) camera.lookAt(...at);

@@ -126,22 +126,6 @@ body {
   padding: 4px 8px 4px 18px;
   border-radius: 28px;
 }
-.score-chip {
-  all: unset; /* first: it resets everything after it too, display included */
-  display: none;
-  cursor: pointer;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
-  border-radius: 16px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  background: var(--md-sys-color-secondary-container);
-  color: var(--md-sys-color-on-secondary-container);
-}
-.score-chip:focus-visible {
-  outline: 2px solid var(--md-sys-color-primary);
-}
 .brand {
   font-weight: 650;
   letter-spacing: 0.02em;
@@ -438,6 +422,41 @@ body {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--md-sys-color-on-surface-variant);
+}
+/* The folded line a phone shows instead (the compact overlay, below). */
+.worth-summary {
+  all: unset; /* first: it resets everything after it too, display included */
+  display: none;
+  box-sizing: border-box;
+  width: 100%;
+  cursor: pointer;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px 8px 16px;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.worth-summary:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary);
+  outline-offset: -2px;
+  border-radius: 20px;
+}
+.worth-sum-title {
+  font-size: 12px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.worth-sum b {
+  font-weight: 800;
+}
+.worth-sum.now {
+  color: var(--md-sys-color-primary);
+  font-weight: 650;
+}
+.worth-summary .chevron {
+  margin-left: auto;
+  flex: none;
+  transition: transform 300ms var(--spring);
 }
 /* By category: its name, what it scores if good, and the holdings that
    make it up. */
@@ -1185,35 +1204,42 @@ kbd {
 
 /* A phone -- or a tablet held upright -- gets the compact overlay: the
    information runs along the top instead of down the side, and the table
-   has the whole width. */
+   has the whole width between it and the controls. The strips' heights are
+   what framing.js fits the table between (STRIPS there; the browser test
+   holds this sheet to them). */
 @media (max-width: 700px), (orientation: portrait) and (max-width: 1100px) {
-  /* One row of controls; the opponent is chosen in settings. */
+  /* The bar keeps its two buttons, stacked at the right of the top row; the
+     score has the rest of the row. */
   .bar {
-    left: 8px;
+    left: auto;
     right: 8px;
     top: 8px;
-    padding: 2px 4px 2px 12px;
-    justify-content: space-between;
-    border-radius: 24px;
+    flex-direction: column;
+    gap: 0;
+    padding: 2px;
+    border-radius: 22px;
   }
-  .bar md-outlined-select {
+  .bar md-outlined-select,
+  .brand,
+  #new {
     display: none;
   }
   .info {
     --beside: 0;
     left: 8px;
     right: 8px;
-    top: 62px;
+    top: 8px;
     bottom: auto;
     width: auto;
     gap: 6px;
   }
-  /* Folded, the running score is a chip in the top bar; a tap opens it. */
+  /* Folded, the running score is the bug; a tap opens the tab under the
+     strip. */
   .tab {
     position: absolute !important;
-    top: 0;
+    top: calc(100% + 6px);
     right: 0;
-    width: min(250px, 100%);
+    width: min(290px, 100%);
     max-height: 50vh;
     font-size: 13px;
     z-index: 2;
@@ -1224,26 +1250,84 @@ kbd {
   .tab-head {
     padding: 4px 10px 4px 14px;
   }
-  /* The live score, smaller; its caption one line. */
+  /* The live score in one row -- you, the deal, your opponent -- and the
+     caption under it. */
   .bug {
-    padding: 6px 12px 6px;
+    margin-right: 50px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0 8px;
+    padding: 5px 12px 5px;
+    cursor: pointer;
+  }
+  .side {
+    grid-row: 1;
+  }
+  .side.you {
+    grid-column: 1;
+  }
+  .side.them {
+    grid-column: 3;
+  }
+  .period {
+    grid-column: 2;
+    grid-row: 1;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    line-height: 1.25;
+  }
+  .side-name {
+    letter-spacing: 0.04em;
   }
   .side-num {
-    font-size: 30px;
+    font-size: 28px;
+    line-height: 1;
+  }
+  .rubicon-bar {
+    margin-top: 3px;
   }
   .caption {
+    grid-row: 2;
     margin-top: 4px;
-    padding-top: 4px;
+    padding-top: 3px;
     font-size: 12.5px;
   }
   .asked .note {
     display: none;
   }
-  .worth-card {
-    padding: 6px 10px;
+  /* The question, a little smaller, so most fit one line. */
+  .asked {
+    padding: 5px 12px;
   }
-  .worth-card .card-title {
+  .asked .ask {
+    font-size: 14px;
+  }
+  .hint-line {
+    margin-top: 4px;
+    font-size: 14px;
+  }
+  .hint-line .follow {
+    --md-text-button-container-height: 28px;
+  }
+  /* What your hand is worth: one line, a tap to open it. */
+  .worth-card {
+    padding: 0;
+    gap: 0;
+  }
+  .worth-summary {
+    display: flex;
+  }
+  .worth-card .card-title,
+  .worth-card:not(.open) > :not(.worth-summary) {
     display: none;
+  }
+  .worth-card.open .worth-grid,
+  .worth-card.open .note {
+    padding: 2px 12px 10px 16px;
+  }
+  .worth-card.open .worth-summary .chevron {
+    transform: rotate(180deg);
   }
   .worth-card md-chip-set {
     flex-wrap: nowrap;
@@ -1254,10 +1338,33 @@ kbd {
     right: 8px;
     bottom: 8px;
   }
+  /* A card played for you is named over the table, as a snackbar floats,
+     rather than pushing the controls up for its few seconds. */
+  .played-for-you {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    translate: -50% 0;
+    pointer-events: none;
+    width: max-content;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  /* One row under your hand: the sort and undo (Explain and Hints are in
+     Settings). */
   .tools {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
     max-width: 100%;
+  }
+  .tools {
+    padding: 2px 4px;
+  }
+  .tools md-filter-chip {
+    display: none;
+  }
+  .sort {
+    --md-outlined-segmented-button-container-height: 32px;
   }
   .options {
     gap: 4px;
@@ -1267,13 +1374,10 @@ kbd {
     --md-outlined-button-container-height: 32px;
     --md-filled-button-label-text-size: 13px;
     --md-outlined-button-label-text-size: 13px;
-  }
-  .brand,
-  #new {
-    display: none;
-  }
-  .score-chip {
-    display: inline-flex;
+    --md-filled-button-leading-space: 12px;
+    --md-filled-button-trailing-space: 12px;
+    --md-outlined-button-leading-space: 12px;
+    --md-outlined-button-trailing-space: 12px;
   }
 }
 

@@ -7,9 +7,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { Vector3 } from "three";
 import { cardCorners } from "../src/kinematics.js";
-import { cameraFor, framing } from "../src/framing.js";
+import { cameraFor, framing, STRIPS } from "../src/framing.js";
 import { layout } from "../src/layout.js";
-import { ZONES, ZONES_PORTRAIT } from "../src/units.js";
+import { CAMERA_PORTRAIT, ZONES, ZONES_PORTRAIT } from "../src/units.js";
 import { partie } from "./partie.js";
 
 const DEG = Math.PI / 180;
@@ -18,14 +18,10 @@ const normal = (p) => new Vector3(0, 0, 1).applyQuaternion(p.quaternion);
 // The angle between a card's face and the table top, in degrees.
 const toTable = (p) => 90 - Math.asin(Math.min(1, Math.abs(normal(p).y))) / DEG;
 
-// Window shapes: a laptop, a wide screen, a tablet across; a phone and a
-// tablet upright.
+// Window shapes: a laptop, a wide screen, a tablet across.
 const ACROSS = [1.6, 1.78, 1.33];
-const UPRIGHT = [0.46, 0.75];
 // The information column's share of the width, across the table.
 const INSET = 0.25;
-const insetFor = (aspect) => (framing(aspect).upright ? 0 : INSET);
-const zonesFor = (aspect) => (framing(aspect).upright ? ZONES_PORTRAIT : ZONES);
 
 test("across the table, both hands are held at 75 degrees, leaning back toward their holders", () => {
   for (const s of states) {
@@ -67,10 +63,10 @@ function overlap(a, b) {
 // The corners in order round the face, for the separating-axis test.
 const outline = (q) => [q[0], q[1], q[3], q[2]];
 
-for (const aspect of [...ACROSS, ...UPRIGHT]) {
+for (const aspect of ACROSS) {
   test(`nothing on the table hides behind your hand, at ${aspect}:1`, () => {
-    const camera = cameraFor(aspect, insetFor(aspect));
-    const zones = zonesFor(aspect);
+    const camera = cameraFor(aspect, INSET);
+    const zones = ZONES;
     for (const s of states) {
       // Every card raised as if chosen to throw, the highest a held card
       // stands: whichever one it is, it must not cover the table.
@@ -85,8 +81,8 @@ for (const aspect of [...ACROSS, ...UPRIGHT]) {
   });
 
   test(`your hand stands clear of the foot of the screen, where its controls go, at ${aspect}:1`, () => {
-    const camera = cameraFor(aspect, insetFor(aspect));
-    const zones = zonesFor(aspect);
+    const camera = cameraFor(aspect, INSET);
+    const zones = ZONES;
     for (const s of states) {
       for (const x of layout(s, { zones, eye: camera.position })) {
         if (x.zone !== "your-hand") continue;
@@ -98,9 +94,9 @@ for (const aspect of [...ACROSS, ...UPRIGHT]) {
   });
 
   test(`everything lies in the play area, clear of the information column, at ${aspect}:1`, () => {
-    const inset = insetFor(aspect);
+    const inset = INSET;
     const camera = cameraFor(aspect, inset);
-    const zones = zonesFor(aspect);
+    const zones = ZONES;
     for (const s of states) {
       for (const x of layout(s, { zones, eye: camera.position })) {
         for (const [px, py] of onScreen(x.pose, camera)) {
@@ -111,3 +107,92 @@ for (const aspect of [...ACROSS, ...UPRIGHT]) {
     }
   });
 }
+
+// ---- a phone, held upright ---------------------------------------------------
+//
+// The compact overlay's strips are a fixed number of CSS pixels -- the
+// information along the top, the controls at the foot -- so the table is
+// framed into whatever height they leave, and a shorter window leaves it
+// less. Windows as the browser gives them: an iPhone's 390 x 844, and as
+// Safari leaves it under its bars; an old small phone; an Android; a tablet.
+const PHONES = [[390, 844], [390, 664], [375, 667], [412, 915], [768, 1024]];
+const bands = (height) => ({ top: 1 - (2 * STRIPS.top) / height, foot: -1 + (2 * STRIPS.foot) / height });
+
+// The upright eye fits its field to `reach`, so the reach must be the
+// table's own: nothing beyond it, and no slack to waste on a small screen.
+test("the upright eye's reach is how far the table's cards reach", () => {
+  const eye = new Vector3(...CAMERA_PORTRAIT.position);
+  const ahead = new Vector3(...CAMERA_PORTRAIT.target).sub(eye).normalize();
+  const right = new Vector3().crossVectors(ahead, new Vector3(0, 1, 0)).normalize();
+  const up = new Vector3().crossVectors(right, ahead);
+  const seen = { up: -Infinity, down: Infinity, across: 0 };
+  for (const s of states) {
+    for (const x of layout(s, { zones: ZONES_PORTRAIT, selected: s.hand, eye })) {
+      for (const corner of cardCorners(x.pose).filter((_, i) => i % 2 === 1)) {
+        const d = corner.clone().sub(eye);
+        const [tx, ty] = [d.dot(right) / d.dot(ahead), d.dot(up) / d.dot(ahead)];
+        seen.up = Math.max(seen.up, ty);
+        seen.down = Math.min(seen.down, ty);
+        seen.across = Math.max(seen.across, Math.abs(tx));
+      }
+    }
+  }
+  const { reach } = CAMERA_PORTRAIT;
+  // What the reach should be: the table's, rounded outward.
+  const should = JSON.stringify({ up: Math.ceil(seen.up * 1e3) / 1e3, down: Math.floor(seen.down * 1e3) / 1e3, across: Math.ceil(seen.across * 1e3) / 1e3 });
+  for (const k of ["up", "across"]) assert.ok(seen[k] <= reach[k] && seen[k] > reach[k] - 0.01, `reach.${k}: the table's is ${should}`);
+  assert.ok(seen.down >= reach.down && seen.down < reach.down + 0.01, `reach.down: the table's is ${should}`);
+});
+
+for (const [w, h] of PHONES) {
+  const aspect = w / h;
+  const camera = cameraFor(aspect, 0, h);
+  const place = (s, extra = {}) => layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, ...extra });
+
+  test(`on a ${w} x ${h} phone, the table lies between the information and the controls`, () => {
+    assert.ok(framing(aspect, 0, h).upright);
+    const { top, foot } = bands(h);
+    for (const s of states) {
+      for (const x of place(s, { selected: s.hand })) {
+        for (const [px, py] of onScreen(x.pose, camera)) {
+          assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
+          assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
+          assert.ok(Math.abs(px) < 0.98, `${x.zone} at x ${px.toFixed(3)}, off the side at ${s.phase}`);
+        }
+      }
+    }
+  });
+
+  test(`on a ${w} x ${h} phone, nothing on the table hides behind your hand`, () => {
+    for (const s of states) {
+      const slots = place(s, { selected: s.hand });
+      const hand = slots.filter((x) => x.zone === "your-hand").map((x) => outline(onScreen(x.pose, camera)));
+      for (const x of slots) {
+        if (x.zone.endsWith("hand")) continue;
+        const card = outline(onScreen(x.pose, camera));
+        for (const held of hand) assert.ok(!overlap(card, held), `${x.zone} behind your hand at ${s.phase}`);
+      }
+    }
+  });
+}
+
+// Andrew's phone notes: "the hand is small". On the reference phone its
+// cards stand well over twice the corner index they carry, and the table's
+// cards are big enough to tell apart at a glance.
+test("on a phone, your hand and the table's cards are big enough to read", () => {
+  const [w, h] = PHONES[0];
+  const camera = cameraFor(w / h, 0, h);
+  const px = (corners, axis) => ((Math.max(...corners.map((c) => c[axis])) - Math.min(...corners.map((c) => c[axis]))) / 2) * h;
+  const held = [];
+  const lying = [];
+  for (const s of states) {
+    for (const x of layout(s, { zones: ZONES_PORTRAIT, eye: camera.position })) {
+      const corners = onScreen(x.pose, camera);
+      if (x.zone === "your-hand") held.push(px(corners, 1));
+      else if (!x.zone.endsWith("hand")) lying.push(px(corners, 0));
+    }
+  }
+  const median = (a) => a.sort((p, q) => p - q)[Math.floor(a.length / 2)];
+  assert.ok(median(held) >= 110, `your cards stand ${median(held).toFixed(0)} px tall`);
+  assert.ok(median(lying) >= 48, `the table's cards are ${median(lying).toFixed(0)} px wide`);
+});

@@ -100,6 +100,27 @@ def button(page, name):
     return page.get_by_role("button", name=name)
 
 
+def dull(s, n=0):
+    """The dullest legal decision, varied by n (as test/partie.js's): a few
+    cards thrown, a call in full or sunk, the first or last legal card."""
+    p = s["prompt"]
+    kind = p["kind"]
+    if kind == "cut":
+        return f"cut {2 + (n * 7) % 29}"
+    if kind == "choose_dealer":
+        return "dealer them" if n % 2 else "dealer you"
+    if kind == "exchange":
+        k = 1 + n % min(p["limit"], 3)
+        return "exchange " + " ".join(s["hand"][-k:])
+    if kind == "declare":
+        return f"declare {len(p['options']) - 1 if n % 3 == 2 else 0}"
+    if kind == "play":
+        return "play " + (p["legal"][-1] if n % 2 else p["legal"][0])
+    if kind == "next_deal":
+        return "next"
+    return None
+
+
 def check_tab(page, failures, where):
     """The running tab's deal total is the engine's score for the deal."""
     s = state(page)
@@ -318,6 +339,31 @@ def main() -> int:
         if width > 390:
             failures.append(f"a phone scrolls sideways: the page is {width}px wide")
         shot(phone, "07-phone")
+        # The table is framed between the strips framing.js assumes: the
+        # information along the top and the controls at the foot must keep
+        # to them, whatever is asked -- two whole deals, played quickly.
+        strips = phone.evaluate("window.piquet3d.strips()")
+        worst = {"top": 0, "foot": 0}
+        for n in range(200):
+            s = state(phone)
+            if s["prompt"]["kind"] == "next_deal" and s["deal"] >= 2:
+                break
+            bands = phone.evaluate("""() => {
+                const box = (id) => { const n = document.getElementById(id); return n && !n.hidden && n.offsetParent ? n.getBoundingClientRect() : null; };
+                const top = Math.max(...["bug", "worth"].map(box).filter(Boolean).map((r) => r.bottom));
+                const controls = box("controls");
+                return { top, foot: controls && controls.height ? innerHeight - controls.top : 0 };
+            }""")
+            for k in worst:
+                if bands[k] > worst[k]:
+                    worst[k] = bands[k]
+                if bands[k] > strips[k]:
+                    failures.append(f"on a phone at {s['phase']}, the {k} strip is {bands[k]:.0f}px, over the {strips[k]}px the table is framed for")
+            command = dull(s, n)
+            if command is None:
+                break
+            phone.evaluate(f"window.piquet3d.send({command!r})")
+        print(f"  phone strips at their tallest: top {worst['top']:.0f}px, foot {worst['foot']:.0f}px (framed for {strips['top']}, {strips['foot']})")
         if phone.errors:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()

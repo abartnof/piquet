@@ -736,7 +736,7 @@ throughout.
       table; every layout and choreography invariant is tested on both
       arrangements. On a phone the running score is a chip in the top bar
       that opens the tab, and the opponent and New partie live in
-      settings. A landscape window narrower than 16:10 widens the view to
+      settings (P14 since made the score itself the tap). A landscape window narrower than 16:10 widens the view to
       keep the table's width. Three things only a real browser showed:
       the soft shadows' cost (§8.3); the dialog's buttons made unclickable
       by an inherited `pointer-events: none`; and headless Chromium
@@ -819,7 +819,7 @@ throughout.
       where the tab had used amber and teal.
       **Left for later:** the phone's table wants its own pass: the hand is
       small, the information strip covers the opponent's hand, and the held
-      hand's shadow reads as a heavy blob from the overhead eye.
+      hand's shadow reads as a heavy blob from the overhead eye. (Done: P14.)
 
 - [x] **P11 — The dialogue box, replaced by a live score (27 September).**
       Seeing the two-halves box, Andrew: *"this box ... is no good. here's
@@ -882,6 +882,47 @@ throughout.
       is 4.96 MB. `speech.js` (events -> clips, node-tested) and `voice.js`
       (playback); Settings: voice, your opponent's voice, your own calls.
       The browser test proves the page speaks.
+
+- [x] **P14 — The phone's own pass (28 September, overnight).** P10 had
+      left it: the hand small, the information strip over the opponent's
+      hand, the held hand's shadow a heavy blob. Measured first: at
+      390 x 844 the top strip took 325 px and the controls 239, over half
+      the screen — and a phone's browser shows less than its screen
+      (Safari leaves an iPhone about 664 px). So both strips were cut down
+      and the table fitted to what they leave:
+      - **Top strip, 325 -> 138 px.** The score takes one row — you, the
+        deal, your opponent — beside the bar's two buttons stacked at the
+        right; a tap on the score opens the tab (the score chip is gone).
+        What your hand is worth folds to one line ("If good: Point 5 ·
+        Sequences 3"), a tap to open it over the table.
+      - **Foot, 239 -> 190 px at its tallest** (declaring, two rows of
+        choices). One row of tools — the sort ("Combos" for short) and
+        undo; on a phone Explain and Hints are the switches in Settings.
+        The question a size smaller so most fit a line; the choices' padding
+        trimmed so three usually fit a row; "Played for you" floats over
+        the table as a snackbar instead of pushing the controls up.
+      - **The table fitted between them** (`framing.js`). Upright, the
+        field is no longer fixed: `STRIPS` holds the strips' tallest
+        heights in CSS pixels, and the field is made just tall enough for
+        the table's reach (`CAMERA_PORTRAIT.reach`, tangents from the eye)
+        to fill the band between them — or wide enough, on a squat window —
+        with the picture lifted into it by a view offset. A short window
+        gets a smaller table, never one under the controls.
+      - **A lower eye**, (0, 60, 62) looking at (0, 0, 2) instead of nearly
+        overhead: the table foreshortens, so it takes less height, and your
+        hand, held up at 50°, faces it nearly square on. The zones were
+        re-stacked for it so nothing lies behind your hand: their hand;
+        their discards and won tricks in one row; the talon and the trick;
+        your discards and won tricks; your hand.
+      - The shadow went with the eye: seen obliquely, the held hand's
+        shadow falls beside the fan rather than spreading under it.
+      Result at 390 x 844: your cards ~132 px tall (from ~60), the table's
+      ~54 px wide; at Safari's 390 x 664, ~91 px. Tested: the staging test
+      now frames real phone sizes in pixels (390 x 844 and 664, 375 x 667,
+      412 x 915, 768 x 1024) — everything between the strips, nothing
+      behind your hand, the reach the table's own, your cards at least
+      110 px tall on the reference phone — and the browser test plays two
+      deals on a phone holding the page's strips to `STRIPS`.
 
 ## 14. Notes for the implementer
 

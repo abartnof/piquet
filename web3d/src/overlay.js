@@ -98,7 +98,8 @@ export function createOverlay(root, on) {
   const $ = (id) => root.querySelector(`#${id}`);
   // The compact overlay (a phone, or a tablet held upright) opens the tab on demand.
   const COMPACT = "(max-width: 700px), (orientation: portrait) and (max-width: 1100px)";
-  let tabOpen = { deal: !window.matchMedia(COMPACT).matches, partie: false };
+  const compact = window.matchMedia(COMPACT);
+  let tabOpen = { deal: !compact.matches, partie: false };
   let lastFigures = new Map();
 
   // ---- the top bar ---------------------------------------------------------
@@ -114,17 +115,8 @@ export function createOverlay(root, on) {
   gear.addEventListener("click", () => $("settings").show());
   const fresh = el("md-text-button", { id: "new" }, "New partie");
   fresh.addEventListener("click", () => on.newPartie());
-  // On a phone the running score lives in the top bar; a tap opens the tab.
-  const scoreChip = el("button", { class: "score-chip", "aria-label": "The running score", "aria-expanded": "false" });
-  scoreChip.addEventListener("click", () => {
-    const open = $("tab").classList.toggle("open");
-    scoreChip.setAttribute("aria-expanded", String(open));
-    tabOpen.deal = open || tabOpen.deal;
-    dealFold.set(tabOpen.deal);
-  });
   $("topbar").replaceChildren(
     el("span", { class: "brand" }, "Piquet"),
-    scoreChip,
     fresh,
     narrate,
     gear,
@@ -596,12 +588,16 @@ export function createOverlay(root, on) {
   // won scores every holding of it -- all your sequences, all your sets --
   // but only your best point.
   const WORTH_ORDER = [["carte_blanche", "Carte blanche"], ["point", "Point"], ["sequences", "Sequences"], ["sets", "Sets"]];
+  // On a phone the card folds to one line -- each category and what it
+  // would score -- and a tap opens it over the table.
+  let worthOpen = false;
   function renderWorth(s, ui, prefs) {
     const card = $("worth");
     const show = (s.prompt.kind === "exchange" || s.prompt.kind === "declare") && prefs.explain !== false;
     card.hidden = !show;
     if (!show) return;
     const grid = el("div", { class: "worth-grid" });
+    const line = [];
     let any = false;
     const calling = s.prompt.kind === "declare" ? s.prompt.category : null;
     for (const [category, name] of WORTH_ORDER) {
@@ -631,8 +627,22 @@ export function createOverlay(root, on) {
         el("span", { class: `worth-name${now ? " now" : ""}` }, now ? `${name} — your call` : name),
         el("span", { class: `worth-total${now ? " now" : ""}` }, String(total)),
         chips);
+      line.push(el("span", { class: `worth-sum${now ? " now" : ""}` }, `${name} `, el("b", {}, String(total))));
     }
+    const chevron = icon("expand");
+    chevron.classList.add("chevron");
+    const summary = el("button", { class: "worth-summary", "aria-expanded": String(worthOpen) },
+      el("span", { class: "worth-sum-title" }, "If good"),
+      ...(any ? line : [el("span", { class: "worth-sum" }, "your hand calls nothing yet")]),
+      chevron);
+    summary.addEventListener("click", () => {
+      worthOpen = !worthOpen;
+      card.classList.toggle("open", worthOpen);
+      summary.setAttribute("aria-expanded", String(worthOpen));
+    });
+    card.classList.toggle("open", worthOpen);
     card.replaceChildren(
+      summary,
       el("span", { class: "card-title" }, "Your hand is worth, if good"),
       any ? grid : el("span", { class: "note" }, "Your hand calls nothing yet."));
     // The category being called in view, if the card has had to scroll.
@@ -665,6 +675,13 @@ export function createOverlay(root, on) {
   });
   let lastAids = {};
   $("tools").replaceChildren(sortSet, undo, explainChip, hintChip);
+  // A phone has room for one row under your hand: the sort and undo. Its
+  // Explain and Hints are switches in Settings, and the sort's longest
+  // word is shortened.
+  const combos = sortSet.querySelector('[data-sort="combos"]');
+  const fit = () => (combos.label = compact.matches ? "Combos" : "Combinations");
+  compact.addEventListener("change", fit);
+  fit();
 
   function renderTools(s, prefs, ui) {
     // Nothing to sort, undo or hint while cutting for the deal.
@@ -704,6 +721,15 @@ export function createOverlay(root, on) {
   const period = el("div", { class: "period" });
   const said = el("p", { class: "caption", "aria-live": "polite" });
   $("bug").replaceChildren(bugYou.root, period, bugThem.root, said);
+  // On a phone the tab is folded away, and the score opens it: a tap on the
+  // score shows where the deal stands, stage by stage.
+  $("bug").addEventListener("click", () => {
+    if (!compact.matches) return;
+    const open = $("tab").classList.toggle("open");
+    $("bug").setAttribute("aria-expanded", String(open));
+    tabOpen.deal = open || tabOpen.deal;
+    dealFold.set(tabOpen.deal);
+  });
   let seen = null; // { seed, level, events }: what the bug last showed
   const calm = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -900,10 +926,6 @@ export function createOverlay(root, on) {
       sort.value = prefs.sort;
       table.value = prefs.surface ?? "random";
       theirVoice.value = prefs.opponentVoice ?? "cori";
-      scoreChip.replaceChildren(
-        el("span", { class: "you" }, String(s.score.you)),
-        el("span", { class: "dot" }, "·"),
-        el("span", { class: "them" }, String(s.score.them)));
       renderTab(s, prefs);
       renderBug(s);
       renderPlayedForYou(s);

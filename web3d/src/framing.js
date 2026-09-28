@@ -11,24 +11,47 @@
 // field widens only as far as the play area needs to keep the table's width.
 //
 // Below PORTRAIT_BELOW the table is laid out for a phone held upright, under
-// its own eye, and the information sits along the top instead.
+// its own eye, and the information sits along the top instead. There the
+// overlay's strips are fixed heights in CSS pixels, so a short window has
+// less room for the table than a tall one: the field is fitted to the band
+// between them, and the picture lifted into it.
 
 import { PerspectiveCamera } from "three";
 import { CAMERA, CAMERA_PORTRAIT, PORTRAIT_BELOW } from "./units.js";
 
-export function framing(aspect, inset = 0) {
+// The compact overlay's strips at their tallest, in CSS pixels: along the
+// top the score, and while you exchange and declare the folded line of what
+// your hand is worth; at the foot the prompt, its choices and the tools.
+// The browser test holds the page to them.
+export const STRIPS = Object.freeze({ top: 142, foot: 194 });
+
+// A phone as the tests and the page assume one, when no height is given.
+const PHONE_HEIGHT = 844;
+
+export function framing(aspect, inset = 0, height = PHONE_HEIGHT) {
   const upright = aspect < PORTRAIT_BELOW;
-  const view = upright ? CAMERA_PORTRAIT : CAMERA;
-  const area = aspect * (1 - (upright ? 0 : inset));
-  const fov = upright ? view.fov : Math.max(view.fov, (360 / Math.PI) * Math.atan(CAMERA.widthTan / area));
-  // The play area's centre, in normalised device coordinates.
-  const shift = upright ? 0 : inset;
-  return { upright, position: view.position, target: view.target, fov, shift };
+  if (!upright) {
+    const area = aspect * (1 - inset);
+    const fov = Math.max(CAMERA.fov, (360 / Math.PI) * Math.atan(CAMERA.widthTan / area));
+    // The play area's centre, in normalised device coordinates.
+    return { upright, position: CAMERA.position, target: CAMERA.target, fov, shift: inset, lift: 0 };
+  }
+  // The band between the strips, in device coordinates; the field just tall
+  // enough for the table's reach to fill it -- or, on a squat window, wide
+  // enough for its width -- and the lift that centres the table in it.
+  const { up, down, across } = CAMERA_PORTRAIT.reach;
+  const top = 1 - (2 * STRIPS.top) / height;
+  const foot = -1 + (2 * STRIPS.foot) / height;
+  const tan = Math.max((up - down) / (top - foot), across / (0.96 * aspect));
+  const lift = (top + foot) / 2 - (up + down) / (2 * tan);
+  const fov = (360 / Math.PI) * Math.atan(tan);
+  return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: 0, lift };
 }
 
-// Aim a camera as the page does, for a window of this shape.
-export function aim(camera, aspect, inset = 0) {
-  const f = framing(aspect, inset);
+// Aim a camera as the page does, for a window of this shape (and, upright,
+// this height in CSS pixels).
+export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT) {
+  const f = framing(aspect, inset, height);
   camera.position.set(...f.position);
   camera.lookAt(...f.target);
   camera.fov = f.fov;
@@ -36,13 +59,18 @@ export function aim(camera, aspect, inset = 0) {
   // three moves the frustum's left edge by near * filmOffset / filmWidth;
   // a shift of s in device coordinates is that, over half the frustum's width.
   camera.filmOffset = -f.shift * camera.getFilmWidth() * Math.tan((f.fov * Math.PI) / 360) * aspect;
+  // Upright, the lift: three moves the frustum's window down by the view
+  // offset's share of the full height, and device coordinates span two, so
+  // lifting the picture by l is an offset of l / 2 in a full height of one.
+  if (f.lift) camera.setViewOffset(aspect, 1, 0, f.lift / 2, aspect, 1);
+  else camera.clearViewOffset();
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld();
   return f;
 }
 
-export function cameraFor(aspect, inset = 0) {
+export function cameraFor(aspect, inset = 0, height = PHONE_HEIGHT) {
   const camera = new PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
-  aim(camera, aspect, inset);
+  aim(camera, aspect, inset, height);
   return camera;
 }

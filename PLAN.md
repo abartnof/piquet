@@ -173,6 +173,18 @@ spends money. The running log, newest last:
   she reckons it, as Cavendish has it. Open for Andrew: should the captions
   say *knave* and *tierce major* like the voice?
 - TODO 12 found already done (`docs/LITERATURE.md`).
+- **The phone's own pass** (`docs/TABLE3D.md` P14). Measured first: at
+  390 x 844 the strips took 564 of 844 px. Top strip 325 -> 138 px (the
+  score in one row beside two stacked buttons, a tap on it opens the tab;
+  the worth card folds to one line); foot 239 -> 190 px at its tallest
+  (one row of tools; Explain and Hints are Settings' switches on a phone;
+  "Played for you" floats). The upright field is now *fitted* to the band
+  the strips leave (`framing.js` `STRIPS`, `CAMERA_PORTRAIT.reach`), under
+  a lower eye with re-stacked zones. Your cards ~132 px tall at 390 x 844
+  (from ~60), ~91 px at Safari's 664. Staging tests at five real phone
+  sizes; the browser test holds the page's strips to `STRIPS`. For Andrew:
+  on a phone, Explain and Hints left the tools row for Settings — a call
+  he may want to make differently.
 
 ### Resume here (third session, 27 September): two threads
 
@@ -189,8 +201,8 @@ each partie.
 The overlay is now *information left, buttons under the hand*, a standing
 rule (saved to memory). Whatever he sends next is the backlog. Owed from
 this round: **the phone's table** (small hand, the info strip covering the
-opponent's hand, a heavy shadow blob). His earlier open choices (below)
-still stand.
+opponent's hand, a heavy shadow blob) -- done overnight, P14. His earlier
+open choices (below) still stand.
 
 **2. TODO 1 — the calibrated prior works; whole parties are next, and
 need Andrew's sign-off.** Measured this session: the prior is worth **+0.68
