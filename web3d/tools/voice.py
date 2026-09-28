@@ -201,6 +201,25 @@ def phrase_groups():
         ways = [(f"{words(n).capitalize()} cards.", "C"), (f"Point of {words(n)}.", "P"),
                 (f"I have {words(n)} cards.", "T"), (f"A point of {words(n)}.", "P")]
         add(f"point-{n}", *(ways if 4 <= n <= 6 else ways[:3]))
+    # The shapes called bare -- elder gives no more than he must -- and the
+    # questions for the tie-break when younger holds the same shape.
+    for length, name in enumerate(SEQUENCES, start=3):
+        add(f"seq-{length}",
+            (f"A {name}.", "C"),
+            (f"{name.capitalize()}.", "T"),
+            (f"I have a {name}.", "T"))
+    add("set-3", ("A trio.", "P"), ("Trio.", "T"), ("I have a trio.", "T"))
+    add("set-4", ("A quatorze.", "F"), ("Quatorze.", "T"), ("I have a quatorze.", "T"))
+    add("how-high",
+        ("How high?", "T"),
+        ("To what card?", "T"),
+        ("How high is it?", "T"),
+        ("And its top card?", "T"))
+    add("what-set",
+        ("Of what?", "T"),
+        ("Which are they?", "T"),
+        ("What are they?", "T"),
+        ("And what are they?", "T"))
     add("what-make",
         ("What do they make?", "C"),
         ("How many?", "Cy"),

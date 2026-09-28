@@ -261,3 +261,73 @@ From a real deal (`speech.js`, partie 3/7, deal 1):
 **Open for Andrew:** Cavendish says *knave*, *tierce major*, *quart
 minor*; the captions and the worth card say *jack* and *tierce to the ace*.
 Should the words on screen follow the voice?
+
+## 7. The audit (28 September)
+
+Andrew: *"i'm mostly concerned with audio in the declarations phase. is that
+fully wired up with audio?"*, then *"i found that after deal 1, no audio
+plays"*, and *"a code review of the audio code, + simulate a few games to
+make sure the audio passes your QC"*. What the review and the simulations
+found, and what became of it.
+
+**Defects, fixed:**
+
+1. *Your opponent's bare calls were silent.* Elder gives no more than he
+   must — "a quart", "a trio" — and there was no recording for a shape
+   without its top or rank: over 48 simulated parties, 97 of 278 of their
+   sequence calls and 134 of 264 of their set calls said nothing. Now "A
+   quart.", "A trio." (and "A quatorze.", every length) are recorded.
+2. *The tie-break was garbled when your opponent was elder.* With points of
+   equal length, "What do they make?" was never asked, the value never
+   said, "Four cards." said twice, and the answer came before the value it
+   answers — the engine reports the decision before the tie-break, and
+   `speech.js` followed its order. Now the decision carries `asked`
+   (`docs/PROTOCOL.md`; a Rust test holds it to what was said, over 59
+   parties), and the dialogue runs call — question — tie-break — answer:
+   "A quart." "How high?" "A quart major." "Good."
+3. *"What do they make?" was asked of your point even when it was not
+   needed*: your calls carry their value always. Now only when `asked`.
+4. *Speech ran ahead of the cards*: it was said when the engine answered,
+   before anything moved, so a run of your opponent's plays was counted
+   while the first card was still in the air. Now every line waits for its
+   event's moment on the animation's clock — a card's count when it lands,
+   a call as their cards stir (`choreography.js` `beats`, tested over whole
+   parties).
+5. *Two batches of speech could play out of order*, if the first was still
+   decoding its clips when the second came. Now strictly in turn.
+6. *An undo or a new partie did not silence speech still decoding.* Now it
+   does.
+7. *Every clip ever decoded was kept*, about 190 kB a second of speech.
+   Now the 160 most recent.
+8. *As elder with nothing to call, you said nothing* (heard only with your
+   own voice on). Now "Nothing."
+9. *Elder, winning on a bare call, never named what he held.* Now he names
+   it as he reckons it: "Three aces. Three kings. Six."
+
+**Suspected, not reproduced: silence after deal 1.** In headless Chromium,
+in real animated play, the voice kept speaking through deals 2 and 3, before
+the changes and after. The likeliest cause: the browser put the sound to
+sleep — Safari "interrupts" it when the window loses the audio, and a
+browser may suspend it — and the page only ever woke it from "suspended",
+and never from a click. Now it is woken from any sleeping state, on every
+click and key and when the page is shown again, and what cannot be said
+now is dropped rather than said all at once, late. Only Andrew's browser
+can confirm it.
+
+**The QC, kept as tests.** `speech.test.js` plays eight simulated parties
+(levels 1 to 4) and checks that, spoken move by move as the page speaks
+them, they say exactly what each deal says spoken whole; that every call of
+elder's is voiced as its shape; that each category runs call, then question
+and tie-break only when asked, then answer; that every count said is the
+running total; and that no line strays into another deal.
+`choreography.test.js` checks each event's moment against the cards.
+
+**For Andrew — interpretations, not defects:**
+
+- With your own voice off (the default), your half of the dialogue is
+  silent: you hear "A quart." and then "A quart major.", your "How high?"
+  unsaid. One option: voice your questions and answers even then.
+- Cavendish has each player repeat his score as he plays every card; the
+  table counts aloud only when a score is made.
+- A good point's suit ("In spades.") is not said: the engine's events do
+  not carry it.

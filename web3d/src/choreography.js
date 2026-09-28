@@ -10,13 +10,15 @@
 // on layout(next) whatever happened, and anything the reducer cannot follow --
 // an undo, a new partie -- is a single direct transition.
 //
-// choreograph(prev, next, placement, view) -> { motions, placement, duration }
+// choreograph(prev, next, placement, view) -> { motions, placement, duration, beats }
 //
 //   placement  where each of the 32 meshes is: [{ id, zone, index, code, pose }]
 //   motions    [{ id, path, delay, duration, reveal }]: `reveal` is the face a
 //              mesh shows from the start of its motion (a card turned up, or
 //              drawn), or -- as { code: null, atEnd: true } -- the face it
 //              stops showing when the motion lands (a card turned down).
+//   beats      { eventIndex: ms }: when each of next's new events is seen to
+//              happen, on the same clock -- for the voice.
 //
 // Faces follow the layout's rule: a mesh shows a face only when the state it
 // is moving towards lets the human know that card.
@@ -162,19 +164,21 @@ export function stagesBetween(prev, next) {
   let s = snapshot(prev, next);
   const stages = [];
   let cuts = [];
-  for (const e of next.events.slice(prev.events.length)) {
+  next.events.slice(prev.events.length).forEach((e, n) => {
+    const at = prev.events.length + n; // the event's index, for its moment (beats)
+    const push = (stage) => stages.push({ ...stage, at });
     switch (e.kind) {
       case "cut":
         cuts.push(e);
         if (cuts.length === 2) {
           s = { ...s, phase: "cut", prompt: { kind: "choose_dealer" }, events: [...s.events, ...cuts] };
-          stages.push({ kind: "cut", state: s, cuts });
+          push({ kind: "cut", state: s, cuts });
           cuts = [];
         }
         break;
       case "cut_again":
         s = { ...s, prompt: { kind: "cut" } };
-        stages.push({ kind: "uncut", state: s });
+        push({ kind: "uncut", state: s });
         break;
       case "deal_begins":
         s = {
@@ -186,41 +190,41 @@ export function stagesBetween(prev, next) {
           trick: null,
           tricks_played: [],
         };
-        stages.push({ kind: "deal", state: s, dealer: e.elder === "you" ? "them" : "you" });
+        push({ kind: "deal", state: s, dealer: e.elder === "you" ? "them" : "you" });
         break;
       case "exchanged":
         if (e.who === "them") {
           s = { ...s, their_discards: s.their_discards + e.count, talon_remaining: s.talon_remaining - e.count };
-          stages.push({ kind: "their-exchange", state: s });
+          push({ kind: "their-exchange", state: s });
         }
         break;
       case "drew": {
         const kept = s.hand.filter((c) => !e.discarded.includes(c));
         s = { ...s, hand: kept, discards: [...s.discards, ...e.discarded] };
-        stages.push({ kind: "discard", state: s });
+        push({ kind: "discard", state: s });
         s = { ...s, hand: [...kept, ...e.drew], talon_remaining: s.talon_remaining - e.drew.length };
-        stages.push({ kind: "draw", state: s });
+        push({ kind: "draw", state: s });
         break;
       }
       case "played": {
         const trick = s.trick ? { ...s.trick, followed: e.card } : { leader: e.who, led: e.card, followed: null };
         s = { ...s, phase: "play", hand: e.who === "you" ? s.hand.filter((c) => c !== e.card) : s.hand, trick };
-        stages.push({ kind: "play", state: s, who: e.who });
+        push({ kind: "play", state: s, who: e.who });
         break;
       }
       case "took_trick":
         s = { ...s, trick: null, tricks_played: [...s.tricks_played, { ...s.trick, winner: e.who }] };
-        stages.push({ kind: "trick", state: s, who: e.who });
+        push({ kind: "trick", state: s, who: e.who });
         break;
       case "called":
         // Your opponent's hand stirs as they call (Andrew): as many of its
         // cards as the call holds rise a little and fall back.
-        if (e.who === "them" && cardsNamed(e.said) > 0) stages.push({ kind: "declare", state: s, count: cardsNamed(e.said) });
+        if (e.who === "them" && cardsNamed(e.said) > 0) push({ kind: "declare", state: s, count: cardsNamed(e.said) });
         break;
       default:
         break; // scores and the rest move no cards
     }
-  }
+  });
   return stages;
 }
 
@@ -663,10 +667,40 @@ class Plan {
   }
 }
 
+// Stages whose moment is their start: a call is heard as the cards stir, and
+// an exchange announced as it begins. Every other card's moment is when it
+// has landed.
+const HEARD_AT_START = new Set(["declare", "their-exchange"]);
+
 export function choreograph(prev, next, placement, view = {}, options = {}) {
   const plan = new Plan(placement, view, options);
   const stages = stagesBetween(prev, next);
-  if (stages) for (const stage of stages) plan[stage.kind](stage);
+  const marks = [];
+  if (stages) {
+    for (const stage of stages) {
+      const start = plan.clock;
+      plan[stage.kind](stage);
+      marks.push({ at: stage.at, start, end: plan.clock, early: HEARD_AT_START.has(stage.kind) });
+    }
+  }
   plan.direct(next); // settle: exactly layout(next), whatever came before
-  return plan.result();
+  const result = plan.result();
+  // When each new event is seen to happen, in ms on this plan's clock -- for
+  // the voice (Andrew: the right audio "at the right occasion, and not
+  // before/after"). An event that moves no cards happens once the motion
+  // before it is done.
+  const beats = {};
+  let done = 0;
+  let m = 0;
+  for (let k = prev.events.length; k < next.events.length; k++) {
+    const own = [];
+    while (m < marks.length && marks[m].at <= k) {
+      if (marks[m].at === k) own.push(marks[m]);
+      else done = Math.max(done, marks[m].end);
+      m++;
+    }
+    beats[k] = own.length ? (own[0].early ? own[0].start : own[own.length - 1].end) : done;
+    for (const mark of own) done = Math.max(done, mark.end);
+  }
+  return { ...result, beats };
 }

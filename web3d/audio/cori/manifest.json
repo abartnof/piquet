@@ -57,6 +57,38 @@
   "point-8.0": "Eight cards.",
   "point-8.1": "Point of eight.",
   "point-8.2": "I have eight cards.",
+  "seq-3.0": "A tierce.",
+  "seq-3.1": "Tierce.",
+  "seq-3.2": "I have a tierce.",
+  "seq-4.0": "A quart.",
+  "seq-4.1": "Quart.",
+  "seq-4.2": "I have a quart.",
+  "seq-5.0": "A quint.",
+  "seq-5.1": "Quint.",
+  "seq-5.2": "I have a quint.",
+  "seq-6.0": "A sixième.",
+  "seq-6.1": "Sixième.",
+  "seq-6.2": "I have a sixième.",
+  "seq-7.0": "A septième.",
+  "seq-7.1": "Septième.",
+  "seq-7.2": "I have a septième.",
+  "seq-8.0": "A huitième.",
+  "seq-8.1": "Huitième.",
+  "seq-8.2": "I have a huitième.",
+  "set-3.0": "A trio.",
+  "set-3.1": "Trio.",
+  "set-3.2": "I have a trio.",
+  "set-4.0": "A quatorze.",
+  "set-4.1": "Quatorze.",
+  "set-4.2": "I have a quatorze.",
+  "how-high.0": "How high?",
+  "how-high.1": "To what card?",
+  "how-high.2": "How high is it?",
+  "how-high.3": "And its top card?",
+  "what-set.0": "Of what?",
+  "what-set.1": "Which are they?",
+  "what-set.2": "What are they?",
+  "what-set.3": "And what are they?",
   "what-make.0": "What do they make?",
   "what-make.1": "How many?",
   "what-make.2": "And what do they make?",
@@ -689,6 +721,58 @@
    "point-8.0",
    "point-8.1",
    "point-8.2"
+  ],
+  "seq-3": [
+   "seq-3.0",
+   "seq-3.1",
+   "seq-3.2"
+  ],
+  "seq-4": [
+   "seq-4.0",
+   "seq-4.1",
+   "seq-4.2"
+  ],
+  "seq-5": [
+   "seq-5.0",
+   "seq-5.1",
+   "seq-5.2"
+  ],
+  "seq-6": [
+   "seq-6.0",
+   "seq-6.1",
+   "seq-6.2"
+  ],
+  "seq-7": [
+   "seq-7.0",
+   "seq-7.1",
+   "seq-7.2"
+  ],
+  "seq-8": [
+   "seq-8.0",
+   "seq-8.1",
+   "seq-8.2"
+  ],
+  "set-3": [
+   "set-3.0",
+   "set-3.1",
+   "set-3.2"
+  ],
+  "set-4": [
+   "set-4.0",
+   "set-4.1",
+   "set-4.2"
+  ],
+  "how-high": [
+   "how-high.0",
+   "how-high.1",
+   "how-high.2",
+   "how-high.3"
+  ],
+  "what-set": [
+   "what-set.0",
+   "what-set.1",
+   "what-set.2",
+   "what-set.3"
   ],
   "what-make": [
    "what-make.0",

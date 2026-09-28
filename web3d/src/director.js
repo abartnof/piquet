@@ -21,7 +21,9 @@ const EASE_MS = 90; // how quickly a lift follows the pointer
 // `settled(prev, next)`, if given, runs after the engine has answered and
 // before the change is choreographed: the moment for the app to update what
 // the view shows (cards just drawn, say), so the animation lands on it.
-export function createDirector({ stage, deck, engine, view, settled, testing = false, manual = false, speed = 1 }) {
+// `timed(prev, next, beats)`, if given, runs once it is choreographed, with
+// when each new event will be seen to happen, in ms from now -- for the voice.
+export function createDirector({ stage, deck, engine, view, settled, timed, testing = false, manual = false, speed = 1 }) {
   const meshes = Array.from({ length: 32 }, () => deck.card(null));
   meshes.forEach((mesh, id) => (mesh.userData.id = id));
   let state = engine.state();
@@ -143,6 +145,10 @@ export function createDirector({ stage, deck, engine, view, settled, testing = f
   function animate(prev, next) {
     timeline.skip(); // anything still moving lands first
     const result = choreograph(prev, next, placement, view(), { pause: view().pause !== false });
+    // Each event's moment, as the timeline will play it: at its speed, or at
+    // once when nothing is animated.
+    const beats = {};
+    for (const [k, ms] of Object.entries(result.beats)) beats[k] = testing ? 0 : ms / timeline.speed;
     placement = result.placement;
     const start = now();
     for (const m of result.motions) {
@@ -168,6 +174,7 @@ export function createDirector({ stage, deck, engine, view, settled, testing = f
     if (testing) timeline.skip();
     if (testing || manual) frame();
     else wake();
+    return beats;
   }
 
   settle(state);
@@ -235,7 +242,8 @@ export function createDirector({ stage, deck, engine, view, settled, testing = f
       state = engine.state();
       if (accepted) {
         settled?.(prev, state);
-        animate(prev, state);
+        const beats = animate(prev, state);
+        timed?.(prev, state, beats);
       }
       else {
         decorate();

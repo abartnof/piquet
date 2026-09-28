@@ -182,23 +182,33 @@ async function main() {
     const drew = next.events.slice(prev.events.length).find((e) => e.kind === "drew");
     if (drew) ui.fresh = drew.drew;
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
-    // What was said, said aloud -- only what is new; an undo falls silent.
+    // An undo falls silent at once.
     if (next.events.length < prev.events.length) voice.stop();
-    else if (!TESTING || params.has("voice")) {
-      const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
-      const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
-      voice.say(lines, prefs);
-    }
+  }
+
+  // What was said, said aloud -- only what is new, and each line when its
+  // event is seen to happen on the table (Andrew: "the right audio plays at
+  // the right occasion, and not before/after").
+  function timed(prev, next, beats) {
+    if (next.events.length < prev.events.length || (TESTING && !params.has("voice"))) return;
+    const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
+    const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
+    voice.say(lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 })), prefs);
   }
 
   const voices = typeof VOICES === "object" ? VOICES : {};
   const voice = createVoice(voices);
+  // Sound may start, and be woken, from a click or a key; and when the page
+  // is shown again after another window had it.
+  for (const kind of ["pointerdown", "keydown"]) document.addEventListener(kind, () => prefs.voice && voice.wake(), { capture: true });
+  document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && prefs.voice && voice.wake());
   const director = createDirector({
     stage,
     deck,
     engine,
     view,
     settled,
+    timed,
     testing: TESTING && !params.has("manual"),
     manual: params.has("manual"),
     speed: prefs.speed,

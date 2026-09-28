@@ -78,13 +78,24 @@ def test_the_sequences_are_the_twenty_one_that_can_be_held():
     assert calls["seq-8-ace"] == "A huitième"
     assert "seq-8-king" not in calls and "seq-3-eight" not in calls
     assert texts("seq-5-ace")[0] == "A quint major."
-    assert len({gid for gid in groups() if gid.startswith("seq-")}) == 21
+    assert len({gid for gid in groups() if gid.startswith("seq-") and gid.count("-") == 2}) == 21
 
 
 def test_the_sets_are_trios_and_quatorzes_of_tens_and_above():
-    sets = {gid for gid in groups() if gid.startswith("set-")}
+    sets = {gid for gid in groups() if gid.startswith("set-") and gid.count("-") == 2}
     assert len(sets) == 10
     assert texts("set-4-ace")[0] == "Four aces." and texts("set-3-knave")[0] == "Three knaves."
+
+
+def test_the_shapes_are_called_bare_and_the_tie_breaks_asked_for():
+    # Elder gives no more than he must: "A quart." Younger, holding the
+    # same, asks: "What do they make?", "How high?", "Of what?" (Cavendish,
+    # pp. 60-67; speech.js).
+    assert "A quart." in texts("seq-4") and "A sixième." in texts("seq-6")
+    assert {f"seq-{n}" for n in range(3, 9)} <= set(groups())
+    assert "A trio." in texts("set-3") and "A quatorze." in texts("set-4")
+    assert "How high?" in texts("how-high")
+    assert "Of what?" in texts("what-set")
 
 
 def test_every_number_a_deal_can_reach_is_said():

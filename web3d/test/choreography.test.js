@@ -127,6 +127,47 @@ test("a card played is laid down after the one it answers, with a pause to think
   assert.ok(theirs.delay >= mine.delay + mine.duration, "they answer after your card is down");
 });
 
+// The voice says each thing as it is seen to happen (Andrew: the right audio
+// "at the right occasion, and not before/after"), so the choreography says
+// when each new event happens on its clock: a card's when it lands, a call as
+// your opponent's cards stir, anything else once the motion before it is done.
+test("every new event has its moment on the animation's clock, in order", () => {
+  let checked = { played: 0, called: 0, scored: 0 };
+  for (const [p, states] of parties.entries()) {
+    let placement = initialPlacement(states[0]);
+    for (let i = 1; i < states.length; i++) {
+      const prev = states[i - 1];
+      const next = states[i];
+      const result = choreograph(prev, next, placement);
+      placement = result.placement;
+      const where = `partie ${p} step ${i}`;
+      let last = 0;
+      for (let k = prev.events.length; k < next.events.length; k++) {
+        const e = next.events[k];
+        const t = result.beats[k];
+        assert.ok(Number.isFinite(t) && t >= 0 && t <= result.duration + 1e-6, `${where}: event ${k} (${e.kind}) at ${t}`);
+        assert.ok(t >= last - 1e-6, `${where}: ${e.kind} is timed before the event ahead of it`);
+        last = t;
+        if (e.kind === "played") {
+          // Not before the card is down on the table.
+          const mesh = result.placement.find((m) => m.code === e.card);
+          const first = result.motions.filter((m) => m.id === mesh.id).sort((a, b) => a.delay - b.delay)[0];
+          if (first) assert.ok(t >= first.delay + first.duration - 1e-6, `${where}: ${e.card} spoken of before it lands`);
+          checked.played++;
+        }
+        if (e.kind === "called" && e.who === "them" && cardsNamed(e.said) > 0) {
+          // As their cards stir: once the bob has begun, before it is over.
+          const bobs = result.motions.filter((m) => Math.abs(m.delay - t) < 50 * cardsNamed(e.said) + 1);
+          assert.ok(bobs.length > 0, `${where}: "${e.said}" said when no card stirs`);
+          checked.called++;
+        }
+        if (e.kind === "scored" && e.category === "play") checked.scored++;
+      }
+    }
+  }
+  assert.ok(checked.played > 100 && checked.called > 20 && checked.scored > 100, JSON.stringify(checked));
+});
+
 test("going back -- an undo -- animates straight to the earlier layout", async () => {
   const states = parties[1];
   const late = states[Math.floor(states.length / 2)];

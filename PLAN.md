@@ -239,6 +239,16 @@ Then two notes from Andrew, playing the version on GitHub:
   versioned so the change reaches a browser that had them on); in Settings,
   **Your opponent's voice: Female | Male**, a toggle, yours the other.
 
+Then *"is that fully wired up with audio?"*, *"after deal 1, no audio
+plays"*, and *"a code review of the audio code, + simulate a few games"*:
+**the audio audit** (`docs/VOICE.md` §7, `docs/TABLE3D.md` P16). Nine
+defects fixed — the worst, your opponent's bare calls unspoken (a third of
+their sequence calls, half their set calls), the tie-break out of order,
+and speech running ahead of the cards. The engine's `decided` now carries
+`asked`. The silence after deal 1 did not reproduce in Chromium; the sound
+is now woken from any sleep on every click and key — **Andrew to say which
+browser, and whether it is cured.** QC kept as tests.
+
 **Open for Andrew when he is back** (nothing below is blocked on anything
 else):
 

@@ -70,6 +70,38 @@ Sources:
 | `point-8` | Eight cards. | C |
 |  | Point of eight. | P |
 |  | I have eight cards. | T |
+| `seq-3` | A tierce. | C |
+|  | Tierce. | T |
+|  | I have a tierce. | T |
+| `seq-4` | A quart. | C |
+|  | Quart. | T |
+|  | I have a quart. | T |
+| `seq-5` | A quint. | C |
+|  | Quint. | T |
+|  | I have a quint. | T |
+| `seq-6` | A sixième. | C |
+|  | Sixième. | T |
+|  | I have a sixième. | T |
+| `seq-7` | A septième. | C |
+|  | Septième. | T |
+|  | I have a septième. | T |
+| `seq-8` | A huitième. | C |
+|  | Huitième. | T |
+|  | I have a huitième. | T |
+| `set-3` | A trio. | P |
+|  | Trio. | T |
+|  | I have a trio. | T |
+| `set-4` | A quatorze. | F |
+|  | Quatorze. | T |
+|  | I have a quatorze. | T |
+| `how-high` | How high? | T |
+|  | To what card? | T |
+|  | How high is it? | T |
+|  | And its top card? | T |
+| `what-set` | Of what? | T |
+|  | Which are they? | T |
+|  | What are they? | T |
+|  | And what are they? | T |
 | `what-make` | What do they make? | C |
 |  | How many? | Cy |
 |  | And what do they make? | T |

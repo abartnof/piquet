@@ -937,6 +937,15 @@ throughout.
       your opponent hands you the choice of deal, and remarks on a deal you
       win by thirty. Opus at 12 kb/s pays for it. `docs/VOICE.md` §3, §5.
 
+- [x] **P16 — The voice audited (28 September).** Andrew: *"a code review
+      of the audio code, + simulate a few games to make sure the audio
+      passes your QC"*. Nine defects fixed, among them your opponent's bare
+      calls unspoken, the tie-break dialogue out of order, and speech
+      running ahead of the cards — now each line waits for its event's
+      moment on the animation's clock (`choreography.js` `beats`). The
+      silence after deal 1 did not reproduce; the sound is now woken from
+      any sleep on every click and key. `docs/VOICE.md` §7 has the list.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
