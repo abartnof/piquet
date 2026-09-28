@@ -190,7 +190,7 @@ fields by kind for a client that wants to animate rather than print:
 | `exchanged` | `who`, `count` |
 | `drew` | `discarded`, `drew` (yours only) |
 | `called` | `who`, `category`, `said` — what was said aloud, never a suit |
-| `decided` | `category`, `winner` (`null` if equal) |
+| `decided` | `category`, `winner` (`null` if equal), `asked` (whether elder was asked for the tie-break -- the point's value, a sequence's top card, a set's rank -- which happens only when both hold the same shape) |
 | `showed` | `who`, `what` — a combination the opponent had to expose |
 | `scored` | `who`, `amount`, `what`, `category` — carte_blanche, point, sequences, sets, play, cards or bonus |
 | `nothing_to_call` | `category` |

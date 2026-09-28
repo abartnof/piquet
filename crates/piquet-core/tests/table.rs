@@ -735,3 +735,61 @@ fn sure_winners_play_themselves() {
         "only {found} games ever offered certain winners"
     );
 }
+
+#[test]
+fn a_decision_says_whether_the_tie_break_was_asked_for() {
+    // The point's value, a sequence's top card, a set's rank: asked for only
+    // when both players hold the same shape (Cavendish, pp. 60-67) -- and
+    // the voice asks "What do they make?" only then. So a decision says
+    // whether it was: for your opponent as elder, exactly when their call
+    // was narrated with its tie-break; for you, when you gave yours.
+    let mut seen = [[0usize; 2]; 2]; // [elder is you][asked]
+    for seed in 1..60 {
+        let mut table = Table::new(3, seed);
+        while let Some(action) = dull(&table) {
+            let before = table.events().len();
+            table.act(action).unwrap();
+            let view = table.view();
+            let events = &table.events()[before..];
+            for e in events {
+                let Event::Decided {
+                    category, asked, ..
+                } = e
+                else {
+                    continue;
+                };
+                let elder_is_you = view.me == Player::Elder;
+                let narrated = events.iter().any(|x| match x {
+                    Event::Called {
+                        who: Who::Them,
+                        category: c,
+                        said,
+                    } => {
+                        c == category
+                            && (said.contains(", making ")
+                                || said.contains(" to the ")
+                                || said.contains(" of "))
+                    }
+                    _ => false,
+                });
+                let gave = view
+                    .said
+                    .iter()
+                    .any(|a| a.category == *category && a.tiebreak.is_some());
+                let expected = if elder_is_you { gave } else { narrated };
+                assert_eq!(
+                    *asked, expected,
+                    "seed {seed}, {category:?}, elder is you: {elder_is_you}"
+                );
+                seen[usize::from(elder_is_you)][usize::from(*asked)] += 1;
+            }
+        }
+    }
+    for (elder, row) in seen.iter().enumerate() {
+        assert!(
+            row[0] > 5 && row[1] > 5,
+            "elder is you: {}; asked and not: {row:?}",
+            elder == 1
+        );
+    }
+}

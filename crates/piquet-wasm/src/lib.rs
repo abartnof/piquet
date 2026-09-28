@@ -400,9 +400,11 @@ fn event(event: &Event, deal: usize) -> String {
         Event::Decided {
             category: c,
             winner,
+            asked,
         } => {
             fields.push(("category", category(*c)));
             fields.push(("winner", or_null(winner.map(who))));
+            fields.push(("asked", asked.to_string()));
             "decided"
         }
         Event::Showed { who: w, what } => {

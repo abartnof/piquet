@@ -169,10 +169,14 @@ pub enum Event {
         category: Category,
         said: String,
     },
-    /// How a category came out: who scores it, if anyone.
+    /// How a category came out: who scores it, if anyone -- and whether
+    /// elder was asked for the tie-break (the point's value, a sequence's
+    /// top card, a set's rank), which is asked only when both hold the same
+    /// shape. The voice asks "What do they make?" only then.
     Decided {
         category: Category,
         winner: Option<Who>,
+        asked: bool,
     },
     /// A combination the opponent had to show.
     Showed {
@@ -306,7 +310,9 @@ impl Event {
             Event::Called { who, said, .. } => {
                 format!("{}: \u{201c}{said}.\u{201d}", capital(name(*who)))
             }
-            Event::Decided { category, winner } => match winner {
+            Event::Decided {
+                category, winner, ..
+            } => match winner {
                 Some(Who::You) => format!("You take {}.", category_word(*category)),
                 Some(Who::Them) => {
                     format!("{} takes {}.", capital(THEM), category_word(*category))
@@ -1071,10 +1077,20 @@ impl Table {
                         self.narrated.push(heard);
                     }
                 }
+                // What elder said in a category, as the human said or heard
+                // it: a tie-break in it means one was asked for.
+                let elder_said = if after.me == Player::Elder {
+                    &after.said
+                } else {
+                    &after.heard
+                };
                 for (category, winner) in &after.outcomes[before.outcomes.len()..] {
                     self.events.push(Event::Decided {
                         category: *category,
                         winner: winner.map(|w| self.who_is(w)),
+                        asked: elder_said
+                            .iter()
+                            .any(|a| a.category == *category && a.tiebreak.is_some()),
                     });
                 }
             }
