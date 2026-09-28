@@ -2,12 +2,13 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated 27 September 2026
-> (third session): **the 3D table has had Andrew's nine notes from playing
-> it** (`docs/TABLE3D.md` P10) — hands at 75°, shadows that follow the
-> cards, the tug, a dialogue box, controls under the hand, animated folds,
-> flourishes for big moments; and **TODO 1 has a calibrated world prior
-> fitted and waiting to be measured**.
+> holds *where we are and what is left*. Last updated 28 September 2026
+> (overnight, autonomous): the 3D table has had every note Andrew sent
+> (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
+> (P14); **the golden vectors are complete** (fourteen modules, three Rust
+> port defects found and fixed); **the terminal is a client of the core
+> session** and cuts for the deal. TODO 1 has a calibrated world prior
+> fitted and waiting for Andrew's sign-off to measure on whole parties.
 
 ## Where we are
 
@@ -21,7 +22,9 @@ is to play and send notes; "Copy game record" gives a seed and command list
 that replays any game exactly. Rebuild with `python3 web/build.py`.
 
 **And in a terminal.** `cargo run -p piquet-cli -- --level 3` sits you down
-against a named opponent for a partie of six deals, settled by the rubicon.
+against your opponent for a partie of six deals, cutting for the deal and
+settling by the rubicon -- a client of the same session (`table.rs`) as the
+browser's page.
 Four measured rungs plus the exact-endgame solver, with styles and
 erraticism, and a mirrored-pair tournament that rates them.
 
@@ -197,7 +200,41 @@ spends money. The running log, newest last:
   (from ~60), ~91 px at Safari's 664. Staging tests at five real phone
   sizes; the browser test holds the page's strips to `STRIPS`. For Andrew:
   on a phone, Explain and Hints left the tools row for Settings — a call
-  he may want to make differently.
+  he may want to make differently. A follow-up found that sorting by rank
+  fans the hand wider and dipped it ~4 px into the controls on a 375 x 667
+  phone; the phone tests now cover every sort (`fd98353`).
+- The terminal has colour (red suits, `NO_COLOR` honoured), and `chances`
+  takes a table of one's own (`density_in` and friends), as the Python does.
+  The Rust/Python parity list is now clear but for `solver.partie_aware`,
+  unported on purpose.
+- **Reload measured**: levels 1–4 replay in ~10 ms; level 5 (the solver)
+  takes 1.4–3.6 s late in a partie. See "Faster reload" below.
+- **Landscape measured**: at 1280 x 800 the controls under the hand stand
+  188 px tall in play, 197 declaring and 269 exchanging with Explain on —
+  where the staging test assumes 112 (14%). So with Explain on, the prompt
+  card covers the lower half of the fan while exchanging or declaring; the
+  corner indices stay clear. Flagged to Andrew before; now with numbers.
+
+**Open for Andrew when he is back** (nothing below is blocked on anything
+else):
+
+1. **Landscape prompt over the fan.** A proposal from his own rule ("long
+   explanations of the declarations on the left side, and shorthand on the
+   bottom"): move the prompt's explanatory line (the talon arithmetic, "what
+   do you call? Sinking a holding ...") into the left column, leaving the
+   question and the hint under the hand. Measured, that line is ~54 px
+   while exchanging (three lines of talon arithmetic) and ~19 px otherwise,
+   so it would take away most of the exchange's overlap and a little of the
+   rest; what remains is the question, the hint row and the buttons.
+2. **On a phone, Explain and Hints are in Settings only** (no room in one
+   row under the hand). Keep, or give them another home?
+3. **Faster reload at level 5** — a choice about the saved format (cache the
+   opponent's moves with its generator's state).
+4. Still open from before: captions in the voice's vocabulary (*knave*,
+   *tierce major*)? The whole-parties measurement of the prior (TODO 1)
+   needs his sign-off on runtime and cost. The tutorial-mode design
+   conversation (TODO 15). The P3 look choices. Whether to ship the prior
+   against humans.
 
 ### Resume here (third session, 27 September): two threads
 

@@ -12,9 +12,11 @@ rather than a bonus feature.
 cargo run -p piquet-cli -- --level 3
 ```
 
-That deals you a partie of six deals against a named opponent, settled by the
-rubicon. `--level 1..5` chooses how well they play; `--seed N` replays a partie
-exactly.
+That cuts for the deal and plays you a partie of six deals against your
+opponent, settled by the rubicon. `--level 1..5` chooses how well they play;
+`--seed N` replays a partie exactly, cut and played the same way. The terminal
+and the browser table are two clients of one session (`piquet_core::table`),
+so a seed is the same partie in both.
 
 ## What is here
 
