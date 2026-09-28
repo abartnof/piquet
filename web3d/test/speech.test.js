@@ -18,7 +18,7 @@ test("the point: its length called, the value asked for when needed, answered", 
     ev("decided", { category: "point", winner: "you" }),
     ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (48)" }),
   ], 1, 0);
-  assert.deepEqual(said(lines), ["you:point-5", "them:what-make", "you:n-48", "them:good", "you:n-5"]);
+  assert.deepEqual(said(lines), ["you:point-5", "them:what-make", "you:value-48", "them:good", "you:n-5"]);
 });
 
 test("sequences and sets called in full, as Cavendish calls them", () => {
@@ -57,7 +57,7 @@ test("younger never repeats a call she lost", () => {
     ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (50)" }),
     ev("called", { who: "them", category: "point", said: "point of 5" }),
   ], 1, 0);
-  assert.deepEqual(said(lines), ["you:point-5", "them:what-make", "you:n-50", "them:good", "you:n-5"]);
+  assert.deepEqual(said(lines), ["you:point-5", "them:what-make", "you:value-50", "them:good", "you:n-5"]);
 });
 
 test("younger's point, when she wins it, is named as she reckons it", () => {
@@ -94,6 +94,20 @@ test("the exchange announced when elder takes fewer than five, and the dealer ch
   assert.deepEqual(said(speech([ev("first_dealer", { deal: 0, chooser: "them", dealer: "them" })], 0, 0)), ["them:my-deal"]);
 });
 
+test("your opponent hands you the choice of deal when you cut higher", () => {
+  const lines = speech([ev("choice_of_deal", { deal: 0, who: "you" }), ev("choice_of_deal", { deal: 0, who: "them" })], 0, 0);
+  assert.deepEqual(said(lines), ["them:your-choice"]);
+});
+
+test("a deal you win handsomely is remarked on, and only such a deal", () => {
+  const big = speech([ev("deal_ends", { you: 64, them: 12 })], 1, 0);
+  assert.deepEqual(said(big), ["them:well-played"]);
+  const close = speech([ev("deal_ends", { you: 30, them: 12 })], 1, 0);
+  assert.deepEqual(said(close), []);
+  const lost = speech([ev("deal_ends", { you: 5, them: 64 })], 1, 0);
+  assert.deepEqual(said(lost), []);
+});
+
 test("a nicety at the end: congratulations if you win, good game if not", () => {
   const won = speech([ev("partie_ends", { deal: 6, you: 180, them: 90 })], 6, 0);
   assert.deepEqual(said(won), ["them:congratulations"]);
@@ -110,10 +124,11 @@ test("only what is new is said", () => {
   assert.deepEqual(said(speech(events, 1, 2)), ["them:not-good"]);
 });
 
-// Every clip the game asks for must have been recorded, in every voice.
-test("across whole parties, every clip asked for exists in the voices' inventory", () => {
+// Every clip the game asks for must have been recorded, in every voice, and
+// said in more than one way.
+test("across whole parties, every clip asked for exists in the voices' bank", () => {
   const manifest = JSON.parse(readFileSync(new URL("../audio/cori/manifest.json", import.meta.url)));
-  const have = new Set(Object.keys(manifest.phrases));
+  const have = new Set(Object.keys(manifest.groups).filter((id) => manifest.groups[id].length >= 2));
   return Promise.all([[3, 7], [1, 11], [2, 23], [3, 404]].map(([l, s]) => partie(l, s))).then((parties) => {
     let asked = 0;
     for (const states of parties) {

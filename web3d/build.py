@@ -104,17 +104,20 @@ AUDIO = HERE / "audio"
 
 def voices(kind: str) -> str:
     """The recorded phrases (web3d/tools/voice.py) as a JSON object: for each
-    voice, its manifest's particulars and every clip, base64 -- the voice at
-    the table, offline (docs/VOICE.md). Empty if none have been made."""
+    voice, its manifest's particulars, every recording (base64), and the
+    groups the page picks among -- the voice at the table, offline
+    (docs/VOICE.md, docs/PHRASES.md). Empty if none have been made."""
     out = {}
     ext = {"mp3": "mp3", "opus": "ogg"}[kind]
     for manifest in sorted(AUDIO.glob("*/manifest.json")):
         spec = json.loads(manifest.read_text())
-        clips = {p.stem: base64.b64encode(p.read_bytes()).decode("ascii") for p in sorted(manifest.parent.glob(f"*.{ext}"))}
-        missing = set(spec["phrases"]) - set(clips)
+        folder = manifest.parent
+        missing = [key for key in spec["files"] if not (folder / f"{key}.{ext}").exists()]
         if missing:
-            sys.exit(f"{manifest.parent.name}: no clip for {', '.join(sorted(missing)[:5])}: run web3d/tools/voice.py")
-        out[spec["voice"]] = {"gender": spec["gender"], "format": ext, "clips": clips, "texts": spec["phrases"]}
+            sys.exit(f"{folder.name}: no recording of {', '.join(missing[:5])}: run web3d/tools/voice.py")
+        clips = {key: base64.b64encode((folder / f"{key}.{ext}").read_bytes()).decode("ascii") for key in spec["files"]}
+        out[spec["voice"]] = {"gender": spec["gender"], "format": ext, "clips": clips,
+                              "groups": spec["groups"], "texts": spec["files"]}
     return json.dumps(out, separators=(",", ":"))
 
 

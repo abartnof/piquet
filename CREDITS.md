@@ -112,3 +112,9 @@ mathematics behind the opponents are credited in `docs/LITERATURE.md`. How
 the game is *spoken* follows Cavendish's treatise in the 1885 edition, read
 from the Internet Archive's scan
 (<https://archive.org/details/lawsofpiquetadop00caveuoft>); public domain.
+The voice's other ways of saying things (`docs/PHRASES.md`) also draw on
+A. Howard Cady, *Piquet: a Treatise on the Game* (1896,
+<https://archive.org/details/piquettreatiseon00cady>) and *Foster's Complete
+Hoyle* (<https://archive.org/details/fosterscompleteh00fost>), both public
+domain, and on pagat.com's names for the combinations; each wording is
+tagged with its source.

@@ -5,11 +5,14 @@
 // docs/VOICE.md. A pure function, so the page only plays what it returns.
 //
 // speech(events, deal, since) -> [{ who, clip }], for the events of `deal`
-// from index `since`: who is "you" or "them", clip a phrase id.
+// from index `since`: who is "you" or "them", clip a group of the bank --
+// something said in several ways, which the voice picks among (voice.js).
 
 const RANK = { ace: "ace", king: "king", queen: "queen", jack: "knave", ten: "ten", nine: "nine" };
 const LENGTH = { tierce: 3, quart: 4, quint: 5, sixième: 6, septième: 7, huitième: 8 };
 const other = (who) => (who === "you" ? "them" : "you");
+// How far ahead a deal must leave you for your opponent to say so.
+const WELL_PLAYED = 30;
 
 // A holding named in full -- "quint to the ace", "trio of queens" -- as the
 // clip Cavendish's words are recorded under; null for a bare name ("trio").
@@ -42,6 +45,9 @@ export function speech(events, deal, since = 0) {
       case "cut_again":
         if (now) say("them", "cut-again");
         break;
+      case "choice_of_deal":
+        if (now && e.who === "you") say("them", "your-choice");
+        break;
       case "exchanged":
         // Only elder announces, and only when leaving some (p. 57).
         if (now && who === elder && e.count < 5) say(who, `take-${e.count}`);
@@ -63,7 +69,7 @@ export function speech(events, deal, since = 0) {
             say(who, `point-${point[1]}`);
             if (point[2]) {
               say(other(who), "what-make");
-              say(who, `n-${point[2]}`);
+              say(who, `value-${point[2]}`);
             }
           }
           break;
@@ -99,6 +105,11 @@ export function speech(events, deal, since = 0) {
         if (count[who] > 0 && count[who] <= 170) say(who, `n-${count[who]}`);
         break;
       }
+      case "deal_ends":
+        // A deal won handsomely is remarked on -- and only such a deal, or
+        // the remark would be as tiresome as silence.
+        if (now && e.you - e.them >= WELL_PLAYED) say("them", "well-played");
+        break;
       case "partie_ends":
         if (now) say("them", e.you > e.them ? "congratulations" : "good-game");
         break;

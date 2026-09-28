@@ -327,6 +327,15 @@ def main() -> int:
             failures.append(f"no point was called aloud: {heard['said'][:8]}")
         elif heard["decoded"] == 0 or heard["failed"]:
             failures.append(f"the voice's clips did not decode: {heard}")
+        # Each thing said was said one of its ways (docs/PHRASES.md): a
+        # recording of that group, never nothing.
+        bank = talk.evaluate("Object.values(VOICES)[0].groups")
+        # Only your opponent's lines are heard: your own calls are off
+        # unless you turn them on.
+        groups = [line.split(":")[1] for line in heard["said"] if line.startswith("them:")]
+        wrong = [(g, k) for g, k in zip(groups, heard["picked"]) if k not in bank.get(g, [])]
+        if len(heard["picked"]) != len(groups) or wrong:
+            failures.append(f"the voice did not pick a way of saying each thing: {wrong[:4] or heard['picked'][:8]}")
         if talk.errors:
             failures.append(f"console errors with the voice on: {talk.errors}")
         talk.context.close()

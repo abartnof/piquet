@@ -42,12 +42,35 @@ Sources: <https://www.merriam-webster.com/dictionary/quatorze>,
 <https://en.wiktionary.org/wiki/huiti%C3%A8me>,
 <https://www.parlettgames.uk/histocs/piquet.html>.
 
-**How the voice is made to say them.** The free voices (Piper) turn text into
-sounds with espeak-ng, so what a word will sound like can be *read* before
-anything is heard: `espeak-ng -v en-gb --ipa "quatorze"` prints the phonemes.
-Each term above is fed to the voice as a respelling (or as raw phonemes) and
-checked this way against the target IPA, since these words cannot be
-listened to on the VM.
+**How the voice is made to say them: English respellings.** The free
+voices (Piper) turn text into sounds with espeak-ng, so what a word will
+sound like can be *read* before anything is heard: `espeak-ng -v en --ipa
+"cart"` prints the phonemes.
+
+The first build fed the French terms to the voices as **raw phonemes**,
+checked only by reading them. That was wrong: the male voice babbled on
+*capot* — Andrew, 28 September: *"some of the men's voice sounds kind of
+spastic. is there a 'ne ne ne' sound?"*, then, having listened, *"yes,
+verified- that one is busted"*. A voice can list a phoneme in its table
+without ever having been trained to say it. His fix: *"an obvious way is to
+use english homonyms, no?"* So every term is now **respelt as English the
+voice already knows**, which each voice says through its own trained path,
+in its own accent — checked through espeak's `en`, `en-gb` and `en-us`:
+
+| term | respelt | espeak reads it |
+|---|---|---|
+| quart | cart | kɑːt (kɑːɹt, American) |
+| quatorze | kuh-torz | kʌtɔːz |
+| capot | kuh-pot | kʌ pɒt (kʌ pɑːt, American) |
+| sixième | seez yem | siːz jɛm |
+| septième | set yem | sɛt jɛm |
+| huitième | wheat yem | wiːt jɛm |
+| piquet | pick-ett | pɪkɛt |
+
+Every recording with one of these words in it — seventeen groups, in both
+voices — was made again this way. The rest (tierce, quint, pique, repique,
+trio, carte blanche) espeak already says as the table above wants. Reading
+phonemes is a proxy; the ear is the check, and only Andrew can apply it.
 
 ## 2. How it is actually said — Cavendish, 1885
 
@@ -87,27 +110,80 @@ whether the captions should follow him too is a question for Andrew.
 win a game)"*): congratulations, well played, good game, your deal, your
 lead, another partie?
 
-## 3. What is said — the inventory
+## 3. What is said — the bank, and saying it several ways
 
 Found by having the engine play 240 parties and collecting everything said,
 then checked against the rules so that calls too rare to have come up are
 not missed. The engine's calls are **compound** — one call may name several
 holdings ("quint to the ace, tierce to the king"; "quatorze of aces, trio of
-queens") — so the voice records **atoms** and plays them in turn with a short
-pause, rather than every combination.
+queens") — so the voice records **groups** and plays them in turn with a
+short pause, rather than every combination.
 
-`web3d/tools/voice.py` holds it as code, and `test_voice.py` holds it to
-the rules: **241 atoms a voice** -- the exchange's announcements (8), carte
-blanche (2), the point by length (6) with "What do they make?" and its suit
-(5), the **21** sequences that can be held, the 10 trios and quatorzes of
-tens and above, good / not good / equal and "Nothing" (4), every number to
-**170** for counting aloud (the most a deal can score), "and", "are",
-pique, repique, capot, "And the cards", and nine niceties.
+**Nothing is said only one way.** Andrew, 28 September: *"i don't want
+*any* sounds to be repetitive- so, things like 'good', 'not good', can become
+variations like 'ah, not good' or 'not good!' etc."*, and on the price:
+*"7mb is fine"*. So each group — a moment at the table — has several
+recordings, and each speaker picks among them from a shuffled bag
+(`web3d/src/bag.js`, node-tested): every way once before any comes round
+again, and never the same way twice running.
 
-The engine's events become a queue of these atoms in `web3d/src/speech.js`
-(node-tested, including that every clip it asks for over whole parties was
-recorded), and `web3d/src/voice.js` plays them in turn, in the voice of
-whoever speaks.
+**How many ways follows how often it is heard.** Counted over twelve
+simulated parties (a scripted player against the ladder), a partie says
+about 170 things, 117 of them numbers — but spread thin: the commonest
+number is heard about five times a partie, most once or twice. The
+phrases repeat most: "Good." eight times a partie, the point's length
+six, "Not good." five, "And the cards." five. So:
+
+- **Phrases** have wordings roughly in step with how often they are
+  heard: "Good." eight, "Not good." six, "What do they make?" five, the
+  point's length four (heard about six times a partie, so each way about
+  once or twice), the rarest (a septième to a king) three. The wordings come from the period books — below — and a few
+  of the table's own, each tagged with its source in `docs/PHRASES.md`.
+- **Numbers** are the same words in several takes: three up to forty, two
+  above. Piper renders the same text differently every time (measured: two
+  renderings of "Forty-eight." differed in length by a tenth), and the takes
+  are spoken at paces 1.0, 0.93 and 1.08 besides.
+- **A point's value** is a group of its own, answering "What do they
+  make?": the number — or, in the forties, what it is *making*, as
+  Cavendish ("Forty-nine," or "Making nine") and Cady ("Forty-seven," or
+  "Making seven") both have it. The same recordings, grouped again, so
+  nothing is stored twice.
+
+**The books consulted for the wordings**, all read from the Internet
+Archive's scans:
+
+| Book | Archive identifier | What it gave |
+|---|---|---|
+| Cavendish, *The Laws of Piquet* (1885; and 1881) | `lawsofpiquetadop00caveuoft`, `lawspiquet00cavegoog` | the whole procedure (§2); "I leave a card"; "Making nine" |
+| A. Howard Cady, *Piquet: a Treatise on the Game* (1896) | `piquettreatiseon00cady` | "I take only four"; "How many?" beside "What do they make?"; "Making seven" |
+| *Foster's Complete Hoyle* (1897 and later) | `fosterscompleteh00fost` | "Quatorze aces"; "sixième to the king" for a sequence |
+| H. G. Bohn, *The Hand-book of Games* (1850) | `handbookofgamesc00bohn` | read; its one spoken phrase, "one for the last card", is not a call anyone makes aloud |
+| Hoyle, *A Short Treatise on the Game of Piquet* (1744) | `bim_eighteenth-century_a-short-treatise-on-the-_hoyle-edmond_1744` | read; nothing spoken — a treatise on play |
+| Chateauneuf, *A New Treatise on Piquet*, French and English (1770) | `bim_eighteenth-century_a-new-treatise-on-piquet_chateauneuf-mr-de_1770` | read; counts in running totals, in French ("16 & 14 d'as c'est 30") — not used |
+| Cotton, *The Compleat Gamester* (1709 printing) | `bim_eighteenth-century_the-compleat-gamester-o_cotton-charles_1709` | too poorly scanned to read |
+
+`web3d/tools/voice.py` holds the bank as code, and `test_voice.py` holds it
+to the rules and to Andrew's brief: every group has at least two ways,
+"Good." at least eight, every number to **170** (the most a deal can
+score), every sequence that can be held (**21**) and every trio and
+quatorze (10), every point value, and every recording used. **The phrases
+are written down** in `docs/PHRASES.md`, generated from the bank (Andrew:
+*"remember to write these phrases down somewhere local as well"*); a test
+keeps the two in step.
+
+The engine's events become a queue of groups in `web3d/src/speech.js`
+(node-tested, including that every group it asks for over whole parties was
+recorded, in more than one way), and `web3d/src/voice.js` picks a way for
+each and plays them in turn, in the voice of whoever speaks. Besides the
+calls, your opponent hands you the choice of deal when you cut higher
+("Your choice."), remarks on a deal you win by thirty or more ("Well
+played." — only then, or it would be as tiresome as silence), and says
+something at the end of the partie.
+
+Not yet said: the suit of a good point ("In spades." — the engine's events
+do not carry it), and the talk from the list Andrew pasted that has no event
+behind it yet (thinking aloud, asking you to cut, prompting when idle — the
+last would want a switch of its own).
 
 ## 4. The voices
 
@@ -141,7 +217,16 @@ them, and can mute your own calls or the voice altogether.
 
 ## 5. Size, measured
 
-All 241 phrases, each voice, trimmed of silence either end:
+**Now (28 September): 601 recordings a voice** in 280 groups, trimmed of
+silence either end, as Ogg Opus at **12 kb/s** mono: Cori 1,146 kB, Norman
+1,084 kB — about 1.8 kB a recording, against 2.9 kB before, the lower rate
+paying for the wordier ways of saying things. With both voices **the page
+is 6.11 MB** (voices 3.12 MB in base64), inside the 7 MB Andrew allowed for
+it (*"7mb is fine"*). 12 kb/s was chosen as the rate at which Opus is still
+wideband speech; it has not been compared by ear against 20 kb/s, and the
+build takes `voice.py --bitrate` if it should be.
+
+Before, for the record — all 241 phrases, one way each, each voice:
 
 | | Cori | Norman |
 |---|---|---|

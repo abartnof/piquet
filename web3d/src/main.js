@@ -178,7 +178,7 @@ async function main() {
   }
 
   const voices = typeof VOICES === "object" ? VOICES : {};
-  const voice = createVoice(voices, Object.values(voices)[0]?.texts ?? {});
+  const voice = createVoice(voices);
   const director = createDirector({
     stage,
     deck,

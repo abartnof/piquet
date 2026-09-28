@@ -924,6 +924,19 @@ throughout.
       110 px tall on the reference phone — and the browser test plays two
       deals on a phone holding the page's strips to `STRIPS`.
 
+- [x] **P15 — The voice, never the same twice (28 September).** Andrew:
+      *"i don't want *any* sounds to be repetitive- so, things like 'good',
+      'not good', can become variations like 'ah, not good' or 'not good!'"*
+      — and *"7mb is fine"*. Every group the voice says now has several
+      recordings, more for what is heard more ("Good." eight ways, a count
+      under forty three takes), with wordings from Cavendish, Cady and
+      Foster read afresh on the Internet Archive, each tagged with its
+      source in `docs/PHRASES.md` (generated from the bank, and tested to
+      match). `bag.js` picks among them: every way once before any again,
+      never the same twice running. A point's value can be "Making nine";
+      your opponent hands you the choice of deal, and remarks on a deal you
+      win by thirty. Opus at 12 kb/s pays for it. `docs/VOICE.md` §3, §5.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

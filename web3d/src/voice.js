@@ -3,20 +3,28 @@
 // into the page, base64, by web3d/build.py from web3d/audio/, so it works
 // offline; each is decoded the first time it is needed.
 //
-// createVoice(voices) -> { say(lines, prefs), stop() }
-//   voices: { cori: { gender, clips: { id: base64 } }, norman: {...} }
-//   lines:  [{ who: "you"|"them", clip }] from speech()
+// Everything is said in several ways (docs/PHRASES.md), and each speaker
+// picks among them without repeating themselves (bag.js).
+//
+// createVoice(voices) -> { say(lines, prefs), stop(), stats() }
+//   voices: { cori: { gender, format, clips: { key: base64 },
+//                     groups: { id: [key] }, texts: { key: words } }, ... }
+//   lines:  [{ who: "you"|"them", clip }] from speech(): clip is a group id
 //   prefs:  { voice: on/off, opponentVoice: "cori"|"norman", sayMine: on/off }
+
+import { createBags } from "./bag.js";
 
 const GAP = 0.09; // s between one speaker's phrases
 const TURN = 0.28; // s when the other speaks
 
-// Words the browser's own voice would say wrongly, respelled for it -- the
-// fallback has no phonemes (docs/VOICE.md, §1).
-const RESPELL = { quart: "cart", quatorze: "katorz", capot: "kapot", sixième: "see zyem", septième: "set yem", huitième: "weet yem" };
+// Words an English voice would say wrongly, respelt as English it knows --
+// the same table the recordings are made with (web3d/tools/voice.py,
+// docs/VOICE.md §1), for a browser speaking in its own voice.
+const RESPELL = { quart: "cart", quatorze: "kuh-torz", capot: "kuh-pot", sixième: "seez yem", septième: "set yem", huitième: "wheat yem", piquet: "pick-ett" };
 
-export function createVoice(voices, texts = {}) {
+export function createVoice(voices) {
   let context = null;
+  const pick = createBags();
   // A browser that cannot play the recorded clips (Ogg Opus: Safari before
   // 18.4) speaks the same words in its own voice instead.
   const format = Object.values(voices)[0]?.format;
@@ -27,7 +35,9 @@ export function createVoice(voices, texts = {}) {
   let next = 0; // when the queue is free, in context time
   let lastWho = null;
   let playing = [];
-  const stats = { said: [], decoded: 0, played: 0, failed: 0 };
+  const stats = { said: [], picked: [], decoded: 0, played: 0, failed: 0 };
+  // One way of saying a group, in this voice: never the same twice running.
+  const choose = (voice, clip) => pick(`${voice}/${clip}`, voices[voice]?.groups?.[clip]);
 
   // Browsers let sound start only after the player has touched the page;
   // every call comes from a click or a key, so the context is made then.
@@ -44,7 +54,7 @@ export function createVoice(voices, texts = {}) {
   function buffer(voice, clip) {
     const key = `${voice}/${clip}`;
     if (!decoded.has(key)) {
-      const data = voices[voice]?.clips?.[clip];
+      const data = clip && voices[voice]?.clips?.[clip];
       decoded.set(key, data
         ? audio()
           .decodeAudioData(Uint8Array.from(atob(data), (c) => c.charCodeAt(0)).buffer)
@@ -67,20 +77,23 @@ export function createVoice(voices, texts = {}) {
     async say(lines, prefs = {}) {
       if (!prefs.voice || !lines.length) return;
       stats.said.push(...lines.map((line) => `${line.who}:${line.clip}`));
-      if (!recorded) {
-        if (!fallback) return;
-        for (const line of lines) {
-          if (line.who === "you" && prefs.sayMine === false) continue;
-          const words = (texts[line.clip] ?? "").replace(/[A-Za-zÀ-ÿ]+/g, (w) => RESPELL[w.toLowerCase()] ?? w);
-          if (words) window.speechSynthesis.speak(new SpeechSynthesisUtterance(words));
-        }
-        return;
-      }
-      if (!audio()) return;
       const theirs = voices[prefs.opponentVoice] ? prefs.opponentVoice : Object.keys(voices)[0];
       const mine = otherVoice(theirs);
       const wanted = lines.filter((line) => line.who === "them" || prefs.sayMine !== false);
-      const buffers = await Promise.all(wanted.map((line) => buffer(line.who === "them" ? theirs : mine, line.clip)));
+      const speaker = (line) => (line.who === "them" ? theirs : mine);
+      const keys = wanted.map((line) => choose(speaker(line), line.clip));
+      stats.picked.push(...keys);
+      if (!recorded) {
+        if (!fallback) return;
+        wanted.forEach((line, i) => {
+          const text = voices[speaker(line)]?.texts?.[keys[i]] ?? "";
+          const words = text.replace(/[A-Za-zÀ-ÿ]+/g, (w) => RESPELL[w.toLowerCase()] ?? w);
+          if (words) window.speechSynthesis.speak(new SpeechSynthesisUtterance(words));
+        });
+        return;
+      }
+      if (!audio()) return;
+      const buffers = await Promise.all(wanted.map((line, i) => buffer(speaker(line), keys[i])));
       const ctx = audio();
       wanted.forEach((line, i) => {
         const clip = buffers[i];
