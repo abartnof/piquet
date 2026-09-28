@@ -369,6 +369,32 @@ elder; each has its own few.
 | **Numbers apart** — each event whole, the count its own recording | ~1,300 | 2.5 h | 19 MB | 28 MB | 37 MB | 55 MB |
 | **Phrases** — each holding and each count its own whole recording, said in turn | ~280 | 12 min | 1.5 MB | 2.2 MB | 2.8 MB | 4.1 MB |
 
+Andrew: *"go smaller for the kb/s. add whatever i remember for SNES and
+n64"* — the same three plans, as files, lower, and at what those consoles
+spent on speech:
+
+| | phrases | numbers apart | maximal |
+|---|---|---|---|
+| Opus 6 kb/s | 0.7 MB | 7.6 MB | 181 MB |
+| Opus 8 kb/s | 0.8 MB | 9.8 MB | 236 MB |
+| Opus 10 kb/s | 1.0 MB | 12.1 MB | 291 MB |
+| Opus 12 kb/s (the Piper try) | 1.2 MB | 14.4 MB | 347 MB |
+| Opus 16 kb/s | 1.5 MB | 18.9 MB | 457 MB |
+| SNES speech — BRR, 8 kHz (~36 kb/s) | 3.0 MB | 41 MB | 1.0 GB |
+| SNES speech — BRR, 16 kHz (~72 kb/s) | 6.0 MB | 81 MB | 2.0 GB |
+| N64 speech — VADPCM, 11 kHz (~50 kb/s) | 4.1 MB | 56 MB | 1.4 GB |
+| N64 speech — VADPCM, 22 kHz (~99 kb/s) | 8.2 MB | 112 MB | 2.7 GB |
+
+The consoles, from what is known of them: the SNES stored samples as BRR,
+nine bytes for sixteen samples (4.5 bits a sample), usually recorded at 8 to
+16 kHz, and all its sounds at once had to fit in 64 KB of audio RAM — about
+fourteen seconds at 8 kHz, before any music; the N64's VADPCM was also about
+4.5 bits a sample, speech usually at 11 to 22 kHz, the limit being the
+cartridge. Opus is a far better codec for the bits: at 6 to 8 kb/s it is
+telephone-band speech, about the bandwidth of an 8 kHz SNES sample and
+cleaner; from about 12 kb/s it is wideband, better than the N64's typical
+speech. Those last two comparisons are by what the codecs do, not by ear.
+
 Sizes are the recordings as files, as they would sit in the repository;
 embedded in the page they are a third larger (base64), on a page of 3.0 MB
 without them. Speech is taken at 78 ms a character, measured on the Piper
