@@ -179,6 +179,8 @@ spends money. The running log, newest last:
   instead of an even 0.5.
 - `round_robin` and `format_table` ported, with their printed forms as
   vectors.
+- The CLI's interactive half tested: sixteen scripted-console tests of
+  `HumanAgent`'s prompts and refusals, through a `Table` seam.
 - **The phone's own pass** (`docs/TABLE3D.md` P14). Measured first: at
   390 x 844 the strips took 564 of 844 px. Top strip 325 -> 138 px (the
   score in one row beside two stacked buttons, a tap on it opens the tab;
@@ -628,11 +630,14 @@ should not have to rediscover them.
 - **`solver.partie_aware` is not ported**, deliberately: it measured worse
   than the flat objective and ships off. See TODO 1, which wants the objective
   settled at the leaf rather than linearised on the way down.
-- **The interactive half of the CLI is untested.** The pure renderers have
-  tests — including the one that matters, that every card drawn parses back as
-  a card you could type — but `HumanAgent`'s prompts and re-prompts do not.
-  The Python has 43 terminal tests; the Rust has 8, and they cover a narrower
-  thing. A `Console`-style seam would make the rest testable.
+- ~~**The interactive half of the CLI is untested.**~~ **Tested** (28
+  September): the table's `Table` now takes its output and what running out
+  of input means as well as its input, and sixteen tests drive `HumanAgent`
+  from a script -- every prompt, and every way each answer is refused and
+  asked again (not a card, not held, not following, the same card twice, a
+  discard of the wrong size, a choice not on the list), the empty answer
+  calling in full, understating offered, nothing asked with nothing to call,
+  younger hearing elder's call, and walking away at the end of input.
 
 ## TODO — things owed that are not yet built
 
