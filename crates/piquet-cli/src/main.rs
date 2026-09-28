@@ -11,7 +11,7 @@
 
 mod render;
 
-use std::io::{self, BufRead, Write};
+use std::io::{self, BufRead, IsTerminal, Write};
 
 use piquet_core::agents::Agent;
 use piquet_core::cards::{Card, Hand};
@@ -68,12 +68,14 @@ trait Seat: Agent {
 struct HumanAgent {
     console: Console,
     opponent: String,
+    palette: render::Palette,
 }
 
 impl HumanAgent {
     fn show(&mut self, view: &View, legal: Option<Hand>) {
         self.console.say("");
-        self.console.say(&render::hand(view.hand, legal));
+        self.console
+            .say(&render::hand(view.hand, legal, self.palette));
     }
 }
 
@@ -220,7 +222,7 @@ impl Agent for HumanAgent {
     fn play(&mut self, view: &View) -> Card {
         let legal = view.legal_plays;
         self.show(view, Some(legal));
-        if let Some(line) = render::trick(view, "you", &self.opponent) {
+        if let Some(line) = render::trick(view, "you", &self.opponent, self.palette) {
             self.console.say(&line);
         }
         if legal != view.hand {
@@ -368,6 +370,10 @@ fn main() {
             leave: walk_away,
         },
         opponent: THEM.to_string(),
+        palette: render::Palette::detect(
+            io::stdout().is_terminal(),
+            std::env::var("NO_COLOR").ok(),
+        ),
     };
     if let Err(why) = run(&mut session, &mut human) {
         eprintln!("  {why}");
@@ -425,6 +431,7 @@ mod tests {
         let agent = HumanAgent {
             console,
             opponent: "your opponent".to_string(),
+            palette: render::PLAIN,
         };
         (agent, shown)
     }

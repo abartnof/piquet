@@ -629,8 +629,11 @@ should not have to rediscover them.
   `round_robin` and prints exactly what it printed before. The printed forms
   are golden vectors, rounding ties included (both languages round half to
   even from the exact binary value -- measured, not assumed).
-- **Colour is not ported.** `terminal.Palette` and `detect_palette` do ANSI
-  colour when the stream supports it; `piquet-cli` is plain throughout.
+- ~~**Colour is not ported.**~~ **Ported** (28 September): `render::Palette`
+  paints hearts and diamonds red -- the hand's rows and the card led -- when
+  the output is a terminal and `NO_COLOR` is not set; black is never painted,
+  so spades survive a dark terminal. (The Python's stage strip, which used
+  bold and dim, has no Rust counterpart to colour.)
 - **`chances::density` and `survival` take no custom table.** The Python
   accepts one, with the docstring inviting you to "measure your own and pass
   it as `table`" — which is exactly what a stronger ladder would want, since

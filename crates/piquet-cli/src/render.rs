@@ -13,6 +13,46 @@ use piquet_core::observation::View;
 use piquet_core::partie::Standing;
 use piquet_core::scoring::{Player, ScoreLog};
 
+/// ANSI colour, or nothing at all.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct Palette {
+    pub enabled: bool,
+}
+
+/// For anything that is not a terminal, and for the tests.
+pub const PLAIN: Palette = Palette { enabled: false };
+
+impl Palette {
+    /// Colour when there is somebody there to see it: off when the output is
+    /// not a terminal, and off when `NO_COLOR` is set and not empty -- a
+    /// convention worth honouring rather than a special case to argue about.
+    pub fn detect(terminal: bool, no_color: Option<String>) -> Palette {
+        if terminal && no_color.is_none_or(|v| v.is_empty()) {
+            Palette { enabled: true }
+        } else {
+            PLAIN
+        }
+    }
+
+    fn wrap(self, text: &str, code: &str) -> String {
+        if self.enabled {
+            format!("\x1b[{code}m{text}\x1b[0m")
+        } else {
+            text.to_string()
+        }
+    }
+
+    /// Hearts and diamonds. Never black for the others: half the world runs
+    /// a dark terminal, and the spades would vanish into it.
+    pub fn red(self, text: &str) -> String {
+        self.wrap(text, "31")
+    }
+}
+
+fn is_red(suit: Suit) -> bool {
+    suit == Suit::HEARTS || suit == Suit::DIAMONDS
+}
+
 /// Spades, hearts, diamonds, clubs -- the order a player expects to read.
 const DISPLAY_ORDER: [Suit; 4] = [Suit::SPADES, Suit::HEARTS, Suit::DIAMONDS, Suit::CLUBS];
 
@@ -26,7 +66,7 @@ pub fn suit_name(suit: Suit) -> &'static str {
 /// layout still, so the eye learns where hearts live instead of re-finding
 /// them every trick; and a void is a fact you *act* on rather than an absence,
 /// because it is exactly what lets you throw whatever you like.
-pub fn hand(hand: Hand, legal: Option<Hand>) -> String {
+pub fn hand(hand: Hand, legal: Option<Hand>, palette: Palette) -> String {
     // Nothing is narrowed, so nothing is worth marking.
     let legal = legal.filter(|l| *l != hand);
     let mut rows = Vec::new();
@@ -48,7 +88,8 @@ pub fn hand(hand: Hand, legal: Option<Hand>) -> String {
                 .collect::<Vec<_>>()
                 .join(" ")
         };
-        rows.push(format!("    {} {}", suit.symbol(), drawn));
+        let row = format!("    {} {}", suit.symbol(), drawn);
+        rows.push(if is_red(suit) { palette.red(&row) } else { row });
     }
     rows.join("\n")
 }
@@ -113,14 +154,20 @@ pub fn standing(standing: Standing, odds: Option<(f64, String)>) -> String {
     line
 }
 
-pub fn trick(view: &View, my_name: &str, their_name: &str) -> Option<String> {
+pub fn trick(view: &View, my_name: &str, their_name: &str, palette: Palette) -> Option<String> {
     let trick = view.current_trick?;
     let who = if trick.leader == view.me {
         my_name
     } else {
         their_name
     };
-    Some(format!("    {who} led {}", trick.led.code()))
+    let led = trick.led.code();
+    let led = if is_red(trick.led.suit()) {
+        palette.red(&led)
+    } else {
+        led
+    };
+    Some(format!("    {who} led {led}"))
 }
 
 #[cfg(test)]
@@ -137,7 +184,7 @@ mod tests {
     #[test]
     fn every_card_drawn_is_a_card_you_could_type() {
         let held = Hand::parse("AS KS JS TS KH QH 9H 8H KD 8D 7D KC").unwrap();
-        let drawn = hand(held, None);
+        let drawn = hand(held, None, PLAIN);
         let mut found = 0;
         for token in drawn.split_whitespace() {
             let token = token.trim_matches(|c| c == '[' || c == ']');
@@ -158,7 +205,7 @@ mod tests {
         // hearts live instead of re-finding them every trick -- and a void is
         // a fact you act on, because it is what lets you throw anything.
         let held = Hand::parse("AS KS QS").unwrap();
-        let drawn = hand(held, None);
+        let drawn = hand(held, None, PLAIN);
         assert_eq!(drawn.lines().count(), 4, "one row per suit, always");
         assert_eq!(
             drawn.matches('—').count(),
@@ -171,7 +218,7 @@ mod tests {
     fn legal_plays_are_bracketed_and_nothing_else_is() {
         let held = Hand::parse("AS KS 7H 8H").unwrap();
         let legal = Hand::parse("7H 8H").unwrap();
-        let drawn = hand(held, Some(legal));
+        let drawn = hand(held, Some(legal), PLAIN);
         assert!(drawn.contains("[7H]") && drawn.contains("[8H]"));
         assert!(!drawn.contains("[AS]") && !drawn.contains("[KS]"));
     }
@@ -181,7 +228,7 @@ mod tests {
         // Marking every card when every card is legal is noise that teaches
         // the eye to ignore the brackets.
         let held = Hand::parse("AS KS 7H").unwrap();
-        assert!(!hand(held, Some(held)).contains('['));
+        assert!(!hand(held, Some(held), PLAIN).contains('['));
     }
 
     #[test]
@@ -210,5 +257,40 @@ mod tests {
         let example = for_example(held);
         let card = parse_card(&example).expect("the example must parse");
         assert!(held.contains(card), "the example must be a card you hold");
+    }
+
+    // -- colour --
+
+    #[test]
+    fn the_red_suits_are_red_and_the_black_ones_are_left_alone() {
+        // Never painted black: half the world runs a dark terminal, and the
+        // spades would vanish into it.
+        let held = Hand::parse("AS KS AH KH AD KD AC KC").unwrap();
+        let lit = hand(held, None, Palette { enabled: true });
+        let rows: Vec<&str> = lit.lines().collect();
+        assert!(
+            rows[1].contains("\x1b[31m") && rows[2].contains("\x1b[31m"),
+            "hearts and diamonds"
+        );
+        assert!(
+            !rows[0].contains('\x1b') && !rows[3].contains('\x1b'),
+            "spades and clubs"
+        );
+    }
+
+    #[test]
+    fn nothing_is_painted_when_nobody_is_watching() {
+        let held = Hand::parse("AS KS AH KH").unwrap();
+        assert!(!hand(held, None, PLAIN).contains('\x1b'));
+    }
+
+    #[test]
+    fn colour_is_on_only_for_a_terminal_and_never_against_no_color() {
+        assert!(!Palette::detect(false, None).enabled, "not a terminal");
+        assert!(Palette::detect(true, None).enabled, "a terminal");
+        // NO_COLOR: a convention worth honouring rather than a special case
+        // to argue about -- set and not empty, it turns colour off.
+        assert!(!Palette::detect(true, Some("1".into())).enabled);
+        assert!(Palette::detect(true, Some(String::new())).enabled);
     }
 }
