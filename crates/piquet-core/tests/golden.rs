@@ -2373,3 +2373,58 @@ fn the_table_prints_exactly_as_recorded() {
         );
     }
 }
+
+#[test]
+fn a_table_of_ones_own_gives_the_recorded_chances() {
+    // The Python's docstring: "measure your own and pass it as `table`". A
+    // small uneven table, so ignoring it or mixing up the seats disagrees.
+    let vec = vectors("chances.json");
+    let row = |key: &str| -> Vec<f64> {
+        vec["custom_table"][key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| p.as_f64().unwrap())
+            .collect()
+    };
+    let table = [row("elder"), row("younger")];
+    for (seat, key) in [(Player::Elder, "elder"), (Player::Younger, "younger")] {
+        assert_eq!(chances::density_in(seat, &table), &table[seat.index()][..]);
+        let want: Vec<f64> = vec["custom_survival"][key]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| p.as_f64().unwrap())
+            .collect();
+        let got = chances::survival_in(seat, &table);
+        assert_eq!(got.len(), want.len());
+        for (g, w) in got.iter().zip(&want) {
+            assert!((g - w).abs() < 1e-12, "{key}: {got:?} against {want:?}");
+        }
+    }
+    for case in vec["custom_chances"].as_array().unwrap() {
+        let got = chances::chance_of_in(
+            case["needed"].as_i64().unwrap() as i32,
+            case["deals_left"].as_u64().unwrap() as usize,
+            case["elder_first"].as_bool().unwrap(),
+            &table,
+        );
+        let want = case["chance"].as_f64().unwrap();
+        assert!((got - want).abs() < 1e-12, "{case}: {got}");
+    }
+}
+
+#[test]
+fn the_measured_table_is_the_default() {
+    let table = chances::measured();
+    for seat in [Player::Elder, Player::Younger] {
+        assert_eq!(chances::density_in(seat, table), chances::density(seat));
+        assert_eq!(chances::survival_in(seat, table), chances::survival(seat));
+    }
+    for (needed, left, first) in [(18, 1, true), (40, 2, false), (100, 6, true)] {
+        assert_eq!(
+            chances::chance_of_in(needed, left, first, table),
+            chances::chance_of(needed, left, first)
+        );
+    }
+}

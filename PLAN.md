@@ -634,10 +634,12 @@ should not have to rediscover them.
   the output is a terminal and `NO_COLOR` is not set; black is never painted,
   so spades survive a dark terminal. (The Python's stage strip, which used
   bold and dim, has no Rust counterpart to colour.)
-- **`chances::density` and `survival` take no custom table.** The Python
-  accepts one, with the docstring inviting you to "measure your own and pass
-  it as `table`" — which is exactly what a stronger ladder would want, since
-  the measured histogram is a statement about *rung-4* play.
+- ~~**`chances::density` and `survival` take no custom table.**~~ **They do**
+  (28 September): `density_in`, `survival_in`, `chance_of_in` and
+  `chance_of_the_rubicon_in` take a `Densities` of one's own, the plain
+  names reading the measured rung-4 table as before -- the Python's
+  "measure your own and pass it as `table`". A small uneven table is a
+  golden vector, so ignoring it or mixing up the seats fails.
 - **`solver.partie_aware` is not ported**, deliberately: it measured worse
   than the flat objective and ships off. See TODO 1, which wants the objective
   settled at the leaf rather than linearised on the way down.

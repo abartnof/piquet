@@ -101,20 +101,38 @@ fn normalise(counts: &[u32]) -> Vec<f64> {
         .collect()
 }
 
-/// Deal-score densities, indexed by `Player::index`.
-pub fn measured() -> &'static [Vec<f64>; 2] {
-    static MEASURED: OnceLock<[Vec<f64>; 2]> = OnceLock::new();
+/// Deal-score densities, indexed by `Player::index`: rung-4 play, measured.
+pub fn measured() -> &'static Densities {
+    static MEASURED: OnceLock<Densities> = OnceLock::new();
     MEASURED.get_or_init(|| [normalise(&ELDER_COUNTS), normalise(&YOUNGER_COUNTS)])
 }
 
+/// Deal-score densities for each seat, indexed by `Player::index`: what a
+/// deal is worth, as some population of players plays it.
+///
+/// [`measured`] is rung-4 play. The Python invites the caller to "measure
+/// your own and pass it as `table`" -- which is what a stronger ladder would
+/// want -- so each question below comes in an `_in` form that takes one.
+pub type Densities = [Vec<f64>; 2];
+
 /// P(this seat scores exactly *i*) in one deal, for i in 0..=CAP.
 pub fn density(seat: Player) -> &'static [f64] {
-    &measured()[seat.index()]
+    density_in(seat, measured())
+}
+
+/// [`density`], by a table of one's own.
+pub fn density_in(seat: Player, table: &Densities) -> &[f64] {
+    &table[seat.index()]
 }
 
 /// P(this seat scores *at least* i) in one deal.
 pub fn survival(seat: Player) -> Vec<f64> {
-    let rows = density(seat);
+    survival_in(seat, measured())
+}
+
+/// [`survival`], by a table of one's own.
+pub fn survival_in(seat: Player, table: &Densities) -> Vec<f64> {
+    let rows = density_in(seat, table);
     let mut out = vec![0.0; rows.len()];
     let mut running = 0.0;
     for i in (0..rows.len()).rev() {
@@ -147,7 +165,7 @@ fn convolve(a: &[f64], b: &[f64]) -> Vec<f64> {
 /// whichever seat it is in next. That alternation is most of the reason the
 /// two seats need separate histograms at all: elder averages about 29 a deal
 /// and younger about 20.
-fn over_several(deals_left: usize, elder_first: bool) -> Vec<f64> {
+fn over_several(deals_left: usize, elder_first: bool, table: &Densities) -> Vec<f64> {
     let mut total = vec![1.0];
     let mut elder = elder_first;
     for _ in 0..deals_left {
@@ -156,7 +174,7 @@ fn over_several(deals_left: usize, elder_first: bool) -> Vec<f64> {
         } else {
             Player::Younger
         };
-        total = convolve(&total, density(seat));
+        total = convolve(&total, density_in(seat, table));
         elder = !elder;
     }
     total
@@ -164,13 +182,18 @@ fn over_several(deals_left: usize, elder_first: bool) -> Vec<f64> {
 
 /// The chance of scoring at least `needed` over the deals that remain.
 pub fn chance_of(needed: i32, deals_left: usize, elder_first: bool) -> f64 {
+    chance_of_in(needed, deals_left, elder_first, measured())
+}
+
+/// [`chance_of`], by a table of one's own.
+pub fn chance_of_in(needed: i32, deals_left: usize, elder_first: bool, table: &Densities) -> f64 {
     if needed <= 0 {
         return 1.0;
     }
     if deals_left == 0 {
         return 0.0;
     }
-    let spread = over_several(deals_left, elder_first);
+    let spread = over_several(deals_left, elder_first, table);
     spread.iter().skip(needed as usize).sum()
 }
 
@@ -180,10 +203,16 @@ pub fn chance_of(needed: i32, deals_left: usize, elder_first: bool) -> f64 {
 /// costs you the *sum* of both scores rather than the difference, so a player
 /// who is short is playing a different game from one who is not.
 pub fn chance_of_the_rubicon(partie: &Partie, side: Side) -> f64 {
-    chance_of(
+    chance_of_the_rubicon_in(partie, side, measured())
+}
+
+/// [`chance_of_the_rubicon`], by a table of one's own.
+pub fn chance_of_the_rubicon_in(partie: &Partie, side: Side, table: &Densities) -> f64 {
+    chance_of_in(
         RUBICON - partie.score_of(side),
         partie.deals_left(),
         partie.elder() == side,
+        table,
     )
 }
 

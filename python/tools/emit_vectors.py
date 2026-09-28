@@ -1626,6 +1626,28 @@ def emit_chances() -> dict:
             }
         )
 
+    # A table of one's own: the docstring invites "measure your own and pass
+    # it as `table`", which is what a stronger ladder would want -- the
+    # measured histogram is a statement about rung-4 play. Small and uneven,
+    # so a port that ignores the table, or mixes up the seats, disagrees.
+    custom = ((0.1, 0.2, 0.3, 0.4), (0.5, 0.25, 0.25))
+    custom_chances = [
+        {
+            "needed": needed,
+            "deals_left": left,
+            "elder_first": first,
+            "chance": chances_mod.chance_of(needed, left, first, custom),
+        }
+        for needed, left, first in (
+            (0, 2, True), (1, 1, True), (3, 1, True), (3, 1, False), (3, 2, False),
+            (5, 3, True), (5, 3, False), (8, 4, True), (4, 0, False),
+        )
+    ]
+    custom_survival = {
+        seat.value: list(chances_mod.survival(seat, custom))
+        for seat in (Player.ELDER, Player.YOUNGER)
+    }
+
     # The first 12 draws of the fixed-seed generator, so a port can check its
     # own RNG before anything downstream disagrees for reasons that are hard
     # to trace back here.
@@ -1654,6 +1676,9 @@ def emit_chances() -> dict:
         "chances": chances,
         "settlements": settlements,
         "weights": weights,
+        "custom_table": {"elder": list(custom[0]), "younger": list(custom[1])},
+        "custom_chances": custom_chances,
+        "custom_survival": custom_survival,
     }
 
 

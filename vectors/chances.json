@@ -302,5 +302,87 @@
       "weight_mine": 7.3180000000000005,
       "weight_theirs": -7.784
     }
-  ]
+  ],
+  "custom_table": {
+    "elder": [
+      0.1,
+      0.2,
+      0.3,
+      0.4
+    ],
+    "younger": [
+      0.5,
+      0.25,
+      0.25
+    ]
+  },
+  "custom_chances": [
+    {
+      "needed": 0,
+      "deals_left": 2,
+      "elder_first": true,
+      "chance": 1.0
+    },
+    {
+      "needed": 1,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0.9
+    },
+    {
+      "needed": 3,
+      "deals_left": 1,
+      "elder_first": true,
+      "chance": 0.4
+    },
+    {
+      "needed": 3,
+      "deals_left": 1,
+      "elder_first": false,
+      "chance": 0
+    },
+    {
+      "needed": 3,
+      "deals_left": 2,
+      "elder_first": false,
+      "chance": 0.6
+    },
+    {
+      "needed": 5,
+      "deals_left": 3,
+      "elder_first": true,
+      "chance": 0.5750000000000001
+    },
+    {
+      "needed": 5,
+      "deals_left": 3,
+      "elder_first": false,
+      "chance": 0.26875
+    },
+    {
+      "needed": 8,
+      "deals_left": 4,
+      "elder_first": true,
+      "chance": 0.140625
+    },
+    {
+      "needed": 4,
+      "deals_left": 0,
+      "elder_first": false,
+      "chance": 0.0
+    }
+  ],
+  "custom_survival": {
+    "elder": [
+      0.9999999999999999,
+      0.8999999999999999,
+      0.7,
+      0.4
+    ],
+    "younger": [
+      1.0,
+      0.5,
+      0.25
+    ]
+  }
 }
