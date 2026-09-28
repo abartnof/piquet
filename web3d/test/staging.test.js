@@ -116,6 +116,8 @@ for (const aspect of ACROSS) {
 // less. Windows as the browser gives them: an iPhone's 390 x 844, and as
 // Safari leaves it under its bars; an old small phone; an Android; a tablet.
 const PHONES = [[390, 844], [390, 664], [375, 667], [412, 915], [768, 1024]];
+// Every order the hand can be sorted in: more groups fan it wider.
+const SORTS = ["auto", "suit", "rank", "combos"];
 const bands = (height) => ({ top: 1 - (2 * STRIPS.top) / height, foot: -1 + (2 * STRIPS.foot) / height });
 
 // The upright eye fits its field to `reach`, so the reach must be the
@@ -127,7 +129,7 @@ test("the upright eye's reach is how far the table's cards reach", () => {
   const up = new Vector3().crossVectors(right, ahead);
   const seen = { up: -Infinity, down: Infinity, across: 0 };
   for (const s of states) {
-    for (const x of layout(s, { zones: ZONES_PORTRAIT, selected: s.hand, eye })) {
+    for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, selected: s.hand, eye, sort }))) {
       for (const corner of cardCorners(x.pose).filter((_, i) => i % 2 === 1)) {
         const d = corner.clone().sub(eye);
         const [tx, ty] = [d.dot(right) / d.dot(ahead), d.dot(up) / d.dot(ahead)];
@@ -153,7 +155,7 @@ for (const [w, h] of PHONES) {
     assert.ok(framing(aspect, 0, h).upright);
     const { top, foot } = bands(h);
     for (const s of states) {
-      for (const x of place(s, { selected: s.hand })) {
+      for (const x of SORTS.flatMap((sort) => place(s, { selected: s.hand, sort }))) {
         for (const [px, py] of onScreen(x.pose, camera)) {
           assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
           assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
@@ -165,12 +167,14 @@ for (const [w, h] of PHONES) {
 
   test(`on a ${w} x ${h} phone, nothing on the table hides behind your hand`, () => {
     for (const s of states) {
-      const slots = place(s, { selected: s.hand });
-      const hand = slots.filter((x) => x.zone === "your-hand").map((x) => outline(onScreen(x.pose, camera)));
-      for (const x of slots) {
-        if (x.zone.endsWith("hand")) continue;
-        const card = outline(onScreen(x.pose, camera));
-        for (const held of hand) assert.ok(!overlap(card, held), `${x.zone} behind your hand at ${s.phase}`);
+      for (const sort of SORTS) {
+        const slots = place(s, { selected: s.hand, sort });
+        const hand = slots.filter((x) => x.zone === "your-hand").map((x) => outline(onScreen(x.pose, camera)));
+        for (const x of slots) {
+          if (x.zone.endsWith("hand")) continue;
+          const card = outline(onScreen(x.pose, camera));
+          for (const held of hand) assert.ok(!overlap(card, held), `${x.zone} behind your hand at ${s.phase}, sorted by ${sort}`);
+        }
       }
     }
   });

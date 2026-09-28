@@ -42,7 +42,7 @@ export const CAMERA = Object.freeze({
 export const CAMERA_PORTRAIT = Object.freeze({
   position: Object.freeze([0, 60, 62]),
   target: Object.freeze([0, 0, 2]),
-  reach: Object.freeze({ up: 0.305, down: -0.344, across: 0.261 }),
+  reach: Object.freeze({ up: 0.305, down: -0.352, across: 0.255 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
