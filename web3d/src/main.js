@@ -183,17 +183,33 @@ async function main() {
     if (drew) ui.fresh = drew.drew;
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
     // An undo falls silent at once.
-    if (next.events.length < prev.events.length) voice.stop();
+    if (next.events.length < prev.events.length) {
+      voice.stop();
+      overlay.clearDialogue();
+    }
   }
 
   // What was said, said aloud -- only what is new, and each line when its
   // event is seen to happen on the table (Andrew: "the right audio plays at
   // the right occasion, and not before/after").
+  //
+  // The declarations are shown as a dialogue besides (Andrew: "two dialogue
+  // boxes to pop up every move"): each of their lines in a box by its
+  // speaker's hand, with the words the voice says, as it says them -- or
+  // would, with the sound off.
+  const DIALOGUE = new Set(["called", "decided", "nothing_to_call"]);
   function timed(prev, next, beats) {
-    if (next.events.length < prev.events.length || (TESTING && !params.has("voice"))) return;
+    if (next.events.length < prev.events.length) return;
     const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
     const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
-    voice.say(lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 })), prefs);
+    const heard = { ...prefs, voice: prefs.voice && (!TESTING || params.has("voice")) };
+    const timedLines = lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 }));
+    // The score waits until the last line of the dialogue has been said.
+    const last = timedLines.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
+    if (last >= 0 && !TESTING) overlay.hold(voice.estimate(timedLines.slice(0, last + 1)));
+    voice.say(timedLines, heard, (line, words, ms) => {
+      if (DIALOGUE.has(line.kind)) overlay.dialogue(line.who, words, ms, line.kind !== "decided");
+    });
   }
 
   const voices = typeof VOICES === "object" ? VOICES : {};
@@ -360,6 +376,7 @@ async function main() {
     }
     begin(n, randomSeed());
     voice.stop();
+    overlay.clearDialogue();
     ui.selected = [];
     ui.lifted = [];
     director.restart();

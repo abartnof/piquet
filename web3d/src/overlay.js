@@ -27,7 +27,7 @@ import "@material/web/select/select-option.js";
 import "@material/web/switch/switch.js";
 import "@material/web/labs/segmentedbutton/outlined-segmented-button.js";
 import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
-import { answersSince, caption, live, scoredSince, tierOf } from "./scorebug.js";
+import { caption, live, scoredSince, tierOf } from "./scorebug.js";
 import { PATTERNS } from "./surfaces.js";
 
 const THEM = "your opponent";
@@ -749,7 +749,11 @@ export function createOverlay(root, on) {
     void node.offsetWidth;
     node.classList.add(cls);
   };
-  const later = (fn) => (calm.matches ? fn() : setTimeout(fn, 450)); // as the card lands
+  // As the card lands -- or, while a declaration is being said, once it has
+  // been: a point is scored after "Good.", not before "Five cards.".
+  let holdUntil = 0;
+  const wait = () => Math.max(450, holdUntil - performance.now());
+  const later = (fn) => (calm.matches ? fn() : setTimeout(fn, wait()));
 
   // Confetti from a point: a burst of small flakes flung out and falling.
   function confetti(host, colour) {
@@ -810,9 +814,51 @@ export function createOverlay(root, on) {
     const edge = on.anchor?.(who);
     if (!edge || calm.matches) return;
     node.classList.add(who === "you" ? "above" : "below");
-    Object.assign(node.style, { left: `${edge.x}px`, top: `${edge.y}px` });
+    // Beside the speaker's dialogue box, if one is up, rather than on it.
+    const box = boxes[who]?.getBoundingClientRect();
+    const x = box ? box.right + 44 : edge.x;
+    Object.assign(node.style, { left: `${x}px`, top: `${edge.y}px` });
     node.addEventListener("animationend", (e) => e.target === node && node.remove());
     $("afloat").append(node);
+  }
+
+  // ---- the declarations, as a dialogue -----------------------------------------
+  //
+  // Andrew: "during the declarations phase, i want two dialogue boxes to pop
+  // up every move- if you're going first, the first dialogue box' tail points
+  // down to you, and the second dialogue box' tail points to the opponent ...
+  // flip the tails if you're not going first." Each line of the declarations,
+  // as it is said -- the words the voice says -- in a box by the hand of
+  // whoever said it: yours above your hand with its tail down to you, your
+  // opponent's below theirs with its tail up to them. Each speaker has one
+  // box; a new call clears the move before.
+  const LINGER = 4200; // ms a box stays up, unless the next line replaces it
+  const boxes = { you: null, them: null };
+  const waiting = new Set();
+  function takeDown(who, at_once = false) {
+    const node = boxes[who];
+    if (!node) return;
+    boxes[who] = null;
+    if (at_once) return node.remove();
+    node.classList.add("leaving");
+    node.addEventListener("animationend", () => node.remove(), { once: true });
+    setTimeout(() => node.remove(), 400); // however the animation goes
+  }
+  function showBox(who, words, opens) {
+    // A box replaced goes at once, so two never share the spot; a new call
+    // lets the other's answer go gently.
+    takeDown(who, true);
+    if (opens) takeDown(who === "you" ? "them" : "you");
+    const edge = on.anchor?.(who);
+    if (!edge || !words) return;
+    const node = el("div", { class: `dialogue ${who}`, role: "status" }, words);
+    $("afloat").append(node);
+    // Centred on the hand, kept on the screen.
+    const half = node.offsetWidth / 2 + 8;
+    node.style.left = `${Math.min(Math.max(edge.x, half), window.innerWidth - half)}px`;
+    node.style.top = `${edge.y}px`;
+    boxes[who] = node;
+    setTimeout(() => boxes[who] === node && takeDown(who), LINGER);
   }
   function floatScore(who, gained, big) {
     const tier = tierOf(gained, big.map((b) => b.flair));
@@ -822,13 +868,6 @@ export function createOverlay(root, on) {
       flair ? el("span", { class: "swap-what" }, flair) : null, el("span", {}, `+${gained}`));
     atTable(who, node);
     if (tier === "big") confetti(node, who === "you" ? "#1a1b20" : "#b3261e");
-  }
-  // "Good", "not good", "equal", from whoever answered, coloured by the word
-  // (Andrew: "good=green, not good=red").
-  function floatAnswer(answer, delay) {
-    const node = el("div", { class: `answer ${answer.tone}`, role: "status" }, answer.text);
-    node.style.animationDelay = `${delay}ms`;
-    atTable(answer.who, node);
   }
 
   // When the table plays a card for you (an aid), say so, and why -- a card
@@ -857,7 +896,6 @@ export function createOverlay(root, on) {
       || now.you < bugYou.shown || now.them < bugThem.shown;
     const since = fresh ? s.events.length : seen.events;
     const news = scoredSince(s.events, s.deal, since);
-    if (!fresh) answersSince(s.events, s.deal, since).forEach((answer, i) => later(() => floatAnswer(answer, i * 900)));
     for (const sd of [bugYou, bugThem]) {
       const to = now[sd.who];
       if (fresh || to <= sd.shown) {
@@ -887,9 +925,14 @@ export function createOverlay(root, on) {
     const text = line ? `${line.who === "you" ? "You" : line.who === "them" ? Them : ""}${line.who ? ": " : ""}${line.text}` : "";
     if (said.dataset.text !== text) {
       said.dataset.text = text;
-      said.className = `caption ${line?.who ?? "table"}`;
-      said.replaceChildren(text);
-      if (!fresh && text) replay(said, "slide");
+      const put = () => {
+        if (said.dataset.text !== text) return; // overtaken
+        said.className = `caption ${line?.who ?? "table"}`;
+        said.replaceChildren(text);
+        if (!fresh && text) replay(said, "slide");
+      };
+      if (!fresh && holdUntil > performance.now()) setTimeout(put, holdUntil - performance.now());
+      else put();
     }
     seen = { seed: s.seed, level: s.level, events: s.events.length };
   }
@@ -943,6 +986,25 @@ export function createOverlay(root, on) {
       renderPrompt(s, ui, prefs);
       renderTools(s, prefs, ui);
       renderNarration(s);
+    },
+    // A line of the declarations, in its box when it is said: `ms` from now.
+    dialogue(who, words, ms, opens) {
+      const timer = setTimeout(() => {
+        waiting.delete(timer);
+        showBox(who, words, opens);
+      }, Math.max(0, ms));
+      waiting.add(timer);
+    },
+    // The score waits this long, for the dialogue being said.
+    hold(ms) {
+      holdUntil = Math.max(holdUntil, performance.now() + ms);
+    },
+    // An undo, a new partie: the dialogue is over.
+    clearDialogue() {
+      holdUntil = 0;
+      for (const timer of waiting) clearTimeout(timer);
+      waiting.clear();
+      ["you", "them"].forEach(takeDown);
     },
     // While your opponent thinks -- the engine runs on the page's own thread,
     // and at the top level a decision can take a second -- say so, under

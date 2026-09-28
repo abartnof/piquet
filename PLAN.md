@@ -249,6 +249,11 @@ and speech running ahead of the cards. The engine's `decided` now carries
 is now woken from any sleep on every click and key — **Andrew to say which
 browser, and whether it is cured.** QC kept as tests.
 
+Then the **dialogue boxes** (`docs/TABLE3D.md` P17): each line of the
+declarations in a box by its speaker's hand, tail to the speaker, timed to
+the voice; the score waits for the dialogue. Andrew plays in **Safari**:
+the tests run Chromium, so his Safari is the real check of the audio fixes.
+
 **Open for Andrew when he is back** (nothing below is blocked on anything
 else):
 

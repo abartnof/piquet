@@ -309,6 +309,15 @@ def main() -> int:
         # The voice: clips bundled, decoded by the browser, and the right ones
         # asked for as the table talks.
         talk = open_page(browser, "test&voice&level=2&seed=31")
+        # Every dialogue box the declarations put up, as it appears.
+        talk.evaluate("""() => {
+            window.__boxes = [];
+            new MutationObserver((changes) => changes.forEach((c) => c.addedNodes.forEach((n) => {
+                if (!n.classList || !n.classList.contains("dialogue")) return;
+                const r = n.getBoundingClientRect();
+                window.__boxes.push({ who: n.classList.contains("you") ? "you" : "them", text: n.textContent, top: r.top, bottom: r.bottom });
+            }))).observe(document.getElementById("afloat"), { childList: true });
+        }""")
         for command in ["cut 14", "dealer them"]:
             talk.evaluate(f"window.piquet3d.send({command!r})")
         for _ in range(12):
@@ -336,6 +345,18 @@ def main() -> int:
         wrong = [(g, k) for g, k in zip(groups, heard["picked"]) if k not in bank.get(g, [])]
         if len(heard["picked"]) != len(groups) or wrong:
             failures.append(f"the voice did not pick a way of saying each thing: {wrong[:4] or heard['picked'][:8]}")
+        # The declarations as a dialogue (Andrew: "two dialogue boxes to pop
+        # up every move"): both speak, in boxes by their own hands.
+        talk.wait_for_timeout(4000)
+        boxes = talk.evaluate("window.__boxes")
+        mine = [b for b in boxes if b["who"] == "you"]
+        theirs = [b for b in boxes if b["who"] == "them"]
+        if not mine or not theirs:
+            failures.append(f"the declarations put up no dialogue for both players: {boxes[:6]}")
+        elif min(b["top"] for b in mine) <= max(b["bottom"] for b in theirs):
+            failures.append(f"your dialogue box is not below your opponent's: {boxes[:6]}")
+        elif any(not b["text"].strip() for b in boxes):
+            failures.append(f"an empty dialogue box: {boxes[:6]}")
         if talk.errors:
             failures.append(f"console errors with the voice on: {talk.errors}")
         talk.context.close()

@@ -148,6 +148,22 @@ test("younger's point, when she wins it, is named as she reckons it", () => {
   assert.deepEqual(said(lines), ["them:point-4", "you:not-good", "you:point-5", "you:n-5"]);
 });
 
+// The dialogue boxes show the declarations' lines (Andrew: "two dialogue
+// boxes to pop up every move"): each line says which kind of event it
+// belongs to.
+test("each line knows the kind of event it belongs to", () => {
+  const lines = speech([
+    ev("deal_begins", { elder: "you" }),
+    ev("exchanged", { who: "you", count: 4 }),
+    ev("called", { who: "you", category: "point", said: "point of 5 (48)" }),
+    ev("decided", { category: "point", winner: "you", asked: true }),
+    ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (48)" }),
+  ], 1, 0);
+  assert.deepEqual(lines.map((l) => `${l.clip}@${l.kind}`), [
+    "take-4@exchanged", "point-5@called", "what-make@decided", "value-48@decided", "good@decided", "n-5@scored",
+  ]);
+});
+
 test("counting aloud: each side's running total, and the great moments named", () => {
   const lines = speech([
     ev("deal_begins", { elder: "you" }),

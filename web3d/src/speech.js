@@ -4,11 +4,11 @@
 // how they are said follows Cavendish, *The Laws of Piquet* (1885) --
 // docs/VOICE.md. A pure function, so the page only plays what it returns.
 //
-// speech(events, deal, since) -> [{ who, clip, at }], for the events of `deal`
+// speech(events, deal, since) -> [{ who, clip, at, kind }], for the events of `deal`
 // from index `since`: who is "you" or "them", clip a group of the bank --
 // something said in several ways, which the voice picks among (voice.js) --
-// and `at` the index of the event it belongs to, so it can be said when that
-// event is seen to happen.
+// `at` the index of the event it belongs to, so it can be said when that
+// event is seen to happen, and `kind` that event's kind.
 //
 // The declarations follow Cavendish (pp. 60-67). Elder calls the shape -- "Five
 // cards.", "A quart.", "A trio." Only when younger holds the same shape does she
@@ -67,7 +67,8 @@ const holdings = (text) => String(text).split(", ");
 export function speech(events, deal, since = 0) {
   const out = [];
   let at = 0;
-  const say = (who, clip) => clip && out.push({ who, clip, at });
+  let kind = null;
+  const say = (who, clip) => clip && out.push({ who, clip, at, kind });
   let elder = null;
   const count = { you: 0, them: 0 }; // each side's running total, said aloud
   const called = {}; // category -> elder's first words
@@ -76,6 +77,7 @@ export function speech(events, deal, since = 0) {
   events.forEach((e, i) => {
     if (e.deal !== deal) return;
     at = i;
+    kind = e.kind;
     const now = i >= since; // earlier events set the scene but are not said again
     const who = e.who === "you" || e.who === "them" ? e.who : null;
     switch (e.kind) {

@@ -946,6 +946,22 @@ throughout.
       silence after deal 1 did not reproduce; the sound is now woken from
       any sleep on every click and key. `docs/VOICE.md` §7 has the list.
 
+- [x] **P17 — The declarations as a dialogue (28 September).** Andrew:
+      *"during the declarations phase, i want two dialogue boxes to pop up
+      every move- if you're going first, the first dialogue box' tail
+      points down to you, and the second dialogue box' tail points to the
+      opponent ... flip the tails if you're not going first ... keep the HUD
+      +n points display as it exists"*. Each line of the declarations, as it
+      is said, in a box by its speaker's hand: yours above it, the tail down
+      to you; your opponent's below theirs, the tail up. The words are the
+      voice's own, picked from the bank; with the sound off, or your voice
+      off, each line still takes its turn, so the answer follows the call.
+      A new call clears the move before. The score — the bug's numbers, the
+      +N, the caption — waits until the dialogue has been said, so a point
+      is scored after "Good.", never before the call; the +N moves aside
+      from a box it would cover. The coloured Good/Not good bubbles are
+      retired (*"don't worry about the color-coding"*).
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

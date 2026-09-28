@@ -48,26 +48,6 @@ export function caption(events, deal) {
   return latest ? { who: latest.who, text: latest.text } : null;
 }
 
-// The answers given since the event at index `since` -- "good", "not good",
-// "equal" -- with who said them, what each means for you, and its tone: the
-// bubble is green for "good" and red for "not good", whoever says it
-// (Andrew: "good=green, not good=red"). A call of nothing is answered by
-// nobody.
-export function answersSince(events, deal, since) {
-  const lines = talk(events, deal);
-  return [...lines.you, ...lines.them]
-    .filter((line) => line.kind === "answer" && line.at >= since)
-    .sort((a, b) => a.at - b.at)
-    .map((line) => ({
-      who: line.who,
-      text: line.text.replace(/[“”]/g, ""),
-      outcome: line.winner === "you" ? "won" : line.winner === "them" ? "lost" : "equal",
-      // The bubble's colour goes with the word: good green, not good red.
-      tone: line.text.includes("Not good") ? "not-good" : line.text.includes("Good") ? "good" : "equal",
-      category: line.category,
-    }));
-}
-
 // How a score is shown: a single point just ticks, a handful bounces, and
 // ten or more -- or any moment with a name, however few its points -- is
 // celebrated.

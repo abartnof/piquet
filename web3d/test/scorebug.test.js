@@ -6,7 +6,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { answersSince, caption, live, scoredSince, tierOf } from "../src/scorebug.js";
+import { caption, live, scoredSince, tierOf } from "../src/scorebug.js";
 import { partie } from "./partie.js";
 
 const parties = await Promise.all([[3, 7], [1, 11], [2, 23]].map(([l, s]) => partie(l, s)));
@@ -76,46 +76,6 @@ test("a card played is shown on the table, not captioned", () => {
     ev("took_trick", { who: "you", number: 1 }),
   ];
   assert.deepEqual(caption(events, 1), { who: "them", text: "“Quart.”" });
-});
-
-// Andrew: "during the declarations, there's only an implicit notification
-// that you didn't succeed ... a bubble that pops up on-screen with that?
-// green or blue if good, red if no good".
-test("the answers given since a moment: who said it, and what it means for you", () => {
-  const events = [
-    ev("deal_begins", { elder: "you" }),
-    ev("called", { who: "you", said: "point of 5 (49)", category: "point" }),
-    ev("decided", { category: "point", winner: "you" }),
-    ev("called", { who: "you", said: "tierce", category: "sequences" }),
-    ev("decided", { category: "sequences", winner: "them" }),
-    ev("called", { who: "you", said: "trio", category: "sets" }),
-    ev("decided", { category: "sets", winner: null }),
-  ];
-  assert.deepEqual(answersSince(events, 1, 0), [
-    { who: "them", text: "Good.", outcome: "won", tone: "good", category: "point" },
-    { who: "them", text: "Not good.", outcome: "lost", tone: "not-good", category: "sequences" },
-    { who: "them", text: "Equal.", outcome: "equal", tone: "equal", category: "sets" },
-  ]);
-  assert.deepEqual(answersSince(events, 1, 5).map((a) => a.text), ["Equal."], "only what is new");
-
-  // Younger, you answer their calls: "good" concedes, and is bad news.
-  const younger = [
-    ev("deal_begins", { elder: "them" }),
-    ev("called", { who: "them", said: "quart", category: "sequences" }),
-    ev("decided", { category: "sequences", winner: "them" }),
-  ];
-  // The colour goes with the word (Andrew: "good=green, not good=red"),
-  // even where "good" is your concession.
-  assert.deepEqual(answersSince(younger, 1, 0), [{ who: "you", text: "Good.", outcome: "lost", tone: "good", category: "sequences" }]);
-});
-
-test("a call of nothing is answered by nobody, so no bubble", () => {
-  const events = [
-    ev("deal_begins", { elder: "you" }),
-    ev("called", { who: "you", said: "nothing", category: "sets" }),
-    ev("decided", { category: "sets", winner: "them" }),
-  ];
-  assert.deepEqual(answersSince(events, 1, 0), []);
 });
 
 // Andrew: "i want all point scoring to work like that. and for big ones (eg

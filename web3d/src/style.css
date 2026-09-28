@@ -930,44 +930,63 @@ md-assist-chip.pinned {
     transform: translate(-50%, 30px) scale(0.95);
   }
 }
-.answer {
-  padding: 6px 16px 8px;
-  border-radius: 18px;
-  font-size: 20px;
-  font-weight: 800;
-  color: #fff;
-  box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
-  animation-duration: 1900ms;
+/* The declarations as a dialogue: each line in a box by its speaker's hand,
+   yours above it with the tail down to you, your opponent's below theirs
+   with the tail up to them. Popped in on the spring; let go quicker. */
+.dialogue {
+  position: fixed;
+  max-width: min(78vw, 360px);
+  padding: 9px 18px 10px;
+  border-radius: 20px;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--elevation-2);
+  pointer-events: none;
+  animation: box-in 420ms var(--ease-in) both;
+  animation: box-in 420ms var(--spring) both;
 }
-.answer.above,
-.answer.below {
-  animation-duration: 1900ms;
+.dialogue.you {
+  translate: -50% calc(-100% - 18px);
+  transform-origin: 50% 100%;
 }
-.answer.good {
-  background: #2e7d32;
+.dialogue.them {
+  translate: -50% 18px;
+  transform-origin: 50% 0;
 }
-.answer.not-good {
-  background: #b3261e;
-}
-.answer.equal {
-  background: #435e91;
-}
-/* A speech bubble's tail, toward whoever said it. */
-.answer::after {
+.dialogue::after {
   content: "";
   position: absolute;
   left: 50%;
-  width: 12px;
-  height: 12px;
-  margin-left: -6px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
   background: inherit;
   transform: rotate(45deg);
 }
-.answer.above::after {
-  bottom: -5px;
+.dialogue.you::after {
+  bottom: -6px;
 }
-.answer.below::after {
-  top: -5px;
+.dialogue.them::after {
+  top: -6px;
+}
+.dialogue.leaving {
+  animation: box-out 260ms var(--ease-out) forwards;
+}
+@keyframes box-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+@keyframes box-out {
+  to {
+    opacity: 0;
+    transform: scale(0.92);
+  }
 }
 
 .num.cheer {
@@ -1398,6 +1417,8 @@ kbd {
   .confetti,
   .caption.slide,
   .asked .arriving,
+  .dialogue,
+  .dialogue.leaving,
   .popping {
     animation: none;
   }
