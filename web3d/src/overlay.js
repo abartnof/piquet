@@ -989,6 +989,38 @@ export function createOverlay(root, on) {
       renderTools(s, prefs, ui);
       renderNarration(s);
     },
+    // The page opened: a tutorial, a new game, or -- if one is under way --
+    // carry on (Andrew: "when someone opens, there can be a button- new
+    // game, or tutorial").
+    welcome(canContinue, choose) {
+      const dialog = $("welcome");
+      let chosen = null;
+      const pick = (kind) => () => {
+        chosen = kind;
+        dialog.close();
+      };
+      dialog.replaceChildren(
+        el("div", { slot: "headline" }, "Piquet"),
+        el("div", { slot: "content", class: "welcome" },
+          el("p", {}, "The classic card game for two, against your opponent."),
+          canContinue ? el("p", { class: "welcome-note" }, "A partie is under way.") : null),
+        el("div", { slot: "actions" },
+          canContinue ? el("md-text-button", { onclick: pick("new") }, "New game") : null,
+          el(canContinue ? "md-text-button" : "md-filled-tonal-button", { onclick: pick("tutorial") }, "Tutorial"),
+          el("md-filled-button", { onclick: pick(canContinue ? "continue" : "new") }, canContinue ? "Continue" : "New game")));
+      dialog.addEventListener("closed", () => choose(chosen ?? (canContinue ? "continue" : "new")), { once: true });
+      dialog.show();
+    },
+    // A short introduction, as bullet points; `done` when it is read.
+    intro(card, done) {
+      const dialog = $("intro");
+      dialog.replaceChildren(
+        el("div", { slot: "headline" }, card.title),
+        el("ul", { slot: "content", class: "intro" }, card.bullets.map((b) => el("li", {}, b))),
+        el("div", { slot: "actions" }, el("md-filled-tonal-button", { onclick: () => dialog.close() }, "Got it")));
+      dialog.addEventListener("closed", () => done?.(), { once: true });
+      dialog.show();
+    },
     // A line of the declarations, in its box when it is said: `ms` from now.
     dialogue(who, words, ms, opens) {
       const timer = setTimeout(() => {

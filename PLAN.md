@@ -925,10 +925,13 @@ Ordered by how much they are needed, not by size.
     thousands (1,090 seen in 400 parties and still climbing). Also owed if
     it returns: "Two cards." for a two-card point was never recorded.
 
-15. **Tutorial mode.** Andrew's standing request: an interactive training
-    mode that flags bad and impossible moves rather than animating a
-    tutorial. Wants a design conversation with him first; `explain.rs`
-    (why a move is better, by which rung plays it) is its second half.
+15. **Tutorial mode — built, the light way** (`docs/TABLE3D.md` P19). Andrew
+    chose, instead of a coach that flags moves: *"an introduction (concise,
+    bullet points- nothing too wordy), and an introduction before each phase
+    of play ... hints+explanations are on by default"*, with a welcome
+    offering New game or Tutorial. Done; for his review. A move-flagging
+    coach (solver values for the play, the top rung's choice elsewhere) and
+    `explain.rs`'s "why" remain possible later layers, not asked for now.
 
 16. **The declaration dialogue boxes — built, for Andrew to review.** Each
     line of the declarations in a box by its speaker's hand, the tail

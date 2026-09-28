@@ -16,6 +16,7 @@ import { createOverlay, label as labelOf } from "./overlay.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
 import { createVoice } from "./voice.js";
+import { INTRO, PHASES, introDue } from "./tutorial.js";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
@@ -34,6 +35,9 @@ const OLD_PREF_STORE = "piquet3d.prefs";
 // Versioned: "play my winners" became opt-in, and a stored set from before
 // would keep it on without the player ever having chosen it.
 const AID_STORE = "piquet3d.aids.2";
+// The tutorial, if this partie is one: which partie, and what it has
+// introduced so far.
+const TUTORIAL_STORE = "piquet3d.tutorial";
 const DEFAULT_PREFS = {
   tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random",
   // The voice (docs/VOICE.md): your opponent's on, in a woman's voice;
@@ -308,6 +312,8 @@ async function main() {
       : null;
     overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus } });
     reframe();
+    // In the tutorial, a new phase is introduced once its cards have moved.
+    if (inTutorial()) setTimeout(introduce, director.busy() ? 900 : 0);
   }
 
   // The table is framed beside the information column, across the table;
@@ -371,6 +377,41 @@ async function main() {
     render();
   }
 
+  // ---- the tutorial ------------------------------------------------------------
+  //
+  // Andrew: "an introduction (concise, bullet points- nothing too wordy), and an
+  // introduction before each phase of play. when this 'tutorial' mode is on,
+  // hints+explanations are on by default ... when someone opens, there can be
+  // a button- new game, or tutorial". The words are tutorial.js's.
+  let tutorial = recall(TUTORIAL_STORE, { on: false, seed: null, seen: [] });
+  let introducing = false;
+  const inTutorial = () => tutorial.on && tutorial.seed === engine.state().seed;
+  // The next phase's introduction, the first time it comes.
+  function introduce() {
+    if (!inTutorial() || introducing) return;
+    const key = introDue(engine.state(), tutorial.seen);
+    if (!key) return;
+    tutorial = { ...tutorial, seen: [...tutorial.seen, key] };
+    store(TUTORIAL_STORE, tutorial);
+    introducing = true;
+    overlay.intro(PHASES[key], () => {
+      introducing = false;
+      introduce();
+    });
+  }
+  function startTutorial() {
+    newPartie(engine.state().level, true);
+    tutorial = { on: true, seed: engine.state().seed, seen: [] };
+    store(TUTORIAL_STORE, tutorial);
+    if (!engine.state().aids.hints) toggleAid("hints");
+    if (prefs.explain === false) setPref("explain", true);
+    introducing = true;
+    overlay.intro(INTRO, () => {
+      introducing = false;
+      introduce();
+    });
+  }
+
   function newPartie(n, force = false) {
     const s = engine.state();
     const inProgress = s.prompt.kind !== "over" && s.record.some((r) => !r.startsWith("*"));
@@ -378,6 +419,7 @@ async function main() {
       render();
       return;
     }
+    if (tutorial.on) store(TUTORIAL_STORE, (tutorial = { on: false, seed: null, seen: [] }));
     begin(n, randomSeed());
     voice.stop();
     overlay.clearDialogue();
@@ -515,6 +557,17 @@ async function main() {
   readyMs = performance.now();
   document.getElementById("loading").hidden = true;
 
+  // On opening: the tutorial, a new game, or the partie under way.
+  if (!TESTING || params.has("welcome")) {
+    const s = engine.state();
+    const underWay = s.prompt.kind !== "over" && s.record.some((r) => !r.startsWith("*"));
+    overlay.welcome(underWay, (choice) => {
+      if (choice === "tutorial") startTutorial();
+      else if (choice === "new") newPartie(s.level, true);
+      else introduce();
+    });
+  }
+
   // Test hooks: the browser test drives and inspects the table through these.
   window.piquet3d = {
     ...hooks,
@@ -528,6 +581,8 @@ async function main() {
     tick: (ms) => director.tick(ms),
     // With ?voice (speech is off in tests otherwise): what the voice did.
     voice: () => voice.stats(),
+    // The tutorial, if this partie is one.
+    tutorial: () => ({ ...tutorial, on: inTutorial() }),
     // The heights the phone's table is framed between (framing.js).
     strips: () => STRIPS,
   };

@@ -969,6 +969,19 @@ throughout.
       with it. The dialogue boxes stay, silent, with the bank's words. The
       page is 3.0 MB. `build.py --audio opus` restores the voice.
 
+- [x] **P19 — The tutorial, and a welcome (28 September).** Andrew: *"an
+      introduction (concise, bullet points- nothing too wordy), and an
+      introduction before each phase of play? when this 'tutorial' mode is
+      on, hints+explanations are on by default ... then when someone opens,
+      there can be a button- new game, or tutorial"*. On opening, a welcome:
+      Tutorial or New game — or Continue, when a partie is under way. The
+      tutorial starts a partie with hints and explanations on, opens with
+      "Piquet in a minute" (five bullets), and introduces each phase the
+      first time it comes: the cut, choosing the deal, the exchange, the
+      point, sequences, sets, the play, the end of a deal, the end of the
+      partie (`tutorial.js`, node-tested for brevity and for the rules as
+      the engine plays them). It survives a reload; a new partie ends it.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

@@ -306,6 +306,40 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
+        # The welcome and the tutorial (Andrew: "an introduction ... and an
+        # introduction before each phase of play ... hints+explanations are
+        # on by default ... new game, or tutorial").
+        tut = open_page(browser, "test&welcome&level=2&seed=31")
+        tut.get_by_role("button", name="Tutorial").click()
+        tut.wait_for_timeout(800)
+        heading = tut.locator("#intro [slot=headline]").inner_text()
+        if heading != "Piquet in a minute":
+            failures.append(f"the tutorial did not open on its introduction: {heading!r}")
+        seen = []
+        for _ in range(8):
+            if tut.locator("#intro").get_attribute("open") is not None:
+                seen.append(tut.locator("#intro [slot=headline]").inner_text())
+                tut.get_by_role("button", name="Got it").click()
+                tut.wait_for_timeout(700)
+                continue
+            s = state(tut)
+            kind = s["prompt"]["kind"]
+            if kind == "cut":
+                tut.evaluate("window.piquet3d.send('cut 14')")
+            elif kind == "choose_dealer":
+                tut.evaluate("window.piquet3d.send('dealer them')")
+            elif kind == "exchange" and "The exchange" in seen:
+                break
+            tut.wait_for_timeout(1200)
+        if seen[:2] != ["Piquet in a minute", "The cut"] or "The exchange" not in seen:
+            failures.append(f"the tutorial's introductions came as {seen}")
+        t = tut.evaluate("window.piquet3d.tutorial()")
+        if not t["on"] or not state(tut)["aids"]["hints"]:
+            failures.append(f"the tutorial is not on, with hints: {t}")
+        if tut.errors:
+            failures.append(f"console errors in the tutorial: {tut.errors}")
+        tut.context.close()
+
         # No sound of any kind (Andrew: "i don't want the html to have any
         # audio"): no recordings in the page, no audio made, no speech -- but
         # the declarations still come as a dialogue, in boxes.

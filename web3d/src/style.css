@@ -930,6 +930,22 @@ md-assist-chip.pinned {
     transform: translate(-50%, 30px) scale(0.95);
   }
 }
+/* The welcome, and the tutorial's introductions: a few short bullets. */
+.welcome p {
+  margin: 0 0 6px;
+}
+.welcome-note {
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 14px;
+}
+.intro {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  line-height: 1.4;
+}
+
 /* The declarations as a dialogue: each line in a box by its speaker's hand,
    yours above it with the tail down to you, your opponent's below theirs
    with the tail up to them. Popped in on the spring; let go quicker. */
