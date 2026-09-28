@@ -113,10 +113,8 @@ def voices(kind: str) -> str:
     html to have any audio")."""
     out = {}
     if kind == "none":
-        manifest = next(iter(sorted(AUDIO.glob("*/manifest.json"))), None)
-        if manifest:
-            spec = json.loads(manifest.read_text())
-            out["words"] = {"groups": spec["groups"], "texts": spec["files"]}
+        # The phrase bank's words (web3d/tools/voice.py --doc writes them).
+        out["words"] = json.loads((ROOT / "web3d" / "words.json").read_text())
         return json.dumps(out, separators=(",", ":"), ensure_ascii=False)
     ext = {"mp3": "mp3", "opus": "ogg"}[kind]
     for manifest in sorted(AUDIO.glob("*/manifest.json")):

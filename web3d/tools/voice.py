@@ -197,9 +197,11 @@ def phrase_groups():
         ("Carte blanche. Not a court card among them.", "T"))
 
     # The point: its length, the question, the answers (pp. 60-61).
-    for n in range(3, 9):
-        ways = [(f"{words(n).capitalize()} cards.", "C"), (f"Point of {words(n)}.", "P"),
-                (f"I have {words(n)} cards.", "T"), (f"A point of {words(n)}.", "P")]
+    # A point may be called short, down to a single card.
+    for n in range(1, 9):
+        cards = "One card." if n == 1 else f"{words(n).capitalize()} cards."
+        have = "I have one card." if n == 1 else f"I have {words(n)} cards."
+        ways = [(cards, "C"), (f"Point of {words(n)}.", "P"), (have, "T"), (f"A point of {words(n)}.", "P")]
         add(f"point-{n}", *(ways if 4 <= n <= 6 else ways[:3]))
     # The shapes called bare -- elder gives no more than he must -- and the
     # questions for the tie-break when younger holds the same shape.
@@ -326,13 +328,20 @@ def groups():
         out[f"n-{n}"] = [f"n-{n}.{k}" for k in range(takes_of_number(n))]
     # The point's value, answering "What do they make?": the number, or in
     # the forties what it is making. The same recordings, grouped again.
-    for value in range(24, 76):
+    for value in range(7, 76):
         keys = list(out[f"n-{value}"])
         if 41 <= value <= 49:
             keys += [f"making-{value - 40}.{k}" for k in range(2)]
         out[f"value-{value}"] = keys
     assert all(key in everything for keys in out.values() for key in keys)
     return out
+
+
+def words_json():
+    """The words of every group, for the page's dialogue boxes (web3d/words.json):
+    what the table says, with or without the sound -- the build embeds it."""
+    return json.dumps({"groups": groups(), "texts": {k: v["text"] for k, v in files().items()}},
+                      ensure_ascii=False, separators=(",", ":"), sort_keys=True) + "\n"
 
 
 def document():
@@ -381,6 +390,7 @@ def document():
 # ---- speaking and encoding --------------------------------------------------------
 
 DOC = ROOT / "docs" / "PHRASES.md"
+WORDS = ROOT / "web3d" / "words.json"
 
 # Opus at 12 kb/s: wideband speech still, and about two thirds the size of
 # the 20 kb/s the voice first shipped at -- which is what pays for saying
@@ -415,8 +425,9 @@ def main():
     parser.add_argument("--doc", action="store_true", help="only rewrite docs/PHRASES.md")
     args = parser.parse_args()
     DOC.write_text(document())
+    WORDS.write_text(words_json())
     if args.doc:
-        print(f"wrote {DOC.relative_to(ROOT)}")
+        print(f"wrote {DOC.relative_to(ROOT)} and {WORDS.relative_to(ROOT)}")
         return 0
     from piper import PiperVoice  # only here: the bank needs no Piper
 

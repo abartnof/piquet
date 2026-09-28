@@ -7,6 +7,7 @@ from pathlib import Path
 
 from voice import (
     HIGHEST_COUNT,
+    words_json,
     RESPELL,
     SOURCES,
     document,
@@ -19,10 +20,14 @@ from voice import (
 )
 
 DOC = Path(__file__).resolve().parents[2] / "docs" / "PHRASES.md"
+WORDS = Path(__file__).resolve().parents[1] / "words.json"
 
 # Every point a hand can hold is worth one of these (7+8+9 = 24 at the
 # least, the whole suit 75 at the most).
 POINT_VALUES = [*range(24, 32), *range(34, 42), *range(44, 52), *range(54, 61), *range(64, 69), 75]
+# A point may be called short -- the engine has been heard to call two cards
+# -- so the smaller ones too: one card 7 to 11, two 15 to 21.
+SHORT_POINTS = [*range(7, 12), *range(15, 22)]
 
 
 def texts(gid):
@@ -119,6 +124,18 @@ def test_a_point_value_is_said_as_a_number_or_as_what_it_is_making():
     assert "Making seven." in texts("value-47")
     assert not any(t.startswith("Making") for t in texts("value-51"))
     assert not any(t.startswith("Making") for t in texts("value-38"))
+
+
+def test_a_point_called_short_is_said_too():
+    assert "Two cards." in texts("point-2") and "One card." in texts("point-1")
+    for value in SHORT_POINTS:
+        assert f"value-{value}" in groups(), value
+
+
+def test_the_dialogue_boxes_words_are_written_from_the_bank():
+    # The page shows the declarations in dialogue boxes with these words,
+    # sound or no sound; `voice.py --doc` writes them with the doc.
+    assert WORDS.read_text() == words_json()
 
 
 def test_every_recording_is_heard_and_every_one_heard_is_recorded():

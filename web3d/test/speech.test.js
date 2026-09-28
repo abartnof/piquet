@@ -220,9 +220,9 @@ test("only what is new is said", () => {
 
 // Every clip the game asks for must have been recorded, in every voice, and
 // said in more than one way.
-test("across whole parties, every clip asked for exists in the voices' bank", () => {
-  const manifest = JSON.parse(readFileSync(new URL("../audio/cori/manifest.json", import.meta.url)));
-  const have = new Set(Object.keys(manifest.groups).filter((id) => manifest.groups[id].length >= 2));
+test("across whole parties, every clip asked for exists in the phrase bank", () => {
+  const bank = JSON.parse(readFileSync(new URL("../words.json", import.meta.url)));
+  const have = new Set(Object.keys(bank.groups).filter((id) => bank.groups[id].length >= 2));
   return Promise.all([[3, 7], [1, 11], [2, 23], [3, 404]].map(([l, s]) => partie(l, s))).then((parties) => {
     let asked = 0;
     for (const states of parties) {

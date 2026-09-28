@@ -49,6 +49,12 @@ Sources:
 | `carte-blanche-have` | I have a carte blanche. | C |
 |  | Carte blanche! | T |
 |  | Carte blanche. Not a court card among them. | T |
+| `point-1` | One card. | C |
+|  | Point of one. | P |
+|  | I have one card. | T |
+| `point-2` | Two cards. | C |
+|  | Point of two. | P |
+|  | I have two cards. | T |
 | `point-3` | Three cards. | C |
 |  | Point of three. | P |
 |  | I have three cards. | T |
