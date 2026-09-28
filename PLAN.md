@@ -3,7 +3,8 @@
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
 > holds *where we are and what is left*. Last updated 28 September 2026
-> (overnight, autonomous): the 3D table has had every note Andrew sent
+> (late; the voice unwired, the dialogue boxes in -- see "Back, 28 September"
+> below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
 > (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
 > (P14); **the golden vectors are complete** (fourteen modules, three Rust
 > port defects found and fixed); **the terminal is a client of the core
@@ -254,6 +255,16 @@ declarations in a box by its speaker's hand, tail to the speaker, timed to
 the voice; the score waits for the dialogue. Andrew plays in **Safari**:
 the tests run Chromium, so his Safari is the real check of the audio fixes.
 
+Then, late on 28 September: Andrew found the audio *"highly stilted"* and
+asked for it **unwired** — done, the page is silent (3.0 MB); the voice is
+parked as TODO 14 with a full count and prices (`docs/VOICE.md` §7–8). In
+the last half hour: the dialogue boxes' words now come from the phrase bank
+(`web3d/words.json`, written by `voice.py --doc`), not the recordings, which
+also gave a point called short ("Two cards.") its box; and a **WebKit smoke
+test** (Playwright's WebKit 26.6 on Linux — Safari's engine, not Safari):
+the page loads and plays, no console errors, the dialogue boxes draw with
+their tails, at 1280 x 800 and on a phone.
+
 **Open for Andrew when he is back** (nothing below is blocked on anything
 else):
 
@@ -269,6 +280,8 @@ else):
    row under the hand). Keep, or give them another home?
 3. **Faster reload at level 5** — a choice about the saved format (cache the
    opponent's moves with its generator's state).
+3a. **The declaration dialogue boxes** (TODO 16) — built, silent, waiting
+   for his eye. And the tutorial mode (TODO 15) wants its design talk.
 4. Still open from before: captions in the voice's vocabulary (*knave*,
    *tierce major*)? The whole-parties measurement of the prior (TODO 1)
    needs his sign-off on runtime and cost. The tutorial-mode design
