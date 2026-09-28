@@ -26,15 +26,19 @@ const params = new URL(window.location.href).searchParams;
 const TESTING = params.has("test");
 
 const GAME_STORE = "piquet3d.game";
-const PREF_STORE = "piquet3d.prefs";
+// Versioned: your own calls became opt-in (Andrew: "by default, the
+// opponent's voice should be on, and the user's voice should be off"). A
+// stored set from before keeps every other choice, but not that one.
+const PREF_STORE = "piquet3d.prefs.2";
+const OLD_PREF_STORE = "piquet3d.prefs";
 // Versioned: "play my winners" became opt-in, and a stored set from before
 // would keep it on without the player ever having chosen it.
 const AID_STORE = "piquet3d.aids.2";
 const DEFAULT_PREFS = {
   tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random",
-  // The voice (docs/VOICE.md): on, your opponent speaking as Cori, you in
-  // the other voice.
-  voice: true, opponentVoice: "cori", sayMine: true,
+  // The voice (docs/VOICE.md): your opponent's on, in a woman's voice;
+  // yours off until you want it, and then in the other.
+  voice: true, opponentVoice: "cori", sayMine: false,
 };
 // Playing out your winners is opt-in: Andrew, finding his cards played for
 // him mid-trick, "i didn't intend for that to happen".
@@ -47,6 +51,16 @@ function recall(key, fallback) {
   } catch (e) {
     return fallback;
   }
+}
+
+// The settings as stored, or as they were stored before the store was
+// versioned, less your own calls.
+function recallPrefs(defaults) {
+  if (recall(PREF_STORE, null)) return recall(PREF_STORE, defaults);
+  const older = recall(OLD_PREF_STORE, null);
+  if (!older) return defaults;
+  const { sayMine, ...kept } = older;
+  return { ...defaults, ...kept };
 }
 
 function store(key, value) {
@@ -67,7 +81,7 @@ async function main() {
     // "a single table top is chosen- at random- when the user opens the
     // html. but it never changes (unless manually it's changed)").
     // ?table= to try one.
-    table: chooseSurface({ chosen: params.get("table") ?? recall(PREF_STORE, DEFAULT_PREFS).surface, saved: null }),
+    table: chooseSurface({ chosen: params.get("table") ?? recallPrefs(DEFAULT_PREFS).surface, saved: null }),
     shadow: params.get("shadow") || "vsm",
     shadowMap: Number(params.get("shadowmap")) || undefined,
     blurSamples: Number(params.get("blur")) || undefined,
@@ -113,7 +127,7 @@ async function main() {
   // Asked by the system for less motion, the cards simply arrive -- unless the
   // player has chosen a speed for themselves.
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let prefs = recall(PREF_STORE, { ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
+  let prefs = recallPrefs({ ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
   const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null };
   let cutDepth = 16;
   const view = () => ({

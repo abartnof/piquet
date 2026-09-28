@@ -215,6 +215,30 @@ spends money. The running log, newest last:
   card covers the lower half of the fan while exchanging or declaring; the
   corner indices stay clear. Flagged to Andrew before; now with numbers.
 
+### Back, 28 September: the voice, never the same twice
+
+Andrew: *"i don't want *any* sounds to be repetitive"*, then *"just go ahead
+with your plan, 7mb is fine ... go back and look at the classic books ...
+remember to write these phrases down somewhere local as well."* Built
+(`docs/TABLE3D.md` P15, `docs/VOICE.md` §3): every group the voice says has
+several recordings, more for what is heard more; wordings from Cavendish,
+Cady and Foster (read afresh on the Internet Archive; seven books
+consulted, the table in `docs/VOICE.md`), each tagged with its source in
+**`docs/PHRASES.md`** — generated from the bank, tested to match. `bag.js`
+picks without repeating. Opus at 12 kb/s; the page is 6.11 MB.
+
+Then two notes from Andrew, playing the version on GitHub:
+- **The male voice babbled on *capot*** (*"kind of spastic ... a 'ne ne ne'
+  sound"*; *"yes, verified- that one is busted"*): the French terms had been
+  fed to the voices as raw phonemes. Now they are **respelt as English**
+  (his suggestion: *"english homonyms"*) -- cart, kuh-torz, kuh-pot, seez
+  yem, set yem, wheat yem -- and all seventeen groups using them re-recorded
+  in both voices (`docs/VOICE.md` §1). **For Andrew: listen again, to those
+  and anything else that babbles.** Reading phonemes is only a proxy.
+- **Defaults:** your opponent's voice on, yours off (the stored settings are
+  versioned so the change reaches a browser that had them on); in Settings,
+  **Your opponent's voice: Female | Male**, a toggle, yours the other.
+
 **Open for Andrew when he is back** (nothing below is blocked on anything
 else):
 

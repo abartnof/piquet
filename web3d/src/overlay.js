@@ -202,7 +202,7 @@ export function createOverlay(root, on) {
   ];
   const PREFS = [
     ["voice", "Voice", "Say aloud what is said at the table, as players have said it since Cavendish"],
-    ["sayMine", "Say my own calls", "Voice your calls and your count as well as your opponent's"],
+    ["sayMine", "Say my own calls", "Voice your calls and your count as well as your opponent's (off unless you turn it on)"],
     ["explain", "Explanations", "Say what the rules make of each moment, and how to act (E)"],
     ["tab", "The running score", "Show where the deal stands, stage by stage"],
     ["undo", "Undo", "Allow taking back a decision"],
@@ -241,10 +241,20 @@ export function createOverlay(root, on) {
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   table.addEventListener("change", () => on.pref("surface", table.value));
   // Your opponent's voice; you speak in the other.
-  const theirVoice = el("md-outlined-select", { "data-pref": "opponentVoice", label: "Your opponent's voice" },
-    [["cori", "Female (Cori, British)"], ["norman", "Male (Norman, American)"]].map(([v, words]) =>
-      el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
-  theirVoice.addEventListener("change", () => on.pref("opponentVoice", theirVoice.value));
+  // Which voice is your opponent's -- a toggle, not a list (Andrew: "there
+  // should be a toggle to switch if M or F is the opponent's voice or the
+  // user's"). Your own calls, when you turn them on, are in the other.
+  const VOICE_CHOICES = [["cori", "Female"], ["norman", "Male"]];
+  const voiceSet = el("md-outlined-segmented-button-set", { class: "voice-choice", "aria-label": "Your opponent's voice" },
+    VOICE_CHOICES.map(([name, words]) => el("md-outlined-segmented-button", { label: words, "data-voice": name })));
+  voiceSet.addEventListener("segmented-button-set-selection", (e) => {
+    if (e.detail.selected) on.pref("opponentVoice", VOICE_CHOICES[e.detail.index][0]);
+  });
+  const voiceRow = el("div", { class: "setting" },
+    el("span", { class: "setting-text" },
+      el("span", { class: "setting-title" }, "Your opponent's voice"),
+      el("span", { class: "setting-words" }, "A woman's or a man's; your own calls, if you have them said, are in the other")),
+    voiceSet);
   const again = el("md-text-button", {}, "New partie");
   again.addEventListener("click", () => {
     $("settings").close();
@@ -263,8 +273,8 @@ export function createOverlay(root, on) {
     el("div", { slot: "headline" }, "Settings"),
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), aidSwitches,
-      el("h3", {}, "The table"), prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, sort, table, theirVoice),
+      el("h3", {}, "The table"), prefSwitches.slice(0, 2), voiceRow, prefSwitches.slice(2),
+      el("div", { class: "selects" }, levelInSettings, speed, sort, table),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },
         [["← →", "move along your hand, or the pack when cutting"],
@@ -925,7 +935,7 @@ export function createOverlay(root, on) {
       speed.value = String(prefs.speed);
       sort.value = prefs.sort;
       table.value = prefs.surface ?? "random";
-      theirVoice.value = prefs.opponentVoice ?? "cori";
+      for (const b of voiceSet.querySelectorAll("md-outlined-segmented-button")) b.selected = b.dataset.voice === (prefs.opponentVoice ?? "cori");
       renderTab(s, prefs);
       renderBug(s);
       renderPlayedForYou(s);
