@@ -156,6 +156,31 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
+### Resume here (closed up for the night, 28 September)
+
+Everything is committed and pushed (`502e72b` and before); the VM was
+stopped by shutting it down from inside, since its service account cannot
+stop it through gcloud. The page is **silent** (3.0 MB), opens on a
+**welcome** (Tutorial / New game / Continue), has a light **tutorial**
+(TODO 15) and the **declaration dialogue boxes** (TODO 16). The voice is
+parked as TODO 14, costed in `docs/VOICE.md` §8.
+
+Waiting on Andrew, in rough order:
+1. Play the tutorial and the dialogue boxes; reword anything in
+   `web3d/src/tutorial.js`.
+2. Should a plain **New game** start with hints and explanations off? (A
+   tutorial turns them on; New game keeps the settings, on by default.)
+3. The landscape question box over the lower half of the fan (proposal:
+   move its explanation line to the left column -- see "Open for Andrew"
+   below).
+4. On a phone, Explain and Hints live only in Settings -- keep?
+5. Faster reload at level 5 (a save-format choice).
+6. The voice, if ever: whole phrases from Google (TODO 14); spending is his.
+
+Billing could not be checked from inside the VM (no billing scope); check
+<https://console.cloud.google.com/billing> -- the free-trial credit runs 90
+days from September.
+
 ### Autonomous stretch, evening of 27 September (Andrew at dinner)
 
 Andrew: *"keep working until i tell you otherwise (or you exhaust the TODO
