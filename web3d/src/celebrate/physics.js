@@ -137,6 +137,18 @@ export class Flung {
   }
 }
 
+// How high a card's lowest corner stands above the table, wherever it is in
+// the scene and however it is scaled.
+const CORNERS = [];
+for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) CORNERS.push(new Vector3((sx * CARD.width) / 2, (sy * CARD.height) / 2, (sz * CARD.thickness) / 2));
+const CORNER = new Vector3();
+export function lowestCorner(mesh) {
+  mesh.updateWorldMatrix(true, false);
+  let low = Infinity;
+  for (const c of CORNERS) low = Math.min(low, CORNER.copy(c).applyMatrix4(mesh.matrixWorld).y);
+  return low;
+}
+
 // A rotation from Euler angles in the cards' order, for scenes that pose.
 export function turned(x, y, z) {
   return new Quaternion().setFromEuler(new Euler(x, y, z, "YXZ"));
