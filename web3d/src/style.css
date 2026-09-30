@@ -1586,7 +1586,7 @@ body.celebrating :is(#info, #controls, #afloat, #narration) {
 }
 .celebrate-burst {
   position: absolute;
-  width: calc(var(--size, 1) * 150px);
+  width: calc(var(--size, 1) * 210px);
   display: grid;
   place-items: center;
   transform: translate(-50%, -50%) rotate(var(--turn, 0deg));
@@ -1604,7 +1604,7 @@ body.celebrating :is(#info, #controls, #afloat, #narration) {
      content unless the word is lifted too. */
   position: relative;
   z-index: 1;
-  font: 800 calc(var(--size, 1) * 25px) / 1 var(--font);
+  font: 800 calc(var(--size, 1) * 24px) / 1 var(--font);
   letter-spacing: 0.02em;
   color: var(--md-sys-color-on-surface);
 }

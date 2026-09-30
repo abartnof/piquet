@@ -124,14 +124,29 @@ export function plates(ctx) {
     jiggle = Math.min(1.5, jiggle + 60 / (40 + Math.hypot(x, z)));
   }
 
+  // The finale: the pile bursts toward you -- the cards fan out across the
+  // view and fly up past it, over your head, to land behind you. (Settled in
+  // a heap on the table, overlapping cards fought each other for the same
+  // height; Andrew: "the cards explode over the screen and then go away".)
+  // The camera turns first; the cards go once it is looking.
+  let launched = false;
   function finale() {
     burst = true;
-    shake = 2.5;
+    shake = 1.2;
     ctx.hud.burst(new Vector3(0, 12, -6), "PIQUET!!!", { size: 1.8, colour: PALETTE.youContainer });
+  }
+  function launch() {
+    launched = true;
+    shake = 2.5;
+    // Like a firework seen from the side: the eye drops back to look up at
+    // the pile (below), and every card arcs out wide across the view to land
+    // far off, beyond the fog -- none of them left to settle in a heap.
     for (const card of ctx.cards) {
-      const a = rng.range(0, Math.PI * 2);
-      const speed = rng.range(40, 110);
-      flung.add(card, new Vector3(Math.cos(a) * speed, rng.range(380, 560), Math.sin(a) * speed), new Vector3(rng.range(-12, 12), rng.range(-12, 12), rng.range(-12, 12)));
+      const a = rng.range(-Math.PI * 0.9, Math.PI * 0.1); // away from you, mostly
+      const far = rng.range(240, 400);
+      const land = new Vector3(Math.cos(a) * far, 0, -6 + Math.sin(a) * far * 0.8);
+      const v = ballistic(card.position, land, rng.range(1.15, 1.6));
+      flung.add(card, v, new Vector3(rng.range(-12, 12), rng.range(-12, 12), rng.range(-12, 12)));
     }
   }
 
@@ -146,7 +161,9 @@ export function plates(ctx) {
       pvx += (w * w * (aim - px) - 2 * w * pvx) * dt;
       px = clamp(px + pvx * dt, -REACH, REACH);
       tilt *= Math.exp(-7 * dt);
-      holder.position.set(px, lerp(-HELD * 2, PY, minimumJerk(clamp((t - 0.4) / 1.1, 0, 1))), PZ);
+      // Rising into place; and at the finale, down out of the way.
+      const down = burst ? minimumJerk(clamp((t - finaleAt) / 0.6, 0, 1)) : 0;
+      holder.position.set(px, lerp(lerp(-HELD * 2, PY, minimumJerk(clamp((t - 0.4) / 1.1, 0, 1))), -HELD * 3, down), PZ);
       holder.rotation.set(-0.5 * tilt, 0, -pvx * 0.0025);
 
       if (!over && spawned < N && t >= nextAt) {
@@ -187,13 +204,15 @@ export function plates(ctx) {
 
       // The pile jumps a little at every smash near it.
       jiggle *= Math.exp(-9 * dt);
-      if (!burst) {
+      if (burst && !launched) jiggle = 1.2; // shivering, about to go
+      if (!launched) {
         ctx.cards.forEach((c, i) => {
           c.position.y = pileAt[i].y + jiggle * Math.max(0, Math.sin(i * 0.37 + t * 38)) * 0.25;
         });
       }
       if (!over && spawned >= N && finaleAt < 0 && thrown.every((p) => p.done)) finaleAt = t + 1;
       if (finaleAt > 0 && !burst && t >= finaleAt) finale();
+      if (burst && !launched && t >= finaleAt + 0.45) launch();
       if (burst && !over && t >= finaleAt + 2.6) {
         over = true;
         ctx.hud.message(`Deflected ${deflected} of ${N}`, { label: "Play again", fn: () => ctx.again() });
@@ -207,9 +226,17 @@ export function plates(ctx) {
       const k = minimumJerk(clamp(t / 1.6, 0, 1));
       shake *= Math.exp(-5 * dt);
       eye.set(0, lerp(55, 118, k), lerp(60, 116, k));
-      if (shake > 0.01) eye.add(new Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).multiplyScalar(shake * 0.8));
       at.set(0, lerp(0, 6, k), lerp(0, 8, k));
-      ctx.look(eye, at, lerp(40, 46, smooth(0, 1, k)));
+      let fov = lerp(40, 46, smooth(0, 1, k));
+      // The finale: back and down, looking up at the burst.
+      if (burst) {
+        const f = minimumJerk(clamp((t - finaleAt) / 0.9, 0, 1));
+        eye.lerp(new Vector3(0, 42, 190), f);
+        at.lerp(new Vector3(0, 78, -30), f);
+        fov = lerp(fov, 58, f);
+      }
+      if (shake > 0.01) eye.add(new Vector3(rng.range(-1, 1), rng.range(-1, 1), rng.range(-1, 1)).multiplyScalar(shake * 0.8));
+      ctx.look(eye, at, fov);
     },
     dispose() {
       shards.dispose();

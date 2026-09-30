@@ -205,6 +205,8 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
   function dropScene() {
     if (scene) scene.dispose?.();
     scene = null;
+    // Cards a scene built into things come back to the table, where they are.
+    for (const card of cards) if (card.parent && card.parent !== root) root.attach(card);
     for (const [target, kind, fn] of listeners.splice(0)) target.removeEventListener(kind, fn);
     for (const mesh of extras.splice(0)) root.remove(mesh);
     for (const child of [...root.children]) if (!cards.includes(child)) root.remove(child);

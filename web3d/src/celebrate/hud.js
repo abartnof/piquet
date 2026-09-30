@@ -67,15 +67,18 @@ export function createHud(root, camera, { staging = false, onStep, onClose } = {
       if (at.z > 1 || Math.abs(at.x) > 1.2 || Math.abs(at.y) > 1.2) return;
       const x = Math.min(92, Math.max(8, (at.x * 0.5 + 0.5) * 100));
       const y = Math.min(88, Math.max(10, (-at.y * 0.5 + 0.5) * 100));
-      const n = 11;
+      // Wider than tall, as the word is, with shallow points: the word sits
+      // in clear space inside the star's inner edge, never on its ink
+      // (Andrew: the text "collides with the outline").
+      const n = 12;
       const points = [];
       for (let i = 0; i < n * 2; i++) {
         const a = (i / (n * 2)) * Math.PI * 2;
-        const r = i % 2 ? 58 + ((i * 37) % 9) : 92 + ((i * 53) % 8);
-        points.push(`${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`);
+        const r = i % 2 ? 76 + ((i * 37) % 6) : 98 + ((i * 53) % 5);
+        points.push(`${(Math.cos(a) * r * 1.45).toFixed(1)},${(Math.sin(a) * r).toFixed(1)}`);
       }
       const fill = colour ?? BRIGHTS[bursts++ % 4];
-      const star = `<svg viewBox="-105 -105 210 210"><polygon points="${points.join(" ")}" fill="${fill}" stroke="${PALETTE.ink}" stroke-width="6" stroke-linejoin="round"/></svg>`;
+      const star = `<svg viewBox="-150 -105 300 210"><polygon points="${points.join(" ")}" fill="${fill}" stroke="${PALETTE.ink}" stroke-width="5" stroke-linejoin="round"/></svg>`;
       const node = el("div", { class: "celebrate-burst" });
       node.innerHTML = star;
       node.append(el("span", {}, words));
