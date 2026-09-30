@@ -29,6 +29,7 @@ import "@material/web/labs/segmentedbutton/outlined-segmented-button.js";
 import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
 import { caption, live, scoredSince, tierOf } from "./scorebug.js";
 import { PATTERNS } from "./surfaces.js";
+import { leftNote } from "./leftovers.js";
 
 const THEM = "your opponent";
 const Them = "Your opponent";
@@ -475,7 +476,7 @@ export function createOverlay(root, on) {
         return [p.answering
           ? `${name}: ${THEM} calls “${p.answering}.”`
           : s.you_are === "elder" ? `${name}: you speak first.` : `${name}: ${THEM} called nothing.`,
-        "What do you call? Sinking a holding keeps it from your opponent, at the cost of its points."];
+        `What do you call? Sinking a holding keeps it from your opponent, at the cost of its points.${p.category === "point" ? leftNote(s) : ""}`];
       }
       case "play":
         if (s.trick && s.trick.leader === "them") {
@@ -1047,7 +1048,8 @@ export function createOverlay(root, on) {
     // The tutorial's pages (web3d/tutorial.md), open at page `at`, with back
     // and forward between them (Andrew: "they should be able to go back/fwd
     // between them"). `seen(key)` as each page shows; `done` when closed.
-    tutorial(pages, at, { seen, done } = {}) {
+    // With `popups`, the introduction says the rest will come by themselves.
+    tutorial(pages, at, { seen, done, popups = false } = {}) {
       const dialog = $("tutorial");
       let i = at;
       const spans = (list) => list.map((s) => (s.bold ? el("strong", {}, s.text) : s.italic ? el("em", {}, s.text) : s.text));
@@ -1063,6 +1065,11 @@ export function createOverlay(root, on) {
       close.addEventListener("click", () => dialog.close());
       const back = el("md-text-button", { class: "tutorial-back" }, symbol("back"), "Back");
       const next = el("md-text-button", { class: "tutorial-next", "trailing-icon": true }, "Next", symbol("forward"));
+      // Andrew: "a little note above the left/right arrows in the opening
+      // tutorial page- something like click here to go to the next tutorial
+      // page, but it's unnecessary now".
+      const note = el("p", { class: "tutorial-note" },
+        "Next shows the other pages now, but there is no need: each opens by itself when its part of the game begins.");
       back.firstChild.setAttribute("slot", "icon");
       next.lastChild.setAttribute("slot", "icon");
       const show = (to) => {
@@ -1072,8 +1079,14 @@ export function createOverlay(root, on) {
         content.replaceChildren(...page.blocks.map(block));
         dots.querySelectorAll(".dot").forEach((d, n) => d.classList.toggle("on", n === i));
         dots.setAttribute("title", `Page ${i + 1} of ${pages.length}`);
+        // A button disabled under the keyboard's focus hands it to the other,
+        // so focus never falls out of the dialog.
+        const held = dialog.contains(document.activeElement) ? document.activeElement : null;
         back.disabled = i === 0;
         next.disabled = i === pages.length - 1;
+        if (held === back && back.disabled) next.focus();
+        if (held === next && next.disabled) back.focus();
+        note.hidden = !(popups && page.key === "intro");
         dialog.shadowRoot?.querySelector(".scroller")?.scrollTo(0, 0);
         seen?.(page.key);
       };
@@ -1082,16 +1095,17 @@ export function createOverlay(root, on) {
       dialog.replaceChildren(
         el("div", { slot: "headline", class: "tutorial-head" }, title, close),
         content,
-        el("div", { slot: "actions", class: "tutorial-actions" }, back, dots, next));
+        el("div", { slot: "actions", class: "tutorial-actions" }, note, el("div", { class: "tutorial-pager" }, back, dots, next)));
       const keys = (e) => {
         if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
           e.preventDefault();
           show(i + (e.key === "ArrowRight" ? 1 : -1));
         }
       };
-      dialog.addEventListener("keydown", keys);
+      // On the document, not the dialog: the arrows page wherever focus is.
+      document.addEventListener("keydown", keys);
       dialog.addEventListener("closed", () => {
-        dialog.removeEventListener("keydown", keys);
+        document.removeEventListener("keydown", keys);
         done?.();
       }, { once: true });
       show(at);

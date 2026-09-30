@@ -956,9 +956,24 @@ md-assist-chip.pinned {
 }
 .tutorial-actions {
   flex: 1;
+  display: grid;
+  gap: 4px;
+}
+.tutorial-pager {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+/* On the introduction, in the tutorial: the other pages will come by themselves. */
+.tutorial-note {
+  margin: 0 8px;
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.tutorial-note[hidden] {
+  display: none;
 }
 .tutorial-dots {
   display: inline-flex;

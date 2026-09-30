@@ -995,9 +995,13 @@ throughout.
       elder left, the settlement's arithmetic, ...).
 
       Behaviour, as he specified: picking **Tutorial** opens the
-      introduction, and the exchange's page follows at once; the
-      declarations' and the tricks' pages pop up the first time you act in
-      those phases -- each page once, and reading ahead counts. Only in the
+      introduction, with a note above Back and Next that there is no need to
+      page ahead; the exchange's page pops up once the deal is decided (he
+      first had it follow the introduction at once, then: *"the second
+      tutorial page should pop up after the player decides if they are
+      younger/elder"*), and the declarations' and the tricks' pages the first
+      time you act in those phases -- each page once, and reading ahead
+      counts. Only in the
       partie begun as the tutorial; a second partie has none. **Settings →
       Tutorial** turns the pop-ups on or off for this partie (off by default).
       The **?** in the top bar, or the ? key, opens the pages at any time, at

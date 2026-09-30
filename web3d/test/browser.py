@@ -306,10 +306,10 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
-        # The welcome and the tutorial: Andrew's four pages -- "intro, which is
-        # immediately followed by the exchange; then declarations and play of
+        # The welcome and the tutorial: Andrew's four pages -- the introduction,
+        # then each phase's page when it comes ("declarations and play of
         # tricks pop up before those phases ... click on the tutorials button
-        # at any time ... go back/fwd between them".
+        # at any time ... go back/fwd between them").
         tut = open_page(browser, "test&welcome&level=2&seed=31")
         tut.locator("#welcome").get_by_role("button", name="Tutorial").click()
         tut.wait_for_timeout(800)
@@ -319,24 +319,17 @@ def main() -> int:
         close_x = lambda: tut.locator("#tutorial .tutorial-close").click()
         if page_title() != "Introduction":
             failures.append(f"the tutorial did not open on its introduction: {page_title()!r}")
-        # Closed on the introduction, the exchange's page follows at once.
-        close_x()
-        tut.wait_for_timeout(700)
-        if not is_open() or page_title() != "The Exchange":
-            failures.append(f"the exchange's page did not follow the introduction: {is_open()}")
-        tut.locator("#tutorial .tutorial-back").click()
-        tut.wait_for_timeout(300)
-        backward = page_title()
-        tut.locator("#tutorial .tutorial-next").click()
-        tut.wait_for_timeout(300)
-        forward = page_title()
-        if (backward, forward) != ("Introduction", "The Exchange"):
-            failures.append(f"back and forward went to {backward!r} and {forward!r}")
-        if tut.locator("#tutorial .tutorial-dots .dot.on").count() != 1:
-            failures.append("the tutorial's dots do not mark one page")
+        # In the tutorial the introduction says the rest will come by themselves.
+        if not tut.locator("#tutorial .tutorial-note").is_visible():
+            failures.append("the introduction has no note that the other pages come by themselves")
         shot(tut, "09-tutorial")
+        # Closed, nothing follows until the deal is decided (Andrew: "the
+        # second tutorial page should pop up after the player decides if they
+        # are younger/elder").
         close_x()
         tut.wait_for_timeout(700)
+        if is_open():
+            failures.append(f"a page followed the introduction at once: {page_title()!r}")
         seen = []
         for _ in range(60):
             if is_open():
@@ -360,8 +353,7 @@ def main() -> int:
             elif p["kind"] == "play":
                 tut.evaluate(f"window.piquet3d.send('play {p['legal'][0]}')")
             tut.wait_for_timeout(1200)
-        # Read already, the exchange's page does not come again.
-        if seen != ["The Declarations", "The Tricks"]:
+        if seen != ["The Exchange", "The Declarations", "The Tricks"]:
             failures.append(f"the tutorial's pages came as {seen}")
         t = tut.evaluate("window.piquet3d.tutorial()")
         if not t["on"] or not state(tut)["aids"]["hints"]:
@@ -371,6 +363,16 @@ def main() -> int:
         tut.wait_for_timeout(500)
         if not is_open() or page_title() != "The Tricks":
             failures.append(f"the ? did not open the page for the play: {is_open()}, {page_title()!r}")
+        tut.locator("#tutorial .tutorial-back").click()
+        tut.wait_for_timeout(300)
+        backward = page_title()
+        tut.locator("#tutorial .tutorial-next").click()
+        tut.wait_for_timeout(300)
+        forward = page_title()
+        if (backward, forward) != ("The Declarations", "The Tricks"):
+            failures.append(f"back and forward went to {backward!r} and {forward!r}")
+        if tut.locator("#tutorial .tutorial-dots .dot.on").count() != 1 or tut.locator("#tutorial .tutorial-note").is_visible():
+            failures.append("the dots do not mark one page, or the note shows off the introduction")
         tut.keyboard.press("ArrowLeft")
         tut.wait_for_timeout(300)
         if page_title() != "The Declarations":

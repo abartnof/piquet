@@ -395,11 +395,12 @@ async function main() {
 
   // ---- the tutorial ------------------------------------------------------------
   //
-  // Andrew's four pages (web3d/tutorial.md): "intro, which is immediately
-  // followed by the exchange; then declarations and play of tricks pop up
-  // before those phases of gameplay. users should be able to click on the
-  // tutorials button at any time to bring these up". A page read once --
-  // paging ahead from the introduction counts -- does not pop up again.
+  // Andrew's four pages (web3d/tutorial.md): the introduction when the
+  // tutorial begins, then each phase's page when it comes -- the exchange's
+  // once the deal is decided (Andrew: "the second tutorial page should pop up
+  // after the player decides if they are younger/elder"), the declarations'
+  // and the tricks' before those phases. The ? brings them up at any time. A
+  // page read once -- paging ahead counts -- does not pop up again.
   const PAGES = parseTutorial(TUTORIAL_TEXT);
   let tutorial = recall(TUTORIAL_STORE, { on: false, seed: null, seen: [] });
   let reading = false;
@@ -407,6 +408,8 @@ async function main() {
   function read(key, then) {
     reading = true;
     overlay.tutorial(PAGES, PAGE_KEYS.indexOf(key), {
+      // In the tutorial the pages come by themselves; the introduction says so.
+      popups: inTutorial(),
       seen: (k) => {
         if (!inTutorial() || tutorial.seen.includes(k)) return;
         tutorial = { ...tutorial, seen: [...tutorial.seen, k] };
@@ -457,9 +460,7 @@ async function main() {
   function startTutorial() {
     newPartie(engine.state().level, true);
     tutorialOn([]);
-    // The introduction, then at once the exchange's page, unless it was
-    // paged to already.
-    read("intro", () => (tutorial.seen.includes("exchange") ? introduce() : read("exchange")));
+    read("intro");
   }
 
   function newPartie(n, force = false) {
