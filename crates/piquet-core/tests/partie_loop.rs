@@ -107,7 +107,10 @@ fn a_level_partie_plays_two_more_deals_then_may_be_drawn() {
     assert!(!partie.complete(), "level after six: two more");
     assert_eq!(partie.deals_left(), 2);
     partie = partie.record_scores(30, 0).unwrap();
-    assert!(!partie.complete(), "both extra deals are played, whatever the first");
+    assert!(
+        !partie.complete(),
+        "both extra deals are played, whatever the first"
+    );
     partie = partie.record_scores(30, 0).unwrap();
     let settlement = partie.settlement().expect("eight deals: settled");
     assert!(settlement.winner.is_none(), "level again: a draw");
