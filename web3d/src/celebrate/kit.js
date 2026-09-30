@@ -2,7 +2,7 @@
 // flat bands, the ink line, and the page's Material colours -- bright and
 // clean, never the prototype's dark room (Andrew: "use the normal look").
 
-import { Color, DynamicDrawUsage, InstancedMesh, Mesh, MeshToonMaterial, Object3D } from "three";
+import { BufferAttribute, Color, DynamicDrawUsage, InstancedMesh, Mesh, MeshToonMaterial, Object3D } from "three";
 import { INK, inkMaterial, toonRamp } from "../materials.js";
 import { G } from "./physics.js";
 
@@ -44,9 +44,23 @@ export function kit(stage) {
   stage.registerInk?.(ink);
   const toon = (color, options = {}) => new MeshToonMaterial({ color: new Color(color), gradientMap: ramp, ...options });
   // A mesh in toon, with the ink line round it. The line needs smooth
-  // normals, which lathes, spheres and tori have.
-  function inked(geometry, material) {
-    if (!geometry.getAttribute("outlineNormal")) geometry.setAttribute("outlineNormal", geometry.getAttribute("normal"));
+  // normals, which lathes, spheres and tori have; a box's are split at its
+  // corners, so its line is pushed out from its middle instead.
+  function inked(geometry, material, { box = false } = {}) {
+    if (!geometry.getAttribute("outlineNormal")) {
+      if (box) {
+        const at = geometry.getAttribute("position");
+        const out = new Float32Array(at.count * 3);
+        for (let i = 0; i < at.count; i++) {
+          const x = at.getX(i);
+          const y = at.getY(i);
+          const z = at.getZ(i);
+          const l = Math.hypot(x, y, z) || 1;
+          out.set([x / l, y / l, z / l], i * 3);
+        }
+        geometry.setAttribute("outlineNormal", new BufferAttribute(out, 3));
+      } else geometry.setAttribute("outlineNormal", geometry.getAttribute("normal"));
+    }
     const mesh = new Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
