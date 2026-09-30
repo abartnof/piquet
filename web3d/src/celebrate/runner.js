@@ -18,6 +18,7 @@
 // dispose() }, with a `title`, and `interactive` and `how` if it is a game.
 
 import { Group, Vector3 } from "three";
+import { minimumJerk } from "../easing.js";
 import { lying, toss } from "../kinematics.js";
 import { CARD } from "../units.js";
 import { random } from "./physics.js";
@@ -54,6 +55,8 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
   let raf = null;
   let manual = false;
   const listeners = [];
+  let blend = null; // where the eye was when the scene began
+  const BLEND = 1.2; // s
   const pointer = { x: 0, y: 0, down: false, id: null };
   const keys = new Set();
 
@@ -115,13 +118,22 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
     keys,
     pile: () => pilePoses(),
     extra,
-    // Look from `from` at `at`, with a field of view if given.
+    // Look from `from` at `at`, with a field of view if given. For a scene's
+    // first moments the eye travels there from where the gather left it,
+    // rather than jumping.
     look(from, at, fov) {
       const c = stage.camera;
       c.position.copy(from);
       c.lookAt(at);
-      if (fov && fov !== c.fov) {
-        c.fov = fov;
+      const target = fov ?? c.fov;
+      if (blend && clock < BLEND) {
+        const k = minimumJerk(clock / BLEND);
+        c.position.lerpVectors(blend.position, from, k);
+        c.quaternion.slerpQuaternions(blend.quaternion, c.quaternion.clone(), k);
+        c.fov = blend.fov + (target - blend.fov) * k;
+        c.updateProjectionMatrix();
+      } else if (target !== c.fov) {
+        c.fov = target;
         c.updateProjectionMatrix();
       }
     },
@@ -218,6 +230,8 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
 
   function begin(name) {
     const make = scenes[name];
+    const c = stage.camera;
+    blend = { position: c.position.clone(), quaternion: c.quaternion.clone(), fov: c.fov };
     if (make.how) hud.how(make.how);
     scene = make(ctx);
   }

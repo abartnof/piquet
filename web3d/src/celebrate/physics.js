@@ -59,14 +59,16 @@ export function random(seed = 1) {
   return next;
 }
 
-// How far a card's lowest point lies below its centre, as it is turned.
+// How far a card's lowest point lies below its centre, as it is turned (and,
+// if given, scaled).
 const HALF = new Vector3();
-export function lowestBelow(quaternion) {
+const ONE = new Vector3(1, 1, 1);
+export function lowestBelow(quaternion, scale = ONE) {
   let low = 0;
   for (const sx of [-1, 1]) {
     for (const sy of [-1, 1]) {
       for (const sz of [-1, 1]) {
-        HALF.set((sx * CARD.width) / 2, (sy * CARD.height) / 2, (sz * CARD.thickness) / 2).applyQuaternion(quaternion);
+        HALF.set((sx * CARD.width * scale.x) / 2, (sy * CARD.height * scale.y) / 2, (sz * CARD.thickness * scale.z) / 2).applyQuaternion(quaternion);
         low = Math.min(low, HALF.y);
       }
     }

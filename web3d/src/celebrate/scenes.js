@@ -4,5 +4,6 @@
 import { plates } from "./plates.js";
 import { pong } from "./pong.js";
 import { cupball } from "./cupball.js";
+import { disco } from "./disco.js";
 
-export const SCENES = { plates, pong, cupball };
+export const SCENES = { plates, pong, cupball, disco };
