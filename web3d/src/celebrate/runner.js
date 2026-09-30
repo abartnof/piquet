@@ -211,6 +211,7 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
     hud.clear();
     keys.clear();
     pointer.down = false;
+    for (const card of cards) card.scale.setScalar(1);
   }
 
   function begin(name) {

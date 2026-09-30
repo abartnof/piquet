@@ -127,3 +127,17 @@ test("plate smash is a game you can finish: plates smash, and the result comes",
   assert.equal(result.action.label, "Play again");
   run.stop();
 });
+
+test("pong is a game you can finish: first to five, and the result comes", () => {
+  const t = table();
+  const run = createCelebrations({ stage: t.stage, deck: t.deck, hud: t.hud, scenes: SCENES, seed: 9 });
+  run.manual();
+  run.play("pong", { from: t.meshes });
+  // Your paddle held still in the middle; your opponent plays on.
+  run.tick(180 * 1000);
+  const result = t.said.messages.at(-1);
+  assert.ok(result, "the game ended");
+  assert.match(result.words, /^(You win|Your opponent wins)$/);
+  assert.match(t.said.scores.at(-1), /^You [0-5] · [0-5] Your opponent$/);
+  run.stop();
+});

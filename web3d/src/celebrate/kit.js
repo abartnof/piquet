@@ -154,3 +154,39 @@ export class Flakes {
     this.mesh.dispose();
   }
 }
+
+// Cards on their way somewhere: each move is a path (t in 0..1 to a pose),
+// begun at `start` seconds and lasting `length`. A move lands exactly on its
+// end and then lets the card go -- the scene takes it from there.
+export class Moves {
+  constructor() {
+    this.list = [];
+  }
+
+  add(mesh, path, start, length) {
+    this.list.push({ mesh, path, start, length });
+  }
+
+  // Place every card that is moving; true while any is still to arrive.
+  update(t) {
+    let pending = false;
+    this.list = this.list.filter((m) => {
+      if (t < m.start) {
+        pending = true;
+        return true;
+      }
+      const u = Math.min(1, (t - m.start) / m.length);
+      const p = m.path(u);
+      m.mesh.position.copy(p.position);
+      m.mesh.quaternion.copy(p.quaternion);
+      if (u < 1) pending = true;
+      return u < 1;
+    });
+    return pending;
+  }
+
+  // Whether this card is still on its way (or yet to leave).
+  moving(mesh) {
+    return this.list.some((m) => m.mesh === mesh);
+  }
+}
