@@ -1046,9 +1046,8 @@ export function createOverlay(root, on) {
       };
       dialog.replaceChildren(
         el("div", { slot: "headline" }, "Piquet"),
-        el("div", { slot: "content", class: "welcome" },
-          el("p", {}, "The classic card game for two, against your opponent."),
-          canContinue ? el("p", { class: "welcome-note" }, "A partie is under way.") : null),
+        // Just the choice (Andrew: the tagline went).
+        canContinue ? el("div", { slot: "content", class: "welcome" }, el("p", { class: "welcome-note" }, "A partie is under way.")) : null,
         el("div", { slot: "actions" },
           canContinue ? el("md-text-button", { onclick: pick("new") }, "New game") : null,
           el(canContinue ? "md-text-button" : "md-filled-tonal-button", { onclick: pick("tutorial") }, "Tutorial"),
