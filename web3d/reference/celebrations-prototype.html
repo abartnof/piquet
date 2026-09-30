@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Piquet end-game celebrations (export: 7 scenes)</title>
+<style>
+html,body{margin:0;height:100%;background:#20232a;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f3efe4}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:3}
+.shout{position:absolute;transform:translate(-50%,-50%);font:900 10vmin/1 Impact,"Arial Black",system-ui,sans-serif;letter-spacing:.02em;color:#f3efe4;-webkit-text-stroke:.6vmin #15171c;paint-order:stroke fill;text-shadow:.8vmin .8vmin 0 #15171c;white-space:nowrap;animation:pop 1.4s ease-out forwards}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.2) rotate(var(--r));opacity:0}14%{transform:translate(-50%,-50%) scale(1.25) rotate(var(--r));opacity:1}28%{transform:translate(-50%,-50%) scale(1) rotate(var(--r))}80%{opacity:1}100%{transform:translate(-50%,-50%) scale(1.08) rotate(var(--r));opacity:0}}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:4}
+#score{position:fixed;top:14px;left:0;right:0;text-align:center;font:800 9vmin/1 Impact,"Arial Black",system-ui,sans-serif;color:#f3efe4;opacity:.85;z-index:3;pointer-events:none;text-shadow:.6vmin .6vmin 0 #15171c}
+#score small{display:block;font:500 13px system-ui;letter-spacing:.04em;opacity:.7;text-shadow:none;margin-top:6px}
+#msg{position:fixed;left:0;right:0;top:34%;text-align:center;z-index:6;pointer-events:none}
+#msg .big{font:900 11vmin/1.05 Impact,"Arial Black",system-ui,sans-serif;text-shadow:.8vmin .8vmin 0 #15171c;-webkit-text-stroke:.5vmin #15171c;paint-order:stroke fill}
+#msg button{pointer-events:auto;margin-top:18px;font:600 16px system-ui;padding:11px 22px;border-radius:10px;border:2px solid #15171c;background:#f2a33a;color:#15171c;cursor:pointer}
+#hint{position:fixed;top:14px;left:14px;font:500 13px system-ui;opacity:.75;z-index:3;pointer-events:none;max-width:60vw}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:26px 8px 10px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;background:linear-gradient(rgba(21,23,28,0),rgba(21,23,28,.9) 45%);z-index:5}
+#bar button{font:500 13px system-ui;padding:7px 11px;border-radius:8px;border:1px solid #5a5f6b;background:#2a2d35;color:#f3efe4;cursor:pointer}
+#bar button:hover{border-color:#f3efe4}
+#bar button.on{background:#f2a33a;color:#15171c;border-color:#f2a33a}
+#bar button.util{border-style:dashed}
+.comic{position:absolute;transform:translate(-50%,-50%) rotate(var(--r));pointer-events:none;animation:cpop 1.2s ease-out forwards}
+.comic svg{width:100%;display:block;overflow:visible}
+.comic .ct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:900 var(--f)/1 Impact,"Arial Black",system-ui,sans-serif;letter-spacing:.02em;color:#15171c;transform:rotate(-5deg);text-align:center}
+@keyframes cpop{0%{transform:translate(-50%,-50%) rotate(var(--r)) scale(.1);opacity:0}16%{transform:translate(-50%,-50%) rotate(var(--r)) scale(1.28);opacity:1}30%{transform:translate(-50%,-50%) rotate(var(--r)) scale(1)}82%{opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--r)) scale(1.08);opacity:0}}
+@media (prefers-reduced-motion:reduce){.shout{animation-duration:2.4s}}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="flash"></div>
+<div id="score"></div>
+<div id="msg"></div>
+<div id="hint">Pick a celebration below. Each one starts from the pile.</div>
+<div id="bar"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================================================
+   PIQUET END-GAME CELEBRATIONS  -  HANDOFF NOTES FOR THE NEXT LLM / DEVELOPER
+   three.js r128 (global build from cdnjs).  Single file, no build step.  7 scenes.
+   =====================================================================================================
+
+   READ THIS FIRST: WHO/WHAT/WHY
+   -----------------------------
+   The user is building a piquet card video game (32-card deck, 7 through Ace). Their engine is written in Rust and
+   the rendering layer is three.js. The visual identity they want is 3D cartoon cel-shading, vector-based and
+   minimalist, with a strong preference for MONOCHROME / restrained palettes. The computer opponent "speaks"
+   piquet calls in synthesized voices (that is why this file uses WebAudio synths + speechSynthesis-style audio
+   rather than sampled audio).
+
+   This file is the "end-of-game celebration" layer: when a hand/game ends, the game calls one of these scenes.
+   The user brainstormed 23 celebration ideas with me, picked 11, iterated on them, and then asked to export
+   the 7 they liked best (this file). Dropped from this export (they exist in an earlier version, not here):
+   solitaire waterfall, card pinata, Holi color burst, samba carnival, golden trophy reveal.
+
+   THE USER'S STANDING RULES (apply to every scene, including any you add)
+   -----------------------------------------------------------------------
+   1. EVERY celebration starts from the 32 cards stacked in a pile on the table (resetDeck() builds that pile).
+   2. More than 32 cards may be used. Extras are cloned "sneakily" from the pile mid-motion (extraCard()).
+      WHY: the user wanted the visual story "the pile transforms into the thing" without being limited to 32 pieces.
+   3. Camera freedom: the scene owns the camera (setCam). The user explicitly said to play with camera angles.
+   4. AUTHENTIC PHYSICS WHERE POSSIBLE. Things that fly must follow real ballistic arcs under gravity (G below),
+      hops are parabolas (par()), strings are constrained rigid/verlet ropes, collisions have restitution.
+      Do not fake with sine bounces or straight-line tweens when a real trajectory is available.
+   5. MOTION EASING WHERE THINGS ARE ANIMATED, i.e. avoid constant-rate motion. Use eio()/eo()/eob()/sm() for
+      tweens and spin() for orbit angles (it integrates a smoothstep speed ramp so orbits ease in). Free rotation of a
+      thrown object is the one legitimate constant-rate case (no torque in air).
+   6. MONOCHROME palette: ink / paper / mid-grey with ONE accent (amber). Card faces are drawn in ink on paper;
+      hearts/diamonds are dark grey rather than red on purpose. Do not introduce rainbow colors unless asked.
+   7. The word "PIQUET!" replaces "Opa!" style shouts. It is shown as a COMIC-BOOK impact burst (comic()) at the
+      spot where something lands, not as audio.
+   8. Fun, silly, culturally-varied energy is welcome, but ALWAYS listen to taste feedback (see revision history).
+
+   HOW THE USER GIVES FEEDBACK (so you can predict them)
+   -----------------------------------------------------
+   Short, decisive notes, often numbered. They want real physics and real geometry (see the disco ball and the
+   plates). They react to how things LOOK: e.g. the ticker-tape ribbons read as something unintended and were removed
+   entirely, so be conservative with long wiggly organic shapes. They tell you the input device that suits a game
+   (cup-and-ball is mouse/fingertip only, not keyboard). Test claims honestly: NOTHING in this file has been seen in
+   a real browser by me (see TESTING).
+
+   ARCHITECTURE MAP (top to bottom)
+   --------------------------------
+   * Constants/helpers: PAL palette; G (gravity); par(); spin(); ballistic(); easing fns; V = THREE.Vector3.
+   * Renderer/scene/lights: hemi + sun (sun casts soft shadows). restoreLights() resets whatever a scene dimmed.
+   * Toon look: MeshToonMaterial + 3-step gradientMap (gradTex). Outlines = EdgesGeometry on cards.
+   * Cards: makeCard() builds a THREE.Group (box mesh + edge lines). deck = the 32 real cards, shuffled once.
+       - Euler order is 'YXZ' for ALL cards/groups that get rotated (so rotation.y is yaw about world vertical for a
+         flat card; cardHalfY() and CardPhys rely on this).
+       - Flat on table = rotation.x = -PI/2. Upright facing camera = rotation.x = 0 (front face is +z).
+       - extraCard() pulls clones from a pool (shares the source card's materials). resetDeck() returns everything.
+       - Card fronts are per-card materials so scenes can tint them (front.color); resetDeck() restores white.
+   * Systems: CardPhys (rigid-ish flat cards with bounce + settle), Flakes (instanced paper/shard particles with
+     gravity/drag/flutter/landing), Puffs (instanced camera-facing soft sprites), AU (WebAudio synth + beat clock),
+     HUD helpers (shout(), comic(), flash(), scoreEl, msgEl), disposeTree().
+   * Assembly helpers mkSlot/beginSlots/stepSlots: attach cards to body-part groups and ease them from the pile into
+     place (used by macarena, card people, cup-and-ball).
+   * Scene contract: CEL.name = function(){ ...build...; return {update(dt,t), dispose()} }.
+       - dt is already multiplied by the global `slow` (slow-mo hook); t is scene time. Scenes that need real time
+         while slowed accumulate dt/slow (see plates).
+       - The scene MUST call setCam(...) every frame, and dispose() must remove listeners it added.
+   * Loop/API: window.Celebrations = {names, play(name), stop(), random()}. URL ?play=name autoplays.
+       Integration idea for the Rust game: call Celebrations.play('plates') (etc.) from the JS side of the renderer
+       when the engine reports game over; call Celebrations.stop() to return to the table. Audio needs a prior user
+       gesture (browser autoplay policy); the toolbar buttons satisfy that in this demo.
+
+   WORLD SCALE / PHYSICS CONSTANTS
+   -------------------------------
+   G = 24.5 units/s^2 means 1 unit ~ 0.4 m (toy-scale table) and real gravity 9.81 m/s^2. This was chosen so arcs are
+   readable on screen while remaining a consistent, real-looking gravity across ALL scenes. A card is 0.7 x 1.0 units.
+   Table radius is 15. Do not change G per scene; change launch velocities instead.
+
+   TESTING (be honest about this when you report to the user)
+   ---------------------------------------------------------
+   I could not run a browser. Verification done: node --check for syntax; a stubbed-three.js smoke test that runs every
+   scene for hundreds/thousands of frames to catch runtime errors (macarena/people run long enough to hit lap/loop
+   logic); standalone numeric checks of the ballistic solver (lands on target), spin() continuity, the card-people
+   yaw loop continuity, and the cup-and-ball physics (string never stretches, ball settles in cup when dropped, a
+   flick tosses it). Visual framing, timings and feel are UNVERIFIED and will likely need small tweaks.
+
+   PERFORMANCE NOTES
+   -----------------
+   macarena can reach ~330 cards (10 extra dancers x 32) - lower MAXX in that scene if a phone struggles.
+   confetti uses up to 9000 instanced pieces. disco recomputes ~500 mirror colors per frame in JS.
+
+   REVISION HISTORY IN THE USER'S WORDS (why things are the way they are)
+   ----------------------------------------------------------------------
+   * Plates: "fly in on parabolas, using real gravity physics. plates should explode. ...comic book 'WHAM!' at the site of
+     impact... wherever a plate lands it goes 'PIQUET!'... the user has a plate they can move left or right (same as pong,
+     but held perpendicular to the table in front of the camera) to swat the other plates away." Later: replace the word
+     'swatted' with 'deflected' (done everywhere: HUD, messages, variables, comments).
+   * Confetti: first version was "ticker tape" with unspooling ribbons. Feedback: it "looks too much like sperm now",
+     replace the ticker tape with confetti. Ribbons were deleted, confetti kept and enlarged. Earlier feedback:
+     "the parade should never surpass the city limits" (it drove off into the void) -> parade now eases to a stop
+     inside the city and an end-wall closes the street.
+   * Disco: "the disco ball should be shinier. think about how actual disco balls are made of many small surfaces."
+     -> ~500 flat mirror tiles with real specular glints and real reflected-ray floor spots.
+   * Macarena: "every time the camera makes a full circle around the macarena dancer, another dancing card person
+     should appear... as if someone threw a deck of cards off-screen, and when the deck hit the table, the cards formed
+     into a person. limit this to 10 extra dancers."
+   * Card people: "when you're done going through the card people's legs, the camera should turn around to see them peeking
+     at you and being very excited - you go through their legs again, ad infinitum."
+   * Card pong: cards as paddles/ball, other cards cheer at the bottom of the screen; drag with mouse/finger or up/down
+     arrow keys. Exported here as 1-PLAYER (vs computer) only per the user's request.
+   * Cup and ball: "the cards turn into a cup and a ball, attached by a string. the user jiggles the cup around and tries to
+     swing the ball into the cup. give the ball weight and make it swing around somewhat realistically." Then:
+     "can't be played with a keyboard, that's a mouse/fingertip one" -> pointer only.
+   ===================================================================================================== */
+
+const PI=Math.PI,TAU=PI*2;
+const clamp=(x,a,b)=>Math.min(b,Math.max(a,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const rand=(a,b)=>a+Math.random()*(b-a);
+const pick=a=>a[(Math.random()*a.length)|0];
+const sm=(a,b,x)=>{const t=clamp((x-a)/(b-a),0,1);return t*t*(3-2*t)};
+const eo=t=>1-Math.pow(1-clamp(t,0,1),3);
+const eio=t=>{t=clamp(t,0,1);return t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2};
+const eob=t=>{t=clamp(t,0,1);const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+const wrapPI=a=>{a=(a+PI)%TAU;if(a<0)a+=TAU;return a-PI};
+const G=24.5; /* world gravity in units/s^2: 1 unit ~ 0.4 m (a toy-scale table), so 9.81 m/s^2 */
+const par=f=>{f=f-Math.floor(f);return 4*f*(1-f);}; /* height profile of a real ballistic hop, 0..1 */
+/* integral of a smoothstep speed ramp: an orbit angle that eases into motion instead of starting at full rate */
+const spin=(t,a,b)=>{if(t<=a)return 0;const L=b-a;if(t>=b)return L*0.5+(t-b);const u=(t-a)/L;return L*(u*u*u-u*u*u*u/2);};
+const V=THREE.Vector3;
+const ballistic=(p0,p1,T)=>new V((p1.x-p0.x)/T,(p1.y-p0.y)/T+0.5*G*T,(p1.z-p0.z)/T); /* launch velocity that lands p0 -> p1 in T seconds under G */
+const $=id=>document.getElementById(id);
+
+const PAL={ink:0x15171c,dark:0x2a2d35,table:0x3a3e47,felt:0x434853,mid:0x8b9099,paper:0xf3efe4,accent:0xf2a33a,bg:0x20232a};
+
+/* ---------------------------------------------------------------- renderer */
+const canvas=$('c');
+const renderer=new THREE.WebGLRenderer({canvas:canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(PAL.bg);
+scene.fog=new THREE.Fog(PAL.bg,45,120);
+const camera=new THREE.PerspectiveCamera(45,1,0.05,220);
+function resize(){const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
+window.addEventListener('resize',resize);resize();
+
+const hemi=new THREE.HemisphereLight(0xffffff,0x5a5f6b,0.85);scene.add(hemi);
+const sun=new THREE.DirectionalLight(0xffffff,0.9);
+sun.position.set(6,16,9);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+{const s=sun.shadow.camera;s.left=-20;s.right=20;s.top=20;s.bottom=-20;s.near=1;s.far=70;}
+sun.shadow.bias=-0.0006;scene.add(sun);
+function restoreLights(){hemi.intensity=0.85;sun.intensity=0.9;scene.background.setHex(PAL.bg);}
+
+/* ---------------------------------------------------------------- materials */
+const gradTex=new THREE.DataTexture(new Uint8Array([90,170,255]),3,1,THREE.LuminanceFormat);
+gradTex.minFilter=gradTex.magFilter=THREE.NearestFilter;gradTex.needsUpdate=true;
+const toon=(color,o)=>new THREE.MeshToonMaterial(Object.assign({color:color,gradientMap:gradTex},o||{}));
+function canvasTex(w,h,draw){const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'));const t=new THREE.CanvasTexture(c);t.anisotropy=4;return t;}
+const softTex=canvasTex(64,64,c=>{const g=c.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,'rgba(255,255,255,1)');g.addColorStop(0.55,'rgba(255,255,255,0.7)');g.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=g;c.fillRect(0,0,64,64);});
+
+/* ---------------------------------------------------------------- table */
+const table=new THREE.Mesh(new THREE.CylinderGeometry(15,15,0.4,72),toon(PAL.table));
+table.position.y=-0.2;table.receiveShadow=true;scene.add(table);
+const felt=new THREE.Mesh(new THREE.CircleGeometry(13.6,72),toon(PAL.felt));
+felt.rotation.x=-PI/2;felt.position.y=0.002;felt.receiveShadow=true;scene.add(felt);
+
+/* ---------------------------------------------------------------- cards */
+const CW=0.7,CH=1.0,CT=0.012;
+const cardGeo=new THREE.BoxGeometry(CW,CH,CT);
+const cardEdges=new THREE.EdgesGeometry(cardGeo);
+const lineMat=new THREE.LineBasicMaterial({color:PAL.ink});
+const edgeMat=toon(PAL.paper);
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function drawSuit(c,suit,x,y,s){
+  if(suit==='H'){c.beginPath();c.moveTo(x,y+s*.9);c.bezierCurveTo(x-s*1.3,y+s*.1,x-s*.8,y-s*.9,x,y-s*.35);c.bezierCurveTo(x+s*.8,y-s*.9,x+s*1.3,y+s*.1,x,y+s*.9);c.fill();}
+  else if(suit==='D'){c.beginPath();c.moveTo(x,y-s);c.lineTo(x+s*.7,y);c.lineTo(x,y+s);c.lineTo(x-s*.7,y);c.closePath();c.fill();}
+  else if(suit==='S'){c.beginPath();c.moveTo(x,y-s*.95);c.bezierCurveTo(x-s*1.3,y-s*.1,x-s*.8,y+s*.8,x,y+s*.3);c.bezierCurveTo(x+s*.8,y+s*.8,x+s*1.3,y-s*.1,x,y-s*.95);c.fill();c.beginPath();c.moveTo(x,y+s*.2);c.lineTo(x-s*.35,y+s*.95);c.lineTo(x+s*.35,y+s*.95);c.closePath();c.fill();}
+  else{const r=s*.42;[[0,-.45],[-.5,.2],[.5,.2]].forEach(p=>{c.beginPath();c.arc(x+p[0]*s,y+p[1]*s,r,0,TAU);c.fill();});c.beginPath();c.moveTo(x,y);c.lineTo(x-s*.3,y+s*.95);c.lineTo(x+s*.3,y+s*.95);c.closePath();c.fill();}
+}
+const PIPS={'7':[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1],[0,-.5]],'8':[[-1,-1],[1,-1],[-1,0],[1,0],[-1,1],[1,1],[0,-.5],[0,.5]],'9':[[-1,-1],[1,-1],[-1,-.33],[1,-.33],[-1,.33],[1,.33],[-1,1],[1,1],[0,0]],'10':[[-1,-1],[1,-1],[-1,-.33],[1,-.33],[-1,.33],[1,.33],[-1,1],[1,1],[0,-.66],[0,.66]]};
+function faceTex(rank,suit){
+  return canvasTex(256,366,c=>{
+    c.fillStyle='#f3efe4';c.fillRect(0,0,256,366);
+    c.strokeStyle='#15171c';c.lineWidth=6;rr(c,8,8,240,350,22);c.stroke();
+    const col=(suit==='H'||suit==='D')?'#4b4f59':'#15171c';
+    c.fillStyle=col;c.strokeStyle=col;c.font='bold 46px Georgia,serif';c.textAlign='center';c.textBaseline='middle';
+    c.fillText(rank,38,48);drawSuit(c,suit,38,94,15);
+    c.save();c.translate(256,366);c.rotate(PI);c.fillText(rank,38,48);drawSuit(c,suit,38,94,15);c.restore();
+    if(rank==='A'){drawSuit(c,suit,128,183,74);}
+    else if(PIPS[rank]){PIPS[rank].forEach(p=>{c.save();c.translate(128+p[0]*50,183+p[1]*108);if(p[1]>0)c.rotate(PI);drawSuit(c,suit,0,0,25);c.restore();});}
+    else{c.lineWidth=4;rr(c,58,80,140,206,10);c.stroke();c.font='bold 108px Georgia,serif';c.fillText(rank,128,186);drawSuit(c,suit,128,112,20);c.save();c.translate(128,262);c.rotate(PI);drawSuit(c,suit,0,0,20);c.restore();}
+  });
+}
+const backMat=toon(0xffffff,{map:canvasTex(256,366,c=>{
+  c.fillStyle='#15171c';c.fillRect(0,0,256,366);c.strokeStyle='#f3efe4';c.lineWidth=6;rr(c,8,8,240,350,22);c.stroke();
+  c.save();rr(c,20,20,216,326,14);c.clip();c.lineWidth=2;c.beginPath();
+  for(let i=-400;i<600;i+=26){c.moveTo(i,20);c.lineTo(i+340,350);c.moveTo(i+340,20);c.lineTo(i,350);}
+  c.stroke();c.restore();
+  c.fillStyle='#f3efe4';c.beginPath();c.moveTo(128,153);c.lineTo(158,183);c.lineTo(128,213);c.lineTo(98,183);c.closePath();c.fill();
+})});
+function makeCard(rank,suit,front){
+  const g=new THREE.Group();g.rotation.order='YXZ';
+  const m=new THREE.Mesh(cardGeo,[edgeMat,edgeMat,edgeMat,edgeMat,front,backMat]);
+  m.castShadow=true;m.receiveShadow=true;g.add(m);g.add(new THREE.LineSegments(cardEdges,lineMat));
+  g.userData={isCard:true,rank:rank,suit:suit,front:front};return g;
+}
+const deck=[];
+['S','H','D','C'].forEach(s=>['7','8','9','10','J','Q','K','A'].forEach(r=>deck.push(makeCard(r,s,toon(0xffffff,{map:faceTex(r,s)})))));
+for(let i=deck.length-1;i>0;i--){const j=(Math.random()*(i+1))|0;const t=deck[i];deck[i]=deck[j];deck[j]=t;}
+deck.forEach(c=>scene.add(c));
+const extras=[];
+function extraCard(){
+  let c=null;for(const e of extras){if(!e.userData.used){c=e;break;}}
+  if(!c){const s=pick(deck);c=makeCard(s.userData.rank,s.userData.suit,s.userData.front);extras.push(c);}
+  c.userData.used=true;c.visible=true;c.scale.set(1,1,1);scene.add(c);c.rotation.set(-PI/2,0,0);return c;
+}
+function pileTransform(i){return{x:Math.sin(i*12.9)*0.05,z:Math.cos(i*7.7)*0.05,y:CT*0.5+i*CT*1.15,yaw:Math.sin(i*5.1)*0.22};}
+const pileTop=()=>CT*1.15*32+0.02;
+function resetDeck(){
+  deck.forEach((c,i)=>{const p=pileTransform(i);scene.add(c);c.visible=true;c.rotation.set(-PI/2,p.yaw,0);c.position.set(p.x,p.y,p.z);c.scale.set(1,1,1);c.userData.front.color.set(0xffffff);});
+  extras.forEach(e=>{e.userData.used=false;e.visible=false;scene.add(e);});
+}
+resetDeck();
+
+/* ---------------------------------------------------------------- helpers */
+function disposeTree(o){
+  if(o.userData&&o.userData.isCard)return;
+  for(const ch of o.children.slice())disposeTree(ch);
+  if(o.geometry)o.geometry.dispose();
+  if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{if(m.map&&m.map!==softTex)m.map.dispose();m.dispose();});}
+}
+function cardHalfY(c){const s=c.scale.x,rx=c.rotation.x,rz=c.rotation.z;return(Math.abs(Math.sin(rz))*CW/2+Math.abs(Math.cos(rz))*CH/2)*Math.abs(Math.cos(rx))*s+CT*0.6;}
+
+class CardPhys{
+  constructor(){this.list=[];}
+  add(c,v,w,o){const b=Object.assign({c:c,v:v.clone(),w:w.clone(),g:G,e:0.45,fr:0.85,st:0,settle:true,onBounce:null},o||{});this.list.push(b);return b;}
+  update(dt){
+    for(const b of this.list){
+      if(b.dead)continue;const c=b.c;
+      if(b.st===0){
+        b.v.y-=b.g*dt;c.position.addScaledVector(b.v,dt);
+        c.rotation.x+=b.w.x*dt;c.rotation.y+=b.w.y*dt;c.rotation.z+=b.w.z*dt;
+        const hy=cardHalfY(c);
+        if(c.position.y<hy&&b.v.y<0){
+          c.position.y=hy;
+          if(b.settle&&b.v.y>-2.2){b.st=1;b.v.y=0;}
+          else{b.v.y*=-b.e;b.v.x*=b.fr;b.v.z*=b.fr;b.w.multiplyScalar(0.7);if(b.onBounce)b.onBounce(b);}
+        }
+      }else{
+        c.position.addScaledVector(b.v,dt);b.v.multiplyScalar(Math.max(0,1-7*dt));
+        const k=Math.min(1,dt*10);
+        const tx=Math.round((c.rotation.x+PI/2)/PI)*PI-PI/2;c.rotation.x+=(tx-c.rotation.x)*k;
+        const tz=Math.round(c.rotation.z/TAU)*TAU;c.rotation.z+=(tz-c.rotation.z)*k;
+        c.position.y+=(cardHalfY(c)-c.position.y)*k;
+      }
+    }
+  }
+}
+
+class Flakes{
+  constructor(parent,geo,mat,max,o){
+    o=o||{};this.max=max;this.g=o.g!==undefined?o.g:9.8;this.floor=o.floor!==undefined?o.floor:0.02;this.bounce=o.bounce||0;
+    this.mesh=new THREE.InstancedMesh(geo,mat,max);this.mesh.frustumCulled=false;this.mesh.count=0;this.mesh.setColorAt(0,new THREE.Color(1,1,1));
+    parent.add(this.mesh);
+    const f=n=>new Float32Array(max*n);
+    this.p=f(3);this.v=f(3);this.r=f(3);this.w=f(3);this.s=f(3);this.d=f(1);this.fl=f(1);this.ph=f(1);
+    this.st=new Uint8Array(max);this.head=0;this.n=0;this.o3=new THREE.Object3D();this.o3.rotation.order='YXZ';this.col=new THREE.Color();
+  }
+  emit(x,y,z,vx,vy,vz,o){
+    o=o||{};const i=this.head;this.head=(i+1)%this.max;this.n=Math.min(this.max,this.n+1);this.mesh.count=this.n;const k=i*3;
+    this.p[k]=x;this.p[k+1]=y;this.p[k+2]=z;this.v[k]=vx;this.v[k+1]=vy;this.v[k+2]=vz;
+    this.r[k]=o.rx!==undefined?o.rx:rand(0,TAU);this.r[k+1]=o.ry!==undefined?o.ry:rand(0,TAU);this.r[k+2]=o.rz!==undefined?o.rz:rand(0,TAU);
+    this.w[k]=o.wx!==undefined?o.wx:rand(-8,8);this.w[k+1]=o.wy!==undefined?o.wy:rand(-8,8);this.w[k+2]=o.wz!==undefined?o.wz:rand(-8,8);
+    const sc=o.s!==undefined?o.s:1;this.s[k]=(o.sx||1)*sc;this.s[k+1]=(o.sy||1)*sc;this.s[k+2]=(o.sz||1)*sc;
+    this.d[i]=o.drag!==undefined?o.drag:0.5;this.fl[i]=o.flutter||0;this.ph[i]=Math.random()*TAU;this.st[i]=1;
+    this.col.set(o.color!==undefined?o.color:0xffffff);this.mesh.setColorAt(i,this.col);this.mesh.instanceColor.needsUpdate=true;
+    this.put(i);this.mesh.instanceMatrix.needsUpdate=true;return i;
+  }
+  put(i){const k=i*3,o=this.o3;o.position.set(this.p[k],this.p[k+1],this.p[k+2]);o.rotation.set(this.r[k],this.r[k+1],this.r[k+2]);o.scale.set(this.s[k],this.s[k+1],this.s[k+2]);o.updateMatrix();this.mesh.setMatrixAt(i,o.matrix);}
+  update(dt,t){
+    const n=this.n;let any=false;
+    for(let i=0;i<n;i++){
+      if(this.st[i]!==1)continue;any=true;const k=i*3;
+      const kd=Math.exp(-this.d[i]*dt);
+      this.v[k+1]-=this.g*dt;this.v[k]*=kd;this.v[k+1]*=kd;this.v[k+2]*=kd;
+      const fl=this.fl[i];
+      if(fl){const ph=this.ph[i];this.v[k]+=Math.sin(t*4+ph)*fl*dt;this.v[k+2]+=Math.cos(t*3.3+ph*1.7)*fl*dt;}
+      this.p[k]+=this.v[k]*dt;this.p[k+1]+=this.v[k+1]*dt;this.p[k+2]+=this.v[k+2]*dt;
+      this.r[k]+=this.w[k]*dt;this.r[k+1]+=this.w[k+1]*dt;this.r[k+2]+=this.w[k+2]*dt;
+      if(this.p[k+1]<=this.floor){
+        this.p[k+1]=this.floor;
+        if(this.bounce>0&&this.v[k+1]<-2){this.v[k+1]*=-this.bounce;this.v[k]*=0.7;this.v[k+2]*=0.7;this.w[k]*=0.6;this.w[k+1]*=0.6;this.w[k+2]*=0.6;}
+        else{this.st[i]=2;this.r[k]=-PI/2;this.r[k+2]=0;}
+      }
+      this.put(i);
+    }
+    if(any)this.mesh.instanceMatrix.needsUpdate=true;
+  }
+}
+
+class Puffs{
+  constructor(parent,max){
+    this.max=max;const m=new THREE.MeshBasicMaterial({map:softTex,transparent:true,depthWrite:false});
+    this.mesh=new THREE.InstancedMesh(new THREE.PlaneGeometry(1,1),m,max);this.mesh.frustumCulled=false;this.mesh.count=0;this.mesh.setColorAt(0,new THREE.Color(1,1,1));parent.add(this.mesh);
+    const f=n=>new Float32Array(max*n);
+    this.p=f(3);this.v=f(3);this.life=f(1);this.ml=f(1);this.s0=f(1);this.s1=f(1);this.dr=f(1);this.gr=f(1);this.al=new Uint8Array(max);
+    this.head=0;this.n=0;this.o3=new THREE.Object3D();this.col=new THREE.Color();
+  }
+  emit(x,y,z,vx,vy,vz,life,s0,s1,color,drag,grav){
+    const i=this.head;this.head=(i+1)%this.max;this.n=Math.min(this.max,this.n+1);this.mesh.count=this.n;const k=i*3;
+    this.p[k]=x;this.p[k+1]=y;this.p[k+2]=z;this.v[k]=vx;this.v[k+1]=vy;this.v[k+2]=vz;
+    this.life[i]=0;this.ml[i]=life;this.s0[i]=s0;this.s1[i]=s1;this.dr[i]=drag;this.gr[i]=grav;this.al[i]=1;
+    this.col.set(color);this.mesh.setColorAt(i,this.col);this.mesh.instanceColor.needsUpdate=true;
+  }
+  update(dt){
+    const n=this.n;const o=this.o3;let any=false;
+    for(let i=0;i<n;i++){
+      if(!this.al[i])continue;any=true;const k=i*3;
+      this.life[i]+=dt;const u=this.life[i]/this.ml[i];
+      if(u>=1){this.al[i]=0;o.position.set(0,-50,0);o.scale.set(0,0,0);o.updateMatrix();this.mesh.setMatrixAt(i,o.matrix);continue;}
+      const kd=Math.exp(-this.dr[i]*dt);this.v[k]*=kd;this.v[k+1]=this.v[k+1]*kd-this.gr[i]*dt;this.v[k+2]*=kd;
+      this.p[k]+=this.v[k]*dt;this.p[k+1]+=this.v[k+1]*dt;this.p[k+2]+=this.v[k+2]*dt;
+      const s=lerp(this.s0[i],this.s1[i],eo(u))*(1-sm(0.65,1,u));
+      o.position.set(this.p[k],this.p[k+1],this.p[k+2]);o.quaternion.copy(camera.quaternion);o.scale.set(s,s,s);o.updateMatrix();this.mesh.setMatrixAt(i,o.matrix);
+    }
+    if(any)this.mesh.instanceMatrix.needsUpdate=true;
+  }
+}
+
+/* ---------------------------------------------------------------- audio */
+const AU={ctx:null,on:true,last:0,timer:null,
+  init(){
+    if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume();return;}
+    try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.out=this.ctx.createGain();this.out.gain.value=0.5;this.out.connect(this.ctx.destination);}catch(e){this.ctx=null;}
+  },
+  tone(f,d,type,v,slide){
+    if(!this.on||!this.ctx)return;const c=this.ctx,t=c.currentTime,o=c.createOscillator(),g=c.createGain();
+    o.type=type||'sine';o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(20,f*slide),t+d);
+    g.gain.setValueAtTime(v||0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+d);o.connect(g);g.connect(this.out);o.start(t);o.stop(t+d+0.02);
+  },
+  noise(d,v,f,q){
+    if(!this.on||!this.ctx)return;const c=this.ctx,n=Math.floor(c.sampleRate*d),b=c.createBuffer(1,n,c.sampleRate),a=b.getChannelData(0);
+    for(let i=0;i<n;i++)a[i]=Math.random()*2-1;
+    const s=c.createBufferSource();s.buffer=b;const fl=c.createBiquadFilter();fl.type='bandpass';fl.frequency.value=f||2000;fl.Q.value=q||0.8;
+    const g=c.createGain();g.gain.setValueAtTime(v||0.2,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+d);
+    s.connect(fl);fl.connect(g);g.connect(this.out);s.start();
+  },
+  kick(v){this.tone(150,0.2,'sine',v||0.6,0.2);},
+  hat(v){this.noise(0.04,v||0.08,7500,1);},
+  clap(v){this.noise(0.12,v||0.25,1600,0.7);},
+  tick(){const n=performance.now();if(n-this.last<35)return;this.last=n;this.tone(700+Math.random()*600,0.04,'square',0.035);},
+  click(){this.noise(0.03,0.1,6000,1);},
+  say(text,pitch,rate,vol){
+    if(!this.on||!window.speechSynthesis)return;
+    try{window.speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text);u.pitch=pitch||1;u.rate=rate||1;u.volume=vol||1;window.speechSynthesis.speak(u);}catch(e){}
+  },
+  beat(bpm,fn){this.stopBeat();let i=0;const ms=60000/bpm/4;this.timer=setInterval(()=>{fn(i%16,i);i++;},ms);},
+  stopBeat(){if(this.timer){clearInterval(this.timer);this.timer=null;}}
+};
+
+/* ---------------------------------------------------------------- hud */
+const hud=$('hud'),flashEl=$('flash'),scoreEl=$('score'),msgEl=$('msg'),hintEl=$('hint');
+function shout(text,o){
+  o=o||{};const d=document.createElement('div');d.className='shout';d.textContent=text;
+  d.style.left=(o.x!==undefined?o.x:50)+'%';d.style.top=(o.y!==undefined?o.y:40)+'%';d.style.fontSize=(o.size||10)+'vmin';
+  d.style.setProperty('--r',(o.rot!==undefined?o.rot:rand(-8,8))+'deg');if(o.color)d.style.color=o.color;
+  hud.appendChild(d);setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},o.life||1500);
+}
+function flash(a){flashEl.style.transition='none';flashEl.style.opacity=a;requestAnimationFrame(()=>{flashEl.style.transition='opacity .5s';flashEl.style.opacity=0;});}
+function comic(world,text,o){
+  o=o||{};const v=world.clone().project(camera);if(v.z>1||v.z<-1)return;
+  const x=clamp((v.x*0.5+0.5)*100,8,92),y=clamp((-v.y*0.5+0.5)*100,12,88);
+  const sz=o.size||16,n=22;let pts='';
+  for(let i=0;i<n*2;i++){const a=i/(n*2)*TAU,r=(i%2?rand(48,58):rand(82,98));pts+=(Math.cos(a)*r).toFixed(1)+','+(Math.sin(a)*r).toFixed(1)+' ';}
+  const d=document.createElement('div');d.className='comic';
+  d.style.left=x+'%';d.style.top=y+'%';d.style.width=(sz*2.3)+'vmin';d.style.setProperty('--r',rand(-12,12)+'deg');d.style.setProperty('--f',(sz*0.33)+'vmin');
+  d.innerHTML='<svg viewBox="-105 -105 210 210"><polygon points="'+pts+'" fill="#15171c" transform="translate(6,7)"/><polygon points="'+pts+'" fill="'+(o.fill||'#f2a33a')+'" stroke="#15171c" stroke-width="6" stroke-linejoin="round"/></svg><div class="ct">'+text+'</div>';
+  hud.appendChild(d);setTimeout(()=>{if(d.parentNode)d.parentNode.removeChild(d);},o.life||1200);
+}
+function clearHud(){hud.innerHTML='';scoreEl.innerHTML='';msgEl.innerHTML='';}
+
+/* ---------------------------------------------------------------- camera + loop */
+const _look=new THREE.Vector3(0,0.5,0);
+let shakeA=0;
+function setCam(px,py,pz,lx,ly,lz){camera.position.set(px,py,pz);_look.set(lx,ly,lz);}
+function shake(a){shakeA=Math.max(shakeA,a);}
+const CEL={};
+let cur=null,curName='',T=0,slow=1,lastNow=performance.now();
+
+function play(name){
+  if(!CEL[name])return;
+  AU.init();stop();resetDeck();hintEl.style.display='none';
+  curName=name;T=0;slow=1;shakeA=0;
+  cur=CEL[name]();
+  document.querySelectorAll('#bar button[data-n]').forEach(b=>b.classList.toggle('on',b.dataset.n===name));
+}
+function stop(){
+  if(cur){try{if(cur.dispose)cur.dispose();}catch(e){console.error(e);}cur=null;}
+  AU.stopBeat();if(window.speechSynthesis)try{window.speechSynthesis.cancel();}catch(e){}
+  clearHud();restoreLights();table.visible=true;resetDeck();
+  document.querySelectorAll('#bar button[data-n]').forEach(b=>b.classList.remove('on'));
+}
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt=Math.min(0.05,(now-lastNow)/1000);lastNow=now;
+  if(cur){
+    const d=dt*slow;T+=d;
+    try{cur.update(d,T);}catch(e){console.error(e);try{cur.dispose&&cur.dispose();}catch(e2){}cur=null;}
+  }else{
+    const a=now*0.00015;setCam(Math.sin(a)*7,4.2,Math.cos(a)*7,0,0.3,0);
+  }
+  shakeA*=Math.pow(0.015,dt);
+  if(shakeA>0.001)camera.position.add(new THREE.Vector3(rand(-1,1),rand(-1,1),rand(-1,1)).multiplyScalar(shakeA*0.35));
+  camera.lookAt(_look);
+  renderer.render(scene,camera);
+}
+
+/* ===================================================================
+   SCENE: PLATE SMASH  (CEL.plates)   - a small game: deflect thrown plates, everything else smashes
+   WHAT: Plates are thrown from off-screen (sides and far back) on true ballistic arcs (ballistic() solves the launch
+     velocity to hit a chosen point on the "deflect plane" z=PZ in time Tc; after that it is pure gravity, no cheating).
+     The player holds an accent-colored plate as a vertical disc in front of the camera and moves it left/right
+     (drag with mouse/finger; ArrowLeft/ArrowRight or A/D). A plate crossing the plane inside the disc is DEFLECTED: its
+     velocity is reflected and given lateral/upward components from where it hit and how fast the player was moving.
+     Every plate that lands (deflected or not) EXPLODES: shards (Flakes with gravity + bounce), dust puffs, screen shake,
+     and a comic-book burst reading PIQUET! projected to the exact screen position of the impact (comic()).
+     After all 26 plates the card pile explodes with a giant PIQUET!!!, slow-mo, and a result screen
+     ("Deflected X of 26") with a Play again button.
+   WHY (user requests): real gravity/parabolas; plates explode; NO audible "PIQUET!" - instead a comic-book impact word at
+     the site of each landing (like WHAM! over a punch); the player-controlled plate is meant to feel like pong's paddle
+     control but rotated to stand perpendicular to the table in front of the camera. The word 'swatted' was renamed
+     'deflected' at the user's request.
+   IMPLEMENTATION NOTES:
+     - Player plate motion is a critically damped spring (w=22) toward the pointer target = smooth, not constant-rate.
+     - Deflection uses SWEPT detection (interpolates x,y at the moment z crosses PZ) so fast plates can't tunnel.
+     - Camera is fixed during play (needed so pointer->world mapping stays accurate). Camera is high/behind the
+       player plate so the pile is visible above it.
+     - Slow-mo at the finale: uses global `slow`; the scene tracks real time separately as rt += dt/slow.
+     - Plates that fall off the table quietly disappear (only happens if deflected very far).
+   TUNABLES: N (plate count), PZ/PY/PR (deflect plane distance/height/radius), PLR (thrown plate radius), spawn cadence
+     lerp(1.15,0.5,...), Tc range (flight time), deflect speed factors in the deflect branch.
+   =================================================================== */
+CEL.plates=function(){
+  const root=new THREE.Group();scene.add(root);
+  const prof=[[0,0],[0.72,0.02],[1.15,0.17],[1.22,0.17],[1.22,0.22],[1.12,0.22],[0.72,0.08],[0,0.08]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const plateGeo=new THREE.LatheGeometry(prof,28),ringGeo=new THREE.TorusGeometry(0.93,0.035,5,32);ringGeo.rotateX(PI/2);ringGeo.translate(0,0.13,0);
+  const plateMat=toon(PAL.paper,{side:THREE.DoubleSide}),ringMat=toon(PAL.ink),heldMat=toon(PAL.accent,{side:THREE.DoubleSide});
+  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.Float32BufferAttribute([0,0,0,0.34,0.05,0,0.12,0.38,0],3));sg.computeVertexNormals();
+  const shards=new Flakes(root,sg,toon(0xffffff,{side:THREE.DoubleSide}),1400,{g:G,floor:0.03,bounce:0.42,drag:0.15});
+  const puffs=new Puffs(root,600);
+  const SC=[PAL.paper,PAL.paper,PAL.mid,PAL.ink,PAL.accent];
+  const PZ=5,PY=2.2,PR=1.35,PLR=1.15,N=26;
+  const mkPlate=(mat,sc)=>{const g=new THREE.Group();const m=new THREE.Mesh(plateGeo,mat);m.castShadow=true;g.add(m);g.add(new THREE.Mesh(ringGeo,ringMat));g.scale.set(sc,sc,sc);return g;};
+  /* the plate you hold: a vertical disc facing the camera */
+  const hold=new THREE.Group();root.add(hold);
+  const held=mkPlate(heldMat,PR/1.22);held.rotation.x=PI/2;hold.add(held);
+  hold.position.set(0,-3,PZ);
+  let px=0,pvx=0,tx=0,tilt=0,deflected=0,smashed=0,spawned=0,nextSpawn=2.0,finaleAt=-1,exploded=false,over=false,jig=0,rt=0,rtE=0;
+  const plates=[],phys=new CardPhys();
+  const base=deck.map(c=>c.position.clone());
+  const ptr=new Set(),keys={};
+  const ray=new THREE.Raycaster(),pl3=new THREE.Plane(new V(0,0,1),-PZ),pt=new V(),ndc=new THREE.Vector2();
+  function world(e){ndc.set(e.clientX/window.innerWidth*2-1,-(e.clientY/window.innerHeight)*2+1);ray.setFromCamera(ndc,camera);return ray.ray.intersectPlane(pl3,pt);}
+  function onDown(e){const p=world(e);if(!p)return;ptr.add(e.pointerId);tx=clamp(p.x,-9,9);try{canvas.setPointerCapture(e.pointerId);}catch(x){}}
+  function onMove(e){if(!ptr.has(e.pointerId))return;const p=world(e);if(p)tx=clamp(p.x,-9,9);}
+  function onUp(e){ptr.delete(e.pointerId);}
+  function onKey(e,down){const k=e.key;if(k==='ArrowLeft'||k==='a'||k==='A'){keys.l=down;if(k==='ArrowLeft')e.preventDefault();}if(k==='ArrowRight'||k==='d'||k==='D'){keys.r=down;if(k==='ArrowRight')e.preventDefault();}}
+  const kd=e=>onKey(e,true),ku=e=>onKey(e,false);
+  canvas.addEventListener('pointerdown',onDown);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onUp);canvas.addEventListener('pointercancel',onUp);
+  window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);
+  function updScore(){scoreEl.innerHTML='Deflected '+deflected+' &nbsp; Smashed '+smashed+'<small>drag your plate, or use the left and right arrows, to deflect the plates away</small>';}
+  updScore();
+  function spawnPlate(){
+    let p0;
+    if(Math.random()<0.6){const sd=Math.random()<0.5?-1:1;p0=new V(sd*rand(26,32),rand(2,6),rand(-10,1));}
+    else p0=new V(rand(-14,14),rand(3,8),-rand(22,26));
+    const Tc=rand(2.1,2.7),pc=new V(rand(-8,8),rand(0.9,3.5),PZ);   /* aimed to cross the deflect plane at pc */
+    const v=ballistic(p0,pc,Tc);
+    const g=mkPlate(plateMat,PLR/1.22);g.position.copy(p0);root.add(g);
+    plates.push({g:g,p:p0.clone(),v:v,w:new V(rand(-9,9),rand(-9,9),rand(-9,9)),deflect:false,dead:false});
+    spawned++;AU.noise(0.25,0.08,500,0.6);
+  }
+  function explode(pl){
+    const x=pl.p.x,z=pl.p.z;pl.dead=true;root.remove(pl.g);smashed++;updScore();
+    for(let i=0;i<24;i++){const a=rand(0,TAU),sp=rand(4,12);shards.emit(x,0.2,z,Math.cos(a)*sp+pl.v.x*0.25,rand(5,13),Math.sin(a)*sp+pl.v.z*0.25,{color:pick(SC),s:rand(0.5,1.2),drag:0.15});}
+    for(let i=0;i<16;i++){const a=i/16*TAU;puffs.emit(x,0.3,z,Math.cos(a)*6,rand(0.5,2),Math.sin(a)*6,0.6,0.4,1.4,PAL.paper,3,0);}
+    for(let i=0;i<10;i++)puffs.emit(x+rand(-.5,.5),0.5,z+rand(-.5,.5),rand(-2,2),rand(2,6),rand(-2,2),0.9,0.5,1.6,PAL.mid,1.5,-1);
+    const dist=Math.hypot(camera.position.x-x,camera.position.y,camera.position.z-z);
+    comic(new V(x,0.8,z),'PIQUET!',{size:clamp(30-dist*1.2,9,22)});
+    shake(clamp(2.2/(1+dist*0.15),0.15,0.9));AU.noise(0.35,0.35,4200,0.6);AU.tone(1800,0.12,'triangle',0.14,0.6);
+    jig=Math.min(1.6,jig+2.5/(1+Math.hypot(x,z)));
+  }
+  return{
+    update(dt,t){
+      rt+=dt/slow;
+      /* your plate: a critically damped spring toward where you point */
+      if(keys.l)tx-=16*dt;if(keys.r)tx+=16*dt;tx=clamp(tx,-9,9);
+      const w=22,acc=w*w*(tx-px)-2*w*pvx;pvx+=acc*dt;px=clamp(px+pvx*dt,-9,9);
+      tilt*=Math.exp(-7*dt);
+      hold.position.set(px,lerp(-3,PY,eob((t-0.6)/1.2)),PZ);hold.rotation.x=-0.5*tilt;hold.rotation.z=-pvx*0.02;
+      if(!over&&spawned<N&&t>=nextSpawn){spawnPlate();nextSpawn=t+lerp(1.15,0.5,eo(spawned/N));}
+      for(const pl of plates){
+        if(pl.dead)continue;
+        const x0=pl.p.x,y0=pl.p.y,z0=pl.p.z;
+        pl.v.y-=G*dt;pl.p.addScaledVector(pl.v,dt);pl.g.position.copy(pl.p);
+        pl.g.rotation.x+=pl.w.x*dt;pl.g.rotation.y+=pl.w.y*dt;pl.g.rotation.z+=pl.w.z*dt;
+        if(!pl.deflect&&pl.v.z>0&&z0<PZ&&pl.p.z>=PZ){
+          const f=(PZ-z0)/(pl.p.z-z0),cx=lerp(x0,pl.p.x,f),cy=lerp(y0,pl.p.y,f);
+          if(Math.hypot(cx-px,cy-PY)<=PR+PLR*0.85){
+            pl.deflect=true;deflected++;updScore();tilt=1;
+            pl.v.z=-(Math.abs(pl.v.z)*0.85+3);pl.v.x=pl.v.x*0.3+(cx-px)*3.2+pvx*0.8;pl.v.y=Math.abs(pl.v.y)*0.3+(cy-PY)*2+8;
+            pl.p.z=PZ-0.05;pl.w.multiplyScalar(1.6);
+            for(let i=0;i<8;i++)puffs.emit(cx,cy,PZ,rand(-3,3),rand(-1,3),rand(-3,3),0.4,0.2,0.8,PAL.paper,3,0);
+            shake(0.25);AU.tone(260,0.09,'square',0.16,0.5);AU.noise(0.08,0.2,1500,0.9);
+          }
+        }
+        if(pl.p.y<=0.25&&pl.v.y<0&&Math.hypot(pl.p.x,pl.p.z)<15){explode(pl);continue;}
+        if(pl.p.y<-10){pl.dead=true;root.remove(pl.g);}
+      }
+      /* pile reacts to nearby smashes */
+      jig*=Math.exp(-9*dt);
+      deck.forEach((c,i)=>{if(exploded)return;c.position.y=base[i].y+jig*par(i*0.37+t*6)*0.22;c.position.x=base[i].x+jig*Math.sin(i*2.3+t*40)*0.05;c.rotation.z=jig*0.12*Math.sin(i+t*25);});
+      if(!over&&spawned>=N&&finaleAt<0&&plates.every(p=>p.dead))finaleAt=t+1.0;
+      if(finaleAt>0&&!exploded&&t>=finaleAt){
+        exploded=true;rtE=rt;flash(0.8);shake(1.4);AU.noise(0.6,0.4,2500,0.5);AU.tone(90,0.5,'sawtooth',0.3,0.3);
+        comic(new V(0,1.2,0),'PIQUET!!!',{size:26,life:2200});
+        deck.forEach(c=>{const a=rand(0,TAU),sp=rand(2.5,6);phys.add(c,new V(Math.cos(a)*sp,rand(12,17),Math.sin(a)*sp),new V(rand(-10,10),rand(-10,10),rand(-10,10)),{e:0.4,fr:0.8});});
+      }
+      if(exploded){slow=lerp(0.35,1,sm(0,0.9,rt-rtE));if(!over&&rt-rtE>2.8){over=true;
+        msgEl.innerHTML='<div class="big">Deflected '+deflected+' of '+N+'</div><button id="again">Play again</button>';const b=document.getElementById('again');if(b)b.onclick=()=>play('plates');}}
+      phys.update(dt);shards.update(dt,t);puffs.update(dt);
+      const k=eio((t-0.2)/1.6);
+      setCam(0,lerp(3.6,11,k),lerp(6,13,k),0,lerp(0.4,0.6,k),lerp(0,1,k));
+    },
+    dispose(){
+      canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onUp);
+      window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);scene.remove(root);disposeTree(root);
+    }
+  };
+};
+
+/* ===================================================================
+   SCENE: CONFETTI PARADE  (CEL.confetti; formerly 'tape'/ticker-tape)
+   WHAT: The pile launches into a conga line of floating cards that parades down a city street between skyscrapers
+     (windows textured by canvas), past a cheering crowd of instanced pawns, while up to 9000 fluttering confetti pieces
+     fall from the windows. The camera swings ahead of the parade and looks back at it.
+   WHY / HISTORY:
+     - The user asked for a ticker-tape parade. First pass used flat strips; then they asked for confetti; my rebuild used
+       verlet-rope ribbons that unspooled from thrown rolls; the user said it "looks too much like sperm now" and asked
+       to replace the ticker tape with confetti. => NO ribbons. Keep confetti as small squares. Avoid long wiggly shapes.
+     - "The parade should never surpass the city limits": the leader position is zl = -D*eio(...) (eased, D=40) so it
+       accelerates, cruises and DECELERATES to a stop; an end wall (a big building at z=ZF-7.5) closes the street and
+       the camera stays inside. At the end the cards swirl into a ring above the street.
+   IMPLEMENTATION NOTES:
+     - Confetti: Flakes with heavy drag (2.4) + flutter so terminal velocity looks like paper, real gravity G.
+     - Crowd jumping uses par() (ballistic hop profile), not |sin|.
+     - Camera orbits from behind to ahead of the parade using PI*sm(...) (eased), not a constant rate.
+   TUNABLES: D (parade length), TP0/TPD (start/duration), confetti emission rate (650/s), colors TC.
+   =================================================================== */
+CEL.confetti=function(){
+  const root=new THREE.Group();scene.add(root);
+  const ZN=20,ZF=-64; /* city limits along z */
+  const ground=new THREE.Mesh(new THREE.PlaneGeometry(400,400),toon(0x1b1d23));ground.rotation.x=-PI/2;ground.position.y=-0.02;root.add(ground);
+  const street=new THREE.Mesh(new THREE.BoxGeometry(18,0.2,96),toon(PAL.felt));street.position.set(0,-0.1+0.004,-40);street.receiveShadow=true;root.add(street);
+  const dashM=toon(PAL.mid);
+  for(let i=0;i<26;i++){const d=new THREE.Mesh(new THREE.BoxGeometry(0.15,0.02,1.6),dashM);d.position.set(0,0.012,ZN-2-i*3.3);root.add(d);}
+  const winTex=canvasTex(128,128,c=>{c.fillStyle='#2a2d35';c.fillRect(0,0,128,128);for(let y=0;y<4;y++)for(let x=0;x<4;x++){c.fillStyle=Math.random()<0.55?'#f3efe4':'#8b9099';c.fillRect(x*32+8,y*32+7,16,18);}});
+  const blds=[];
+  function building(w,h,d,x,z,delay){
+    const tex=winTex.clone();tex.needsUpdate=true;tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(w/3.2,h/3.2);
+    const sm_=toon(0xffffff,{map:tex}),rm=toon(PAL.dark);
+    const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),[sm_,sm_,rm,rm,sm_,sm_]);
+    m.position.set(x,-h/2-0.5,z);m.userData={y1:h/2,y0:-h/2-0.5,delay:delay};m.castShadow=true;root.add(m);blds.push(m);
+  }
+  [-1,1].forEach(side=>{for(let k=0;k<14;k++){const w=rand(4.2,5.6);building(w,rand(12,26),rand(5,6),side*(9.2+w/2),ZN-2-k*6.4,0.4+k*0.06);}});
+  building(44,34,6,0,ZF-7.5,1.2); /* end wall: the city stops here */
+  const CR=340;
+  const heads=new THREE.InstancedMesh(new THREE.SphereGeometry(0.16,8,6),toon(0xffffff),CR),bodies=new THREE.InstancedMesh(new THREE.ConeGeometry(0.22,0.6,8),toon(0xffffff),CR);
+  heads.frustumCulled=bodies.frustumCulled=false;root.add(heads);root.add(bodies);
+  const crowd=[],ccol=new THREE.Color();
+  for(let i=0;i<CR;i++){
+    const sd=i%2?1:-1;crowd.push({x:sd*rand(6.4,8.6),z:rand(ZN,ZF+2),ph:rand(0,1),sp:rand(0.9,1.5)});
+    ccol.setHex(pick([PAL.paper,PAL.mid,PAL.accent,PAL.paper]));heads.setColorAt(i,ccol);bodies.setColorAt(i,ccol);
+  }
+  const o3=new THREE.Object3D();
+  /* confetti */
+  const conf=new Flakes(root,new THREE.PlaneGeometry(0.16,0.16),toon(0xffffff,{side:THREE.DoubleSide}),9000,{g:G,floor:0.02});
+  const TC=[PAL.paper,PAL.accent,PAL.mid,0xf7c777,PAL.paper,PAL.ink];
+  function confetti(x,y,z,vx,vy,vz){conf.emit(x,y,z,vx,vy,vz,{color:pick(TC),s:rand(0.7,1.6),sy:rand(0.5,1.2),drag:2.4,flutter:6,wx:rand(-12,12),wy:rand(-12,12),wz:rand(-12,12)});}
+  const base=deck.map(c=>c.position.clone()),baseYaw=deck.map(c=>c.rotation.y);
+  const D=40,TP0=1.0,TPD=13.5;
+  let burst=false,confAcc=0;
+  const slotP=new V();
+  function slot(i,t,zl){slotP.set(Math.sin(t*2.4+i*0.55)*1.4,1.7+Math.sin(t*3.2-i*0.6)*0.5,zl+i*0.62);return slotP;}
+  return{
+    update(dt,t){
+      blds.forEach(m=>{const u=eo((t-m.userData.delay)/1.3);m.position.y=lerp(m.userData.y0,m.userData.y1,u);});
+      const zl=-D*eio((t-TP0)/TPD);  /* eased: accelerates, cruises, decelerates to a stop before the city ends */
+      if(!burst&&t>=1.0){burst=true;for(let i=0;i<600;i++)confetti(0,0.4,0,rand(-6,6),rand(8,18),rand(-6,6));flash(0.4);shake(0.5);AU.noise(0.4,0.3,3000,0.5);AU.tone(180,0.3,'sawtooth',0.2,0.3);}
+      if(t>=1.2){
+        confAcc+=dt*650;while(confAcc>=1){confAcc-=1;const sd=Math.random()<0.5?-1:1;confetti(sd*8.9,rand(6,24),clamp(zl+rand(-16,16),ZF+3,ZN),-sd*rand(0.5,3.5),rand(-1,2),rand(-1,1));}
+      }
+      const amp=0.5*sm(2,3,t);
+      for(let i=0;i<CR;i++){const c=crowd[i],j=par(t*c.sp+c.ph)*amp;
+        o3.position.set(c.x,0.3+j,c.z);o3.rotation.set(0,0,0);o3.scale.set(1,1,1);o3.updateMatrix();bodies.setMatrixAt(i,o3.matrix);
+        o3.position.set(c.x,0.78+j,c.z);o3.updateMatrix();heads.setMatrixAt(i,o3.matrix);}
+      bodies.instanceMatrix.needsUpdate=true;heads.instanceMatrix.needsUpdate=true;
+      const rg=sm(13.6,15.6,t);
+      deck.forEach((c,i)=>{
+        const j=31-i,t0=1.0+j*0.075,u=(t-t0)/0.9;
+        if(u<=0){c.position.copy(base[i]);return;}
+        const e=eio(u),sp=slot(j,t,zl);
+        let x=sp.x,y=sp.y,z=sp.z;
+        if(rg>0){const a=j/32*TAU+1.1*spin(t,13.6,18);x=lerp(x,Math.cos(a)*3.6,rg);y=lerp(y,4.4+Math.sin(a*3+t)*0.25,rg);z=lerp(z,zl+2+Math.sin(a)*2.7,rg);}
+        c.position.set(lerp(base[i].x,x,e),lerp(base[i].y,y,e)+Math.sin(PI*clamp(u,0,1))*2.5,lerp(base[i].z,z,e));
+        c.rotation.set(lerp(-PI/2,0.1*Math.sin(t*2+j),e),lerp(baseYaw[i],0.35*Math.sin(t*2+j),e),lerp(0,0.15*Math.sin(t*3+j),e));
+      });
+      conf.update(dt,t);
+      const a=PI*sm(0.8,5,t),fin=sm(15,19,t),h=lerp(4,7,sm(1,5,t))+2.5*fin,R=lerp(9,10,sm(1,5,t))+3*fin;
+      setCam(Math.sin(a)*4,h,zl+R*Math.cos(a),0,lerp(2,3.5,rg),zl+lerp(3+(1-Math.cos(a))*0.5,2,rg));
+    },
+    dispose(){scene.remove(root);disposeTree(root);}
+  };
+};
+
+/* ===================================================================
+   SCENE: DISCO BALL DANCE FLOOR  (CEL.disco)
+   WHAT: Pile -> the four Aces stand up as dancers on a pulsing checker floor (10x10 instanced tiles whose colors ripple
+     with the beat), the other 28 cards fan out as a bobbing audience arc, a disco ball descends. Synth 4-on-the-floor.
+   WHY: First version had a low-poly sphere with fake dots. User: "the disco ball should be shinier. think about how
+     actual disco balls are actually made of many small surfaces." So the ball is now a dark core covered in ~500 flat
+     mirror tiles (instanced planes on latitude rings, each oriented along its sphere normal). Each frame, per tile,
+     for four lamps we compute diffuse + Blinn specular toward the camera (pow 45) => real glints as it rotates. The 72
+     floor light spots are REAL reflections: incident ray from a lamp, reflected about the tile normal, intersected with
+     the floor plane; spots hide when the ray misses. (User preference: authentic physics where possible.)
+   IMPLEMENTATION NOTES: ball rotation uses spin() (eases up to speed). Aces' choreography is move(bf) over an
+     8-beat phrase with par()/eio(). Lights are dimmed for the mood; dispose() calls restoreLights().
+   TUNABLES: BPM, RINGS (mirror density), LAMPS, specular exponent/gain in shine(), tile palette cA..cD.
+   =================================================================== */
+CEL.disco=function(){
+  const root=new THREE.Group();scene.add(root);
+  const BPM=118,TS=2.6,G_=10,TILE=1.55;
+  const tiles=new THREE.InstancedMesh(new THREE.BoxGeometry(TILE-0.06,0.1,TILE-0.06),new THREE.MeshBasicMaterial({color:0xffffff}),G_*G_);
+  tiles.frustumCulled=false;root.add(tiles);
+  const o3=new THREE.Object3D(),tc=new THREE.Color();
+  const cA=new THREE.Color(0x1c1e24),cB=new THREE.Color(0x3a3e47),cC=new THREE.Color(PAL.accent),cD=new THREE.Color(PAL.paper);
+  for(let i=0;i<G_;i++)for(let j=0;j<G_;j++){o3.position.set((i-(G_-1)/2)*TILE,0.05,(j-(G_-1)/2)*TILE);o3.updateMatrix();tiles.setMatrixAt(i*G_+j,o3.matrix);tiles.setColorAt(i*G_+j,cA);}
+  /* the mirror ball */
+  const BR=1.3,ballG=new THREE.Group();root.add(ballG);
+  const core=new THREE.Mesh(new THREE.SphereGeometry(BR-0.03,20,14),toon(PAL.ink));ballG.add(core);
+  const nx=[],ny=[],nz=[];const RINGS=20;
+  for(let i=0;i<RINGS;i++){
+    const lat=-PI/2+(i+0.5)*PI/RINGS,cl=Math.cos(lat),cnt=Math.max(3,Math.round(TAU*BR*cl/0.2));
+    for(let j=0;j<cnt;j++){const lon=(j+(i%2)*0.5)/cnt*TAU;nx.push(cl*Math.cos(lon));ny.push(Math.sin(lat));nz.push(cl*Math.sin(lon));}
+  }
+  const M=nx.length;
+  const mir=new THREE.InstancedMesh(new THREE.PlaneGeometry(0.17,0.17),new THREE.MeshBasicMaterial({color:0xffffff,side:THREE.DoubleSide}),M);
+  mir.frustumCulled=false;const zAx=new V(0,0,1),nv=new V();
+  for(let i=0;i<M;i++){nv.set(nx[i],ny[i],nz[i]);o3.position.copy(nv).multiplyScalar(BR+0.006);o3.quaternion.setFromUnitVectors(zAx,nv);o3.scale.set(1,1,1);o3.updateMatrix();mir.setMatrixAt(i,o3.matrix);mir.setColorAt(i,cB);}
+  ballG.add(mir);
+  const cord=new THREE.Mesh(new THREE.CylinderGeometry(0.03,0.03,30,5),toon(PAL.mid));cord.position.y=16;ballG.add(cord);
+  const LAMPS=[{p:new V(0,16,10),c:[1,1,1]},{p:new V(0,16,-10),c:[1,0.75,0.4]},{p:new V(12,13,0),c:[0.9,0.9,1]},{p:new V(-12,13,0),c:[1,0.85,0.6]}];
+  const spMats=[0xf3efe4,0xf2a33a,0xf3efe4,0xf7c777].map(c=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:0.85,depthWrite:false}));
+  const spGeo=new THREE.CircleGeometry(0.3,14),spots=[];
+  for(let i=0;i<72;i++){const m=new THREE.Mesh(spGeo,spMats[i%4]);m.rotation.x=-PI/2;m.position.y=0.112;m.visible=false;root.add(m);spots.push({m:m,i:Math.floor(i*M/72),l:i%4});}
+  function shine(th,by){
+    const ct=Math.cos(th),st=Math.sin(th),cp=camera.position;
+    for(let i=0;i<M;i++){
+      const wx=nx[i]*ct+nz[i]*st,wy=ny[i],wz=-nx[i]*st+nz[i]*ct,px=wx*BR,py=by+wy*BR,pz=wz*BR;
+      let vx=cp.x-px,vy=cp.y-py,vz=cp.z-pz;const vl=Math.sqrt(vx*vx+vy*vy+vz*vz)||1;vx/=vl;vy/=vl;vz/=vl;
+      let r=0.16,g=0.17,b=0.2;
+      for(let l=0;l<4;l++){
+        const L=LAMPS[l];let lx=L.p.x-px,ly=L.p.y-py,lz=L.p.z-pz;const ll=Math.sqrt(lx*lx+ly*ly+lz*lz);lx/=ll;ly/=ll;lz/=ll;
+        const nl=wx*lx+wy*ly+wz*lz;if(nl<=0)continue;
+        let hx=lx+vx,hy=ly+vy,hz=lz+vz;const hl=Math.sqrt(hx*hx+hy*hy+hz*hz)||1;const nh=(wx*hx+wy*hy+wz*hz)/hl;
+        const k=0.22*nl+(nh>0?3.5*Math.pow(nh,45):0);r+=L.c[0]*k;g+=L.c[1]*k;b+=L.c[2]*k;
+      }
+      tc.setRGB(Math.min(1,r),Math.min(1,g),Math.min(1,b));mir.setColorAt(i,tc);
+    }
+    mir.instanceColor.needsUpdate=true;
+    spots.forEach(s=>{
+      const i=s.i,wx=nx[i]*ct+nz[i]*st,wy=ny[i],wz=-nx[i]*st+nz[i]*ct,px=wx*BR,py=by+wy*BR,pz=wz*BR,L=LAMPS[s.l];
+      let dx=px-L.p.x,dy=py-L.p.y,dz=pz-L.p.z;const dl=Math.sqrt(dx*dx+dy*dy+dz*dz);dx/=dl;dy/=dl;dz/=dl;
+      const dn=dx*wx+dy*wy+dz*wz;
+      if(dn>=0){s.m.visible=false;return;}
+      const rx=dx-2*dn*wx,ry=dy-2*dn*wy,rz=dz-2*dn*wz;   /* reflected ray */
+      if(ry>=-0.05){s.m.visible=false;return;}
+      const k=(0.112-py)/ry,hx=px+k*rx,hz=pz+k*rz;
+      if(Math.hypot(hx,hz)>8.2){s.m.visible=false;return;}
+      s.m.visible=true;s.m.position.x=hx;s.m.position.z=hz;s.m.scale.set(0.6+(-dn)*0.7,0.6+(-dn)*0.7,1);
+    });
+  }
+  const base=deck.map(c=>c.position.clone()),baseYaw=deck.map(c=>c.rotation.y);
+  const aces=deck.map((c,i)=>i).filter(i=>deck[i].userData.rank==='A');
+  const others=deck.map((c,i)=>i).filter(i=>deck[i].userData.rank!=='A');
+  const acePos=[-3.6,-1.2,1.2,3.6];
+  function move(bf){
+    const i=Math.floor(bf),f=bf-i,hop=par(f);
+    let dx=0,y=0,yaw=0,lean=0,sy=1;
+    if(bf<2){dx=(i===0?-1:1)*0.35*Math.sin(f*PI);lean=(i===0?-1:1)*0.3*Math.sin(f*PI);y=hop*0.25;}
+    else if(bf<4){lean=-0.6+0.12*Math.sin(f*PI*2);y=(i===2?hop*0.5:0.15);yaw=0.5;}
+    else if(bf<6){yaw=eio((bf-4)/2)*TAU;y=hop*0.4;}
+    else if(bf<7){y=hop*1.3;sy=1+0.12*Math.cos(f*PI*2);}
+    else{lean=-0.35*Math.sin(f*PI);y=hop*0.2;}
+    return{dx:dx,y:y,yaw:yaw,lean:lean,sy:sy};
+  }
+  let audio=false,lastB=-1;
+  return{
+    update(dt,t){
+      hemi.intensity=lerp(0.85,0.55,sm(0.3,1.6,t));sun.intensity=lerp(0.9,0.5,sm(0.3,1.6,t));
+      const bt=t-TS;
+      if(!audio&&bt>=0){audio=true;const bass=[55,0,0,55,0,0,82.4,0,55,0,0,73.4,0,0,65.4,0];
+        AU.beat(BPM,s=>{if(s%4===0)AU.kick(0.6);if(s%4===2)AU.hat(0.12);if(s===4||s===12)AU.clap(0.22);if(bass[s])AU.tone(bass[s],0.2,'triangle',0.3);});}
+      const beat=Math.max(0,bt)*BPM/60,bi=Math.floor(beat),pulse=Math.exp(-(beat-bi)*4);
+      if(bt>=0&&bi!==lastB){lastB=bi;shake(0.05);}
+      const by=lerp(19,8.6,eo((t-0.6)/2.2));ballG.position.set(0,by,0);
+      const th=1.1*spin(t,0.6,3.5);ballG.rotation.y=th;
+      shine(th,by);
+      for(let i=0;i<G_;i++)for(let j=0;j<G_;j++){
+        const d=Math.hypot(i-(G_-1)/2,j-(G_-1)/2),v=Math.sin(d*1.2-beat*PI)*0.5+0.5,chk=(i+j+Math.floor(beat*2))%2===0;
+        const on=sm(0.8,2.2,t-d*0.05);
+        tc.copy(chk?cA:cB);if(v>0.72)tc.lerp(cC,(v-0.72)/0.28);if(v>0.96&&chk)tc.lerp(cD,0.5);
+        tc.lerp(cA,1-on);tiles.setColorAt(i*G_+j,tc);
+      }
+      tiles.instanceColor.needsUpdate=true;
+      deck.forEach((c,i)=>{
+        const ai=aces.indexOf(i),t0=0.5+i*0.03,u=eio((t-t0)/1.0),arc=Math.sin(PI*clamp((t-t0)/1.0,0,1))*2.2;
+        let tx,ty,tz,ry=0,rz=0,sc=1;
+        if(ai>=0){const m=move(bt>=0?beat%8:0);tx=acePos[ai]+m.dx;ty=0.1+0.5*1.7*m.sy+m.y;tz=0.6;ry=m.yaw;rz=m.lean;sc=1.7;}
+        else{const k=others.indexOf(i),row=k<14?0:1,idx=row?k-14:k,n=14;const a=lerp(-1.0,1.0,idx/(n-1))*(row?1.05:0.9),R=row?8.6:7.2;
+          tx=Math.sin(a)*R;tz=-Math.cos(a)*R*0.55-1.2-row*1.3;ty=0.1+0.5+par(beat+idx*0.13)*0.25*sm(TS-0.5,TS,t);ry=-a*0.6+0.25*Math.sin(beat*PI*0.5+idx);rz=0.15*Math.sin(beat*PI+idx*0.6);}
+        c.position.set(lerp(base[i].x,tx,u),lerp(base[i].y,ty,u)+arc,lerp(base[i].z,tz,u));
+        const s=lerp(1,sc,u);c.scale.set(s,s,s);
+        c.rotation.set(lerp(-PI/2,0,u),lerp(baseYaw[i],ry,u),rz*u);
+      });
+      const a=Math.sin(t*0.4)*0.6,R=lerp(9,15,sm(0.2,2.5,t))-pulse*0.4*sm(TS,TS+1,t),H=lerp(4,6,sm(0.2,2.5,t));
+      setCam(Math.sin(a)*R,H,Math.cos(a)*R,0,2.2,-1);
+    },
+    dispose(){scene.remove(root);disposeTree(root);restoreLights();}
+  };
+};
+
+/* ===================================================================
+   shared: assembling cards into bodies (macarena + card people)
+   =================================================================== */
+function mkSlot(card,part,x,y,z,rx,ry,rz,sx,sy,delay){
+  return{card:card,part:part,p:new THREE.Vector3(x,y,z),q:new THREE.Quaternion().setFromEuler(new THREE.Euler(rx||0,ry||0,rz||0,'YXZ')),s:new THREE.Vector3(sx,sy,1),delay:delay||0};
+}
+function beginSlots(slots){
+  scene.updateMatrixWorld(true);
+  slots.forEach(s=>{s.part.attach(s.card);s.sp=s.card.position.clone();s.sq=s.card.quaternion.clone();s.ss=s.card.scale.clone();});
+}
+function stepSlots(slots,t,t0,dur,arc){
+  slots.forEach(s=>{
+    const u=(t-t0-s.delay)/dur;if(u<=0)return;const uc=clamp(u,0,1),e=eo(uc);
+    s.card.position.lerpVectors(s.sp,s.p,e);s.card.position.y+=Math.sin(PI*uc)*arc;
+    s.card.quaternion.copy(s.sq).slerp(s.q,e);s.card.scale.lerpVectors(s.ss,s.s,e);
+  });
+}
+function faceMesh(parent,x,y,z){
+  const m=toon(PAL.ink),g=new THREE.Group();g.position.set(x,y,z);parent.add(g);
+  [-1,1].forEach(s=>{const e=new THREE.Mesh(new THREE.CircleGeometry(0.05,10),m);e.position.set(s*0.15,0.14,0);g.add(e);});
+  const sm_=new THREE.Mesh(new THREE.TorusGeometry(0.16,0.022,6,14,PI),m);sm_.rotation.z=PI;sm_.position.set(0,-0.08,0);g.add(sm_);
+  g.visible=false;return g;
+}
+
+/* ===================================================================
+   SCENE: CARD MACARENA  (CEL.macarena)   - grows a crowd, one dancer per camera lap
+   WHAT: The pile assembles into a dancing person built ONLY from cards (torso 6, head 4, arms 8, legs 8, hat 2,
+     sunglasses 2 = card BACKS shown as dark lenses, feet 2 = 32 cards). It performs the Macarena's arm sequence
+     (SEQ_R/SEQ_L over 16 beats, poses in table P) with hip sway and a hop + quarter turn on beat 16, synced to a synth beat.
+   USER REQUEST: "every time the camera makes a full circle around the macarena dancer, another dancing card person should
+     appear. they should appear as if someone threw a deck of cards off-screen, and when the deck hit the table, the cards
+     formed into a person. limit this to 10 extra dancers."
+   HOW: One camera lap == one 16-beat dance cycle (PERIOD). Lap boundary => throwStack(): 32 extra cards stacked in a
+     Group are hurled from BEHIND the camera on a ballistic arc (ballistic() to the spot), tumble at a constant angular
+     rate (2 turns so they land flat), thud with one restitution bounce (shake + kick sound), rest 0.4 s, then attach to a
+     new figure's joints and ease into place (beginSlots/stepSlots). Extras spawn on two rings (SPOTS), max MAXX=10.
+     All dancers share the same beat phase so they read as a line dance. Camera radius grows with the crowd.
+     The lap angle is TAU*(lap + lerp(fr, eio(fr), 0.55)) => eased so the camera drifts slower at the lap mark.
+   CAVEATS: arm poses are hand-tuned guesses (not visually verified) - tweak the P table. ~330 cards at full crowd.
+   =================================================================== */
+CEL.macarena=function(){
+  const root=new THREE.Group();scene.add(root);
+  const S=0.62,cw=CW*S,ch=CH*S,PEL=4*ch,BPM=103,TD=3.3,T0=0.5,PERIOD=16*60/BPM,MAXX=10,THROW=1.6;
+  const grp=(par_,x,y,z)=>{const g=new THREE.Group();g.position.set(x,y,z);par_.add(g);return g;};
+  const P={REST:[0,0,-0.12,0,0],FD:[-1.45,0,-0.05,0,0],FU:[-1.45,0,-0.05,0,PI],XS:[-1.25,0.95,0,-2.3,0],HEAD:[-0.35,0,-1.5,-2.2,0],XH:[-0.7,0.75,0,-1.1,0],SH:[0.25,0,-0.5,-0.9,0],CL:[-1.3,0.5,0,-0.6,0]};
+  const SEQ_R=['FD','FD','FU','FU','XS','XS','HEAD','HEAD','XH','XH','SH','SH','SH','SH','SH','CL'];
+  const SEQ_L=['REST','FD','FD','FU','FU','XS','XS','HEAD','HEAD','XH','XH','SH','SH','SH','SH','CL'];
+  function armPose(seq,k,f){const cur=P[seq[k]],prev=P[seq[(k+15)%16]],e=eo(Math.min(1,f*2.5));return cur.map((v,i)=>lerp(prev[i],v,e));}
+  function setArm(a,pose){const mir=a.side>0?-1:1;a.sh.rotation.set(pose[0],pose[1]*mir,pose[2]*mir);a.el.rotation.set(pose[3],pose[4],0);}
+  function buildFig(x,z,src){
+    const fig=new THREE.Group();fig.position.set(x,0,z);root.add(fig);
+    const torso=grp(fig,0,PEL+1.5*ch,0),head=grp(fig,0,PEL+3*ch+0.04+ch,0);
+    const mkArm=sx=>{const sh=grp(fig,sx*(cw+cw/2+0.03),PEL+3*ch-0.25,0);sh.rotation.order='YXZ';const el=grp(sh,0,-2*ch,0);return{sh:sh,el:el,side:sx};};
+    const armR=mkArm(-1),armL=mkArm(1);
+    const mkLeg=sx=>{const hip=grp(fig,sx*(cw/2+0.01),PEL,0);const knee=grp(hip,0,-2*ch,0);return{hip:hip,knee:knee};};
+    const legR=mkLeg(-1),legL=mkLeg(1);
+    const mouth=faceMesh(head,0,-0.1,0.03);
+    const slots=[];let n=0;
+    const add=(part,x_,y,z_,rx,ry,rz,sx,sy)=>{slots.push(mkSlot(src(),part,x_,y,z_,rx,ry,rz,sx||S,sy||S,n*0.05));n++;};
+    [-1,0,1].forEach(r=>{add(torso,-cw/2,r*ch,0);add(torso,cw/2,r*ch,0);});
+    [[-1,-1],[1,-1],[-1,1],[1,1]].forEach(p=>add(head,p[0]*cw/2,p[1]*ch/2,0));
+    add(head,-0.18,0.62+0.26,0,0,0,-0.4);add(head,0.18,0.62+0.26,0,0,0,0.4);
+    add(head,-0.19,0.12,0.05,0,PI,0,0.3,0.3);add(head,0.19,0.12,0.05,0,PI,0,0.3,0.3);
+    [armR,armL].forEach(a=>{[0.5,1.5].forEach(k=>add(a.sh,0,-k*ch,0));[0.5,1.5].forEach(k=>add(a.el,0,-k*ch,0));});
+    [legR,legL].forEach(l=>{[0.5,1.5].forEach(k=>add(l.hip,0,-k*ch,0));[0.5,1.5].forEach(k=>add(l.knee,0,-k*ch,0));});
+    add(legR.knee,0,-2*ch+0.02,0.27,-PI/2,0,0);add(legL.knee,0,-2*ch+0.02,0.27,-PI/2,0,0);
+    return{fig:fig,torso:torso,head:head,armR:armR,armL:armL,legR:legR,legL:legL,mouth:mouth,slots:slots,x0:x};
+  }
+  function dance(F,active,beat){
+    if(!active){F.armR.sh.rotation.set(0,0,-0.12);F.armL.sh.rotation.set(0,0,0.12);return;}
+    const k=Math.floor(beat)%16,f=beat-Math.floor(beat),turns=Math.floor(beat/16);
+    setArm(F.armR,armPose(SEQ_R,k,f));setArm(F.armL,armPose(SEQ_L,k,f));
+    const sw=(k>=12&&k<=14),sway=sw?Math.sin(beat*PI)*0.25:0;
+    F.torso.rotation.z=sw?-sway*0.3:0.05*Math.sin(beat*PI);F.head.rotation.z=0.06*Math.sin(beat*PI+1);
+    F.legR.hip.rotation.z=-0.04+sway*0.1;F.legL.hip.rotation.z=0.04+sway*0.1;
+    F.fig.position.x=F.x0+sway;F.fig.position.y=k===15?par(f)*0.9:par(beat)*0.06;  /* ballistic hops */
+    F.legR.knee.rotation.x=k===15?-par(f)*0.7:0;F.legL.knee.rotation.x=F.legR.knee.rotation.x;
+    F.fig.rotation.y=turns*PI/2+(k===15?eio(f)*PI/2:0);
+  }
+  const main=buildFig(0,0,(()=>{let k=0;return()=>deck[31-(k++)];})());
+  beginSlots(main.slots);
+  const SPOTS=[[5.6,30],[9.8,45],[5.6,150],[9.8,135],[5.6,270],[9.8,225],[5.6,90],[9.8,315],[5.6,210],[5.6,330]];
+  const extra=[];let thrown=0,Rk=0,audio=false;
+  const STK=32*CT*1.15/2+0.01;
+  function throwStack(idx,t){
+    const r=SPOTS[idx][0],a=SPOTS[idx][1]*PI/180,tx=Math.cos(a)*r,tz=Math.sin(a)*r;
+    const cards=[];for(let i=0;i<32;i++)cards.push(extraCard());
+    const F=buildFig(tx,tz,(()=>{let k=0;return()=>cards[k++];})());
+    const tg=new THREE.Group();root.add(tg);
+    cards.forEach((c,i)=>{tg.add(c);c.position.set(rand(-0.03,0.03),(i-15.5)*CT*1.15,rand(-0.03,0.03));c.rotation.set(-PI/2,rand(-0.15,0.15),0);c.scale.set(1,1,1);});
+    /* from behind the camera, lateral jitter so it never hits the lens */
+    const cp=camera.position,bl=Math.hypot(cp.x,cp.z)||1,bx=cp.x/bl,bz=cp.z/bl,lat=rand(-6,6);
+    const p0=new V(cp.x+bx*9-bz*lat,cp.y+3,cp.z+bz*9+bx*lat);
+    const vel=ballistic(p0,new V(tx,STK,tz),THROW);
+    extra.push({F:F,tg:tg,pos:p0.clone(),vel:vel,t0:t,st:'fly',landed:false,tL:0,tA:0,hy:rand(0,TAU)});
+    AU.noise(0.4,0.12,700,0.5);
+  }
+  function updExtra(e,dt,t,beat){
+    if(e.st==='fly'||e.st==='rest'){
+      e.vel.y-=G*dt;e.pos.addScaledVector(e.vel,dt);
+      if(e.pos.y<=STK&&e.vel.y<0){
+        e.pos.y=STK;
+        if(e.vel.y<-2.5){e.vel.y*=-0.25;e.vel.x*=0.35;e.vel.z*=0.35;shake(0.4);AU.kick(0.5);AU.noise(0.15,0.25,900,0.6);}
+        else{e.vel.y=0;if(!e.landed){e.landed=true;e.tL=t;e.st='rest';}}
+      }
+      if(e.landed){e.vel.x*=Math.exp(-6*dt);e.vel.z*=Math.exp(-6*dt);}
+      e.tg.position.copy(e.pos);
+      const tau=t-e.t0;e.tg.rotation.set(tau<THROW?-TAU*2*(tau/THROW):0,e.hy,0); /* free tumble: constant angular rate, ends flat */
+      if(e.landed&&t>e.tL+0.4){beginSlots(e.F.slots);e.st='asm';e.tA=t;}
+    }
+    if(e.st==='asm'){stepSlots(e.F.slots,t,e.tA,0.9,0.8);e.F.mouth.visible=t>e.tA+2.6;dance(e.F,false,0);if(t>e.tA+2.7)e.st='dance';}
+    if(e.st==='dance')dance(e.F,true,beat);
+  }
+  return{
+    update(dt,t){
+      stepSlots(main.slots,t,T0,0.9,0.8);main.mouth.visible=t>TD-0.2;
+      const bt=t-TD;
+      if(!audio&&bt>=0){audio=true;AU.beat(BPM,s=>{if(s%4===0)AU.kick(0.5);if(s%8===4)AU.clap(0.2);if(s%2===1)AU.hat(0.07);if(s%8===0)AU.tone(110,0.2,'triangle',0.25);if(s%8===3)AU.tone(165,0.15,'triangle',0.2);});}
+      const beat=Math.max(0,bt)*BPM/60;
+      dance(main,bt>=0,beat);
+      const x=t/PERIOD,lap=Math.floor(x),fr=x-lap;
+      if(lap>thrown&&thrown<MAXX){throwStack(thrown,t);thrown++;}
+      extra.forEach(e=>updExtra(e,dt,t,beat));
+      /* one lap per dance cycle, eased so the camera drifts slower at the lap mark */
+      const ang=TAU*(lap+lerp(fr,eio(fr),0.55));
+      Rk+=(thrown*1.1-Rk)*Math.min(1,dt*1.5);
+      const R=lerp(9,13,sm(0,2.5,t))+Rk;
+      setCam(Math.sin(ang)*R,lerp(3.5,4.6,sm(0,2.5,t))+Rk*0.25,Math.cos(ang)*R,0,2.9,0);
+    },
+    dispose(){scene.remove(root);disposeTree(root);}
+  };
+};
+
+/* ===================================================================
+   SCENE: CARD PEOPLE LINEUP  (CEL.people)  - loops forever
+   WHAT: The pile assembles into 6 card people standing in a queue (each: head, torso, 2 arms, 2 legs = 36 cards, so 4
+     extras are cloned mid-flight) with little faces. The camera glides at knee height through the gap between every
+     person's legs (legs are spaced so the camera's x=0 path clears them), reaches the end, TURNS AROUND, the people spin
+     to face it (staggered, eased, with a real hop) and go wild - waving, hopping, and leaning out of the queue to peek at
+     the camera - then the camera goes back through their legs the other way, turns again, and so on ad infinitum.
+   USER REQUEST: originally "cards form people (legs, torso, arms, head) in a line and the camera slides between their legs";
+     then: "when you're done going through the card people's legs, the camera should turn around to see them peeking at
+     you and being very excited - you go through their legs again, ad infinitum."
+   IMPLEMENTATION NOTES: camState(t) is a 4-phase cycle (travel -z, turn, travel +z, turn) using eio() so the camera stops
+     smoothly at each end. Each person's yaw = cycle*TAU + PI*eio(turn B) + PI*eio(turn D) => continuous forever
+     (verified numerically). Peeking = the upper-body group leans +/- with a per-person phase. People become "excited"
+     (exc) after the first pass. Sounds: a tone as the camera passes each person.
+   =================================================================== */
+CEL.people=function(){
+  const root=new THREE.Group();scene.add(root);
+  const people=[],slots=[];let n=0;
+  const grp=(par_,x,y,z)=>{const g=new THREE.Group();g.position.set(x,y,z);par_.add(g);return g;};
+  const nxt=()=>{if(n<32)return deck[31-(n++)];n++;const c=extraCard();c.position.set(0,pileTop(),0);c.rotation.set(-PI/2,0,0);return c;};
+  for(let k=0;k<6;k++){
+    const pr=grp(root,0,0,-2.2-k*2.4);
+    const P={root:pr,k:k};
+    P.hipL=grp(pr,-0.42,1.35,0);P.hipR=grp(pr,0.42,1.35,0);
+    P.upper=grp(pr,0,1.35,0);
+    P.torso=grp(P.upper,0,0.625,0);P.head=grp(P.upper,0,1.75,0);
+    P.armL=grp(P.upper,-0.62,1.15,0);P.armR=grp(P.upper,0.62,1.15,0);
+    const d=k*0.12;
+    const add=(part,x,y,rx,sx,sy,dl)=>slots.push(mkSlot(nxt(),part,x,y,0,rx||0,0,0,sx,sy,d+dl));
+    add(P.hipL,0,-0.675,0,0.5,1.35,0);add(P.hipR,0,-0.675,0,0.5,1.35,0.02);
+    add(P.torso,0,0,0,1.3,1.25,0.04);add(P.head,0,0,0,1.0,0.9,0.06);
+    add(P.armL,0,-0.575,0,0.42,1.15,0.08);add(P.armR,0,-0.575,0,0.42,1.15,0.1);
+    P.face=faceMesh(P.head,0,0.02,0.03);
+    P.jitter=rand(0,TAU);people.push(P);
+  }
+  beginSlots(slots);
+  const T0=3.6,ZS=8,ZE=-16,TT=8.0,TN=1.8,C=2*(TT+TN);
+  function camState(t){
+    const s=t-T0;if(s<0)return null;
+    const cyc=Math.floor(s/C),w=s-cyc*C;let z,th,tu=0;
+    if(w<TT){z=lerp(ZS,ZE,eio(w/TT));th=0;}
+    else if(w<TT+TN){z=ZE;tu=(w-TT)/TN;th=PI*eio(tu);}
+    else if(w<2*TT+TN){z=lerp(ZE,ZS,eio((w-TT-TN)/TT));th=PI;}
+    else{z=ZS;tu=(w-2*TT-TN)/TN;th=PI+PI*eio(tu);}
+    return{cyc:cyc,w:w,z:z,th:th,tu:tu};
+  }
+  let prevZ=null;
+  return{
+    update(dt,t){
+      stepSlots(slots,t,0.5,0.85,0.7);
+      const assembled=t>2.6,cs=camState(t);
+      const exc=sm(T0+TT-1,T0+TT+1,t);   /* they go wild once the camera has been through once */
+      people.forEach(P=>{P.face.visible=t>1.3+P.k*0.12+0.9;});
+      people.forEach(P=>{
+        const k=P.k,idle=Math.sin(t*3+P.jitter);
+        P.hipL.rotation.z=-0.06-0.03*idle;P.hipR.rotation.z=0.06-0.03*idle;
+        const up=0.5+0.5*Math.sin(t*5+k*1.0),up2=0.5+0.5*Math.sin(t*5+k*1.0+PI);
+        P.armR.rotation.z=lerp(0.15+0.1*idle,lerp(0.3,2.6,up),exc);
+        P.armL.rotation.z=-lerp(0.15-0.1*idle,lerp(0.3,2.6,up2),exc);
+        /* peek: lean out of the queue to look at the camera */
+        const pk=Math.sin(t*2.2+k*1.3);
+        P.upper.rotation.z=0.28*exc*pk;P.head.rotation.z=0.06*Math.sin(t*2+P.jitter)-0.3*exc*pk;
+        /* facing: spin to the camera's end after each turnaround (eased), with a real hop */
+        let yaw=0,hopT=0;
+        if(cs){
+          const fB=(cs.w-TT-(5-k)*0.18)/0.9,fD=(cs.w-(2*TT+TN)-k*0.18)/0.9;
+          yaw=cs.cyc*TAU+PI*eio(fB)+PI*eio(fD);
+          if(fB>0&&fB<1)hopT=4*fB*(1-fB)*0.8;
+          if(fD>0&&fD<1)hopT=4*fD*(1-fD)*0.8;
+        }
+        P.root.rotation.y=yaw;
+        P.root.position.y=assembled?(par(t*1.4+k*0.37)*0.3*exc+hopT):0;
+        P.root.scale.y=1+0.03*Math.sin(t*3+P.jitter)*(assembled?1:0);
+      });
+      /* camera */
+      const b0=sm(T0-1.3,T0,t);
+      let px=0,py=0.72,pz=ZS,lx=0,ly=1.5,lz=ZS-4;
+      if(cs){
+        const dx=Math.sin(cs.th),dz=-Math.cos(cs.th);
+        pz=cs.z;py=0.72+0.45*Math.sin(PI*cs.tu);lx=dx*4;ly=1.5;lz=cs.z+dz*4;
+        people.forEach(P=>{const z0=P.root.position.z;if(prevZ!==null&&(prevZ-z0)*(cs.z-z0)<0)AU.tone(220+P.k*40,0.18,'sine',0.18,2.2);});
+        prevZ=cs.z;
+      }
+      if(t<T0){
+        const a=0.4*sm(0,T0-0.6,t),ex=Math.sin(a)*9,ey=2.8,ez=Math.cos(a)*9;
+        setCam(lerp(ex,px,b0),lerp(ey,py,b0),lerp(ez,pz,b0),lerp(0,lx,b0),lerp(1.5,ly,b0),lerp(-3,lz,b0));
+      }else setCam(px,py,pz,lx,ly,lz);
+    },
+    dispose(){scene.remove(root);disposeTree(root);}
+  };
+};
+
+/* ===================================================================
+   SCENE: CARD PONG  (CEL.pong)  - playable, 1 player vs computer
+   WHAT: The pile becomes: one card = your paddle (left), one card = computer paddle (right), one card = the ball, and the
+     other 29 cards cheering at the bottom of the screen (hop harder as the rally grows; spin and jump on a goal).
+     First to 5. Ball speed rises with each hit; the hit offset on the paddle steers the ball. Winner banner + Play again.
+   USER REQUEST: "one card per paddle, one card as the ball, the other cards cheering at the bottom of the screen.
+     players can drag their card with mouse/finger or use the up/down arrow keys." (2-player mode existed in the working
+     copy; this export is 1-player only at the user's request.)
+   IMPLEMENTATION NOTES: pointer position is raycast onto the table plane (y=0) and drives the left paddle's target z; the
+     paddle chases it with a speed cap. Camera is fixed during play so this mapping stays valid. The AI re-rolls an aim
+     error every 0.22 s and is speed-capped (8.3 u/s) so it can lose.
+   =================================================================== */
+CEL.pong=function(){
+  const root=new THREE.Group();scene.add(root);
+  const XL=7.6,ZH=4.4,SC=1.6,PH=CH*SC/2,PW=CW*SC/2,BR=0.3,LIM=ZH-0.25-PH,WIN=5;
+  const padL=deck[31],padR=deck[30],ball=deck[29],aud=deck.slice(0,29);
+  const lineM=toon(PAL.mid);
+  for(let i=0;i<9;i++){const m=new THREE.Mesh(new THREE.BoxGeometry(0.14,0.02,0.5),lineM);m.position.set(0,0.012,-ZH+0.5+i*(2*ZH-1)/8);root.add(m);}
+  [-1,1].forEach(s=>{const m=new THREE.Mesh(new THREE.BoxGeometry(2*XL+2.4,0.05,0.12),lineM);m.position.set(0,0.025,s*(ZH+0.15));root.add(m);});
+  const base=deck.map(c=>c.position.clone()),baseYaw=deck.map(c=>c.rotation.y);
+  const puffs=new Puffs(root,200);
+  const conf=new Flakes(root,new THREE.PlaneGeometry(0.16,0.1),toon(0xffffff,{side:THREE.DoubleSide}),500,{g:9,floor:0.02});
+  const S={l:0,r:0,ph:'intro',bx:0,bz:0,vx:0,vz:0,speed:7.5,tzL:0,tzR:0,serveAt:0,rally:0,exc:0.15,boost:0,over:false,aiT:0,aiErr:0,hitL:0,hitR:0,pz:{L:0,R:0}};
+  const ptr=new Map(),keys={};
+  const ray=new THREE.Raycaster(),pl=new THREE.Plane(new THREE.Vector3(0,1,0),0),pt=new THREE.Vector3(),ndc=new THREE.Vector2();
+  function world(e){ndc.set(e.clientX/window.innerWidth*2-1,-(e.clientY/window.innerHeight)*2+1);ray.setFromCamera(ndc,camera);return ray.ray.intersectPlane(pl,pt);}
+  function setT(side,z){const v=clamp(z,-LIM,LIM);if(side==='L')S.tzL=v;else S.tzR=v;}   /* only the left (human) paddle is ever driven by the pointer */
+  function onDown(e){const p=world(e);if(!p)return;ptr.set(e.pointerId,'L');setT('L',p.z);try{canvas.setPointerCapture(e.pointerId);}catch(x){}}
+  function onMove(e){const side=ptr.get(e.pointerId);if(!side)return;const p=world(e);if(p)setT(side,p.z);}
+  function onUp(e){ptr.delete(e.pointerId);}
+  function onKey(e,down){
+    const k=e.key;if(k==='ArrowUp'||k==='ArrowDown'||k==='w'||k==='s'||k==='W'||k==='S'){keys[k.toLowerCase()]=down;if(k.indexOf('Arrow')===0)e.preventDefault();}
+  }
+  const kd=e=>onKey(e,true),ku=e=>onKey(e,false);
+  canvas.addEventListener('pointerdown',onDown);canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerup',onUp);canvas.addEventListener('pointercancel',onUp);
+  window.addEventListener('keydown',kd);window.addEventListener('keyup',ku);
+  function updScore(){scoreEl.innerHTML=S.l+' : '+S.r+'<small>'+'drag your card, or use the up and down arrows'+'. First to '+WIN+'.</small>';}
+  updScore();
+  function serve(dir){
+    S.bx=0;S.bz=rand(-1.5,1.5);S.speed=7.5;S.rally=0;const a=rand(-0.5,0.5);S.vx=dir*Math.cos(a)*S.speed;S.vz=Math.sin(a)*S.speed;S.ph='play';
+  }
+  function hitFx(x,z,pow){for(let i=0;i<8;i++)puffs.emit(x,0.2,z,rand(-2,2),rand(1,3),rand(-2,2),0.5,0.15,0.5,PAL.paper,2,0);AU.tone(440+pow*25,0.07,'square',0.12);}
+  function goal(side){
+    if(side==='L')S.l++;else S.r++;
+    S.boost=1;S.ph='wait';shake(0.4);AU.tone(200,0.4,'sawtooth',0.18,0.4);flash(0.15);updScore();
+    for(let i=0;i<40;i++)conf.emit(side==='L'?XL:-XL,0.5,rand(-3,3),rand(-4,4),rand(6,12),rand(-4,4),{color:pick([PAL.paper,PAL.accent,PAL.mid]),drag:0.4,flutter:2});
+    if(S.l>=WIN||S.r>=WIN){
+      S.over=true;S.ph='over';S.exc=1;
+      for(let i=0;i<300;i++)conf.emit(rand(-8,8),rand(8,14),rand(-4,4),rand(-2,2),rand(-1,1),rand(-2,2),{color:pick([PAL.paper,PAL.accent,PAL.mid,0xf7c777]),drag:1.2,flutter:4});
+      const who=S.l>=WIN?'YOU WIN':'AI WINS';
+      msgEl.innerHTML='<div class="big">'+who+'</div><button id="again">Play again</button>';
+      const b=document.getElementById('again');if(b)b.onclick=()=>play('pong');
+      AU.tone(523,0.4,'triangle',0.2);setTimeout(()=>AU.tone(659,0.4,'triangle',0.2),150);setTimeout(()=>AU.tone(784,0.7,'triangle',0.22),300);
+    }else S.serveAt=T+1.3;
+  }
+  let lastAi=0;
+  return{
+    update(dt,t){
+      /* ---- cards flying out of the pile ---- */
+      const u=(i,t0)=>eo((t-t0)/0.9);
+      const fly=(c,i,t0,tx,ty,tz,rx,ry,rz,sc)=>{const k=u(i,t0);c.position.set(lerp(base[i].x,tx,k),lerp(base[i].y,ty,k)+Math.sin(PI*clamp((t-t0)/0.9,0,1))*1.6,lerp(base[i].z,tz,k));
+        c.rotation.set(lerp(-PI/2,rx,k),lerp(baseYaw[i],ry,k),rz*k);const s=lerp(1,sc,k);c.scale.set(s,s,s);};
+      const iL=deck.indexOf(padL),iR=deck.indexOf(padR),iB=deck.indexOf(ball);
+      if(t<2.6){
+        fly(padL,iL,0.3,-XL,PH*0.0+0.02,S.pz.L,-PI/2,0,0,SC);fly(padR,iR,0.4,XL,0.02,S.pz.R,-PI/2,0,0,SC);fly(ball,iB,0.6,0,0.06,0,-PI/2,0,0,0.65);
+      }
+      aud.forEach((c,i)=>{const di=deck.indexOf(c),row=i<15?0:1,idx=row?i-15:i,n=row?14:15;
+        const tx=lerp(-9,9,idx/(n-1)),tz=6.3+row*0.9;
+        const hop=par(t*(1.6+(i%5)*0.2)+i*0.13)*S.exc*0.9;
+        const ty=0.5+hop+row*0.0;const spin=S.boost>0.4?Math.sin(t*10+i)*0.4:0;
+        if(t<2.6){const t0=0.8+i*0.04,k=eo((t-t0)/0.9);c.position.set(lerp(base[di].x,tx,k),lerp(base[di].y,ty,k)+Math.sin(PI*clamp((t-t0)/0.9,0,1))*2,lerp(base[di].z,tz,k));c.rotation.set(lerp(-PI/2,0,k),lerp(baseYaw[di],0,k),0);}
+        else{c.position.set(tx,ty,tz);c.rotation.set(0,spin+0.2*Math.sin(t*3+i),0.12*Math.sin(t*6+i));}
+      });
+      S.boost*=Math.exp(-1.6*dt);
+      if(S.ph!=='over')S.exc=0.15+Math.min(0.6,S.rally*0.06)+S.boost*0.7;
+      /* ---- state machine ---- */
+      if(S.ph==='intro'&&t>=2.6){S.ph='wait';S.serveAt=t+0.9;shout('READY',{x:50,y:40,size:11,life:1100});AU.tone(330,0.15,'square',0.12);}
+      if(S.ph==='wait'&&t>=S.serveAt){serve(Math.random()<0.5?-1:1);AU.tone(660,0.12,'square',0.14);}
+      if(t>=2.6){
+        /* input */
+        if(keys.arrowup||keys.w)S.tzL-=13*dt;if(keys.arrowdown||keys.s)S.tzL+=13*dt;
+        S.tzL=clamp(S.tzL,-LIM,LIM);
+        /* AI (right paddle): tracks the ball with a re-rolled error every 0.22 s and a capped speed (8.3 u/s, slower than the
+           ball's lateral speed) so it is beatable; drifts back to centre while the ball is heading away. */
+        if(S.ph==='play'&&S.vx>0){if(t-lastAi>0.22){lastAi=t;S.aiErr=rand(-1,1)*(0.35+S.speed*0.05);}S.tzR=clamp(S.bz+S.aiErr,-LIM,LIM);}
+        else S.tzR=lerp(S.tzR,0,Math.min(1,dt*1.5));
+        const spL=24,spR=8.3;
+        S.pz.L+=clamp(S.tzL-S.pz.L,-spL*dt,spL*dt);S.pz.R+=clamp(S.tzR-S.pz.R,-spR*dt,spR*dt);
+        padL.position.set(-XL,0.03,S.pz.L);padR.position.set(XL,0.03,S.pz.R);
+        padL.rotation.set(-PI/2,0,0);padR.rotation.set(-PI/2,0,0);
+        S.hitL*=Math.exp(-10*dt);S.hitR*=Math.exp(-10*dt);
+        padL.scale.setScalar(SC*(1+0.18*S.hitL));padR.scale.setScalar(SC*(1+0.18*S.hitR));
+      }
+      if(S.ph==='play'){
+        S.bx+=S.vx*dt;S.bz+=S.vz*dt;
+        if(S.bz>ZH-BR){S.bz=ZH-BR;S.vz=-Math.abs(S.vz);hitFx(S.bx,S.bz,2);}
+        if(S.bz<-ZH+BR){S.bz=-ZH+BR;S.vz=Math.abs(S.vz);hitFx(S.bx,S.bz,2);}
+        if(S.vx<0&&S.bx-BR<=-XL+PW&&S.bx+BR>=-XL-PW&&Math.abs(S.bz-S.pz.L)<=PH+BR*0.8){
+          const off=clamp((S.bz-S.pz.L)/(PH+BR),-1,1),a=off*0.85;S.speed=Math.min(16,S.speed+0.55);S.rally++;
+          S.bx=-XL+PW+BR;S.vx=S.speed*Math.cos(a);S.vz=S.speed*Math.sin(a);S.hitL=1;hitFx(S.bx,S.bz,S.speed);
+        }
+        if(S.vx>0&&S.bx+BR>=XL-PW&&S.bx-BR<=XL+PW&&Math.abs(S.bz-S.pz.R)<=PH+BR*0.8){
+          const off=clamp((S.bz-S.pz.R)/(PH+BR),-1,1),a=off*0.85;S.speed=Math.min(16,S.speed+0.55);S.rally++;
+          S.bx=XL-PW-BR;S.vx=-S.speed*Math.cos(a);S.vz=S.speed*Math.sin(a);S.hitR=1;hitFx(S.bx,S.bz,S.speed);
+        }
+        if(S.bx<-XL-2.4)goal('R');else if(S.bx>XL+2.4)goal('L');
+      }
+      if(t>=2.6){ball.position.set(S.bx,0.08+(S.ph==='wait'?0:0),S.bz);ball.rotation.set(-PI/2,ball.rotation.y+dt*9,0);ball.scale.setScalar(0.65);}
+      puffs.update(dt);conf.update(dt,t);
+      /* camera: fixed during play so pointer mapping stays stable */
+      const k=sm(0.2,2.4,t);setCam(lerp(0,0,k),lerp(4.2,12.5,k),lerp(6.5,9.6,k),0,0,lerp(0,0.6,k));
+    },
+    dispose(){
+      canvas.removeEventListener('pointerdown',onDown);canvas.removeEventListener('pointermove',onMove);canvas.removeEventListener('pointerup',onUp);canvas.removeEventListener('pointercancel',onUp);
+      window.removeEventListener('keydown',kd);window.removeEventListener('keyup',ku);scene.remove(root);disposeTree(root);
+    }
+  };
+};
+
+/* ===================================================================
+   SCENE: CUP AND BALL  (CEL.cupball)  - POINTER ONLY (mouse or fingertip). No keyboard controls, by the user's decision.
+   WHAT: The pile becomes a cup (8 wall cards in an octagon, 1 base card, 3-card handle) and a ball (20 cards on a
+     Fibonacci sphere), joined by a string. The player moves the cup with the pointer and tries to swing the ball into it.
+   USER REQUEST: "give the ball weight and make it swing around somewhat realistically" (see the Wikipedia cup-and-ball
+     toy). Then: "can't be played with a keyboard, that's a mouse/fingertip one."
+   PHYSICS (all real, semi-implicit substeps of <=4 ms):
+     - The ball is a point mass under G with light air drag. The string is an inextensible tether of length L: when the
+       ball would exceed L it is projected back onto the sphere and the outward relative velocity is removed
+       (slightly bouncy). The snap also tugs the cup (visual 'yank' spring) and clicks - that is what gives it WEIGHT.
+     - The cup is a real bowl in its local frame: base disc, cylindrical wall shell (ball can hit inside or outside), and a
+       torus-like rim ring. Collision uses velocity RELATIVE to the moving cup, restitution 0.3 => you can catch, bounce,
+       balance, and toss the ball (drop the cup then jerk it up).
+     - The cup follows the pointer through a critically damped spring (w=26); it tilts with horizontal speed.
+     - ONE deliberate cheat: a gentle spring pulls the ball toward the cup's plane (z=0) because a 2D pointer cannot
+       control depth. Remove/soften `-6*ball.p.z` in sub() if you add depth control.
+     - The string is a visual verlet rope pinned to cup and ball, drawn as a camera-facing quad strip.
+   SCORING: a catch registers when the ball has settled in the cup for 0.35 s; it re-arms once the ball has left the cup
+     for 0.4 s. A catch triggers confetti puffs + a comic PIQUET! + a little fanfare.
+   TUNABLES: rin (cup radius), H (depth), rb (ball radius), L (string length), spring w, restitution values.
+   =================================================================== */
+CEL.cupball=function(){
+  const root=new THREE.Group();scene.add(root);
+  const rin=0.75,H=0.88,rb=0.45,L=3.0,T_PLAY=3.0,CAMD=14.5,GRIP=0.9;
+  const B0=new V(0,4.6,0);
+  const cupG=new THREE.Group();cupG.position.copy(B0);root.add(cupG);
+  const ballG=new THREE.Group();ballG.position.set(0,B0.y-0.05-L,0);root.add(ballG);
+  const slots=[];let n=0;const nxt=()=>deck[31-(n++)];
+  const add=(part,x,y,z,rx,ry,rz,sx,sy,dl)=>{const sl=mkSlot(nxt(),part,x,y,z,rx,ry,rz,sx,sy,dl);slots.push(sl);return sl;};
+  for(let i=0;i<8;i++){const th=i/8*TAU;add(cupG,rin*Math.cos(th),H/2,rin*Math.sin(th),0,PI/2-th,0,0.88,0.88,i*0.04);}
+  add(cupG,0,0.012,0,-PI/2,0,0,1.2,1.2,0.34);
+  for(let k=0;k<3;k++)add(cupG,0,-0.32-k*0.6,0,0,0,0,0.36,0.6,0.4+k*0.04);
+  const zAx=new V(0,0,1),tv=new V();
+  for(let i=0;i<20;i++){
+    const y=1-(i+0.5)*2/20,r=Math.sqrt(1-y*y),ph=i*2.39996;tv.set(Math.cos(ph)*r,y,Math.sin(ph)*r);
+    const sl=add(ballG,tv.x*rb*0.94,tv.y*rb*0.94,tv.z*rb*0.94,0,0,0,0.42,0.42,0.5+i*0.03);
+    sl.q.setFromUnitVectors(zAx,tv);sl.q.premultiply(new THREE.Quaternion().setFromAxisAngle(tv,rand(0,TAU)));
+  }
+  beginSlots(slots);
+  /* state */
+  const cup={p:B0.clone(),v:new V(),phi:0,yank:new V(),yv:new V()};
+  const ball={p:ballG.position.clone(),v:new V()};
+  let tx=0,ty=B0.y-GRIP,catches=0,armed=true,hold=0,out=0,live=false;
+  const puffs=new Puffs(root,300);
+  /* the string: a visual verlet rope pinned to the cup and the ball */
+  const RN=14,RP=[],RQ=[];
+  const ropePos=new Float32Array((RN+1)*2*3),ropeGeo=new THREE.BufferGeometry();
+  ropeGeo.setAttribute('position',new THREE.BufferAttribute(ropePos,3));
+  {const idx=[];for(let k=0;k<RN;k++){const a=k*2,b=k*2+1,c=k*2+2,d=k*2+3;idx.push(a,b,c,b,d,c);}ropeGeo.setIndex(idx);}
+  const rope=new THREE.Mesh(ropeGeo,new THREE.MeshBasicMaterial({color:PAL.paper,side:THREE.DoubleSide}));rope.frustumCulled=false;rope.visible=false;root.add(rope);
+  const anchorAt=()=>{const c=Math.cos(cup.phi),s=Math.sin(cup.phi);return[cup.p.x+0.05*s,cup.p.y-0.05*c,cup.p.z];};
+  {const a=anchorAt();for(let i=0;i<=RN;i++){const f=i/RN;RP.push([lerp(a[0],ball.p.x,f),lerp(a[1],ball.p.y,f),lerp(a[2],ball.p.z,f)]);RQ.push(RP[i].slice());}}
+  /* pointer only */
+  const ray=new THREE.Raycaster(),pl3=new THREE.Plane(new V(0,0,1),0),pt=new V(),ndc=new THREE.Vector2();
+  function onPtr(e){
+    ndc.set(e.clientX/window.innerWidth*2-1,-(e.clientY/window.innerHeight)*2+1);ray.setFromCamera(ndc,camera);
+    const p=ray.ray.intersectPlane(pl3,pt);if(p){tx=p.x;ty=p.y;}
+  }
+  canvas.addEventListener('pointermove',onPtr);canvas.addEventListener('pointerdown',onPtr);
+  function updScore(){scoreEl.innerHTML='Catches '+catches+'<small>move the mouse, or drag a finger, to swing the cup and catch the ball</small>';}
+  updScore();
+  let hitMax=0;
+  function collideCup(h){
+    const c=Math.cos(cup.phi),s=Math.sin(cup.phi);
+    const dx=ball.p.x-cup.p.x,dy=ball.p.y-cup.p.y,dz=ball.p.z-cup.p.z;
+    let lx=c*dx+s*dy,ly=-s*dx+c*dy,lz=dz;
+    const rvx=ball.v.x-cup.v.x,rvy=ball.v.y-cup.v.y,rvz=ball.v.z-cup.v.z;
+    let vx=c*rvx+s*rvy,vy=-s*rvx+c*rvy,vz=rvz;
+    const resolve=(nx,ny,nz)=>{const vn=vx*nx+vy*ny+vz*nz;if(vn<0){const e=0.3;vx-=(1+e)*vn*nx;vy-=(1+e)*vn*ny;vz-=(1+e)*vn*nz;hitMax=Math.max(hitMax,-vn);const f=Math.exp(-1.5*h);vx*=f;vz*=f;}};
+    let rho=Math.hypot(lx,lz)||1e-6,ux=lx/rho,uz=lz/rho;
+    if(rho<rin){                               /* base disc */
+      if(ly>=0&&ly<rb){ly=rb;resolve(0,1,0);}
+      else if(ly<0&&ly>-rb){ly=-rb;resolve(0,-1,0);}
+    }
+    if(ly>0&&ly<H){                            /* wall shell */
+      if(rho<rin&&rho>rin-rb){const r2=rin-rb;lx=ux*r2;lz=uz*r2;resolve(-ux,0,-uz);}
+      else if(rho>=rin&&rho<rin+rb){const r2=rin+rb;lx=ux*r2;lz=uz*r2;resolve(ux,0,uz);}
+    }
+    rho=Math.hypot(lx,lz)||1e-6;ux=lx/rho;uz=lz/rho;
+    {const dr=rho-rin,dh=ly-H,dd=Math.hypot(dr,dh);   /* rim ring */
+      if(ly>=H&&dd<rb&&dd>1e-6){const nr=dr/dd,ny=dh/dd,push=rb-dd;lx+=ux*nr*push;lz+=uz*nr*push;ly+=ny*push;resolve(ux*nr,ny,uz*nr);}}
+    ball.p.set(cup.p.x+c*lx-s*ly,cup.p.y+s*lx+c*ly,cup.p.z+lz);
+    ball.v.set(cup.v.x+c*vx-s*vy,cup.v.y+s*vx+c*vy,cup.v.z+vz);
+  }
+  function tether(){
+    const a=anchorAt(),dx=ball.p.x-a[0],dy=ball.p.y-a[1],dz=ball.p.z-a[2],dist=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-6;
+    if(dist>L){
+      const nx=dx/dist,ny=dy/dist,nz=dz/dist;ball.p.set(a[0]+nx*L,a[1]+ny*L,a[2]+nz*L);
+      const vr=(ball.v.x-cup.v.x)*nx+(ball.v.y-cup.v.y)*ny+(ball.v.z-cup.v.z)*nz;
+      if(vr>0){ball.v.x-=nx*vr*1.1;ball.v.y-=ny*vr*1.1;ball.v.z-=nz*vr*1.1;
+        if(vr>3){cup.yv.x+=nx*vr*0.3;cup.yv.y+=ny*vr*0.3;if(vr>7){AU.tone(180+vr*6,0.06,'triangle',0.08);shake(0.06);}}}   /* the snap of the string tugs the cup */
+    }
+  }
+  function sub(h,xm){
+    const W=26,tgx=clamp(tx,-xm,xm),tgy=clamp(ty+GRIP,1.9,8);
+    const ax=W*W*(tgx-cup.p.x)-2*W*cup.v.x,ay=W*W*(tgy-cup.p.y)-2*W*cup.v.y;
+    cup.v.x+=ax*h;cup.v.y+=ay*h;cup.p.x+=cup.v.x*h;cup.p.y+=cup.v.y*h;
+    const tp=clamp(-cup.v.x*0.045,-0.6,0.6);cup.phi+=(tp-cup.phi)*Math.min(1,h*10);
+    ball.v.y-=G*h;ball.v.z+=(-6*ball.p.z-1.5*ball.v.z)*h;  /* gentle pull toward the cup's plane so a 2D pointer can play a 3D toy */
+    ball.v.multiplyScalar(Math.exp(-0.12*h));
+    ball.p.addScaledVector(ball.v,h);
+    if(ball.p.y<rb){ball.p.y=rb;if(ball.v.y<0)ball.v.y*=-0.35;const f=Math.exp(-3*h);ball.v.x*=f;ball.v.z*=f;}
+    collideCup(h);tether();
+    const W2=18;cup.yv.x+=(-W2*W2*cup.yank.x-2*W2*cup.yv.x)*h;cup.yv.y+=(-W2*W2*cup.yank.y-2*W2*cup.yv.y)*h;cup.yank.x+=cup.yv.x*h;cup.yank.y+=cup.yv.y*h;
+  }
+  function localBall(){
+    const c=Math.cos(cup.phi),s=Math.sin(cup.phi),dx=ball.p.x-cup.p.x,dy=ball.p.y-cup.p.y,dz=ball.p.z-cup.p.z;
+    const rvx=ball.v.x-cup.v.x,rvy=ball.v.y-cup.v.y,rvz=ball.v.z-cup.v.z;
+    return{x:c*dx+s*dy,y:-s*dx+c*dy,z:dz,speed:Math.sqrt(rvx*rvx+rvy*rvy+rvz*rvz)};
+  }
+  function celebrate(){
+    const c=Math.cos(cup.phi),s=Math.sin(cup.phi),mx=cup.p.x-H*s,my=cup.p.y+H*c;
+    for(let i=0;i<36;i++){const a=rand(0,TAU),sp=rand(2,7);puffs.emit(mx,my,0,Math.cos(a)*sp,rand(2,7),Math.sin(a)*sp*0.4,rand(0.7,1.3),0.15,0.5,pick([PAL.accent,PAL.paper,0xf7c777]),1.5,4);}
+    comic(new V(mx,my+1.6,0),'PIQUET!',{size:15});flash(0.18);updScore();
+    AU.tone(523,0.18,'triangle',0.2);setTimeout(()=>AU.tone(784,0.3,'triangle',0.22),110);
+  }
+  return{
+    update(dt,t){
+      stepSlots(slots,t,0.4,0.9,1.0);
+      rope.visible=t>2.4;
+      const hh=Math.tan(22.5*PI/180)*CAMD,xm=Math.min(7.5,hh*camera.aspect*0.9);
+      if(!live&&t>=T_PLAY){live=true;}
+      if(live){
+        const nS=Math.min(14,Math.max(4,Math.ceil(dt/0.004))),h=dt/nS;hitMax=0;
+        for(let i=0;i<nS;i++)sub(h,xm);
+        if(hitMax>3.5){AU.tick();AU.tone(300+hitMax*10,0.04,'square',0.05);}
+        const Lb=localBall(),rho=Math.hypot(Lb.x,Lb.z);
+        const inCup=rho<rin-0.05&&Lb.y>0&&Lb.y<H+rb,settled=inCup&&Lb.y<rb+0.15&&Lb.speed<2.5;
+        hold=settled?hold+dt:0;
+        if(armed&&hold>0.35){armed=false;catches++;celebrate();}
+        out=inCup?0:out+dt;if(!armed&&out>0.4)armed=true;
+      }
+      cupG.position.set(cup.p.x+cup.yank.x,cup.p.y+cup.yank.y,cup.p.z);cupG.rotation.z=cup.phi;
+      ballG.position.copy(ball.p);
+      const sp=Math.hypot(ball.v.x,ball.v.z);if(sp>0.01&&live)ballG.rotateOnWorldAxis(new V(ball.v.z/sp,0,-ball.v.x/sp),sp/rb*dt*0.4);
+      /* string: verlet rope, ends pinned to cup and ball */
+      const a=anchorAt();RP[0][0]=a[0];RP[0][1]=a[1];RP[0][2]=a[2];RP[RN][0]=ball.p.x;RP[RN][1]=ball.p.y;RP[RN][2]=ball.p.z;
+      const seg=L/RN,damp=Math.exp(-2*dt);
+      for(let i=1;i<RN;i++)for(let c=0;c<3;c++){const v=(RP[i][c]-RQ[i][c])*damp;RQ[i][c]=RP[i][c];RP[i][c]+=v;if(c===1)RP[i][c]-=G*0.6*dt*dt;}
+      for(let it=0;it<6;it++)for(let i=0;i<RN;i++){
+        const A=RP[i],B=RP[i+1],dx=B[0]-A[0],dy=B[1]-A[1],dz=B[2]-A[2],d=Math.sqrt(dx*dx+dy*dy+dz*dz)||1e-6,df=(d-seg)/d;
+        if(d>seg||true){const wa=i===0?0:0.5,wb=i+1===RN?0:0.5,tw=wa+wb||1;
+          if(d>seg){A[0]+=dx*df*wa/tw;A[1]+=dy*df*wa/tw;A[2]+=dz*df*wa/tw;B[0]-=dx*df*wb/tw;B[1]-=dy*df*wb/tw;B[2]-=dz*df*wb/tw;}}
+      }
+      for(let i=1;i<RN;i++)if(RP[i][1]<0.03)RP[i][1]=0.03;
+      const cp=camera.position;
+      for(let i=0;i<=RN;i++){
+        const a0=RP[Math.max(0,i-1)],a1=RP[Math.min(RN,i+1)],P0=RP[i];
+        const tx_=a1[0]-a0[0],ty_=a1[1]-a0[1],tz_=a1[2]-a0[2],vx=cp.x-P0[0],vy=cp.y-P0[1],vz=cp.z-P0[2];
+        let sx=ty_*vz-tz_*vy,sy=tz_*vx-tx_*vz,sz=tx_*vy-ty_*vx;const sl=Math.sqrt(sx*sx+sy*sy+sz*sz)||1;const w=0.035/sl;
+        sx*=w;sy*=w;sz*=w;const o=i*6;
+        ropePos[o]=P0[0]+sx;ropePos[o+1]=P0[1]+sy;ropePos[o+2]=P0[2]+sz;ropePos[o+3]=P0[0]-sx;ropePos[o+4]=P0[1]-sy;ropePos[o+5]=P0[2]-sz;
+      }
+      ropeGeo.attributes.position.needsUpdate=true;
+      puffs.update(dt);
+      const k=eio((t-0.2)/2.0);setCam(0,lerp(3.5,4.4,k),lerp(6,CAMD,k),0,lerp(0.4,3.8,k),0);
+    },
+    dispose(){canvas.removeEventListener('pointermove',onPtr);canvas.removeEventListener('pointerdown',onPtr);scene.remove(root);disposeTree(root);}
+  };
+};
+
+/* ---------------------------------------------------------------- ui */
+const LIST=[['plates','Plate smash'],['confetti','Confetti'],['disco','Disco'],['macarena','Macarena'],['people','Card people'],['pong','Card pong'],['cupball','Cup & ball']];
+const bar=$('bar');
+LIST.forEach(p=>{const b=document.createElement('button');b.textContent=p[1];b.dataset.n=p[0];b.onclick=()=>play(p[0]);bar.appendChild(b);});
+const rb=document.createElement('button');rb.className='util';rb.textContent='Random';rb.onclick=()=>play(pick(LIST)[0]);bar.appendChild(rb);
+const sb=document.createElement('button');sb.className='util';sb.textContent='Sound: on';sb.onclick=()=>{AU.on=!AU.on;sb.textContent=AU.on?'Sound: on':'Sound: off';if(!AU.on){AU.stopBeat();if(window.speechSynthesis)try{window.speechSynthesis.cancel();}catch(e){}}};bar.appendChild(sb);
+
+window.Celebrations={names:LIST.map(p=>p[0]),play:play,stop:stop,random:()=>play(pick(LIST)[0])};
+const q=new URLSearchParams(window.location.search).get('play');
+if(q&&CEL[q]){hintEl.style.display='none';setTimeout(()=>play(q),50);}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
