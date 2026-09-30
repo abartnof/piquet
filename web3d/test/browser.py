@@ -269,6 +269,15 @@ def main() -> int:
                 if state(page)["record"] != before:
                     failures.append("a reload did not resume the game in progress")
             s = state(page)
+            # The cards cast shadows (Andrew: "confirm that at every segment
+            # of the game, all cards are casting shadows"): drawn with them
+            # and without, your hand held up, the frames differ. (Cards lying
+            # flat hide their shadows under themselves, as real ones do.)
+            if "shadows" not in checked and s["prompt"]["kind"] == "exchange":
+                checked.add("shadows")
+                cast = page.evaluate("window.piquet3d.shadowPixels()")
+                if cast < 2000:
+                    failures.append(f"the cards' shadows add only {cast} pixels with your hand held up")
             if "peek" not in checked and s["prompt"]["kind"] == "play" and s["discards"]:
                 checked.add("peek")
                 check_peek(page, failures)
@@ -323,6 +332,19 @@ def main() -> int:
         if not tut.locator("#tutorial .tutorial-note").is_visible():
             failures.append("the introduction has no note that the other pages come by themselves")
         shot(tut, "09-tutorial")
+        # One arrangement on every page (Andrew: "choose one alignment schema
+        # and stick with it"): Back at the left edge, Next at the right. And
+        # paging ahead does not stop a page coming at its moment.
+        edges = set()
+        for _ in range(4):
+            back = tut.locator("#tutorial .tutorial-back").bounding_box()
+            nxt = tut.locator("#tutorial .tutorial-next").bounding_box()
+            edges.add((round(back["x"]), round(nxt["x"] + nxt["width"])))
+            if tut.locator("#tutorial .tutorial-next").get_attribute("disabled") is None:
+                tut.locator("#tutorial .tutorial-next").click()
+                tut.wait_for_timeout(300)
+        if len(edges) != 1:
+            failures.append(f"the tutorial's Back and Next move between pages: {sorted(edges)}")
         # Closed, nothing follows until the deal is decided (Andrew: "the
         # second tutorial page should pop up after the player decides if they
         # are younger/elder").
@@ -435,6 +457,48 @@ def main() -> int:
         if tut.errors:
             failures.append(f"console errors in the tutorial: {tut.errors}")
         tut.context.close()
+
+        # You younger, so your opponent moves first in every phase: each page
+        # comes at the phase's very start, the table held still behind it
+        # (Andrew: "the pop ups pop up at the beginning of each of the
+        # phases").
+        yng = open_page(browser, "test&welcome&level=2&seed=2")
+        yng.locator("#welcome").get_by_role("button", name="Tutorial").click()
+        yng.wait_for_timeout(800)
+        yng.locator("#tutorial .tutorial-close").click()
+        yng.wait_for_timeout(700)
+        theirs = lambda kind: any(e["kind"] == kind and e.get("who") == "them" for e in state(yng)["events"])
+        held = {}
+        for _ in range(40):
+            if yng.locator("#tutorial").get_attribute("open") is not None:
+                title = yng.locator("#tutorial .tutorial-title").inner_text()
+                # Held at a gate before your opponent's first move of the
+                # phase -- not come to by the table falling still.
+                phase_move = {"The Exchange": "exchanged", "The Declarations": "called", "The Tricks": "played"}.get(title)
+                held[title] = bool(phase_move) and yng.evaluate("window.piquet3d.held()") and theirs(phase_move)
+                yng.locator("#tutorial .tutorial-close").click()
+                yng.wait_for_timeout(700)
+                continue
+            s = state(yng)
+            p = s["prompt"]
+            if "The Tricks" in held:
+                break
+            if p["kind"] == "cut":
+                yng.evaluate("window.piquet3d.send('cut 14')")
+            elif p["kind"] == "choose_dealer":
+                yng.evaluate("window.piquet3d.send('dealer you')")
+            elif p["kind"] == "exchange":
+                yng.evaluate(f"window.piquet3d.send('exchange {s['hand'][-1]}')")
+            elif p["kind"] == "declare":
+                yng.evaluate("window.piquet3d.send('declare 0')")
+            elif p["kind"] == "play":
+                yng.evaluate(f"window.piquet3d.send('play {p['legal'][0]}')")
+            yng.wait_for_timeout(1200)
+        if held != {"The Exchange": True, "The Declarations": True, "The Tricks": True}:
+            failures.append(f"as younger, the pages did not hold the table at each phase's start: {held}")
+        if yng.errors:
+            failures.append(f"console errors in the younger tutorial: {yng.errors}")
+        yng.context.close()
 
         # No sound of any kind (Andrew: "i don't want the html to have any
         # audio"): no recordings in the page, no audio made, no speech -- but

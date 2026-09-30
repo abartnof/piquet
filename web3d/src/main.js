@@ -204,6 +204,7 @@ async function main() {
     if (next.events.length < prev.events.length) {
       voice.stop();
       overlay.clearDialogue();
+      director.cancelTimed();
     }
   }
 
@@ -225,8 +226,40 @@ async function main() {
     // The score waits until the last line of the dialogue has been said.
     const last = timedLines.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
     if (last >= 0 && !TESTING) overlay.hold(voice.estimate(timedLines.slice(0, last + 1)));
+    // On the table's clock, so a tutorial page at the start of a phase holds
+    // the boxes still along with the cards.
     voice.say(timedLines, heard, (line, words, ms) => {
-      if (DIALOGUE.has(line.kind)) overlay.dialogue(line.who, words, ms, line.kind !== "decided");
+      if (DIALOGUE.has(line.kind)) director.at(ms, () => overlay.dialogue(line.who, words, 0, line.kind !== "decided"));
+    });
+    phasePages(prev, next, beats);
+  }
+
+  // In the tutorial, each phase's page at the phase's very start (Andrew:
+  // "the pop ups pop up at the beginning of each of the phases"): when your
+  // opponent moves first in it, the table stops just before their first move
+  // and holds still until the page is closed; when you move first, the page
+  // comes once the table is still (introduce).
+  const PHASE_OF = {
+    exchanged: "exchange", drew: "exchange", looked: "exchange", they_took: "exchange",
+    called: "declarations", decided: "declarations", nothing_to_call: "declarations", showed: "declarations",
+    played: "tricks", took_trick: "tricks",
+  };
+  function phasePages(prev, next, beats) {
+    if (!inTutorial()) return;
+    next.events.slice(prev.events.length).forEach((e, i) => {
+      const key = PHASE_OF[e.kind];
+      if (!key || tutorial.seen.includes(key)) return;
+      tutorial = { ...tutorial, seen: [...tutorial.seen, key] };
+      store(TUTORIAL_STORE, tutorial);
+      if (e.who === "you") return; // yours: its page came before you moved
+      director.gate(beats[prev.events.length + i] ?? 0, (release) => {
+        overlay.pauseScore();
+        const opened = performance.now();
+        read(key, () => {
+          overlay.resumeScore(performance.now() - opened);
+          release();
+        });
+      });
     });
   }
 
@@ -328,8 +361,9 @@ async function main() {
       : null;
     overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus, tutorial: inTutorial() } });
     reframe();
-    // In the tutorial, a new phase is introduced once its cards have moved.
-    if (inTutorial()) setTimeout(introduce, director.busy() ? 900 : 0);
+    // In the tutorial, a phase you begin is introduced once the table is
+    // still.
+    if (inTutorial()) director.timeline.idle().then(introduce);
   }
 
   // The table is framed beside the information column, across the table;
@@ -399,8 +433,9 @@ async function main() {
   // tutorial begins, then each phase's page when it comes -- the exchange's
   // once the deal is decided (Andrew: "the second tutorial page should pop up
   // after the player decides if they are younger/elder"), the declarations'
-  // and the tricks' before those phases. The ? brings them up at any time. A
-  // page read once -- paging ahead counts -- does not pop up again.
+  // and the tricks' before those phases. The ? brings them up at any time.
+  // Each pops up once, at its moment, whether or not it was paged to before
+  // (Andrew paged through them all, and then the exchange's never came).
   const PAGES = parseTutorial(TUTORIAL_TEXT);
   let tutorial = recall(TUTORIAL_STORE, { on: false, seed: null, seen: [] });
   let reading = false;
@@ -410,11 +445,6 @@ async function main() {
     overlay.tutorial(PAGES, PAGE_KEYS.indexOf(key), {
       // In the tutorial the pages come by themselves; the introduction says so.
       popups: inTutorial(),
-      seen: (k) => {
-        if (!inTutorial() || tutorial.seen.includes(k)) return;
-        tutorial = { ...tutorial, seen: [...tutorial.seen, k] };
-        store(TUTORIAL_STORE, tutorial);
-      },
       done: () => {
         reading = false;
         (then ?? introduce)();
@@ -424,9 +454,13 @@ async function main() {
   // In the tutorial, the phase's page the first time you act in it -- once
   // no other dialog is open (Settings, say, where it was just turned on).
   function introduce() {
-    if (!inTutorial() || reading || document.querySelector("md-dialog[open]")) return;
+    if (!inTutorial() || reading || director.held() || director.busy() || document.querySelector("md-dialog[open]")) return;
     const key = pageDue(engine.state(), tutorial.seen);
-    if (key) read(key);
+    if (!key) return;
+    // Popped up: done. Paging to a page does not count.
+    tutorial = { ...tutorial, seen: [...tutorial.seen, key] };
+    store(TUTORIAL_STORE, tutorial);
+    read(key);
   }
   // A page held back by another dialog comes when that dialog closes.
   document.addEventListener("closed", (e) => e.target.id !== "tutorial" && setTimeout(introduce, 0), true);
@@ -459,7 +493,7 @@ async function main() {
   }
   function startTutorial() {
     newPartie(engine.state().level, true);
-    tutorialOn([]);
+    tutorialOn(["intro"]);
     read("intro");
   }
 
@@ -476,6 +510,7 @@ async function main() {
     begin(n, randomSeed());
     voice.stop();
     overlay.clearDialogue();
+    director.cancelTimed();
     ui.selected = [];
     ui.lifted = [];
     director.restart();
@@ -637,8 +672,32 @@ async function main() {
     tick: (ms) => director.tick(ms),
     // With ?voice (speech is off in tests otherwise): what the voice did.
     voice: () => voice.stats(),
+    // Whether the table is held still at a gate (a tutorial page at the
+    // start of a phase).
+    held: () => director.held(),
     // The tutorial, if this partie is one.
     tutorial: () => ({ ...tutorial, on: inTutorial() }),
+    // What the cards' shadows add to the frame as it stands: drawn with them
+    // and without, read straight from the drawing buffer, the pixels that
+    // differ counted.
+    shadowPixels: () => {
+      const gl = stage.renderer.getContext();
+      const { drawingBufferWidth: w, drawingBufferHeight: h } = gl;
+      const read = (on) => {
+        // Soft (VSM) shadows are cast by every receiver too, so both go.
+        for (const mesh of director.meshes) mesh.castShadow = mesh.receiveShadow = on;
+        stage.render();
+        const px = new Uint8Array(w * h * 4);
+        gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+        return px;
+      };
+      const lit = read(true);
+      const bare = read(false);
+      read(true);
+      let n = 0;
+      for (let i = 0; i < lit.length; i += 4) if (Math.abs(lit[i] - bare[i]) + Math.abs(lit[i + 1] - bare[i + 1]) + Math.abs(lit[i + 2] - bare[i + 2]) > 12) n += 1;
+      return n;
+    },
     // The heights the phone's table is framed between (framing.js).
     strips: () => STRIPS,
   };

@@ -788,8 +788,19 @@ export function createOverlay(root, on) {
   // As the card lands -- or, while a declaration is being said, once it has
   // been: a point is scored after "Good.", not before "Five cards.".
   let holdUntil = 0;
+  // And not while a tutorial page holds the table still: the score waits
+  // with the cards, and the dialogue's hold is lengthened by the pause.
+  let paused = false;
   const wait = () => Math.max(450, holdUntil - performance.now());
-  const later = (fn) => (calm.matches ? fn() : setTimeout(fn, wait()));
+  function whenFree(fn, delay) {
+    setTimeout(function go() {
+      if (paused) return setTimeout(go, 150);
+      const left = holdUntil - performance.now();
+      if (left > 5) return setTimeout(go, left);
+      fn();
+    }, delay);
+  }
+  const later = (fn) => (calm.matches ? fn() : whenFree(fn, wait()));
 
   // Confetti from a point: a burst of small flakes flung out and falling.
   function confetti(host, colour) {
@@ -967,7 +978,7 @@ export function createOverlay(root, on) {
         said.replaceChildren(text);
         if (!fresh && text) replay(said, "slide");
       };
-      if (!fresh && holdUntil > performance.now()) setTimeout(put, holdUntil - performance.now());
+      if (!fresh && (paused || holdUntil > performance.now())) whenFree(put, Math.max(0, holdUntil - performance.now()));
       else put();
     }
     seen = { seed: s.seed, level: s.level, events: s.events.length };
@@ -1122,6 +1133,15 @@ export function createOverlay(root, on) {
     // The score waits this long, for the dialogue being said.
     hold(ms) {
       holdUntil = Math.max(holdUntil, performance.now() + ms);
+    },
+    // While a tutorial page holds the table still, and after: the score
+    // carries on, its wait lengthened by the time the page was open.
+    pauseScore() {
+      paused = true;
+    },
+    resumeScore(ms) {
+      paused = false;
+      if (holdUntil) holdUntil += ms;
     },
     // An undo, a new partie: the dialogue is over.
     clearDialogue() {

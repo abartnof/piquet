@@ -954,12 +954,20 @@ md-assist-chip.pinned {
 .tutorial-head md-icon-button {
   margin: -8px -12px -8px 0;
 }
+/* One arrangement on every page (Andrew: "choose one alignment schema and
+   stick with it"): Back at the left edge, the dots centred, Next at the
+   right edge -- the row spans the dialog whatever the page holds. */
 .tutorial-actions {
   flex: 1;
+  width: 100%;
   display: grid;
+  /* One full-width column: without the introduction's note to stretch it,
+     an auto column shrank to the buttons and took the row with it. */
+  grid-template-columns: 100%;
   gap: 4px;
 }
 .tutorial-pager {
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;

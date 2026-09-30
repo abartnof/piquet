@@ -108,19 +108,62 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
 
   // ---- the clock ----------------------------------------------------------
 
+  // The table's clock can stop: at a gate -- a tutorial page at the start of
+  // a phase (Andrew: "the pop ups pop up at the beginning of each of the
+  // phases") -- the cards hold still until the gate is released, and then
+  // carry on from where they were. Held time is taken off the clock, so
+  // everything scheduled on it (the dialogue's boxes too, through `at`)
+  // simply waits. Each entry is { at, gate, fn }: at a gate the clock stops
+  // and `fn(release)` is called; otherwise `fn()` runs when its time comes.
   let manualNow = 0;
-  const now = () => (manual ? manualNow : performance.now());
+  const wall = () => (manual ? manualNow : performance.now());
+  let offset = 0; // ms the clock has been held, in all
+  let heldAt = null; // the clock's reading while it is held
+  const queue = [];
+  const now = () => heldAt ?? wall() - offset;
   let running = false;
-  function frame() {
-    const t = now();
-    const busy = timeline.tick(t);
-    const easing = easeLifts(t);
-    stage.render();
-    if ((busy || easing) && !manual) requestAnimationFrame(frame);
-    else {
-      running = false;
-      lastFrame = null;
+  function schedule(entry) {
+    queue.push(entry);
+    queue.sort((a, b) => a.at - b.at || b.gate - a.gate);
+    wake();
+  }
+  function release() {
+    if (heldAt === null) return;
+    offset = wall() - heldAt;
+    heldAt = null;
+    wake();
+  }
+  // Run what is due by `until`, in order; stop at a gate and hold there.
+  function due(until) {
+    while (queue.length && queue[0].at <= until && heldAt === null) {
+      const entry = queue.shift();
+      if (entry.gate) {
+        heldAt = entry.at;
+        timeline.tick(entry.at);
+        stage.render();
+        entry.fn(release);
+        return true;
+      }
+      entry.fn();
     }
+    return heldAt !== null;
+  }
+  function frame() {
+    if (heldAt === null) {
+      const held = due(now());
+      if (!held) {
+        const t = now();
+        const busy = timeline.tick(t);
+        const easing = easeLifts(t);
+        stage.render();
+        if ((busy || easing || queue.length) && !manual) {
+          requestAnimationFrame(frame);
+          return;
+        }
+      }
+    }
+    running = false;
+    lastFrame = null;
   }
   function wake() {
     if (manual) return frame();
@@ -236,6 +279,16 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
     placement: () => placement,
     busy: () => timeline.busy(),
     // Carry out a command, and animate whatever it set in motion.
+    // Hold the table at `ms` from now on its clock: the cards stop, and
+    // `open(release)` is called; they carry on when it calls release.
+    gate(ms, open) {
+      schedule({ at: now() + ms, gate: true, fn: open });
+    },
+    // Run `fn` at `ms` from now on the table's clock, which a gate stops.
+    at(ms, fn) {
+      schedule({ at: now() + ms, gate: false, fn });
+    },
+    held: () => heldAt !== null,
     send(command) {
       const prev = state;
       const accepted = engine.send(command);
@@ -263,6 +316,11 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
       decorate();
       wake();
     },
+    // An undo, a new partie: what was timed to the moves is over.
+    cancelTimed() {
+      queue.length = 0;
+      release();
+    },
     // A new partie, or a game restored: straight onto the table.
     restart() {
       state = engine.state();
@@ -270,6 +328,8 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
     },
     skip() {
       timeline.skip();
+      // What was timed to the moves comes now too -- up to a gate, if any.
+      due(Infinity);
       decorate();
       wake();
     },

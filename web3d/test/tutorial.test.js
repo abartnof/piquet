@@ -63,7 +63,7 @@ test("in the tutorial, each phase's page comes once, the first time you act in i
     }
   }
   assert.deepEqual(shown, ["exchange", "declarations", "tricks"]);
-  // Read ahead from the introduction, and a page does not come again.
+  // Once it has popped up, a page does not come again.
   const early = states.find((s) => s.prompt.kind === "exchange");
   assert.equal(pageDue(early, ["intro", "exchange"]), null);
 });
