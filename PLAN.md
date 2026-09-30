@@ -170,7 +170,10 @@ lead, repique in category order, trick scoring, cards and capot, the
 rubicon, and the two extra deals then a draw (pagat's worked settlements
 are now tests, `57f8375`) -- **except**:
 
-1. **Pique's reckoning order -- an interpretation, and Andrew's call.**
+1. **Pique's reckoning order -- decided: Cavendish, no switch.** (Andrew,
+   taking the recommendation: *"we don't need extra switches, just pick a
+   scoring rule and we'll use that."* Recorded as R8 in `docs/DESIGN.md`
+   §3.7, and §3.6 and §5.2 now describe the code.) The finding:
    pagat: *"For pique the scores are counted in the order they actually
    occur."* The engine counts it in Cavendish's Law 67 category order, as it
    does repique, so younger's won point (entered after elder's lead, but
@@ -1029,14 +1032,9 @@ Ordered by how much they are needed, not by size.
     pointing to them (`docs/TABLE3D.md` P17). They run silently now,
     timed as the voice would have been; the score waits for them.
 
-17. **Pique's reckoning order: pagat or Cavendish? Andrew's call.** pagat
-    counts a pique in the order points actually occur; the engine (since
-    `6899b0e`) in Law 67's category order. 1 deal in 160 at rung 4, 30
-    points each ("Back, 30 September"). If pagat: the Python oracle, the Rust,
-    the vectors, `solver::piqued_after`'s live-pique search and the
-    tutorial's last Bonuses line change together, Cavendish kept behind a
-    flag with an R-row in `docs/DESIGN.md` §3.7; either way §3.6 and §5.2
-    are brought into line with the code.
+17. ~~**Pique's reckoning order: pagat or Cavendish?**~~ **Decided 30
+    September: Cavendish's category order, as the engine already played it;
+    no switch.** R8 in `docs/DESIGN.md` §3.7; §3.6 and §5.2 corrected.
 18. **Show elder the talon cards they left.** The rules and the engine allow
     it and the opponent does it; the page never shows a human elder. A
     design choice first (proposal: a peek fan on clicking the talon, like

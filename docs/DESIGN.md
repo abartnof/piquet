@@ -315,21 +315,30 @@ second card**; the winner of the **last trick scores 2 instead of 1**. **10 for 
   anything: **+60**. For repique, points are reckoned in strict *category*
   order: carte blanche, point, sequences, sets.
 - **Pique** — 30+ in declarations *and play* before the opponent scores
-  anything: **+30**. Reckoned in *actual occurrence* order. Only elder can
-  score a pique, because he always scores 1 for leading before younger can
-  score anything.
+  anything: **+30**. Reckoned, like repique, in Cavendish's *category* order
+  (Law 67: carte blanche, point, sequences, sets, points made in play, the
+  cards), so younger's won point, though she announces it only after elder's
+  first lead, still comes before his sequences. The cards never count. Only
+  elder can score a pique (Law 69 says so, and the order makes it so). This
+  is R8 below: pagat says "the order they actually occur", and we follow
+  Cavendish.
 - A player scores pique or repique, never both.
 - Equality in a declaration does not prevent either.
 
-**These two rules use two different orderings of the same points.** That is
-the single subtlest thing in Piquet, and it is why §5.2 models scoring as an
-ordered event log rather than a running total.
+**Both rules read the points in category order, not in the order they were
+said.** That is the single subtlest thing in Piquet: younger's declarations
+are *entered* after elder's first lead but *reckon* in their categories. It
+is why §5.2 models scoring as an ordered event log rather than a running
+total.
 
 ### 3.7 Rule conflicts across sources
 
-**pagat.com is our authority. Where sources disagree, pagat wins.** The
-disagreements are still recorded, because each is a variant someone plays and
-most are cheap to put behind a flag.
+**pagat.com is our authority. Where sources disagree, pagat wins** -- with
+one recorded exception, R8, where pagat departs from the Cavendish laws it
+says it follows. The disagreements are still recorded, but the game plays one
+rule for each, never a switch between readings (Andrew, 30 September 2026:
+*"we don't need extra switches, just pick a scoring rule and we'll use
+that"*).
 
 Sources consulted, roughly in order of trustworthiness:
 
@@ -355,6 +364,7 @@ Sources consulted, roughly in order of trustworthiness:
 | R5 | Last trick worth? | 1 *bonus* | Cavendish Law 65: "The winner of the last trick scores **two** instead of one." fr-Wikipedia agrees (2 total); de-Wikipedia says 3 | **2 to its winner** — i.e. the normal 1 plus a bonus of 1. pagat's "one additional point" says the same thing; our earlier reading of this as a flat 1 was an ambiguity, not a conflict |
 | R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
 | R7 | Scoring system | Rubicon, 6 deals | Parlett distinguishes Rubicon from basic "Saunt" (race to 100) | **Rubicon** |
+| R8 | In what order do scores reckon for a **pique**? | "For pique the scores are counted in the order they actually occur" -- so elder's declarations and first lead come before anything younger enters | **Cavendish** (1885, Laws 67 and 69, read verbatim): "The scores, whether obtained by the elder or younger hand, reckon in the following order: I. Carte blanche. II. Point. III. Sequences. …"; a pique is thirty "before his adversary has reckoned anything that deal". pagat says its rules are Cavendish's (1882), so this looks like pagat's slip, not a different game | **Cavendish's category order -- the exception to pagat.** Chosen by Andrew, 30 September 2026. The readings differ in 127 of 20,000 rung-4 deals (1 in 160): elder at 30 from sequences and sets while younger won the point has a pique on pagat, none on Cavendish |
 
 A note on **pique and repique bookkeeping**: French and German sources express
 these as the score *jumping to* 60 and 90 respectively, rather than as +30 and
@@ -735,9 +745,9 @@ figure in §4.2 a real engineering quantity rather than a thought experiment.
 ### 5.2 Scoring is an ordered event log, not a tally
 
 Every point scored is an event: `(who, amount, source, category, sequence
-number)`. Repique is derived by scanning that log in *category* order;
-pique by scanning it in *temporal* order (§3.6). A running integer total
-cannot express both.
+number)`. Repique and pique are both derived by scanning that log in
+*category* order, which is not the order it was written in (§3.6, R8). A
+running integer total cannot express that.
 
 This structure pays for itself three times over: it makes the hardest rule
 in the game testable, it gives the tutor a ready-made narrative ("you

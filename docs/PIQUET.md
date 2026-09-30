@@ -261,7 +261,9 @@ Both bonuses are reckoned in that order of precedence, and not in the order the
 points were entered. Younger's declarations are only *entered* after elder
 leads, but her point is still category II and reckons before his sequences at
 III — so a category she has won denies elder a pique just as it denies him a
-repique.
+repique. pagat reads the pique otherwise ("the order they actually occur");
+we follow Cavendish's laws, which pagat says it follows too (`docs/DESIGN.md`,
+R8).
 
 A player scores one or the other, never both. Equality in a category does not
 count as scoring and so does not block either bonus.
