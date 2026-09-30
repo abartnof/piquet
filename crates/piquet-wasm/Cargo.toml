@@ -3,6 +3,8 @@ name = "piquet-wasm"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
 description = "The table, as a JSON protocol a browser -- or any other client -- can drive."
 
 [lib]

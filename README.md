@@ -126,3 +126,10 @@ on the table along an edge, tricks swept to their winner), with Material
 Design 3 controls, a running score tab, hints and undo. Its design, the
 physics of every motion and what was measured along the way are in
 `docs/TABLE3D.md`; `?demo` on the page shows the motions on a loop.
+
+## Licence
+
+© 2026 Andrew Bartnof, under the MIT License (`LICENSE`). The card art, the
+libraries bundled into the pages and the other third-party pieces keep their
+own licences, listed with their authors in `CREDITS.md`; the card back is
+CC BY-SA 3.0.

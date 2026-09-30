@@ -1130,7 +1130,8 @@ export function createOverlay(root, on) {
 function credits() {
   const item = (title, ...lines) => el("div", { class: "credit" }, el("strong", {}, title), ...lines.map((l) => el("p", {}, l)));
   return [
-    item("Piquet", "© 2026 Andrew Bartnof."),
+    item("Piquet", "© 2026 Andrew Bartnof. Released under the MIT License: free to use, copy, change and share, with this notice kept.",
+      "The parts by others below keep their own licences — the card back’s CC BY-SA 3.0 among them."),
     item("The card faces", "“Public domain complete playing card deck”, by AustinGabriel64, from Wikimedia Commons. CC0 1.0 — no rights reserved; credited gladly."),
     item("The card back", "Adapted from “Reverso baraja española”, by Germarquezm, from Wikimedia Commons, which includes elements of his “Baraja española.svg”.",
       "Licensed CC BY-SA 3.0 (creativecommons.org/licenses/by-sa/3.0). Changed: re-framed to the faces’ 5:7 and redrawn on flat white without its border. The back shown here is therefore also CC BY-SA 3.0."),

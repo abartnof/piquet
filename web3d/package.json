@@ -3,7 +3,7 @@
   "private": true,
   "description": "The 3D table: a client of the Piquet protocol (docs/TABLE3D.md)",
   "type": "module",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "scripts": {
     "test": "node --test test/"
   },

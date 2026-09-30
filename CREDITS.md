@@ -1,5 +1,9 @@
 # Credits
 
+**Piquet** is © 2026 Andrew Bartnof and released under the **MIT License**
+(`LICENSE`). Everything listed below is someone else's and keeps its own
+licence — notably the card back, which is CC BY-SA 3.0.
+
 Credit where it is due — including where no licence demands it. **Every
 third-party asset is recorded here, in the commit that brings it in**: art,
 fonts, icons, libraries, build tools, and the design systems we follow.
