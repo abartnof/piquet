@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""TODO 1's real test, run the small way: whole mirrored parties, the settling
+search against the flat one (both with the fitted prior), in batches, stopping
+as soon as the answer is clear.
+
+    bin/partie-sequential [FIRST_SEED]
+
+Andrew, asked for an overnight budget: "could it be less, or perhaps if the
+numbers are conclusive with fewer simulations, you cut the simulations
+short?" So the design is fixed here, before any data:
+
+- Batches of 100 mirrored pairs (bin/partieprior, both cores, at low
+  priority), at most four looks: 400 pairs, about an hour.
+- At look k the net settlement per pair's z-score is compared with the
+  O'Brien-Fleming boundary for four equally spaced looks at a two-sided 5%:
+  4.05, 2.86, 2.34, 2.02. Crossing it ends the run: the difference is real.
+- If none is crossed by the fourth look, the run ends anyway and reports the
+  estimate and its 95% interval: any difference is no bigger than that.
+
+Each batch's pairs are kept in measurements/partie/look-K.tsv; the running
+summary in measurements/partie/sequential.txt.
+"""
+
+import math
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+OUT = ROOT / "measurements" / "partie"
+BOUNDARY = [4.05, 2.86, 2.34, 2.02]
+BATCH = 100
+
+
+def main() -> int:
+    first = int(sys.argv[1]) if len(sys.argv) > 1 else 300_000
+    OUT.mkdir(parents=True, exist_ok=True)
+    cargo = Path.home() / ".cargo" / "bin" / "cargo"
+    subprocess.run([str(cargo), "build", "--release", "-q", "--bin", "partieprior"], cwd=ROOT, check=True)
+    values: list[int] = []
+    summary = OUT / "sequential.txt"
+    lines = [__doc__.strip().splitlines()[0], f"first seed {first}, batches of {BATCH}, boundaries {BOUNDARY}", ""]
+    for look, bound in enumerate(BOUNDARY, start=1):
+        record = OUT / f"look-{look}.tsv"
+        subprocess.run(
+            ["nice", "-n", "15", str(ROOT / "target" / "release" / "partieprior"), str(BATCH), "2",
+             str(first + (look - 1) * BATCH), "--out", str(record)],
+            cwd=ROOT, check=True, stdout=subprocess.DEVNULL,
+        )
+        for line in record.read_text().splitlines():
+            if line and not line.startswith("#"):
+                values.append(int(line.split("\t")[1]))
+        n = len(values)
+        mean = sum(values) / n
+        sd = math.sqrt(sum((v - mean) ** 2 for v in values) / (n - 1))
+        se = sd / math.sqrt(n)
+        z = mean / se if se else 0.0
+        level = sum(1 for v in values if v == 0)
+        lines.append(
+            f"look {look}: {n} pairs, net {mean:+.2f} ± {se:.2f} a pair (z {z:+.2f}, boundary ±{bound}); "
+            f"level {level}, settling ahead {sum(1 for v in values if v > 0)}, behind {sum(1 for v in values if v < 0)}"
+        )
+        stop = abs(z) >= bound
+        if stop or look == len(BOUNDARY):
+            low, high = mean - 1.96 * se, mean + 1.96 * se
+            verdict = (
+                f"STOPPED at look {look}: the difference is real -- settling {'gains' if mean > 0 else 'loses'} {abs(mean):.1f} a pair"
+                if stop
+                else f"NO CLEAR DIFFERENCE after {n} pairs: 95% interval {low:+.1f} to {high:+.1f} a pair"
+            )
+            lines += ["", verdict]
+            summary.write_text("\n".join(lines) + "\n")
+            print("\n".join(lines))
+            return 0
+        summary.write_text("\n".join(lines) + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

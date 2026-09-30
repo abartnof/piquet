@@ -1,0 +1,7 @@
+TODO 1's real test, run the small way: whole mirrored parties, the settling
+first seed 300000, batches of 100, boundaries [4.05, 2.86, 2.34, 2.02]
+
+look 1: 100 pairs, net +8.84 ± 3.78 a pair (z +2.34, boundary ±4.05); level 42, settling ahead 35, behind 23
+look 2: 200 pairs, net +8.26 ± 2.54 a pair (z +3.25, boundary ±2.86); level 84, settling ahead 70, behind 46
+
+STOPPED at look 2: the difference is real -- settling gains 8.3 a pair
