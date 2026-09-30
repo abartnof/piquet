@@ -1025,25 +1025,44 @@ throughout.
       tutorial page never opens over another dialog: turned on in Settings,
       it waits for Settings to close.
 
-- [ ] **P21 — The celebrations (30 September, under way).** Andrew designed
-      seven end-of-partie celebrations with Claude on the web
-      (`web3d/reference/celebrations-prototype.html`, kept for their ideas)
-      and asked for them translated: *"just use these as ideas ... no sound,
-      use the normal look, use our normal card art, use normal 3js settings
-      ... when the game ends, the user will just see one of the ending
-      games/animations, randomly chosen."* `web3d/src/celebrate/`: the
-      runner (its own 32 cards, taking over the table's with the same faces,
-      tossed into a pile with the table's own motion; the camera, fog and
-      framing handed back after), real-gravity physics in centimetres
-      (981 cm/s², a flung card never through the table -- tested), props in
-      toon and ink in the page's Material colours, and the words over the
-      scene (a "PIQUET!" burst where things land, a score chip, a result
-      card, a bar). **`?ending`** stages it: a partie played by a dull script
-      into its last deal, two cards in your hand -- play one, the partie ends,
-      the celebration comes; ‹ › step through them, ✕ gives the table back.
-      In a real partie one comes at random, a moment after the result.
-      Done: **Plate smash**. To come: pong, cup and ball, disco, the parade,
-      the macarena, the card people.
+- [x] **P21 — The celebrations (30 September).** Andrew designed seven
+      end-of-partie celebrations with Claude on the web (the prototype,
+      kept for its ideas until all seven were in, is in git at `272ff15`:
+      `web3d/reference/celebrations-prototype.html`) and asked for them
+      translated: *"just use these as ideas ... no sound, use the normal
+      look, use our normal card art, use normal 3js settings ... when the
+      game ends, the user will just see one of the ending games/animations,
+      randomly chosen"* -- whoever won, and with no way to pick one outside
+      the staging.
+
+      `web3d/src/celebrate/`: the runner (its own 32 cards, taking over the
+      table's with the same faces, tossed into a pile with the table's own
+      motion; the camera eased in from where it was, and it, the fog and the
+      framing handed back after; the field widened for a phone in
+      portrait), real-gravity physics in centimetres, props in toon and ink
+      in the page's colours, bodies of cards (`body.js`), and the words over
+      the scene -- a burst that always says "Piquet!", a score chip, a result
+      card, a bar. **`?ending`** stages them: a partie played by a dull script
+      into its last deal, two cards in your hand; play one and the partie
+      ends; ‹ › step through all seven, ✕ gives the table back.
+
+      The seven: **Plate smash** (deflect plates thrown on true arcs; the
+      pile bursts like a firework, seen from below), **Card pong** (first to
+      five; on a phone the court runs up the screen), **Cup and ball** (a
+      real toy's size and gravity), **Disco** (five hundred lit mirror tiles,
+      reflected spots on a pulsing floor), **The parade** (a toy city; the
+      key light travels with it), **Macarena** (a card person dances; a new
+      deck is thrown in and becomes another dancer each lap, up to ten), and
+      **Card people** (the eye through their legs, and back, forever).
+      Andrew's notes so far: the finale's cards "explode over the screen and
+      then go away"; the word clear of its star; every burst "Piquet!"; flat
+      cards clean (0.02 cm above the table, as in play).
+
+      Tested without a browser (`test/celebrations.test.js`: every card of
+      every scene above the table, measured by its lowest corner in the
+      world, for forty seconds; the games played to their results; the
+      table given back exactly) and in one (the staging steps through all
+      seven; a real partie's has no arrows).
 
 ## 14. Notes for the implementer
 
