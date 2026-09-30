@@ -5,7 +5,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { Mesh, Object3D, Vector3 } from "three";
-import { Flung, G, ballistic, hop, lowestBelow, random, spin } from "../src/celebrate/physics.js";
+import { Flung, G, REST, ballistic, hop, lowestBelow, random, spin } from "../src/celebrate/physics.js";
 import { CARD } from "../src/units.js";
 
 test("gravity is the real one, in centimetres", () => {
@@ -75,7 +75,7 @@ test("a flung card falls, bounces, and comes to rest flat -- never through the t
     // Flat: its face normal straight up or down, resting on the table.
     const normal = new Vector3(0, 0, 1).applyQuaternion(card.quaternion);
     assert.ok(Math.abs(Math.abs(normal.y) - 1) < 1e-3, `lies flat (normal ${normal.toArray().map((x) => x.toFixed(3))})`);
-    assert.ok(Math.abs(card.position.y - CARD.thickness / 2) < 0.01, "on the table");
+    assert.ok(Math.abs(card.position.y - (REST + CARD.thickness / 2)) < 0.01, "resting just above the table, as cards in play do");
   }
 });
 

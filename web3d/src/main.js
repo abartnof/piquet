@@ -402,8 +402,15 @@ async function main() {
     celebrations.play(name, { from: director.meshes });
   }
   // Once the partie's last cards have landed and its result has been seen.
+  // (Whoever won: it celebrates the partie, not the winner.) Only if the
+  // partie is still over by then -- a new one may have begun meanwhile.
   function partieEnded() {
-    director.timeline.idle().then(() => setTimeout(celebrate, STAGING ? 900 : 2200));
+    const seed = engine.state().seed;
+    director.timeline.idle().then(() =>
+      setTimeout(() => {
+        const s = engine.state();
+        if (s.prompt.kind === "over" && s.seed === seed) celebrate();
+      }, STAGING ? 900 : 2200));
   }
 
   function render() {
@@ -559,6 +566,8 @@ async function main() {
       render();
       return;
     }
+    // A new partie ends any celebration of the last.
+    if (celebrations.playing()) celebrations.stop();
     // A second partie has no tutorial (Andrew: "2nd partie has no more
     // tutorial popups").
     if (tutorial.on) tutorialOff();

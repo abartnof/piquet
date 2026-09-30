@@ -13,7 +13,7 @@ import { BoxGeometry, Group, Mesh, Plane, Vector3 } from "three";
 import { toss } from "../kinematics.js";
 import { CARD } from "../units.js";
 import { BRIGHTS, Flakes, Moves, PALETTE, kit } from "./kit.js";
-import { clamp, hop, lerp, lowestBelow, smooth, turned } from "./physics.js";
+import { REST, clamp, hop, lerp, lowestBelow, smooth, turned } from "./physics.js";
 
 const XL = 68; // cm: each paddle's distance from the middle
 const ZH = 39; // cm: the court's half-depth
@@ -25,6 +25,8 @@ const BR = (CARD.width * BALL) / 2;
 const LIMIT = ZH - 2 - HALF;
 const WIN = 5;
 const START = 2.6; // s: the cards are in their places
+const UPRIGHT = new Vector3(0, 1, 0);
+const SIDEWAYS = new Vector3(1, 0, 0);
 
 export function pong(ctx) {
   const { toon } = kit(ctx.stage);
@@ -56,7 +58,7 @@ export function pong(ctx) {
   // To their places: the paddles and the ball flat on the court, the crowd
   // standing in two rows along the front, facing you.
   const moves = new Moves();
-  const flat = (x, z, scale = 1) => ({ position: new Vector3(x, (CARD.thickness / 2) * scale, z), quaternion: turned(-Math.PI / 2, 0, 0) });
+  const flat = (x, z, scale = 1) => ({ position: new Vector3(x, REST + (CARD.thickness / 2) * scale, z), quaternion: turned(-Math.PI / 2, 0, 0) });
   const place = (mesh, to, start) => moves.add(mesh, toss({ position: mesh.position.clone(), quaternion: mesh.quaternion.clone() }, to, { clearance: 14 }), start, 0.8);
   place(you, flat(-XL, 0), 0.3);
   place(them, flat(XL, 0), 0.4);
@@ -71,7 +73,7 @@ export function pong(ctx) {
   const LEAN = -0.85;
   crowd.forEach((card, i) => {
     const q = turned(LEAN, 0, 0);
-    place(card, { position: new Vector3(seat[i].x, lowestBelow(q), seat[i].z), quaternion: q }, 0.8 + i * 0.04);
+    place(card, { position: new Vector3(seat[i].x, lowestBelow(q) + REST, seat[i].z), quaternion: q }, 0.8 + i * 0.04);
   });
 
   const S = { you: 0, them: 0, phase: "intro", bx: 0, bz: 0, vx: 0, vz: 0, speed: 67, aimYou: 0, aimThem: 0, zYou: 0, zThem: 0, serveAt: 0, rally: 0, cheer: 0.15, boost: 0, errAt: 0, err: 0, hitYou: 0, hitThem: 0 };
@@ -110,7 +112,7 @@ export function pong(ctx) {
         colour: rng.pick(BRIGHTS), drag: 3, flutter: 160, rand: rng,
       });
     }
-    ctx.hud.burst(new Vector3(from * 0.8, 10, 0), side === "you" ? "PIQUET!" : "Point!", { size: 1.1 });
+    ctx.hud.burst(new Vector3(from * 0.8, 10, 0), { size: 1.1 });
     if (S.you >= WIN || S.them >= WIN) {
       S.phase = "over";
       S.cheer = 1;
@@ -142,13 +144,13 @@ export function pong(ctx) {
         const spin = S.boost > 0.4 ? Math.sin(t * 10 + i) * 0.4 : 0;
         card.quaternion.copy(turned(LEAN, spin + 0.2 * Math.sin(t * 3 + i), 0.12 * Math.sin(t * 6 + i)));
         // Standing on its lowest corner as it leans, never through the table.
-        card.position.set(seat[i].x, lowestBelow(card.quaternion) + up, seat[i].z);
+        card.position.set(seat[i].x, lowestBelow(card.quaternion) + REST + up, seat[i].z);
       });
 
       if (S.phase === "intro" && t >= START) {
         S.phase = "wait";
         S.serveAt = t + 0.9;
-        ctx.hud.burst(new Vector3(0, 8, 0), "Ready", { size: 1.1 });
+        ctx.hud.burst(new Vector3(0, 8, 0), { size: 1.1 });
       }
       if (S.phase === "wait" && t >= S.serveAt) serve(rng() < 0.5 ? -1 : 1);
 
@@ -170,8 +172,8 @@ export function pong(ctx) {
         S.zThem += clamp(S.aimThem - S.zThem, -74 * dt, 74 * dt);
         S.hitYou *= Math.exp(-10 * dt);
         S.hitThem *= Math.exp(-10 * dt);
-        you.position.set(-XL, (CARD.thickness / 2) * SCALE, S.zYou);
-        them.position.set(XL, (CARD.thickness / 2) * SCALE, S.zThem);
+        you.position.set(-XL, REST + (CARD.thickness / 2) * SCALE, S.zYou);
+        them.position.set(XL, REST + (CARD.thickness / 2) * SCALE, S.zThem);
         you.quaternion.copy(turned(-Math.PI / 2, 0, 0));
         them.quaternion.copy(turned(-Math.PI / 2, 0, 0));
         you.scale.setScalar(SCALE * (1 + 0.18 * S.hitYou));
@@ -210,7 +212,7 @@ export function pong(ctx) {
         else if (S.bx > XL + 21) goal("you");
       }
       if (t >= START) {
-        ball.position.set(S.bx, (CARD.thickness / 2) * BALL, S.bz);
+        ball.position.set(S.bx, REST + (CARD.thickness / 2) * BALL, S.bz);
         ball.quaternion.copy(turned(-Math.PI / 2, t * 9, 0));
         ball.scale.setScalar(BALL);
       }
@@ -219,9 +221,18 @@ export function pong(ctx) {
       // The eye: up from the table's view to look down on the court, then
       // still, so the pointer and the court agree.
       const k = smooth(0.2, 2.4, t);
-      eye.set(0, lerp(55, 118, k), lerp(60, 122, k));
-      at.set(0, 0, lerp(0, 14, k));
-      ctx.look(eye, at, 42);
+      // A phone held upright looks straight down with the court turned
+      // lengthwise up the screen: your paddle at the bottom, theirs at the
+      // top, dragged side to side.
+      if (ctx.camera.aspect < 1) {
+        eye.set(lerp(0, -6, k), lerp(55, 150, k), lerp(60, 26, k));
+        at.set(0, 0, lerp(0, 12, k));
+        ctx.look(eye, at, 42, k > 0.5 ? SIDEWAYS : UPRIGHT);
+      } else {
+        eye.set(0, lerp(55, 118, k), lerp(60, 122, k));
+        at.set(0, 0, lerp(0, 14, k));
+        ctx.look(eye, at, 42);
+      }
     },
     dispose() {
       confetti.dispose();
@@ -231,4 +242,5 @@ export function pong(ctx) {
 }
 pong.title = "Card pong";
 pong.how = "Drag your card, or use ↑ and ↓. First to five";
+pong.touch = "Drag your card. First to five";
 pong.interactive = true;

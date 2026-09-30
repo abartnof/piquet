@@ -61,8 +61,10 @@ export function createHud(root, camera, { staging = false, onStep, onClose } = {
         action ? el("md-filled-tonal-button", { onclick: action.fn }, action.label) : "");
     },
     // A burst at a point in the scene: a star in one of the page's bright
-    // colours, ink round it, the word in the page's type.
-    burst(point, words = "PIQUET!", { size = 1, colour } = {}) {
+    // colours, ink round it, and always the one word (Andrew: every burst in
+    // the endings "should just say 'Piquet!'").
+    burst(point, { size = 1, colour } = {}) {
+      const words = "Piquet!";
       at.copy(point).project(camera);
       if (at.z > 1 || Math.abs(at.x) > 1.2 || Math.abs(at.y) > 1.2) return;
       const x = Math.min(92, Math.max(8, (at.x * 0.5 + 0.5) * 100));

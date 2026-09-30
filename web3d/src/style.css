@@ -1631,6 +1631,7 @@ body.celebrating :is(#info, #controls, #afloat, #narration) {
 .celebrate-score {
   position: absolute;
   top: 12px;
+  white-space: nowrap;
   left: 50%;
   translate: -50% 0;
   padding: 8px 18px;

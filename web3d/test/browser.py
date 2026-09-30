@@ -534,6 +534,20 @@ def main() -> int:
             failures.append(f"console errors in the celebrations: {end.errors}")
         end.context.close()
 
+        # In a real partie (Andrew: "regardless of if they win/lose ...
+        # randomly chosen- if they don't do file?ending, they can't scroll
+        # left/right to pick an ending"): one at random, no arrows.
+        real = open_page(browser, "test&level=2&seed=31")
+        real.evaluate("window.piquet3d.celebrate()")
+        chosen = real.evaluate("window.piquet3d.celebration()")
+        if chosen not in names:
+            failures.append(f"a real partie's celebration was not one of them: {chosen}")
+        if real.locator(".celebrate-bar .celebrate-forward").count() or real.locator(".celebrate-bar .celebrate-back").count():
+            failures.append("outside ?ending there should be no arrows to pick a celebration")
+        if not real.locator(".celebrate-bar .celebrate-close").is_visible():
+            failures.append("a real partie's celebration should still have its way back")
+        real.context.close()
+
         # No sound of any kind (Andrew: "i don't want the html to have any
         # audio"): no recordings in the page, no audio made, no speech -- but
         # the declarations still come as a dialogue, in boxes.

@@ -1,7 +1,8 @@
 // The celebrations: at the end of a partie, the cards celebrate.
 //
 // Andrew designed seven with Claude on the web (web3d/reference/
-// celebrations-prototype.html) and asked for them translated into the game:
+// celebrations-prototype.html, kept in git at 272ff15) and asked for them
+// translated into the game:
 // "just use these as ideas, and translate the ideas into the game. use all
 // of our norms we've established- no sound, use the normal look, use our
 // normal card art, use normal 3js settings ... in the real game, when the
@@ -21,19 +22,20 @@ import { Group, Vector3 } from "three";
 import { minimumJerk } from "../easing.js";
 import { lying, toss } from "../kinematics.js";
 import { CARD } from "../units.js";
-import { random } from "./physics.js";
+import { REST, random } from "./physics.js";
 
 const CODES = [];
 for (const s of "SHDC") for (const r of "789TJQKA") CODES.push(r + s);
 
 export const PILE = Object.freeze({ x: 0, z: -6 });
+const UP = new Vector3(0, 1, 0);
 const STEP = CARD.thickness + 0.012;
 
 // The pile: all 32 squared face down in the middle of the table, each a hair
 // turned, as a hand squares a pack.
 export function pilePoses(at = PILE) {
   return CODES.map((_, i) =>
-    lying({ x: at.x + Math.sin(i * 12.9) * 0.08, z: at.z + Math.cos(i * 7.7) * 0.08, height: i * STEP, faceUp: false, yaw: Math.sin(i * 5.1) * 0.02 }),
+    lying({ x: at.x + Math.sin(i * 12.9) * 0.08, z: at.z + Math.cos(i * 7.7) * 0.08, height: REST + i * STEP, faceUp: false, yaw: Math.sin(i * 5.1) * 0.02 }),
   );
 }
 
@@ -84,6 +86,7 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
     if (!saved) return;
     const c = stage.camera;
     c.position.copy(saved.position);
+    c.up.copy(UP);
     c.quaternion.copy(saved.quaternion);
     c.fov = saved.fov;
     c.near = saved.near;
@@ -121,11 +124,16 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
     // Look from `from` at `at`, with a field of view if given. For a scene's
     // first moments the eye travels there from where the gather left it,
     // rather than jumping.
-    look(from, at, fov) {
+    look(from, at, fov, up = UP) {
       const c = stage.camera;
       c.position.copy(from);
+      c.up.copy(up);
       c.lookAt(at);
-      const target = fov ?? c.fov;
+      // A phone held upright sees at least as much across as a square
+      // screen would: the field widened for it, so no scene loses its sides.
+      const wide = c.aspect < 1 ? 1 / c.aspect : 1;
+      const asked = fov ?? saved?.fov ?? c.fov;
+      const target = (2 * Math.atan(Math.tan((asked * Math.PI) / 360) * wide) * 180) / Math.PI;
       if (blend && clock < BLEND) {
         const k = minimumJerk(clock / BLEND);
         c.position.lerpVectors(blend.position, from, k);
@@ -232,7 +240,10 @@ export function createCelebrations({ stage, deck, hud, scenes, seed }) {
     const make = scenes[name];
     const c = stage.camera;
     blend = { position: c.position.clone(), quaternion: c.quaternion.clone(), fov: c.fov };
-    if (make.how) hud.how(make.how);
+    // On a touch screen, the words for fingers, not keys.
+    const touch = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+    const how = touch ? make.touch ?? make.how : make.how;
+    if (how) hud.how(how);
     scene = make(ctx);
   }
 

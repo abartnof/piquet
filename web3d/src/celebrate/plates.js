@@ -119,7 +119,7 @@ export function plates(ctx) {
         colour: rng.pick(SHARDS), size: rng.range(0.6, 1.3), drag: 0.8, rand: rng,
       });
     }
-    ctx.hud.burst(new Vector3(x, 6, z), "PIQUET!", { size: clamp(1.4 - Math.hypot(x, z) / 250, 0.8, 1.3) });
+    ctx.hud.burst(new Vector3(x, 6, z), { size: clamp(1.4 - Math.hypot(x, z) / 250, 0.8, 1.3) });
     shake = Math.max(shake, clamp(2.2 - Math.hypot(x, z - PZ) / 90, 0.3, 1.6));
     jiggle = Math.min(1.5, jiggle + 60 / (40 + Math.hypot(x, z)));
   }
@@ -133,7 +133,7 @@ export function plates(ctx) {
   function finale() {
     burst = true;
     shake = 1.2;
-    ctx.hud.burst(new Vector3(0, 12, -6), "PIQUET!!!", { size: 1.8, colour: PALETTE.youContainer });
+    ctx.hud.burst(new Vector3(0, 12, -6), { size: 1.8, colour: PALETTE.youContainer });
   }
   function launch() {
     launched = true;
@@ -246,4 +246,5 @@ export function plates(ctx) {
 }
 plates.title = "Plate smash";
 plates.how = "Drag your plate, or use ← and →, to deflect the plates";
+plates.touch = "Drag your plate to deflect the plates";
 plates.interactive = true;

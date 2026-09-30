@@ -257,7 +257,7 @@ export function cupball(ctx) {
     catches += 1;
     tally();
     const mouth = new Vector3(cup.p.x - DEPTH * Math.sin(cup.phi), cup.p.y + DEPTH * Math.cos(cup.phi), 0);
-    ctx.hud.burst(mouth.clone().add(new Vector3(0, 14, 0)), "PIQUET!", { size: 1.2 });
+    ctx.hud.burst(mouth.clone().add(new Vector3(0, 14, 0)), { size: 1.2 });
     for (let i = 0; i < 40; i++) {
       const a = rng.range(0, Math.PI * 2);
       const speed = rng.range(20, 70);

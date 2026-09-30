@@ -1,6 +1,6 @@
 // The physics of the celebrations: real gravity, in the table's units.
 //
-// Andrew's prototype (web3d/reference/celebrations-prototype.html) set the
+// Andrew's prototype (in git at 272ff15, web3d/reference/celebrations-prototype.html) set the
 // rule these keep: "AUTHENTIC PHYSICS WHERE POSSIBLE. Things that fly must
 // follow real ballistic arcs under gravity ... do not fake with sine bounces
 // or straight-line tweens when a real trajectory is available." The table is
@@ -11,6 +11,9 @@ import { Euler, Quaternion, Vector3 } from "three";
 import { CARD } from "../units.js";
 
 export const G = 981; // cm/s^2
+// A card lies this far above the table, as on the table in play: flush with
+// it, a card fights the table and its shadow for the same pixels.
+export const REST = 0.02; // cm
 
 // The launch velocity that carries a body from p0 to p1 in T seconds under
 // gravity alone.
@@ -105,8 +108,8 @@ export class Flung {
         m.rotation.x += (flat - m.rotation.x) * k;
         m.rotation.z += (Math.round(m.rotation.z / (2 * Math.PI)) * 2 * Math.PI - m.rotation.z) * k;
         // Lowered as it turns flat -- never so fast a corner dips below.
-        const eased = m.position.y + (CARD.thickness / 2 - m.position.y) * k;
-        m.position.y = Math.max(eased, lowestBelow(m.quaternion));
+        const eased = m.position.y + (REST + CARD.thickness / 2 - m.position.y) * k;
+        m.position.y = Math.max(eased, lowestBelow(m.quaternion) + REST);
         continue;
       }
       b.v.y -= G * dt;
@@ -115,7 +118,7 @@ export class Flung {
       m.rotation.y += b.w.y * dt;
       m.rotation.z += b.w.z * dt;
       m.updateMatrix();
-      const low = lowestBelow(m.quaternion);
+      const low = lowestBelow(m.quaternion) + REST;
       if (m.position.y < low && b.v.y >= 0) {
         // Rising, but turning a corner into the table: the table holds it.
         m.position.y = low;
