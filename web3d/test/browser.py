@@ -219,12 +219,18 @@ def check_undo_hints_settings(page, failures):
     if state(page)["aids"]["hints"] == hints:
         failures.append("H did not toggle hints")
     page.keyboard.press("h")
-    notes = page.locator("#prompt .asked .note").count()
+    # The interpretation: beside the table on a wide screen (Andrew: "long
+    # explanations ... on the left side, and shorthand on the bottom"),
+    # under the hand only on a phone.
+    told = "#rule:not([hidden]) .rule-text, #prompt .asked .note"
+    notes = page.locator(told).count()
+    if page.locator("#prompt .asked .note").count():
+        failures.append("on a wide screen the long explanation should be in the left column, not under the hand")
     page.keyboard.press("e")
-    if notes and page.locator("#prompt .asked .note").count():
+    if notes and page.locator(told).count():
         failures.append("E did not hide the interpretation")
     page.keyboard.press("e")
-    if notes and not page.locator("#prompt .asked .note").count():
+    if notes and not page.locator(told).count():
         failures.append("E again did not bring the interpretation back")
     # Sorting is always to hand, as a segmented button under it.
     sort = page.locator("md-outlined-segmented-button[data-sort='rank']")

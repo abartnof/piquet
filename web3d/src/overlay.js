@@ -542,7 +542,24 @@ export function createOverlay(root, on) {
     const arriving = (layer, on) => (on && shownLayers[layer] === false ? " arriving" : "");
     const lines = [];
     if (fact) lines.push(el("p", { class: "ask" }, fact));
-    if (rule && explain) lines.push(el("p", { class: `note${arriving("explain", explain)}` }, rule));
+    // The long line -- what the rules make of this moment -- sits in the
+    // column on the left when there is room, leaving only the question and
+    // its answers under the hand (Andrew: "long explanations ... on the left
+    // side, and shorthand on the bottom"); a phone keeps it here.
+    const aside = !compact.matches;
+    const ruleCard = $("rule");
+    const told = rule && explain;
+    if (told && !aside) lines.push(el("p", { class: `note${arriving("explain", explain)}` }, rule));
+    if (told && aside) {
+      if (ruleCard.hidden || ruleCard.dataset.text !== rule) {
+        ruleCard.classList.toggle("arriving", ruleCard.hidden);
+        ruleCard.dataset.text = rule;
+        ruleCard.replaceChildren(el("div", { class: "card-title" }, "What it means"), el("p", { class: "rule-text" }, rule));
+      }
+      ruleCard.hidden = false;
+    } else {
+      ruleCard.hidden = true;
+    }
     if (hint) {
       const follow = el("md-text-button", { class: "follow", title: "Do what the hint says" }, "Follow");
       follow.addEventListener("click", () => on.act(hint.command));

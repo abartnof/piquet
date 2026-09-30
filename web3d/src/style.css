@@ -411,6 +411,23 @@ body {
   --md-outlined-button-outline-color: #009fb7;
   --md-outlined-button-outline-width: 2px;
 }
+/* What the rules make of the moment, beside the table rather than over the
+   hand, when there is room. */
+.rule-card {
+  padding: 10px 14px 12px 16px;
+  display: grid;
+  gap: 4px;
+}
+.rule-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.rule-card.arriving {
+  animation: layer 480ms var(--ease-in);
+  animation: layer 480ms var(--spring);
+}
 /* It takes what height the column has left, and scrolls within it. */
 .info > .worth-card {
   flex: 0 1 auto;
