@@ -16,7 +16,9 @@ import { createOverlay, label as labelOf } from "./overlay.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
 import { createVoice } from "./voice.js";
-import { INTRO, PHASES, introDue } from "./tutorial.js";
+import { PAGE_KEYS, pageDue, pageFor, parseTutorial } from "./tutorial.js";
+// Andrew's words, as he wrote them: esbuild inlines the file as text.
+import TUTORIAL_TEXT from "../tutorial.md";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
@@ -32,9 +34,12 @@ const GAME_STORE = "piquet3d.game";
 // stored set from before keeps every other choice, but not that one.
 const PREF_STORE = "piquet3d.prefs.2";
 const OLD_PREF_STORE = "piquet3d.prefs";
-// Versioned: "play my winners" became opt-in, and a stored set from before
-// would keep it on without the player ever having chosen it.
-const AID_STORE = "piquet3d.aids.2";
+// Versioned: "play my winners" became opt-in, and then hints did (Andrew:
+// "when tutorial mode is on, both explanations and hints are on by default;
+// else, only explanations are on"). A stored set from before keeps every
+// other choice, but not hints, which it would hold only by the old default.
+const AID_STORE = "piquet3d.aids.3";
+const OLD_AID_STORE = "piquet3d.aids.2";
 // The tutorial, if this partie is one: which partie, and what it has
 // introduced so far.
 const TUTORIAL_STORE = "piquet3d.tutorial";
@@ -46,7 +51,7 @@ const DEFAULT_PREFS = {
 };
 // Playing out your winners is opt-in: Andrew, finding his cards played for
 // him mid-trick, "i didn't intend for that to happen".
-const DEFAULT_AIDS = { hints: true, play_forced: true, play_winners: false, declare_for_me: false };
+const DEFAULT_AIDS = { hints: false, play_forced: true, play_winners: false, declare_for_me: false };
 
 function recall(key, fallback) {
   try {
@@ -55,6 +60,15 @@ function recall(key, fallback) {
   } catch (e) {
     return fallback;
   }
+}
+
+// The aids as stored, or as they were before hints became opt-in, less hints.
+function recallAids() {
+  if (recall(AID_STORE, null)) return recall(AID_STORE, DEFAULT_AIDS);
+  const older = recall(OLD_AID_STORE, null);
+  if (!older) return DEFAULT_AIDS;
+  const { hints, ...kept } = older;
+  return { ...DEFAULT_AIDS, ...kept };
 }
 
 // The settings as stored, or as they were stored before the store was
@@ -153,13 +167,13 @@ async function main() {
   };
   function begin(level, seed) {
     engine.start(level, seed);
-    applyAids(recall(AID_STORE, DEFAULT_AIDS));
+    applyAids(recallAids());
   }
   function restore(saved) {
     engine.start(saved.level, saved.seed);
     const payload = [`replay ${saved.level} ${saved.seed}`, ...(saved.record || [])].join("\n");
     if (!engine.send(payload)) begin(saved.level, saved.seed); // a record from an older engine
-    applyAids(recall(AID_STORE, DEFAULT_AIDS));
+    applyAids(recallAids());
   }
   const randomSeed = () => crypto.getRandomValues(new Uint32Array(1))[0] % 1000000;
 
@@ -264,6 +278,8 @@ async function main() {
     // Whether the page has a voice at all (the default build has none).
     audible: voice.audible(),
     undo: () => act("undo"),
+    tutorial: () => showTutorial(),
+    tutorialMode: (on) => tutorialMode(on),
     aid: toggleAid,
     pref: setPref,
     level: (n) => newPartie(n),
@@ -310,7 +326,7 @@ async function main() {
         ? `Cut here: lift ${Math.min(Math.max(f.index + 1, s.prompt.fewest), s.prompt.most)} cards (Space)`
         : `${labelOf(f.code)}${s.prompt.kind === "play" && !s.prompt.legal.includes(f.code) ? ", which you may not play" : ""} (Space to ${s.prompt.kind === "play" ? "play" : ui.selected.includes(f.code) ? "keep" : "throw"})`
       : null;
-    overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus } });
+    overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus, tutorial: inTutorial() } });
     reframe();
     // In the tutorial, a new phase is introduced once its cards have moved.
     if (inTutorial()) setTimeout(introduce, director.busy() ? 900 : 0);
@@ -379,37 +395,71 @@ async function main() {
 
   // ---- the tutorial ------------------------------------------------------------
   //
-  // Andrew: "an introduction (concise, bullet points- nothing too wordy), and an
-  // introduction before each phase of play. when this 'tutorial' mode is on,
-  // hints+explanations are on by default ... when someone opens, there can be
-  // a button- new game, or tutorial". The words are tutorial.js's.
+  // Andrew's four pages (web3d/tutorial.md): "intro, which is immediately
+  // followed by the exchange; then declarations and play of tricks pop up
+  // before those phases of gameplay. users should be able to click on the
+  // tutorials button at any time to bring these up". A page read once --
+  // paging ahead from the introduction counts -- does not pop up again.
+  const PAGES = parseTutorial(TUTORIAL_TEXT);
   let tutorial = recall(TUTORIAL_STORE, { on: false, seed: null, seen: [] });
-  let introducing = false;
+  let reading = false;
   const inTutorial = () => tutorial.on && tutorial.seed === engine.state().seed;
-  // The next phase's introduction, the first time it comes.
-  function introduce() {
-    if (!inTutorial() || introducing) return;
-    const key = introDue(engine.state(), tutorial.seen);
-    if (!key) return;
-    tutorial = { ...tutorial, seen: [...tutorial.seen, key] };
-    store(TUTORIAL_STORE, tutorial);
-    introducing = true;
-    overlay.intro(PHASES[key], () => {
-      introducing = false;
-      introduce();
+  function read(key, then) {
+    reading = true;
+    overlay.tutorial(PAGES, PAGE_KEYS.indexOf(key), {
+      seen: (k) => {
+        if (!inTutorial() || tutorial.seen.includes(k)) return;
+        tutorial = { ...tutorial, seen: [...tutorial.seen, k] };
+        store(TUTORIAL_STORE, tutorial);
+      },
+      done: () => {
+        reading = false;
+        (then ?? introduce)();
+      },
     });
+  }
+  // In the tutorial, the phase's page the first time you act in it -- once
+  // no other dialog is open (Settings, say, where it was just turned on).
+  function introduce() {
+    if (!inTutorial() || reading || document.querySelector("md-dialog[open]")) return;
+    const key = pageDue(engine.state(), tutorial.seen);
+    if (key) read(key);
+  }
+  // A page held back by another dialog comes when that dialog closes.
+  document.addEventListener("closed", (e) => e.target.id !== "tutorial" && setTimeout(introduce, 0), true);
+  // The ? in the top bar, or the key: the page for this moment.
+  function showTutorial() {
+    if (!reading) read(pageFor(engine.state()));
+  }
+  // With the tutorial come hints and explanations; when it ends, the hints
+  // go again if it was the tutorial that brought them.
+  function tutorialOn(seen) {
+    const seed = engine.state().seed;
+    const brought = !engine.state().aids.hints;
+    tutorial = { on: true, seed, seen, hints: brought || (tutorial.seed === seed && !!tutorial.hints) };
+    store(TUTORIAL_STORE, tutorial);
+    if (brought) toggleAid("hints");
+    if (prefs.explain === false) setPref("explain", true);
+  }
+  function tutorialOff() {
+    const brought = tutorial.on && tutorial.hints;
+    tutorial = { ...tutorial, on: false, hints: false };
+    store(TUTORIAL_STORE, tutorial);
+    if (brought && engine.state().aids.hints) toggleAid("hints");
+  }
+  // The switch in Settings: this partie's pages on or off. Pages already
+  // read stay read.
+  function tutorialMode(on) {
+    if (on) tutorialOn(tutorial.seed === engine.state().seed ? tutorial.seen : []);
+    else tutorialOff();
+    render();
   }
   function startTutorial() {
     newPartie(engine.state().level, true);
-    tutorial = { on: true, seed: engine.state().seed, seen: [] };
-    store(TUTORIAL_STORE, tutorial);
-    if (!engine.state().aids.hints) toggleAid("hints");
-    if (prefs.explain === false) setPref("explain", true);
-    introducing = true;
-    overlay.intro(INTRO, () => {
-      introducing = false;
-      introduce();
-    });
+    tutorialOn([]);
+    // The introduction, then at once the exchange's page, unless it was
+    // paged to already.
+    read("intro", () => (tutorial.seen.includes("exchange") ? introduce() : read("exchange")));
   }
 
   function newPartie(n, force = false) {
@@ -419,7 +469,9 @@ async function main() {
       render();
       return;
     }
-    if (tutorial.on) store(TUTORIAL_STORE, (tutorial = { on: false, seed: null, seen: [] }));
+    // A second partie has no tutorial (Andrew: "2nd partie has no more
+    // tutorial popups").
+    if (tutorial.on) tutorialOff();
     begin(n, randomSeed());
     voice.stop();
     overlay.clearDialogue();
@@ -532,6 +584,9 @@ async function main() {
         e.preventDefault();
         act("undo");
       }
+    } else if (e.key === "?") {
+      e.preventDefault();
+      showTutorial();
     } else if ((e.key === "h" || e.key === "H") && !e.ctrlKey && !e.metaKey) {
       toggleAid("hints");
     } else if ((e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey) {

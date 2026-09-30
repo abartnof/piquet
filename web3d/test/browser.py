@@ -306,36 +306,130 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
-        # The welcome and the tutorial (Andrew: "an introduction ... and an
-        # introduction before each phase of play ... hints+explanations are
-        # on by default ... new game, or tutorial").
+        # The welcome and the tutorial: Andrew's four pages -- "intro, which is
+        # immediately followed by the exchange; then declarations and play of
+        # tricks pop up before those phases ... click on the tutorials button
+        # at any time ... go back/fwd between them".
         tut = open_page(browser, "test&welcome&level=2&seed=31")
-        tut.get_by_role("button", name="Tutorial").click()
+        tut.locator("#welcome").get_by_role("button", name="Tutorial").click()
         tut.wait_for_timeout(800)
-        heading = tut.locator("#intro [slot=headline]").inner_text()
-        if heading != "Piquet in a minute":
-            failures.append(f"the tutorial did not open on its introduction: {heading!r}")
+        page_title = lambda: tut.locator("#tutorial .tutorial-title").inner_text()
+        is_open = lambda: tut.locator("#tutorial").get_attribute("open") is not None
+        # Andrew: "a little x (md3) in the top-right of the tutorial pages".
+        close_x = lambda: tut.locator("#tutorial .tutorial-close").click()
+        if page_title() != "Introduction":
+            failures.append(f"the tutorial did not open on its introduction: {page_title()!r}")
+        # Closed on the introduction, the exchange's page follows at once.
+        close_x()
+        tut.wait_for_timeout(700)
+        if not is_open() or page_title() != "The Exchange":
+            failures.append(f"the exchange's page did not follow the introduction: {is_open()}")
+        tut.locator("#tutorial .tutorial-back").click()
+        tut.wait_for_timeout(300)
+        backward = page_title()
+        tut.locator("#tutorial .tutorial-next").click()
+        tut.wait_for_timeout(300)
+        forward = page_title()
+        if (backward, forward) != ("Introduction", "The Exchange"):
+            failures.append(f"back and forward went to {backward!r} and {forward!r}")
+        if tut.locator("#tutorial .tutorial-dots .dot.on").count() != 1:
+            failures.append("the tutorial's dots do not mark one page")
+        shot(tut, "09-tutorial")
+        close_x()
+        tut.wait_for_timeout(700)
         seen = []
-        for _ in range(8):
-            if tut.locator("#intro").get_attribute("open") is not None:
-                seen.append(tut.locator("#intro [slot=headline]").inner_text())
-                tut.get_by_role("button", name="Got it").click()
+        for _ in range(60):
+            if is_open():
+                if page_title() != (seen[-1] if seen else None):
+                    seen.append(page_title())
+                close_x()
                 tut.wait_for_timeout(700)
                 continue
             s = state(tut)
-            kind = s["prompt"]["kind"]
-            if kind == "cut":
-                tut.evaluate("window.piquet3d.send('cut 14')")
-            elif kind == "choose_dealer":
-                tut.evaluate("window.piquet3d.send('dealer them')")
-            elif kind == "exchange" and "The exchange" in seen:
+            p = s["prompt"]
+            if "The Tricks" in seen:
                 break
+            if p["kind"] == "cut":
+                tut.evaluate("window.piquet3d.send('cut 14')")
+            elif p["kind"] == "choose_dealer":
+                tut.evaluate("window.piquet3d.send('dealer them')")
+            elif p["kind"] == "exchange":
+                tut.evaluate(f"window.piquet3d.send('exchange {s['hand'][-1]}')")
+            elif p["kind"] == "declare":
+                tut.evaluate("window.piquet3d.send('declare 0')")
+            elif p["kind"] == "play":
+                tut.evaluate(f"window.piquet3d.send('play {p['legal'][0]}')")
             tut.wait_for_timeout(1200)
-        if seen[:2] != ["Piquet in a minute", "The cut"] or "The exchange" not in seen:
-            failures.append(f"the tutorial's introductions came as {seen}")
+        # Read already, the exchange's page does not come again.
+        if seen != ["The Declarations", "The Tricks"]:
+            failures.append(f"the tutorial's pages came as {seen}")
         t = tut.evaluate("window.piquet3d.tutorial()")
         if not t["on"] or not state(tut)["aids"]["hints"]:
             failures.append(f"the tutorial is not on, with hints: {t}")
+        # The ? brings the pages up at any time, at the page for the moment.
+        tut.locator("#tutorial-open").click()
+        tut.wait_for_timeout(500)
+        if not is_open() or page_title() != "The Tricks":
+            failures.append(f"the ? did not open the page for the play: {is_open()}, {page_title()!r}")
+        tut.keyboard.press("ArrowLeft")
+        tut.wait_for_timeout(300)
+        if page_title() != "The Declarations":
+            failures.append(f"the left arrow went to {page_title()!r}")
+        tut.keyboard.press("Escape")
+        tut.wait_for_timeout(700)
+        if is_open():
+            failures.append("Escape did not close the tutorial")
+        # The switch in Settings shows it on, for this partie; the next
+        # partie has none of it ("2nd partie has no more tutorial popups").
+        switch = tut.locator("md-switch[data-tutorial]")
+        if not switch.evaluate("s => s.selected"):
+            failures.append("Settings does not show the tutorial on in the tutorial's partie")
+        tut.locator("#new").click()
+        tut.wait_for_timeout(1500)
+        popped = False
+        for _ in range(12):
+            if is_open():
+                popped = True
+                break
+            s = state(tut)
+            p = s["prompt"]
+            if p["kind"] == "cut":
+                tut.evaluate("window.piquet3d.send('cut 14')")
+            elif p["kind"] == "choose_dealer":
+                tut.evaluate("window.piquet3d.send('dealer them')")
+            elif p["kind"] == "exchange":
+                tut.evaluate(f"window.piquet3d.send('exchange {s['hand'][-1]}')")
+            elif p["kind"] == "declare":
+                break
+            tut.wait_for_timeout(1000)
+        if popped or tut.evaluate("window.piquet3d.tutorial()")["on"] or switch.evaluate("s => s.selected"):
+            failures.append("the second partie still has the tutorial")
+        # Outside the tutorial only explanations are on by default; the hints
+        # the tutorial brought go with it.
+        if state(tut)["aids"]["hints"]:
+            failures.append("hints stayed on after the tutorial's partie")
+        # The top bar's plus says what it does on hover.
+        tut.mouse.move(640, 420)  # away first: the click that began this partie hid it
+        tut.wait_for_timeout(200)
+        tut.locator("#new").hover()
+        tut.wait_for_timeout(700)
+        tip = tut.locator(".tip.shown")
+        if tip.count() != 1 or tip.inner_text() != "Start a new partie" or tip.evaluate("t => getComputedStyle(t).opacity") != "1":
+            failures.append(f"the plus has no visible tooltip: {tip.all_inner_texts()}")
+        # Settings holds only what the page does not.
+        if tut.locator("#settings").get_by_role("button", name="New partie").count() or \
+                tut.locator('#settings md-outlined-select[label="Order your hand"]').count():
+            failures.append("Settings still repeats New partie or the hand's order")
+        # Turned on in Settings, the pages come again, once each.
+        tut.locator("#settings-open").click()
+        tut.wait_for_timeout(500)
+        switch.click()
+        tut.get_by_role("button", name="Done").click()
+        tut.wait_for_timeout(1500)
+        if not is_open() or page_title() != "The Declarations":
+            failures.append(f"switched on at the declarations, their page did not come: {is_open()}")
+        else:
+            close_x()
         if tut.errors:
             failures.append(f"console errors in the tutorial: {tut.errors}")
         tut.context.close()

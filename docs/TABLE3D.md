@@ -982,6 +982,45 @@ throughout.
       partie (`tutorial.js`, node-tested for brevity and for the rules as
       the engine plays them). It survives a reload; a new partie ends it.
 
+- [x] **P20 — Andrew's tutorial: four pages, a ?, and a switch (30
+      September).** Andrew wrote the pages himself -- an introduction, the
+      exchange, the declarations, the tricks -- and asked that they be
+      *"identical to how this videogame works"*. They live in
+      **`web3d/tutorial.md`**, inlined as text by esbuild, so rewording them
+      touches no code. Checked rule by rule against the engine and pagat;
+      eight corrections, each with his text's original reading in PLAN.md
+      ("Back, 30 September"), and `test/tutorial.test.js` holds every rule
+      they state against the engine's own events (a low card led scores a
+      point, the last trick scores one more, younger takes 1 to 3 plus what
+      elder left, the settlement's arithmetic, ...).
+
+      Behaviour, as he specified: picking **Tutorial** opens the
+      introduction, and the exchange's page follows at once; the
+      declarations' and the tricks' pages pop up the first time you act in
+      those phases -- each page once, and reading ahead counts. Only in the
+      partie begun as the tutorial; a second partie has none. **Settings →
+      Tutorial** turns the pop-ups on or off for this partie (off by default).
+      The **?** in the top bar, or the ? key, opens the pages at any time, at
+      the one for the moment you are in; **Back** and **Next** (Material
+      Symbols arrows, dots between them) and ← → page through them; the
+      **X** at the top right (Material Symbols *close*) or Esc closes them.
+
+      Then, the same afternoon, a tidy of the chrome. The top bar's "New
+      partie" became a Material **+** with the tooltip "Start a new partie"
+      (shown on phones too, since Settings no longer has it); the narration
+      toggle's tooltip is **"Game log"** ("Game record" would have collided
+      with Settings' *Copy game record*, which is the replay code). The top
+      bar's four icons now use the page's own Material tooltip, which drops
+      *below* anything along the top. **Settings holds only what the page
+      does not**: New partie and the hand's order are gone from it, and the
+      "(H)", "(E)" key hints from its descriptions -- the Keys list says them.
+      **Hints are off by default**; the tutorial brings hints and
+      explanations on, and takes the hints away again when it ends if it was
+      what brought them (the stored aids are versioned, `piquet3d.aids.3`, so
+      a browser holding hints only by the old default loses them). A
+      tutorial page never opens over another dialog: turned on in Settings,
+      it waits for Settings to close.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

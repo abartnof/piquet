@@ -67,8 +67,13 @@ folds' spring is Material 3 Expressive's spatial spring (damping ratio 0.8), sam
 for CSS `linear()` — <https://m3.material.io/styles/motion/overview>. The hand's sort
 is Material Web's outlined segmented button, from its `labs`.
 
-The page's few icons (undo, settings, narration, fold and unfold) are simple
-strokes drawn for it; no icon font or Material Symbols is used.
+The page's own icons (undo, settings, narration, fold and unfold) are simple
+strokes drawn for it. Four come from **Material Symbols** (Outlined, weight
+400, 24 px), by **Google** — <https://github.com/google/material-design-icons>,
+Apache License 2.0: *arrow_back*, *arrow_forward* and *close* on the
+tutorial's pages, and *help* (the question mark) in the top bar, where
+Andrew asked for Material's own. Their SVG paths are copied into
+`web3d/src/overlay.js`; no icon font is fetched or bundled.
 
 ## Software in the page
 

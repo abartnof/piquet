@@ -67,6 +67,29 @@ const ICONS = {
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
 
+// Material's own symbols, where Andrew asked for them -- back, forward, the
+// close X, the plus for a new partie and the question mark for the tutorial. Material Symbols (Outlined,
+// weight 400, 24 px), Apache License 2.0, Google: the paths are bundled, so
+// nothing is fetched.
+const SYMBOLS = {
+  back: "m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z",
+  add: "M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z",
+  close: "m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z",
+  forward: "M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z",
+  help: "M478-240q21 0 35.5-14.5T528-290q0-21-14.5-35.5T478-340q-21 0-35.5 14.5T428-290q0 21 14.5 35.5T478-240Zm-36-154h74q0-33 7.5-52t42.5-52q26-26 41-49.5t15-56.5q0-56-41-86t-97-30q-57 0-92.5 30T342-618l66 26q5-18 22.5-39t53.5-21q32 0 48 17.5t16 38.5q0 20-12 37.5T506-526q-44 39-54 59t-10 73Zm38 314q-83 0-156-31.5T197-197q-54-54-85.5-127T80-480q0-83 31.5-156T197-763q54-54 127-85.5T480-880q83 0 156 31.5T763-763q54 54 85.5 127T880-480q0 83-31.5 156T763-197q-54 54-127 85.5T480-80Zm0-80q134 0 227-93t93-227q0-134-93-227t-227-93q-134 0-227 93t-93 227q0 134 93 227t227 93Zm0-320Z",
+};
+
+export function symbol(name) {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("viewBox", "0 -960 960 960");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("class", "icon symbol");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", SYMBOLS[name]);
+  svg.append(path);
+  return svg;
+}
+
 export function icon(name) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -106,19 +129,26 @@ export function createOverlay(root, on) {
 
   // Your opponent's skill is chosen in Settings, once a partie (Andrew: in
   // the top bar it was "unnecessary noise when the game is happening").
-  const narrate = el("md-icon-button", { id: "narration-toggle", title: "What has been said", "aria-label": "Narration", toggle: true }, icon("narration"));
+  const narrate = el("md-icon-button", { id: "narration-toggle", "data-tip": "Game log", "aria-label": "Game log", toggle: true }, icon("narration"));
   narrate.addEventListener("click", () => {
     $("narration").hidden = !$("narration").hidden;
     narrate.selected = !$("narration").hidden;
   });
-  const gear = el("md-icon-button", { id: "settings-open", title: "Settings", "aria-label": "Settings" }, icon("settings"));
+  // The tutorial's pages, at any time (Andrew: "some sort of question mark
+  // icon you can use to link to the tutorial from the game screen").
+  const help = el("md-icon-button", { id: "tutorial-open", "data-tip": "Tutorial\nKey: ?", "aria-label": "Tutorial" }, symbol("help"));
+  help.addEventListener("click", () => on.tutorial());
+  const gear = el("md-icon-button", { id: "settings-open", "data-tip": "Settings", "aria-label": "Settings" }, icon("settings"));
   gear.addEventListener("click", () => $("settings").show());
-  const fresh = el("md-text-button", { id: "new" }, "New partie");
+  // A new partie: a plus, not words (Andrew: "replace the 'new partie'
+  // button with a md3 button (a plus sign?) with a mouseover tooltip").
+  const fresh = el("md-icon-button", { id: "new", "data-tip": "Start a new partie", "aria-label": "Start a new partie" }, symbol("add"));
   fresh.addEventListener("click", () => on.newPartie());
   $("topbar").replaceChildren(
     el("span", { class: "brand" }, "Piquet"),
     fresh,
     narrate,
+    help,
     gear,
   );
 
@@ -148,9 +178,14 @@ export function createOverlay(root, on) {
       if (tipFor !== target || !target.isConnected) return;
       tip.textContent = target.dataset.tip;
       const r = target.getBoundingClientRect();
-      const beside = r.right < window.innerWidth * 0.4;
+      // Beside the left column; below the top bar; otherwise above.
+      const below = r.bottom < 80;
+      const beside = !below && r.right < window.innerWidth * 0.4;
       tip.classList.toggle("beside", beside);
-      if (beside) {
+      tip.classList.toggle("under", below);
+      if (below) {
+        Object.assign(tip.style, { left: `${Math.min(r.left + r.width / 2, window.innerWidth - 90)}px`, top: `${r.bottom + 8}px`, bottom: "" });
+      } else if (beside) {
         Object.assign(tip.style, { left: `${r.right + 12}px`, top: `${r.top + r.height / 2}px`, bottom: "" });
       } else {
         Object.assign(tip.style, { left: `${r.left + r.width / 2}px`, top: "", bottom: `${window.innerHeight - r.top + 10}px` });
@@ -195,7 +230,7 @@ export function createOverlay(root, on) {
   // ---- settings and credits -------------------------------------------------
 
   const AIDS = [
-    ["hints", "Hints", "Suggest the strongest move, under your hand (H)"],
+    ["hints", "Hints", "Suggest the strongest move, under your hand"],
     ["play_forced", "Play forced cards", "Play a card for me when it is the only one I may play"],
     ["play_winners", "Play my winners", "Play out my hand when every trick left is certainly mine (off unless you turn it on)"],
     ["declare_for_me", "Declare for me", "Call everything, never ask"],
@@ -203,7 +238,7 @@ export function createOverlay(root, on) {
   const PREFS = [
     ["voice", "Voice", "Say aloud what is said at the table, as players have said it since Cavendish"],
     ["sayMine", "Say my own calls", "Voice your calls and your count as well as your opponent's (off unless you turn it on)"],
-    ["explain", "Explanations", "Say what the rules make of each moment, and how to act (E)"],
+    ["explain", "Explanations", "Say what the rules make of each moment, and how to act"],
     ["tab", "The running score", "Show where the deal stands, stage by stage"],
     ["undo", "Undo", "Allow taking back a decision"],
     ["pause", "Pause on tricks", "Leave each finished trick on the table a moment"],
@@ -211,6 +246,12 @@ export function createOverlay(root, on) {
   const row = (title, words, control) => el("label", { class: "setting" },
     el("span", { class: "setting-text" }, el("span", { class: "setting-title" }, title), el("span", { class: "setting-words" }, words)),
     control);
+  // The tutorial's pages for this partie (Andrew: "in the config menu,
+  // tutorial should be able to be turned off/on using a toggle"): on only in
+  // a partie begun as the tutorial, until you turn it off.
+  const tutorialSwitch = el("md-switch", { "data-tutorial": "" });
+  tutorialSwitch.addEventListener("change", () => on.tutorialMode(tutorialSwitch.selected));
+  const tutorialRow = row("Tutorial", "Its pages before each phase, once each, in this partie. The ? has them at any time", tutorialSwitch);
   const aidSwitches = AIDS.map(([aid, title, words]) => {
     const s = el("md-switch", { "data-aid": aid });
     s.addEventListener("change", () => on.aid(aid));
@@ -233,10 +274,6 @@ export function createOverlay(root, on) {
     [["0.6", "Leisurely"], ["1", "Natural"], ["1.7", "Brisk"], ["100", "Instant"]].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   speed.addEventListener("change", () => on.pref("speed", Number(speed.value)));
-  const sort = el("md-outlined-select", { "data-pref": "sort", label: "Order your hand" },
-    [["auto", "Automatically"], ["suit", "By suit"], ["rank", "By rank"], ["combos", "By combination"]].map(([v, words]) =>
-      el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
-  sort.addEventListener("change", () => on.pref("sort", sort.value));
   // The table top: one at random each time the page opens, or your own.
   const table = el("md-outlined-select", { "data-pref": "surface", label: "The table" },
     [["random", "A new one each time the page opens"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
@@ -257,11 +294,6 @@ export function createOverlay(root, on) {
       el("span", { class: "setting-title" }, "Your opponent's voice"),
       el("span", { class: "setting-words" }, "A woman's or a man's; your own calls, if you have them said, are in the other")),
     voiceSet);
-  const again = el("md-text-button", {}, "New partie");
-  again.addEventListener("click", () => {
-    $("settings").close();
-    on.newPartie();
-  });
   const copy = el("md-text-button", {}, "Copy game record");
   copy.addEventListener("click", () => on.copy(copy));
   const creditsOpen = el("md-text-button", {}, "Credits");
@@ -274,9 +306,9 @@ export function createOverlay(root, on) {
   $("settings").replaceChildren(
     el("div", { slot: "headline" }, "Settings"),
     el("div", { slot: "content", class: "settings" },
-      el("h3", {}, "Help at the table"), aidSwitches,
+      el("h3", {}, "Help at the table"), tutorialRow, aidSwitches,
       el("h3", {}, "The table"), on.audible ? [prefSwitches.slice(0, 2), voiceRow, prefSwitches.slice(2)] : prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, sort, table),
+      el("div", { class: "selects" }, levelInSettings, speed, table),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },
         [["← →", "move along your hand, or the pack when cutting"],
@@ -286,8 +318,9 @@ export function createOverlay(root, on) {
           ["U", "undo"],
           ["H", "hints on or off"],
           ["E", "explanations on or off"],
+          ["?", "the tutorial's pages"],
           ["Esc", "let go of everything chosen"]].flatMap(([k, what]) => [el("dt", {}, el("kbd", {}, k)), el("dd", {}, what)]))),
-    el("div", { slot: "actions" }, again, copy, creditsOpen, closeSettings),
+    el("div", { slot: "actions" }, copy, creditsOpen, closeSettings),
   );
   const closeCredits = el("md-filled-tonal-button", {}, "Close");
   closeCredits.addEventListener("click", () => $("credits").close());
@@ -976,9 +1009,9 @@ export function createOverlay(root, on) {
         });
       }
       for (const sw of root.querySelectorAll("[data-aid]")) sw.selected = !!s.aids[sw.dataset.aid];
+      tutorialSwitch.selected = !!ui.tutorial;
       for (const sw of root.querySelectorAll("md-switch[data-pref]")) sw.selected = !!prefs[sw.dataset.pref];
       speed.value = String(prefs.speed);
-      sort.value = prefs.sort;
       table.value = prefs.surface ?? "random";
       for (const b of voiceSet.querySelectorAll("md-outlined-segmented-button")) b.selected = b.dataset.voice === (prefs.opponentVoice ?? "cori");
       renderTab(s, prefs);
@@ -1011,14 +1044,57 @@ export function createOverlay(root, on) {
       dialog.addEventListener("closed", () => choose(chosen ?? (canContinue ? "continue" : "new")), { once: true });
       dialog.show();
     },
-    // A short introduction, as bullet points; `done` when it is read.
-    intro(card, done) {
-      const dialog = $("intro");
+    // The tutorial's pages (web3d/tutorial.md), open at page `at`, with back
+    // and forward between them (Andrew: "they should be able to go back/fwd
+    // between them"). `seen(key)` as each page shows; `done` when closed.
+    tutorial(pages, at, { seen, done } = {}) {
+      const dialog = $("tutorial");
+      let i = at;
+      const spans = (list) => list.map((s) => (s.bold ? el("strong", {}, s.text) : s.italic ? el("em", {}, s.text) : s.text));
+      const block = (b) =>
+        b.type === "h" ? el("h3", {}, spans(b.spans))
+          : b.type === "p" ? el("p", {}, spans(b.spans))
+            : el(b.type, {}, b.items.map((item) => el("li", {}, spans(item))));
+      const title = el("span", { class: "tutorial-title" });
+      const dots = el("span", { class: "tutorial-dots", "aria-hidden": "true" }, pages.map(() => el("span", { class: "dot" })));
+      const content = el("div", { slot: "content", class: "tutorial-page" });
+      // Andrew: "a little x (md3) in the top-right of the tutorial pages".
+      const close = el("md-icon-button", { class: "tutorial-close", title: "Close (Esc)", "aria-label": "Close" }, symbol("close"));
+      close.addEventListener("click", () => dialog.close());
+      const back = el("md-text-button", { class: "tutorial-back" }, symbol("back"), "Back");
+      const next = el("md-text-button", { class: "tutorial-next", "trailing-icon": true }, "Next", symbol("forward"));
+      back.firstChild.setAttribute("slot", "icon");
+      next.lastChild.setAttribute("slot", "icon");
+      const show = (to) => {
+        i = Math.max(0, Math.min(pages.length - 1, to));
+        const page = pages[i];
+        title.textContent = page.title;
+        content.replaceChildren(...page.blocks.map(block));
+        dots.querySelectorAll(".dot").forEach((d, n) => d.classList.toggle("on", n === i));
+        dots.setAttribute("title", `Page ${i + 1} of ${pages.length}`);
+        back.disabled = i === 0;
+        next.disabled = i === pages.length - 1;
+        dialog.shadowRoot?.querySelector(".scroller")?.scrollTo(0, 0);
+        seen?.(page.key);
+      };
+      back.addEventListener("click", () => show(i - 1));
+      next.addEventListener("click", () => show(i + 1));
       dialog.replaceChildren(
-        el("div", { slot: "headline" }, card.title),
-        el("ul", { slot: "content", class: "intro" }, card.bullets.map((b) => el("li", {}, b))),
-        el("div", { slot: "actions" }, el("md-filled-tonal-button", { onclick: () => dialog.close() }, "Got it")));
-      dialog.addEventListener("closed", () => done?.(), { once: true });
+        el("div", { slot: "headline", class: "tutorial-head" }, title, close),
+        content,
+        el("div", { slot: "actions", class: "tutorial-actions" }, back, dots, next));
+      const keys = (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+          e.preventDefault();
+          show(i + (e.key === "ArrowRight" ? 1 : -1));
+        }
+      };
+      dialog.addEventListener("keydown", keys);
+      dialog.addEventListener("closed", () => {
+        dialog.removeEventListener("keydown", keys);
+        done?.();
+      }, { once: true });
+      show(at);
       dialog.show();
     },
     // A line of the declarations, in its box when it is said: `ms` from now.
@@ -1054,10 +1130,11 @@ export function createOverlay(root, on) {
 function credits() {
   const item = (title, ...lines) => el("div", { class: "credit" }, el("strong", {}, title), ...lines.map((l) => el("p", {}, l)));
   return [
+    item("Piquet", "© 2026 Andrew Bartnof."),
     item("The card faces", "“Public domain complete playing card deck”, by AustinGabriel64, from Wikimedia Commons. CC0 1.0 — no rights reserved; credited gladly."),
     item("The card back", "Adapted from “Reverso baraja española”, by Germarquezm, from Wikimedia Commons, which includes elements of his “Baraja española.svg”.",
       "Licensed CC BY-SA 3.0 (creativecommons.org/licenses/by-sa/3.0). Changed: re-framed to the faces’ 5:7 and redrawn on flat white without its border. The back shown here is therefore also CC BY-SA 3.0."),
-    item("Material Design 3", "The controls follow Google’s Material Design 3 (m3.material.io), through Material Web 2.5.0 — Apache License 2.0, © Google LLC — and Lit 3.3.3 (lit-html, lit-element, @lit/reactive-element) — BSD 3-Clause, © Google LLC — with tslib 2.8.1 (0BSD, © Microsoft). Colours generated with Material Color Utilities (Apache 2.0)."),
+    item("Material Design 3", "The controls follow Google’s Material Design 3 (m3.material.io), through Material Web 2.5.0 — Apache License 2.0, © Google LLC — and Lit 3.3.3 (lit-html, lit-element, @lit/reactive-element) — BSD 3-Clause, © Google LLC — with tslib 2.8.1 (0BSD, © Microsoft). Colours generated with Material Color Utilities (Apache 2.0). The back, forward, close and question-mark icons are Material Symbols — Apache License 2.0, © Google LLC."),
     item("three.js", "The table is drawn with three.js 0.186.1 — MIT License, © 2010–2026 three.js authors."),
     item("The rules", "Rubicon piquet, after pagat.com and the Portland Club laws of 1892 (Cavendish)."),
   ];

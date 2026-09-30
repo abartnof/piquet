@@ -154,6 +154,11 @@ body {
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* Material Symbols are filled shapes, not strokes. */
+.icon.symbol {
+  fill: currentColor;
+  stroke: none;
+}
 
 /* ---- the information column ------------------------------------------------ */
 
@@ -930,7 +935,7 @@ md-assist-chip.pinned {
     transform: translate(-50%, 30px) scale(0.95);
   }
 }
-/* The welcome, and the tutorial's introductions: a few short bullets. */
+/* The welcome. */
 .welcome p {
   margin: 0 0 6px;
 }
@@ -938,12 +943,61 @@ md-assist-chip.pinned {
   color: var(--md-sys-color-on-surface-variant);
   font-size: 14px;
 }
-.intro {
-  margin: 0;
-  padding-left: 20px;
+/* The tutorial's pages: Andrew's words, set to be read, with the page's
+   place among the four as dots beside its title. */
+.tutorial-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.tutorial-head md-icon-button {
+  margin: -8px -12px -8px 0;
+}
+.tutorial-actions {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tutorial-dots {
+  display: inline-flex;
+  gap: 6px;
+  flex: none;
+}
+.tutorial-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--md-sys-color-outline-variant);
+  transition: background 200ms var(--ease), transform 200ms var(--ease);
+}
+.tutorial-dots .dot.on {
+  background: var(--md-sys-color-primary);
+  transform: scale(1.25);
+}
+.tutorial-page {
+  line-height: 1.45;
+  font-size: 15px;
+}
+.tutorial-page p {
+  margin: 0 0 10px;
+}
+.tutorial-page h3 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 18px 0 6px;
+  color: var(--md-sys-color-primary);
+}
+.tutorial-page ul,
+.tutorial-page ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
   display: grid;
-  gap: 8px;
-  line-height: 1.4;
+  gap: 6px;
+}
+.tutorial-page strong {
+  font-weight: 600;
 }
 
 /* The declarations as a dialogue: each line in a box by its speaker's hand,
@@ -1263,8 +1317,7 @@ kbd {
     border-radius: 22px;
   }
   .bar md-outlined-select,
-  .brand,
-  #new {
+  .brand {
     display: none;
   }
   .info {
@@ -1476,4 +1529,11 @@ kbd {
 }
 .tip.beside.shown {
   transform: translate(0, -50%) scale(1);
+}
+/* Under the top bar's icons, dropping into place ("under": .below is the score bubbles' class). */
+.tip.under {
+  transform: translate(-50%, -4px) scale(0.96);
+}
+.tip.under.shown {
+  transform: translate(-50%, 0) scale(1);
 }

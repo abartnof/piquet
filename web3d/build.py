@@ -63,6 +63,8 @@ def bundle() -> tuple[str, dict[str, int]]:
         subprocess.run(
             [str(ESBUILD), "src/main.js", "--bundle", "--minify", "--format=iife",
              "--target=es2022", "--platform=browser", "--legal-comments=eof",
+             # The tutorial's pages are Markdown, inlined as text (web3d/tutorial.md).
+             "--loader:.md=text",
              f"--outfile={out}", f"--metafile={meta}", "--log-level=warning"],
             cwd=HERE, check=True,
         )
