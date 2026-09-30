@@ -77,3 +77,39 @@ fn a_stronger_side_does_better_over_a_partie() {
         "rung 4 scored {strong_total} against rung 1's {weak_total}"
     );
 }
+
+/// pagat's own worked settlements: "the scores are A:99, B:120. Player A pays
+/// 319 to player B" and "A:101, B:120. Player A pays 119".
+#[test]
+fn pagats_worked_settlements() {
+    use piquet_core::partie::Partie;
+    for (loser, pays, rubiconed) in [(99, 319, true), (101, 119, false)] {
+        let mut partie = Partie::new(Side::A);
+        partie = partie.record_scores(loser, 120).unwrap();
+        for _ in 1..DEALS_IN_PARTIE {
+            partie = partie.record_scores(0, 0).unwrap();
+        }
+        let settlement = partie.settlement().expect("six deals, unequal: settled");
+        assert_eq!(settlement.points, pays, "{loser} to 120");
+        assert_eq!(settlement.rubicon, rubiconed);
+    }
+}
+
+/// "If the scores are equal after 6 deals, two more hands are played. If they
+/// are then still equal the partie is a draw."
+#[test]
+fn a_level_partie_plays_two_more_deals_then_may_be_drawn() {
+    use piquet_core::partie::Partie;
+    let mut partie = Partie::new(Side::A);
+    for _ in 0..DEALS_IN_PARTIE {
+        partie = partie.record_scores(20, 20).unwrap();
+    }
+    assert!(!partie.complete(), "level after six: two more");
+    assert_eq!(partie.deals_left(), 2);
+    partie = partie.record_scores(30, 0).unwrap();
+    assert!(!partie.complete(), "both extra deals are played, whatever the first");
+    partie = partie.record_scores(30, 0).unwrap();
+    let settlement = partie.settlement().expect("eight deals: settled");
+    assert!(settlement.winner.is_none(), "level again: a draw");
+    assert_eq!(settlement.points, 0);
+}
