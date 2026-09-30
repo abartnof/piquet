@@ -3,5 +3,6 @@
 
 import { plates } from "./plates.js";
 import { pong } from "./pong.js";
+import { cupball } from "./cupball.js";
 
-export const SCENES = { plates, pong };
+export const SCENES = { plates, pong, cupball };

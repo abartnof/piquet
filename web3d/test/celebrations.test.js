@@ -11,7 +11,7 @@ import { cardGeometry } from "../src/cards.js";
 import { lying } from "../src/kinematics.js";
 import { createCelebrations, pilePoses, PILE } from "../src/celebrate/runner.js";
 import { SCENES } from "../src/celebrate/scenes.js";
-import { lowestBelow } from "../src/celebrate/physics.js";
+import { CARD } from "../src/units.js";
 
 globalThis.window ??= new EventTarget();
 
@@ -57,9 +57,13 @@ function table() {
   return { stage, deck, meshes, hud, said, camera };
 }
 
+// How far a card's lowest corner is above the table, in the world -- a card
+// may be part of something (a cup, a dancer) and scaled.
+const CORNERS = [];
+for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) CORNERS.push(new Vector3((sx * CARD.width) / 2, (sy * CARD.height) / 2, (sz * CARD.thickness) / 2));
 function above(mesh) {
-  mesh.updateMatrix();
-  return mesh.position.y - lowestBelow(mesh.quaternion);
+  mesh.updateWorldMatrix(true, false);
+  return Math.min(...CORNERS.map((c) => c.clone().applyMatrix4(mesh.matrixWorld).y));
 }
 
 test("every celebration has a name", () => {
@@ -104,6 +108,7 @@ for (const name of Object.keys(SCENES)) {
       if (s % 10) continue;
       for (const card of [...run.context.cards]) {
         assert.ok(Number.isFinite(card.position.x + card.position.y + card.position.z), `${name}: NaN at ${s}`);
+        assert.ok(card.parent, `${name}: ${card.userData.code} left the scene`);
         assert.ok(above(card) > -0.1, `${name}: ${card.userData.code} through the table at frame ${s}`);
       }
       assert.ok(Number.isFinite(t.camera.position.length()), `${name}: the camera is lost`);
@@ -139,5 +144,42 @@ test("pong is a game you can finish: first to five, and the result comes", () =>
   assert.ok(result, "the game ended");
   assert.match(result.words, /^(You win|Your opponent wins)$/);
   assert.match(t.said.scores.at(-1), /^You [0-5] · [0-5] Your opponent$/);
+  run.stop();
+});
+
+// A pointer event as a canvas gets one.
+function pointer(kind, x, y) {
+  const e = new Event(kind);
+  Object.assign(e, { clientX: x, clientY: y, pointerId: 1 });
+  return e;
+}
+
+test("cup and ball, swung hard: the ball flies on its string, and nothing goes through the table", () => {
+  const t = table();
+  const run = createCelebrations({ stage: t.stage, deck: t.deck, hud: t.hud, scenes: SCENES, seed: 4 });
+  run.manual();
+  run.play("cupball", { from: t.meshes });
+  run.tick(4500);
+  const canvas = t.stage.renderer.domElement;
+  canvas.dispatchEvent(pointer("pointerdown", 640, 400));
+  const ball = run.context.cards[0];
+  const seen = { low: Infinity, high: -Infinity };
+  for (let s = 0; s < 20 * 60; s++) {
+    // A hand swinging the cup side to side, faster and faster, and jerking up.
+    const x = 640 + Math.sin(s / (20 - Math.min(14, s / 60))) * 420;
+    const y = 400 - (s % 90 < 8 ? 180 : 0);
+    canvas.dispatchEvent(pointer("pointermove", x, y));
+    run.tick(1000 / 60);
+    if (s % 5) continue;
+    ball.updateWorldMatrix(true, false);
+    const at = new Vector3().setFromMatrixPosition(ball.matrixWorld);
+    seen.low = Math.min(seen.low, at.y);
+    seen.high = Math.max(seen.high, at.y);
+    for (const card of run.context.cards) {
+      assert.ok(above(card) > -0.1, `${card.userData.code} through the table at step ${s}`);
+      assert.ok(Number.isFinite(card.position.length()), "NaN");
+    }
+  }
+  assert.ok(seen.high - seen.low > 10, `the ball swung (${seen.low.toFixed(1)} to ${seen.high.toFixed(1)} cm)`);
   run.stop();
 });
