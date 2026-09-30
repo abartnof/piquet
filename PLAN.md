@@ -3,8 +3,8 @@
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
 > holds *where we are and what is left*. Last updated 30 September 2026
-> (Andrew's tutorial in; the engine checked against pagat -- see "Back, 30
-> September" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
+> (Andrew's tutorial in; the engine checked against pagat and Cavendish; the
+> MIT licence -- see "Back, 30 September" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
 > (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
 > (P14); **the golden vectors are complete** (fourteen modules, three Rust
 > port defects found and fixed); **the terminal is a client of the core
@@ -197,16 +197,39 @@ are now tests, `57f8375`) -- **except**:
    Andrew's standing rule says pagat, with Cavendish behind a flag. The
    tutorial's words describe the engine as it is today ("points count in
    round order"); they change with the rule.
-2. **The page never shows elder the talon cards they left -- a defect in
-   the page.** The engine sends them (`talon_seen`) and the opponent uses
-   them; a human elder is never shown them. The layout's rule is that no
-   talon card ever shows a face, so how to show them is a design choice --
-   proposal: click the talon to peek at them in a small fan, as your
-   discards do.
+2. **The page never told elder the talon cards they left -- fixed
+   (`6e95309`, `772ccff`).** The engine knew (`talon_seen`,
+   `watched_them_take`) and the opponent used it. The first proposal, a
+   peek at the talon, was measured before it was built: **in all 144 deals
+   (levels 1-4) where elder left cards, the opponent as younger drew every
+   one**, in the same step as elder's exchange, so they are almost never
+   still there to look at. What the rule gives is knowing which they were and
+   where they went: two protocol events, `looked` and `they_took`, in the
+   game log, and the point's explanation names them ("You left J♠ 8♦; your
+   opponent drew them").
+   **A lead, unvalidated:** the opponent as younger always exchanges the
+   most it may -- 7 cards when elder took 1. pagat: "For younger hand it is
+   more frequently correct not to take the maximum, but still rare." Against
+   an elder who takes five (the norm) that is three, and fine; whether
+   always-the-maximum costs points is unmeasured. Milestone 8's ground.
 3. Known and small: younger's option to expose her untaken cards (TODO 10)
    and carte blanche's choreography (TODO 11) are not modelled; the table
    offers the full call, nothing, or one card short, where the engine (and
    pagat) accept any smaller holding.
+
+**Then, the same day:** the licence is **MIT, © 2026 Andrew Bartnof**
+(`LICENSE`, the crates, web3d's package, the page's Credits). Andrew took the
+recommendations on the rest: pique stays Cavendish's, with **no switch**
+(*"we don't need extra switches, just pick a scoring rule and we'll use
+that"* -- R8); "the first partie" means the tutorial's. The exchange's page
+now waits for the deal to be decided, and the introduction says the pages
+will come by themselves.
+
+**Hypothetical, not owed:** Andrew is designing end-of-partie celebration
+animations (cards celebrating) with Claude on the web. He may ask for a
+staging page -- a partie one trick shy of its end, with an arrow to step
+through animations -- and then for the animations he settles on to be
+integrated. Not started; don't start it unasked.
 
 **The tutorial (TABLE3D P20).** `web3d/tutorial.md` holds the four pages,
 Andrew's words with these corrections, each to what the engine does:
@@ -1035,11 +1058,10 @@ Ordered by how much they are needed, not by size.
 17. ~~**Pique's reckoning order: pagat or Cavendish?**~~ **Decided 30
     September: Cavendish's category order, as the engine already played it;
     no switch.** R8 in `docs/DESIGN.md` §3.7; §3.6 and §5.2 corrected.
-18. **Show elder the talon cards they left.** The rules and the engine allow
-    it and the opponent does it; the page never shows a human elder. A
-    design choice first (proposal: a peek fan on clicking the talon, like
-    your discards), then `layout.js`'s no-face-in-the-talon rule gains its
-    one exception, with its tests.
+18. ~~**Show elder the talon cards they left.**~~ **Done 30 September** as
+    two protocol events and a line in the point's explanation; a talon peek
+    was measured to be useless against this opponent, which always draws
+    them (see "Back, 30 September").
 
 ## Code review findings
 
