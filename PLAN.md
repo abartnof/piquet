@@ -2,9 +2,9 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated 30 September 2026
-> (Andrew's tutorial in; the engine checked against pagat and Cavendish; the
-> MIT licence -- see "Back, 30 September" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
+> holds *where we are and what is left*. Last updated overnight, 30
+> September into 1 October 2026 (all seven celebrations in; TODO 1 measured
+> on whole parties -- see "Resume here (overnight ...)" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
 > (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
 > (P14); **the golden vectors are complete** (fourteen modules, three Rust
 > port defects found and fixed); **the terminal is a client of the core
@@ -155,6 +155,70 @@ should not be, and it is almost always an instance nobody stopped:
     bin/vm --down          # stop it
 
 ## Next action
+
+### Resume here (overnight, 30 September into 1 October -- Andrew asleep)
+
+Andrew, going to bed: *"use your best judgement, so that when i wake up,
+it's all done. you can leave notes about what you did (ie ask for
+forgiveness, not permission) ... when you're done, make sure you're all
+committed on git, and then shut down the linux vm."* Everything below is
+committed and pushed; the VM was shut down from inside at the end.
+
+**To look at first:** `web3d/piquet3d.html?ending` -- play one card, and
+all seven celebrations are one ‹ › away (TABLE3D P21). In a real partie one
+comes at random when it ends, whoever won, with no arrows.
+
+**Done tonight:**
+- **All seven celebrations**, translated from his prototype into the
+  table's norms (no sound, the normal look and card art, real gravity):
+  Plate smash, Card pong, Cup and ball, Disco, The parade, Macarena, Card
+  people. His notes applied as they came: the finale's cards "explode over
+  the screen and then go away"; "Piquet!" clear of its star, and the only
+  word any burst says; pong's paddles clean (flat cards rest 0.02 cm above
+  the table, as in play). The prototype file is deleted as he allowed (in
+  git at `272ff15`).
+- **The tutorial**: pages at each phase's very start (the table held behind
+  them), one button arrangement on every page, pages pop up even if paged
+  to. **The welcome** lost its tagline. **Shadows** measured present at every
+  moment (faint only where cards slide flat).
+- **TODO 1 measured on whole parties**, the small way (below).
+
+**Decided on Andrew's behalf** ("i'll follow your judgement"), each easy to
+reverse:
+1. **Landscape: the long explanation moves to the left column** (a "What it
+   means" card under the score), so only the question and the answers sit
+   under the hand -- his own rule, "long explanations ... on the left side,
+   and shorthand on the bottom". A phone keeps it under the hand.
+2. **Phone: Explain and Hints stay in Settings.** The one row under a
+   phone's hand holds the sort and undo; per-partie choices belong in
+   Settings (his rule: keep the play screen quiet).
+3. **Phone celebrations:** the field widens in portrait; pong's court runs
+   up the screen; the bar gives touch words.
+4. **Faster reload at level 5: not done, on purpose.** It would mean saving
+   and restoring the level-5 opponent's generators (several Mersenne
+   Twisters inside its agents) through the core engine, where a slip would
+   silently change the replayed game -- for a 1-4 s wait that only happens
+   reloading a level-5 partie late on, which already says "Restoring your
+   game...". Say so if you want it anyway.
+
+**TODO 1, measured (`bin/partie-sequential`, `measurements/partie/`).**
+Whole mirrored parties, the settling search against the flat one, both
+with the fitted prior; a sequential design fixed in advance (batches of
+100, O'Brien-Fleming boundaries 4.05/2.86/2.34/2.02), as Andrew asked --
+"if the numbers are conclusive with fewer simulations, you cut the
+simulations short". **Stopped at the second look: +8.26 ± 2.54 settlement
+points a mirrored pair (z 3.25), 200 pairs, about fifty minutes.** Settling
+beat flat in 70 pairs, lost 46, tied 84. Calibrated: a real gain and a
+modest one -- about four points a partie, against settlements that run to
+hundreds; measured in self-play at rung 5 with the prior on both sides.
+**Andrew's call:** make settling (with the prior) the level-5 default? That
+is also the old question of whether to use the prior -- fitted to rung 4's
+discards -- against a person at all.
+
+**For Andrew, in rough order:** play `?ending` and the game, and send notes;
+the level-5 default above; the unvalidated lead that the opponent as
+younger always exchanges the most it may (pagat: rarely right). The earlier
+list below (28 September) is now all answered or decided.
 
 ### Later, 30 September: the celebrations under way (TABLE3D P21)
 
@@ -721,7 +785,11 @@ level 5 late in a partie (the page says "Restoring your game…").
       tricks are yours whatever happens — play them out for you. The end of
       many deals is exactly this, and it is pure clicking.
 - [x] Collapse the narration by deal, the current one open.
-- [ ] Faster reload: record the opponent's moves too, so a reload applies
+- [x] ~~Faster reload~~ -- **decided against, 1 October** (Andrew left it to
+      judgement): it needs the level-5 opponent's generators saved and
+      restored through the core engine, a risk to exact replay, for a
+      1-4 s wait on reloading a late level-5 partie. The original note:
+      record the opponent's moves too, so a reload applies
       them instead of re-deciding them. Needs care — the opponent's generator
       would then not have advanced, so the game would stop being reproducible
       from seed and human actions alone.
@@ -880,7 +948,12 @@ should not have to rediscover them.
 
 Ordered by how much they are needed, not by size.
 
-1. **The partie objective — built, measured, not yet a default.** The search
+1. **The partie objective — built, measured, not yet a default.**
+   **Whole parties, 1 October:** settling beats flat by **+8.26 ± 2.54
+   settlement points a mirrored pair** (z 3.25; both with the prior; a
+   sequential run stopped at 200 pairs -- `measurements/partie/`). Real and
+   modest. Making it the level-5 default is Andrew's call, tied to whether
+   the prior is fair against a person. The history: The search
    now carries both totals to the leaf and settles there
    (`solver::card_settlements`), which is what `docs/DESIGN.md` §6.4a asked
    for. It costs only **1.6× at eight tricks**, far less than the state-space
