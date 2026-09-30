@@ -2,9 +2,9 @@
 
 > Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
 > `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated 28 September 2026
-> (late; the voice unwired, the dialogue boxes in -- see "Back, 28 September"
-> below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
+> holds *where we are and what is left*. Last updated 30 September 2026
+> (Andrew's tutorial in; the engine checked against pagat -- see "Back, 30
+> September" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
 > (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
 > (P14); **the golden vectors are complete** (fourteen modules, three Rust
 > port defects found and fixed); **the terminal is a client of the core
@@ -155,6 +155,71 @@ should not be, and it is almost always an instance nobody stopped:
     bin/vm --down          # stop it
 
 ## Next action
+
+### Back, 30 September: Andrew's tutorial, and the rules checked against pagat
+
+Andrew wrote the tutorial's four pages himself and asked that they be
+*"identical to how this videogame works"*, and then that the engine be
+checked against pagat once more first. Done in that order.
+
+**The engine against pagat, clause by clause** (pagat's page as fetched
+30 September, last updated 1 September 2026). Everything agrees -- pack,
+cut, deal, exchange limits, younger's obligatory card, discards consulted,
+the declarations and their ties, showing, younger declaring after elder's
+lead, repique in category order, trick scoring, cards and capot, the
+rubicon, and the two extra deals then a draw (pagat's worked settlements
+are now tests, `57f8375`) -- **except**:
+
+1. **Pique's reckoning order -- an interpretation, and Andrew's call.**
+   pagat: *"For pique the scores are counted in the order they actually
+   occur."* The engine counts it in Cavendish's Law 67 category order, as it
+   does repique, so younger's won point (entered after elder's lead, but
+   category II) blocks elder's pique. pagat's own repique example -- elder
+   30 in sequences and sets, younger the better point -- denies only the
+   repique, so on pagat elder has a pique there. **Measured: the readings
+   disagree in 127 of 20,000 rung-4 deals (1 in 160), 30 points each.**
+   The engine changed on 22 September (`6899b0e`, a code review calling
+   pagat's reading a bug); no flag, no R-row, and `docs/DESIGN.md` §3.6 and
+   §5.2 still describe pagat's reading -- the design and the code disagree.
+   **Cavendish, read verbatim** (*Laws of Piquet*, 1885, archive.org
+   `lawsofpiquetadop00caveuoft`), sides with the engine. Law 67: "The
+   scores, whether obtained by the elder or younger hand, reckon in the
+   following order: I. Carte blanche. II. Point. III. Sequences. IV.
+   Quatorzes and trios. V. Points made in play. VI. The cards." Law 69: "A
+   pique is obtained on the score of thirty being made by the elder hand, in
+   hand and play, before his adversary has reckoned anything that deal." So
+   pagat, which gives its rules as "those published by Cavendish in 1882",
+   departs from Cavendish on exactly this point. A genuine source conflict:
+   pagat's words against the law it cites.
+   Andrew's standing rule says pagat, with Cavendish behind a flag. The
+   tutorial's words describe the engine as it is today ("points count in
+   round order"); they change with the rule.
+2. **The page never shows elder the talon cards they left -- a defect in
+   the page.** The engine sends them (`talon_seen`) and the opponent uses
+   them; a human elder is never shown them. The layout's rule is that no
+   talon card ever shows a face, so how to show them is a design choice --
+   proposal: click the talon to peek at them in a small fan, as your
+   discards do.
+3. Known and small: younger's option to expose her untaken cards (TODO 10)
+   and carte blanche's choreography (TODO 11) are not modelled; the table
+   offers the full call, nothing, or one card short, where the engine (and
+   pagat) accept any smaller holding.
+
+**The tutorial (TABLE3D P20).** `web3d/tutorial.md` holds the four pages,
+Andrew's words with these corrections, each to what the engine does:
+leading scores for *any* card (his text had tens and higher -- piquet au
+cent's rule); the last trick's extra point (missing); younger *must* take
+at least one card (his text allowed none); only elder may peek, at the cards
+they left (his text let either); repique needs the opponent not to have
+scored (missing); the settlement is the difference plus 100, or both totals
+plus 100 when the loser misses the rubicon (his text: "extra points for a
+big margin"); lying is one card fewer or nothing (what the table offers);
+ties score for neither; a line on the order points count in. Typos, "stock"
+made "talon" as the table says it, and elder and younger defined where
+first used. Andrew then asked for an X at the top right, popups only in the
+tutorial's partie, and a Settings switch, off by default. "The first
+partie" was read as the partie begun from **Tutorial**, not the first
+**New game** -- **for Andrew to confirm.**
 
 ### Resume here (closed up for the night, 28 September)
 
@@ -950,7 +1015,8 @@ Ordered by how much they are needed, not by size.
     thousands (1,090 seen in 400 parties and still climbing). Also owed if
     it returns: "Two cards." for a two-card point was never recorded.
 
-15. **Tutorial mode — built, the light way** (`docs/TABLE3D.md` P19). Andrew
+15. **Tutorial mode — built, the light way** (`docs/TABLE3D.md` P19; Andrew's
+    own four pages replaced the first words on 30 September, P20). Andrew
     chose, instead of a coach that flags moves: *"an introduction (concise,
     bullet points- nothing too wordy), and an introduction before each phase
     of play ... hints+explanations are on by default"*, with a welcome
@@ -962,6 +1028,20 @@ Ordered by how much they are needed, not by size.
     line of the declarations in a box by its speaker's hand, the tail
     pointing to them (`docs/TABLE3D.md` P17). They run silently now,
     timed as the voice would have been; the score waits for them.
+
+17. **Pique's reckoning order: pagat or Cavendish? Andrew's call.** pagat
+    counts a pique in the order points actually occur; the engine (since
+    `6899b0e`) in Law 67's category order. 1 deal in 160 at rung 4, 30
+    points each ("Back, 30 September"). If pagat: the Python oracle, the Rust,
+    the vectors, `solver::piqued_after`'s live-pique search and the
+    tutorial's last Bonuses line change together, Cavendish kept behind a
+    flag with an R-row in `docs/DESIGN.md` §3.7; either way §3.6 and §5.2
+    are brought into line with the code.
+18. **Show elder the talon cards they left.** The rules and the engine allow
+    it and the opponent does it; the page never shows a human elder. A
+    design choice first (proposal: a peek fan on clicking the talon, like
+    your discards), then `layout.js`'s no-face-in-the-talon rule gains its
+    one exception, with its tests.
 
 ## Code review findings
 
