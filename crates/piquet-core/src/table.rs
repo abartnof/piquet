@@ -163,6 +163,17 @@ pub enum Event {
         discarded: Hand,
         drew: Hand,
     },
+    /// As elder, having taken fewer than five: the rest of your five, which
+    /// the rules let you look at (pagat: "If elder exchanges fewer than five
+    /// cards he can look at the remainder of the five").
+    Looked {
+        cards: Hand,
+    },
+    /// Of the cards you left, those your opponent drew. They draw from the top,
+    /// so yours go first -- and whatever they drew they are holding.
+    TheyTook {
+        cards: Hand,
+    },
     /// Declared aloud. `said` is what was said, never a suit.
     Called {
         who: Who,
@@ -307,6 +318,14 @@ impl Event {
             Event::Drew { discarded, drew } => {
                 format!("You threw {} and drew {}.", shown(*discarded), shown(*drew))
             }
+            Event::Looked { cards } => {
+                format!("You look at the cards you left: {}.", shown(*cards))
+            }
+            Event::TheyTook { cards } => format!(
+                "{} drew {} from the cards you left.",
+                capital(THEM),
+                shown(*cards)
+            ),
             Event::Called { who, said, .. } => {
                 format!("{}: \u{201c}{said}.\u{201d}", capital(name(*who)))
             }
@@ -1028,9 +1047,22 @@ impl Table {
                 let count = before.talon_remaining - after.talon_remaining;
                 self.events.push(Event::Exchanged { who: actor, count });
                 if actor == Who::You {
+                    let drew = after.hand.without(before.hand);
                     self.events.push(Event::Drew {
                         discarded: after.my_discards.without(before.my_discards),
-                        drew: after.hand.without(before.hand),
+                        drew,
+                    });
+                    // As elder, the rest of your five is yours to look at.
+                    if phase == Phase::ElderExchange {
+                        let five = Hand::of(&after.talon_seen).expect("five distinct cards");
+                        let left = five.without(drew);
+                        if !left.is_empty() {
+                            self.events.push(Event::Looked { cards: left });
+                        }
+                    }
+                } else if phase == Phase::YoungerExchange && !after.watched_them_take.is_empty() {
+                    self.events.push(Event::TheyTook {
+                        cards: after.watched_them_take,
                     });
                 }
             }

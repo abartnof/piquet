@@ -793,3 +793,98 @@ fn a_decision_says_whether_the_tie_break_was_asked_for() {
         );
     }
 }
+
+/// pagat: "If elder exchanges fewer than five cards he can look at the
+/// remainder of the five." Elder is told which cards those are, and then
+/// which of them the opponent drew -- they draw from the top, so the ones
+/// left go first. Measured on 30 September: the opponent, as younger, takes
+/// every card it may, so they almost never stay in the talon.
+#[test]
+fn elder_is_told_the_cards_they_left_and_which_the_opponent_drew() {
+    use piquet_core::cards::Card;
+    let (mut looked, mut took) = (0, 0);
+    for seed in 1..=15u32 {
+        let mut table = Table::new(3, seed);
+        through_the_cut(&mut table);
+        let mut deal = 0;
+        while table.prompt() != Prompt::Over {
+            let elder_exchange =
+                matches!(table.prompt(), Prompt::Exchange { .. }) && table.you() == Player::Elder;
+            if !elder_exchange {
+                let action = dull(&table).unwrap();
+                table.act(action).unwrap();
+                continue;
+            }
+            deal += 1;
+            let take = 1 + (seed as usize + deal) % 5; // 1 to 5
+            let throw: Vec<Card> = table.view().hand.cards().take(take).collect();
+            let five = table.deal().talon[..5].to_vec();
+            let from = table.events().len();
+            table
+                .act(Action::Exchange(Hand::of(&throw).unwrap()))
+                .unwrap();
+            let new = &table.events()[from..];
+            let looked_at = new.iter().find_map(|e| match e {
+                Event::Looked { cards } => Some(*cards),
+                _ => None,
+            });
+            let told = new.iter().find_map(|e| match e {
+                Event::TheyTook { cards } => Some(*cards),
+                _ => None,
+            });
+            if take == 5 {
+                assert_eq!((looked_at, told), (None, None), "nothing left to look at");
+                continue;
+            }
+            assert_eq!(looked_at, Some(Hand::of(&five[take..]).unwrap()));
+            looked += 1;
+            let theirs = table.deal().discards[1].len() as usize;
+            let drawn: Vec<Card> = five[take..].iter().take(theirs).copied().collect();
+            assert_eq!(
+                told,
+                Some(Hand::of(&drawn).unwrap()),
+                "they draw yours first"
+            );
+            for card in &drawn {
+                assert!(
+                    table.deal().hands[1].holds(*card),
+                    "{} is in their hand",
+                    card.code()
+                );
+            }
+            took += 1;
+            // In the order it happened: your draw, your look, their exchange, what they took.
+            let at = |f: &dyn Fn(&Event) -> bool| new.iter().position(f).unwrap();
+            let order = [
+                at(&|e| matches!(e, Event::Drew { .. })),
+                at(&|e| matches!(e, Event::Looked { .. })),
+                at(&|e| matches!(e, Event::Exchanged { who: Who::Them, .. })),
+                at(&|e| matches!(e, Event::TheyTook { .. })),
+            ];
+            assert!(order.windows(2).all(|w| w[0] < w[1]), "{order:?}");
+        }
+    }
+    assert!(looked >= 10 && took >= 10, "looked {looked}, took {took}");
+}
+
+/// Younger sees none of elder's talon cards, and is told nothing of them.
+#[test]
+fn younger_is_told_nothing_of_elders_talon_cards() {
+    for seed in 1..=10u32 {
+        let mut table = Table::new(2, seed);
+        through_the_cut(&mut table);
+        let mut younger_events = Vec::new();
+        while let Some(action) = dull(&table) {
+            let from = table.events().len();
+            let younger = table.you() == Player::Younger;
+            table.act(action).unwrap();
+            if younger {
+                younger_events.extend(table.events()[from..].iter().cloned());
+            }
+        }
+        assert!(!younger_events.is_empty());
+        assert!(younger_events
+            .iter()
+            .all(|e| !matches!(e, Event::Looked { .. } | Event::TheyTook { .. })));
+    }
+}

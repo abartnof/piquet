@@ -387,6 +387,16 @@ fn event(event: &Event, deal: usize) -> String {
             fields.push(("drew", hand(*drew)));
             "drew"
         }
+        Event::Looked { cards } => {
+            fields.push(("who", who(Who::You)));
+            fields.push(("cards", hand(*cards)));
+            "looked"
+        }
+        Event::TheyTook { cards } => {
+            fields.push(("who", who(Who::Them)));
+            fields.push(("cards", hand(*cards)));
+            "they_took"
+        }
         Event::Called {
             who: w,
             category: c,

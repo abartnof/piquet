@@ -189,6 +189,8 @@ fields by kind for a client that wants to animate rather than print:
 | `deal_begins` | `elder`, `you_total`, `them_total`, `rubicon_permille` |
 | `exchanged` | `who`, `count` |
 | `drew` | `discarded`, `drew` (yours only) |
+| `looked` | `who` (you), `cards` — as elder, having taken fewer than five, the rest of your five, which the rules let you look at (yours only) |
+| `they_took` | `who` (them), `cards` — of the cards you left, those your opponent drew; they draw yours first, and are holding them (yours only) |
 | `called` | `who`, `category`, `said` — what was said aloud, never a suit |
 | `decided` | `category`, `winner` (`null` if equal), `asked` (whether elder was asked for the tie-break -- the point's value, a sequence's top card, a set's rank -- which happens only when both hold the same shape) |
 | `showed` | `who`, `what` — a combination the opponent had to expose |
