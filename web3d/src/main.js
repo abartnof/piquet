@@ -17,6 +17,9 @@ import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
 import { createVoice } from "./voice.js";
 import { PAGE_KEYS, pageDue, pageFor, parseTutorial } from "./tutorial.js";
+import { createCelebrations } from "./celebrate/runner.js";
+import { createHud } from "./celebrate/hud.js";
+import { SCENES } from "./celebrate/scenes.js";
 // Andrew's words, as he wrote them: esbuild inlines the file as text.
 import TUTORIAL_TEXT from "../tutorial.md";
 import { createScene } from "./scene.js";
@@ -189,9 +192,36 @@ async function main() {
     begin(3, randomSeed());
   }
 
+  // ?ending -- the celebrations' staging (Andrew: "the dummy ending where
+  // the game is basically over, and i get to scroll through the different
+  // endings"): a partie played by a dull script into its last deal, until
+  // you hold two cards. Play one; the last trick plays itself; the partie
+  // ends, and the celebration comes, with arrows to step through them all.
+  // Nothing of it is kept: your own partie is left as it was.
+  const STAGING = params.has("ending");
+  if (STAGING) {
+    begin(level || 3, Number(seed ?? 31));
+    engine.send("set play_forced on");
+    const dull = (s) => {
+      const p = s.prompt;
+      if (p.kind === "cut") return "cut 16";
+      if (p.kind === "choose_dealer") return "dealer you";
+      if (p.kind === "exchange") return `exchange ${s.hand.slice(-Math.min(p.limit, 3)).join(" ")}`;
+      if (p.kind === "declare") return "declare 0";
+      if (p.kind === "play") return `play ${p.legal[0]}`;
+      return "next";
+    };
+    for (let n = 0; n < 5000; n++) {
+      const s = engine.state();
+      if (s.prompt.kind === "over" || (s.prompt.kind === "play" && s.deal >= 6 && s.hand.length <= 2)) break;
+      engine.send(dull(s));
+    }
+  }
+
   // After every accepted move, before it is animated: choices clear, and what
   // the talon gave you stands proud until the play begins.
   function settled(prev, next) {
+    if (next.prompt.kind === "over" && prev.prompt.kind !== "over" && (!TESTING || STAGING)) partieEnded();
     ui.selected = [];
     ui.lifted = [];
     ui.pinned = null;
@@ -290,6 +320,7 @@ async function main() {
   };
 
   function keep() {
+    if (STAGING) return; // the staging's partie is not yours
     const s = engine.state();
     store(GAME_STORE, { level: s.level, seed: s.seed, record: s.record });
     const url = new URL(window.location.href);
@@ -350,6 +381,30 @@ async function main() {
       setTimeout(() => (button.textContent = "Copy game record"), 2000);
     },
   });
+
+  // ---- the celebrations -------------------------------------------------------
+  //
+  // At the end of a partie, one of them at random (Andrew: "in the real
+  // game, when the game ends, the user will just see one of the ending
+  // games/animations, randomly chosen"); when staging, all of them in turn.
+  const hud = createHud(document.getElementById("overlay"), stage.camera, {
+    staging: STAGING,
+    onStep: (d) => {
+      const names = celebrations.names;
+      const i = names.indexOf(celebrations.playing());
+      celebrations.play(names[(i + d + names.length) % names.length]);
+    },
+    onClose: () => celebrations.stop(),
+  });
+  const celebrations = createCelebrations({ stage, deck, hud, scenes: SCENES });
+  function celebrate(name = STAGING ? celebrations.names[0] : celebrations.random()) {
+    if (celebrations.playing()) return;
+    celebrations.play(name, { from: director.meshes });
+  }
+  // Once the partie's last cards have landed and its result has been seen.
+  function partieEnded() {
+    director.timeline.idle().then(() => setTimeout(celebrate, STAGING ? 900 : 2200));
+  }
 
   function render() {
     const f = focused();
@@ -531,6 +586,7 @@ async function main() {
     return null;
   }
   canvas.addEventListener("pointermove", (e) => {
+    if (celebrations.playing()) return;
     if (director.busy()) return;
     const hit = director.pick(e.clientX, e.clientY);
     const t = target(hit);
@@ -540,6 +596,7 @@ async function main() {
   });
   canvas.addEventListener("pointerleave", () => director.hover(null));
   canvas.addEventListener("click", (e) => {
+    if (celebrations.playing()) return;
     if (director.busy()) {
       director.skip(); // a click while the cards move: finish the move
       render();
@@ -596,6 +653,11 @@ async function main() {
   }
 
   document.addEventListener("keydown", (e) => {
+    // A celebration has the keys, all but Esc, which ends it.
+    if (celebrations.playing()) {
+      if (e.key === "Escape" && !document.querySelector("md-dialog[open]")) celebrations.stop();
+      return;
+    }
     if (["INPUT", "SELECT", "TEXTAREA", "MD-OUTLINED-SELECT"].includes(e.target.tagName) || e.altKey) return;
     if (document.querySelector("md-dialog[open]")) return;
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
@@ -649,7 +711,7 @@ async function main() {
   document.getElementById("loading").hidden = true;
 
   // On opening: the tutorial, a new game, or the partie under way.
-  if (!TESTING || params.has("welcome")) {
+  if ((!TESTING || params.has("welcome")) && !STAGING) {
     const s = engine.state();
     const underWay = s.prompt.kind !== "over" && s.record.some((r) => !r.startsWith("*"));
     overlay.welcome(underWay, (choice) => {
@@ -675,6 +737,15 @@ async function main() {
     // Whether the table is held still at a gate (a tutorial page at the
     // start of a phase).
     held: () => director.held(),
+    // The celebrations: start one, which is playing, their names, and a
+    // hand-driven clock for stills.
+    celebrate: (name) => celebrate(name),
+    celebration: () => celebrations.playing(),
+    celebrations: () => celebrations.names,
+    celebrationTick: (ms) => {
+      celebrations.manual(true);
+      celebrations.tick(ms);
+    },
     // The tutorial, if this partie is one.
     tutorial: () => ({ ...tutorial, on: inTutorial() }),
     // What the cards' shadows add to the frame as it stands: drawn with them

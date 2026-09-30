@@ -1025,6 +1025,26 @@ throughout.
       tutorial page never opens over another dialog: turned on in Settings,
       it waits for Settings to close.
 
+- [ ] **P21 — The celebrations (30 September, under way).** Andrew designed
+      seven end-of-partie celebrations with Claude on the web
+      (`web3d/reference/celebrations-prototype.html`, kept for their ideas)
+      and asked for them translated: *"just use these as ideas ... no sound,
+      use the normal look, use our normal card art, use normal 3js settings
+      ... when the game ends, the user will just see one of the ending
+      games/animations, randomly chosen."* `web3d/src/celebrate/`: the
+      runner (its own 32 cards, taking over the table's with the same faces,
+      tossed into a pile with the table's own motion; the camera, fog and
+      framing handed back after), real-gravity physics in centimetres
+      (981 cm/s², a flung card never through the table -- tested), props in
+      toon and ink in the page's Material colours, and the words over the
+      scene (a "PIQUET!" burst where things land, a score chip, a result
+      card, a bar). **`?ending`** stages it: a partie played by a dull script
+      into its last deal, two cards in your hand -- play one, the partie ends,
+      the celebration comes; ‹ › step through them, ✕ gives the table back.
+      In a real partie one comes at random, a moment after the result.
+      Done: **Plate smash**. To come: pong, cup and ball, disco, the parade,
+      the macarena, the card people.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for

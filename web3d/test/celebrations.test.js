@@ -1,0 +1,129 @@
+// The celebrations, run without a browser: the real scenes on real three.js
+// objects, a stand-in for the page's words, the clock driven by hand. What a
+// test can hold them to: every card starts in the pile and never passes
+// through the table; nothing becomes NaN; a game can be played to its end;
+// and when the celebration closes the table is exactly as it was.
+
+import test from "node:test";
+import assert from "node:assert/strict";
+import { Mesh, MeshBasicMaterial, PerspectiveCamera, Scene, Vector3 } from "three";
+import { cardGeometry } from "../src/cards.js";
+import { lying } from "../src/kinematics.js";
+import { createCelebrations, pilePoses, PILE } from "../src/celebrate/runner.js";
+import { SCENES } from "../src/celebrate/scenes.js";
+import { lowestBelow } from "../src/celebrate/physics.js";
+
+globalThis.window ??= new EventTarget();
+
+function table() {
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(40, 1.6, 20, 400);
+  camera.position.set(0, 55, 60);
+  camera.lookAt(0, 0, 0);
+  const canvas = new EventTarget();
+  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1280, height: 800 });
+  canvas.setPointerCapture = () => {};
+  const stage = { scene, camera, renderer: { domElement: canvas }, registerInk() {}, render() {}, portrait: false };
+  const geometry = cardGeometry();
+  const deck = {
+    card(code = null) {
+      const mesh = new Mesh(geometry, new MeshBasicMaterial());
+      mesh.userData.code = code;
+      scene.add(mesh);
+      return mesh;
+    },
+  };
+  // The table as a partie leaves it: tricks face up in rows, the rest down.
+  const codes = [];
+  for (const s of "SHDC") for (const r of "789TJQKA") codes.push(r + s);
+  const meshes = codes.map((code, i) => {
+    const mesh = deck.card(i < 24 ? code : null);
+    const p = lying({ x: -30 + (i % 12) * 5, z: i < 12 ? -17 : i < 24 ? -5 : 10, height: 0.02, faceUp: i < 24 });
+    mesh.position.copy(p.position);
+    mesh.quaternion.copy(p.quaternion);
+    return mesh;
+  });
+  const said = { bursts: 0, messages: [], scores: [], titles: [] };
+  const hud = {
+    open() {},
+    close() {},
+    clear() {},
+    title: (words) => said.titles.push(words),
+    how() {},
+    score: (words) => words && said.scores.push(words),
+    message: (words, action) => words && said.messages.push({ words, action }),
+    burst: () => (said.bursts += 1),
+  };
+  return { stage, deck, meshes, hud, said, camera };
+}
+
+function above(mesh) {
+  mesh.updateMatrix();
+  return mesh.position.y - lowestBelow(mesh.quaternion);
+}
+
+test("every celebration has a name", () => {
+  for (const [name, make] of Object.entries(SCENES)) assert.ok(make.title, name);
+  assert.ok(Object.keys(SCENES).length >= 1);
+});
+
+test("the cards gather from the table into the pile, keeping their faces", () => {
+  const t = table();
+  const run = createCelebrations({ stage: t.stage, deck: t.deck, hud: t.hud, scenes: SCENES, seed: 3 });
+  run.manual();
+  const shown = new Map(t.meshes.filter((m) => m.userData.code).map((m) => [m.userData.code, m.position.clone()]));
+  run.play(run.names[0], { from: t.meshes });
+  assert.ok(t.meshes.every((m) => !m.visible), "the table's own cards are put away");
+  // At the handover, each face shown on the table is where it was.
+  for (const card of run.context.cards) {
+    const was = shown.get(card.userData.code);
+    if (was) assert.ok(card.position.distanceTo(was) < 1e-6, `${card.userData.code} moved at the handover`);
+  }
+  for (let ms = 0; ms < 1300; ms += 1000 / 60) {
+    run.tick(1000 / 60);
+    for (const card of run.context.cards) assert.ok(above(card) > -0.05, "through the table while gathering");
+  }
+  const pile = pilePoses();
+  run.context.cards.forEach((card, k) => {
+    assert.ok(card.position.distanceTo(pile[k].position) < 0.5 || card.position.y > 0.5, `card ${k} is in the pile`);
+  });
+  assert.ok(Math.hypot(PILE.x, PILE.z) < 20, "the pile is in the middle of the table");
+  run.stop();
+});
+
+for (const name of Object.keys(SCENES)) {
+  test(`${name}: plays without a card through the table, and gives the table back`, () => {
+    const t = table();
+    const eye = t.camera.position.clone();
+    const children = t.stage.scene.children.length;
+    const run = createCelebrations({ stage: t.stage, deck: t.deck, hud: t.hud, scenes: SCENES, seed: 11 });
+    run.manual();
+    run.play(name, { from: t.meshes });
+    for (let s = 0; s < 40 * 60; s++) {
+      run.tick(1000 / 60);
+      if (s % 10) continue;
+      for (const card of [...run.context.cards]) {
+        assert.ok(Number.isFinite(card.position.x + card.position.y + card.position.z), `${name}: NaN at ${s}`);
+        assert.ok(above(card) > -0.1, `${name}: ${card.userData.code} through the table at frame ${s}`);
+      }
+      assert.ok(Number.isFinite(t.camera.position.length()), `${name}: the camera is lost`);
+    }
+    run.stop();
+    assert.equal(t.stage.scene.children.length, children, "everything it added is gone");
+    assert.ok(t.meshes.every((m) => m.visible), "the table's cards are back");
+    assert.ok(t.camera.position.distanceTo(eye) < 1e-9, "the camera is back");
+  });
+}
+
+test("plate smash is a game you can finish: plates smash, and the result comes", () => {
+  const t = table();
+  const run = createCelebrations({ stage: t.stage, deck: t.deck, hud: t.hud, scenes: SCENES, seed: 5 });
+  run.manual();
+  run.play("plates", { from: t.meshes });
+  run.tick(60 * 1000);
+  assert.ok(t.said.bursts >= 10, `PIQUET! where plates land (${t.said.bursts})`);
+  const result = t.said.messages.at(-1);
+  assert.match(result.words, /^Deflected \d+ of 26$/);
+  assert.equal(result.action.label, "Play again");
+  run.stop();
+});

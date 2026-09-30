@@ -156,6 +156,17 @@ should not be, and it is almost always an instance nobody stopped:
 
 ## Next action
 
+### Later, 30 September: the celebrations under way (TABLE3D P21)
+
+Andrew's seven celebration ideas (from a Claude web chat) are being
+translated into the table's norms -- no sound, the normal look and card art,
+real gravity. The machinery, the `?ending` staging and **Plate smash** are
+in; the other six follow, each committed as it lands. Also that evening:
+the tutorial pages now come at each phase's very start (the table held
+behind them), one button arrangement on every page, and shadows measured
+present throughout (faint only where cards slide flat -- lifting slides
+higher is Andrew's call).
+
 ### Back, 30 September: Andrew's tutorial, and the rules checked against pagat
 
 Andrew wrote the tutorial's four pages himself and asked that they be

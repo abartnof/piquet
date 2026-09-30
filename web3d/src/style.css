@@ -1560,3 +1560,132 @@ kbd {
 .tip.under.shown {
   transform: translate(-50%, 0) scale(1);
 }
+
+/* ---- the celebrations -----------------------------------------------------------
+   At the end of a partie the table's panels step aside and the cards
+   celebrate; over them, bursts where things land, a score, a result, and a
+   bar with the scene's name and the way back. */
+body.celebrating :is(#info, #controls, #afloat, #narration) {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 280ms var(--ease-out), visibility 0s linear 280ms;
+}
+.celebrate {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.celebrate[hidden],
+.celebrate [hidden] {
+  display: none;
+}
+.celebrate-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.celebrate-burst {
+  position: absolute;
+  width: calc(var(--size, 1) * 150px);
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%) rotate(var(--turn, 0deg));
+  animation: burst 1.3s var(--ease-in) forwards;
+}
+.celebrate-burst > * {
+  grid-area: 1 / 1;
+}
+.celebrate-burst svg {
+  width: 100%;
+  filter: drop-shadow(0 3px 4px rgb(0 0 0 / 0.18));
+}
+.celebrate-burst span {
+  /* Above the star: its drop shadow is a filter, which paints over plain
+     content unless the word is lifted too. */
+  position: relative;
+  z-index: 1;
+  font: 800 calc(var(--size, 1) * 25px) / 1 var(--font);
+  letter-spacing: 0.02em;
+  color: var(--md-sys-color-on-surface);
+}
+@keyframes burst {
+  0% {
+    scale: 0.2;
+    opacity: 0;
+  }
+  14% {
+    scale: 1.15;
+    opacity: 1;
+  }
+  28% {
+    scale: 1;
+  }
+  78% {
+    opacity: 1;
+  }
+  100% {
+    scale: 1.06;
+    opacity: 0;
+  }
+}
+.celebrate-score {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  translate: -50% 0;
+  padding: 8px 18px;
+  border-radius: 18px;
+  font: 600 15px / 1.2 var(--font);
+  color: var(--md-sys-color-on-surface);
+}
+.celebrate-message {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  translate: -50% -50%;
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  padding: 22px 30px;
+  border-radius: 28px;
+  pointer-events: auto;
+  animation: pop-in 420ms var(--ease-in);
+}
+.celebrate-result {
+  font: 700 24px / 1.2 var(--font);
+  color: var(--md-sys-color-on-surface);
+}
+.celebrate-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 28px;
+  max-width: calc(100vw - 32px);
+  pointer-events: auto;
+}
+.celebrate-words {
+  display: grid;
+  min-width: 0;
+  padding: 0 12px;
+  text-align: center;
+}
+.celebrate-name {
+  font: 600 15px / 1.3 var(--font);
+  color: var(--md-sys-color-on-surface);
+}
+.celebrate-count {
+  font-weight: 400;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.celebrate-how {
+  font-size: 12.5px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.celebrate-how:empty {
+  display: none;
+}

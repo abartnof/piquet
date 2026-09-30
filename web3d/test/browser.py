@@ -500,6 +500,40 @@ def main() -> int:
             failures.append(f"console errors in the younger tutorial: {yng.errors}")
         yng.context.close()
 
+        # The celebrations' staging (Andrew: "the dummy ending where the game
+        # is basically over, and i get to scroll through the different
+        # endings"): two cards left in the last deal; play one, the partie
+        # ends, a celebration comes; the arrows step; the X gives the table
+        # back.
+        end = open_page(browser, "test&ending")
+        s = state(end)
+        if not (s["deal"] >= 6 and s["prompt"]["kind"] == "play" and len(s["hand"]) == 2):
+            failures.append(f"the staging did not open on the last deal's last two cards: deal {s['deal']}, {s['prompt']['kind']}, {s['hand']}")
+        end.evaluate(f"window.piquet3d.send('play {s['prompt']['legal'][0]}')")
+        end.wait_for_function("window.piquet3d.celebration() !== null", timeout=15_000)
+        names = end.evaluate("window.piquet3d.celebrations()")
+        first = end.evaluate("window.piquet3d.celebration()")
+        end.evaluate("window.piquet3d.celebrationTick(1500)")
+        shot(end, "10-celebration")
+        if not end.locator(".celebrate-bar").is_visible() or end.locator("#controls").is_visible():
+            failures.append("a celebration should have its bar, and the table's controls stepped aside")
+        stepped = []
+        for _ in names:
+            end.locator(".celebrate-bar .celebrate-forward").click()
+            end.wait_for_timeout(300)
+            end.evaluate("window.piquet3d.celebrationTick(2500)")
+            stepped.append(end.evaluate("window.piquet3d.celebration()"))
+        if first != names[0] or stepped[-1] != names[0] or sorted(set(stepped)) != sorted(names):
+            failures.append(f"the arrows did not step through every celebration: {first}, then {stepped}")
+        end.locator(".celebrate-bar .celebrate-close").click()
+        end.wait_for_timeout(500)
+        if end.evaluate("window.piquet3d.celebration()") is not None or end.locator(".celebrate").is_visible():
+            failures.append("the X did not give the table back")
+        check_drawn(end, failures, "after a celebration")
+        if end.errors:
+            failures.append(f"console errors in the celebrations: {end.errors}")
+        end.context.close()
+
         # No sound of any kind (Andrew: "i don't want the html to have any
         # audio"): no recordings in the page, no audio made, no speech -- but
         # the declarations still come as a dialogue, in boxes.
