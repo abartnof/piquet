@@ -25,8 +25,8 @@ download it and open it from disk.
 
 You play a partie of six deals against your opponent, settled by the rubicon.
 There are five levels of opponent, from one that "plays their highest card and
-hopes" to one that "reads the endgame exactly". Hints, explanations and undo
-are on by default, and each can be turned off.
+hopes" to one that "reads the endgame exactly". Explanations, hints and undo
+can each be switched on or off.
 
 - **The rules engine** is written in Rust (`crates/piquet-core`) and compiled to
   WebAssembly inside the page. It deals, scores and plays your opponent, whose
