@@ -1,4 +1,4 @@
-// What is said at the table, sorted by who said it (Andrew: "we speak a LOT
+// What is said at the table, sorted by who said it (the user: "we speak a LOT
 // in piquet- those things we say during gameplay are a part of the game.
 // they shouldn't be hidden away").
 //
@@ -18,7 +18,7 @@ const NAME = { point: "Point", sequences: "Sequences", sets: "Sets", carte_blanc
 
 const RUBICON = 100;
 
-// The rare big moments, which the dialogue box celebrates (Andrew: like a
+// The rare big moments, which the dialogue box celebrates (the user: like a
 // three-pointer's graphic in a basketball broadcast's score box -- "for
 // special events (not for every event)"). Everything else is said quietly.
 export function flairOf(e) {

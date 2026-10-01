@@ -1,6 +1,6 @@
 // What the celebrations build with, in the table's own look: toon shading in
 // flat bands, the ink line, and the page's Material colours -- bright and
-// clean, never the prototype's dark room (Andrew: "use the normal look").
+// clean, never the prototype's dark room (the user: "use the normal look").
 
 import { BufferAttribute, Color, DynamicDrawUsage, InstancedMesh, Mesh, MeshToonMaterial, Object3D } from "three";
 import { INK, inkMaterial, toonRamp } from "../materials.js";

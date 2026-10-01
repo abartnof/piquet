@@ -8,7 +8,7 @@ bundles web3d/src with three.js and Material Web through esbuild, and inlines
 the engine, the bundle and the stylesheet into web3d/src/index.html. The page
 needs no server and no network: open it from disk and play.
 
-It prints what every part weighs. Over 5 MB it warns rather than fails: Andrew
+It prints what every part weighs. Over 5 MB it warns rather than fails: the user
 set that figure as a guideline for modesty ("i want this to be rather modest
 and easy to use, but it's not a HARD limit"), so the size is weighed against
 what the bytes buy, not treated as a wall.
@@ -111,7 +111,7 @@ def voices(kind: str) -> str:
     (docs/VOICE.md, docs/PHRASES.md). Empty if none have been made.
 
     With `none`, the default, no sound at all: only the words of the
-    phrases, for the declarations' dialogue boxes (Andrew: "i don't want the
+    phrases, for the declarations' dialogue boxes (the user: "i don't want the
     html to have any audio")."""
     out = {}
     if kind == "none":
@@ -144,7 +144,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Build the 3D table's single-file page.")
     parser.add_argument("--audio", choices=["none", "opus", "mp3"], default="none",
                         help="no sound, only the phrases' words for the dialogue boxes (the default: "
-                             "Andrew, 'i don't want the html to have any audio'); or the voice's "
+                             "the user, 'i don't want the html to have any audio'); or the voice's "
                              "clips as Ogg Opus or MP3")
     parser.add_argument("--art", choices=["webp", "svg"], default="webp",
                         help="ship the card art rasterised (webp, the default) or as vectors (svg), "

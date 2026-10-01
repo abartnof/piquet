@@ -127,7 +127,7 @@ export function layDown(from, to, { clearance, ease = minimumJerk, turnBy = 0.85
   });
 }
 
-// A card played from a held hand. Andrew, watching the first build: "there's
+// A card played from a held hand. The user, watching the first build: "there's
 // sort of a sharp tug pulling the card from the deck, and then it's placed on
 // the table". So two beats: the fingers snap it out along its own length,
 // clear of its neighbours and still at the hand's angle -- fast from the
@@ -150,7 +150,7 @@ export function pull(from, to, { tug = 0.6 * CARD.height, tugShare = 0.3, overla
   };
 }
 
-// A card tossed onto the table. Andrew: "moving cards should start with
+// A card tossed onto the table. The user: "moving cards should start with
 // strong jerks, then end with gravity-like acceleration. that means a lot of
 // motion-easing." So it is thrown, not guided: it leaves at full speed,
 // rises and falls on a parabola -- a cartoon's gravity, strong enough that
@@ -211,7 +211,7 @@ export function rise(from, to) {
 }
 
 // A held card bobbed up out of its hand along its own length and back --
-// what a player's hand does as they call a holding (Andrew: "the cards
+// what a player's hand does as they call a holding (the user: "the cards
 // should rise from the deck a bit"). Flicked up, held a moment, and let
 // fall back into place, faster and faster.
 export function bob(held, lift, { riseShare = 0.28, holdShare = 0.4 } = {}) {
@@ -243,7 +243,7 @@ export function pickUp(from, to, { toward, lift = (20 * Math.PI) / 180, liftShar
       : carry((t - liftShare) / (1 - liftShare));
 }
 
-// Turning a card over on the table (Andrew: "one side must be constrained by
+// Turning a card over on the table (the user: "one side must be constrained by
 // the table"). It turns about its edge lying furthest in `toward` and ends one
 // width over, the other side up. A flip is a pile of one; see flipPile.
 export function flip(from, options = {}) {
@@ -281,7 +281,7 @@ export function flipPile(poses, { toward, riseShare = 1 / 1.6, crest = 0.3 } = {
 // dead stop. It rides `lift` above the table at the middle of its way and
 // settles onto its place, so it passes over whatever it crosses rather than
 // through it -- two cards at one height fight over which is drawn, and the
-// ink and the shading break up (Andrew: "one card should always be on top").
+// ink and the shading break up (the user: "one card should always be on top").
 export function slide(from, to, { ease = friction, lift = 0 } = {}) {
   return (t) => {
     const s = ease(t);

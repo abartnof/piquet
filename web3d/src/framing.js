@@ -2,7 +2,7 @@
 // tests can look through exactly the camera the page uses.
 //
 // Information lives down the left of the window and the controls under your
-// hand (Andrew: "any information display should be on the left, or top; any
+// hand (the user: "any information display should be on the left, or top; any
 // area with buttons that influence gameplay should be on the right/bottom").
 // So the table is framed in the play area to the right of the information
 // column: `inset` is the share of the window's width the column takes. The

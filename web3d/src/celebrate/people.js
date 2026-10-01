@@ -5,7 +5,7 @@
 // it, thrilled; and the eye goes back through their legs the other way, and
 // round again, for as long as you watch.
 //
-// From the prototype, in Andrew's words: "cards form people (legs, torso,
+// From the prototype, in the user's words: "cards form people (legs, torso,
 // arms, head) in a line and the camera slides between their legs" -- then
 // "when you're done going through the card people's legs, the camera should
 // turn around to see them peeking at you and being very excited - you go

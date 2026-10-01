@@ -3,7 +3,7 @@
 // plate that lands smashes -- shards on real gravity, a "PIQUET!" where it
 // hit -- and when the last has flown, the pile itself bursts.
 //
-// From the prototype, in Andrew's words: "fly in on parabolas, using real
+// From the prototype, in the user's words: "fly in on parabolas, using real
 // gravity physics. plates should explode ... wherever a plate lands it goes
 // 'PIQUET!' ... the user has a plate they can move left or right (same as
 // pong, but held perpendicular to the table in front of the camera) to swat
@@ -127,7 +127,7 @@ export function plates(ctx) {
   // The finale: the pile bursts toward you -- the cards fan out across the
   // view and fly up past it, over your head, to land behind you. (Settled in
   // a heap on the table, overlapping cards fought each other for the same
-  // height; Andrew: "the cards explode over the screen and then go away".)
+  // height; the user: "the cards explode over the screen and then go away".)
   // The camera turns first; the cards go once it is looking.
   let launched = false;
   function finale() {

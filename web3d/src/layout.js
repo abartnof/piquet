@@ -202,7 +202,7 @@ export function layout(
 
   // The trick on the table: each card in front of whoever played it, yours
   // upright to you and theirs upright to them -- the one that follows lying
-  // a step above the one led, so if their corners meet it is on top (Andrew:
+  // a step above the one led, so if their corners meet it is on top (the user:
   // "the cards in the tricks are still clipping each other").
   if (state.trick) {
     const { leader, led, followed } = state.trick;

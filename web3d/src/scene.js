@@ -68,7 +68,7 @@ export function createScene(
   // The balance between the two sets how deep a shadow is: it takes away
   // only the key light. With the sky at 2.3 against a key of 1.0 a shadow
   // was a fifth darker than the table, and one card's in the air hardly
-  // showed (Andrew: the shadows "don't follow the cards to the table at
+  // showed (the user: the shadows "don't follow the cards to the table at
   // all"). The same brightness, weighted toward the key, makes a shadow
   // about a third darker; and a sun a little lower draws a held card's
   // shadow long enough to show how it is tilted.
@@ -103,7 +103,7 @@ export function createScene(
   key.shadow.intensity = 0.8;
   scene.add(key);
 
-  // The table (Andrew's spec): unlit, a procedural pattern in one ink over a
+  // The table (the user's spec): unlit, a procedural pattern in one ink over a
   // light base (surfaces.js) -- the cards, not the table, take the light.
   // The shadows are laid over it by a sheet that draws nothing else, so a
   // card still says where it is by the shadow it casts on the pattern.

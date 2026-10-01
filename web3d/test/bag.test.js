@@ -1,4 +1,4 @@
-// Saying a thing several ways without repeating yourself (Andrew: "i don't
+// Saying a thing several ways without repeating yourself (the user: "i don't
 // want *any* sounds to be repetitive"): every way once before any again,
 // and never the same way twice running.
 

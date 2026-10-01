@@ -85,7 +85,7 @@ impl Seat for HumanAgent {
     }
 
     /// Cut for the deal: how many cards to lift. Cutting is the person's own
-    /// act if they want it, and not a chore if they do not (Andrew: "it
+    /// act if they want it, and not a chore if they do not (the user: "it
     /// should be optional to actually pick a card") -- an empty answer cuts
     /// the middle of the pack.
     fn cut(&mut self) -> usize {

@@ -1,5 +1,5 @@
 // The overlay: the 2D surfaces floating over the table, in Material Design 3
-// (docs/TABLE3D.md section 9). Andrew: "any information display should be on
+// (docs/TABLE3D.md section 9). The user: "any information display should be on
 // the left, or top; any area with buttons that influence gameplay should be
 // on the right/bottom. preferably, all the buttons the user will need to play
 // the game would be right below the deck". So down the left: the running
@@ -9,7 +9,7 @@
 //
 // It draws only what the engine's state says, and reports what the player
 // chose through `on` callbacks; it holds no rules. No proper names: the
-// machine is "your opponent" everywhere a player reads (Andrew).
+// machine is "your opponent" everywhere a player reads (the user).
 
 import "@material/web/button/filled-button.js";
 import "@material/web/chips/assist-chip.js";
@@ -68,7 +68,7 @@ const ICONS = {
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
 };
 
-// Material's own symbols, where Andrew asked for them -- back, forward, the
+// Material's own symbols, where the user asked for them -- back, forward, the
 // close X, the plus for a new partie and the question mark for the tutorial. Material Symbols (Outlined,
 // weight 400, 24 px), Apache License 2.0, Google: the paths are bundled, so
 // nothing is fetched.
@@ -128,20 +128,20 @@ export function createOverlay(root, on) {
 
   // ---- the top bar ---------------------------------------------------------
 
-  // Your opponent's skill is chosen in Settings, once a partie (Andrew: in
+  // Your opponent's skill is chosen in Settings, once a partie (the user: in
   // the top bar it was "unnecessary noise when the game is happening").
   const narrate = el("md-icon-button", { id: "narration-toggle", "data-tip": "Game log", "aria-label": "Game log", toggle: true }, icon("narration"));
   narrate.addEventListener("click", () => {
     $("narration").hidden = !$("narration").hidden;
     narrate.selected = !$("narration").hidden;
   });
-  // The tutorial's pages, at any time (Andrew: "some sort of question mark
+  // The tutorial's pages, at any time (the user: "some sort of question mark
   // icon you can use to link to the tutorial from the game screen").
   const help = el("md-icon-button", { id: "tutorial-open", "data-tip": "Tutorial\nKey: ?", "aria-label": "Tutorial" }, symbol("help"));
   help.addEventListener("click", () => on.tutorial());
   const gear = el("md-icon-button", { id: "settings-open", "data-tip": "Settings", "aria-label": "Settings" }, icon("settings"));
   gear.addEventListener("click", () => $("settings").show());
-  // A new partie: a plus, not words (Andrew: "replace the 'new partie'
+  // A new partie: a plus, not words (the user: "replace the 'new partie'
   // button with a md3 button (a plus sign?) with a mouseover tooltip").
   const fresh = el("md-icon-button", { id: "new", "data-tip": "Start a new partie", "aria-label": "Start a new partie" }, symbol("add"));
   fresh.addEventListener("click", () => on.newPartie());
@@ -155,7 +155,7 @@ export function createOverlay(root, on) {
 
   // ---- tooltips ----------------------------------------------------------------
   //
-  // Longer words, and the keys, on hover (Andrew: explanations "should be
+  // Longer words, and the keys, on hover (the user: explanations "should be
   // mouseover tooltips", and keyboard shortcuts belong in tooltips, "not
   // on-screen"). One Material-style rich tooltip for anything with a
   // data-tip: beside the left column's chips, above the buttons under your
@@ -203,7 +203,7 @@ export function createOverlay(root, on) {
   // ---- folds: Material 3's expanding list item ---------------------------------
   //
   // A head that opens and closes a body: the chevron turns and the body grows
-  // on a spring (style.css). Andrew: those arrows are animated in Material 3,
+  // on a spring (style.css). The user: those arrows are animated in Material 3,
   // "with a lot of motion easing". The elements persist from one render to
   // the next, so the motion has something to run on; only what is inside
   // them is replaced.
@@ -247,7 +247,7 @@ export function createOverlay(root, on) {
   const row = (title, words, control) => el("label", { class: "setting" },
     el("span", { class: "setting-text" }, el("span", { class: "setting-title" }, title), el("span", { class: "setting-words" }, words)),
     control);
-  // The tutorial's pages for this partie (Andrew: "in the config menu,
+  // The tutorial's pages for this partie (the user: "in the config menu,
   // tutorial should be able to be turned off/on using a toggle"): on only in
   // a partie begun as the tutorial, until you turn it off.
   const tutorialSwitch = el("md-switch", { "data-tutorial": "" });
@@ -281,7 +281,7 @@ export function createOverlay(root, on) {
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   table.addEventListener("change", () => on.pref("surface", table.value));
   // Your opponent's voice; you speak in the other.
-  // Which voice is your opponent's -- a toggle, not a list (Andrew: "there
+  // Which voice is your opponent's -- a toggle, not a list (the user: "there
   // should be a toggle to switch if M or F is the opponent's voice or the
   // user's"). Your own calls, when you turn them on, are in the other.
   const VOICE_CHOICES = [["cori", "Female"], ["norman", "Male"]];
@@ -443,7 +443,7 @@ export function createOverlay(root, on) {
   //
   // Under your hand, the question over the buttons that answer it.
 
-  // What is asked of you, in two layers (Andrew: of "Your opponent led Q♣.
+  // What is asked of you, in two layers (the user: of "Your opponent led Q♣.
   // You cannot follow suit: play anything." the first is simply true, the
   // second prescriptive -- and the prescriptive part "should be easy to turn
   // off"). The fact is always shown; the interpretation -- what the rules
@@ -460,7 +460,7 @@ export function createOverlay(root, on) {
       case "choose_dealer":
         return ["You cut higher: you choose who deals first.", "Dealing is a disadvantage, but the first dealer is elder in the sixth and last deal."];
       case "exchange": {
-        // The numbers of this exchange, not the rule's (Andrew: "i don't know
+        // The numbers of this exchange, not the rule's (the user: "i don't know
         // how many cards i can draw when i see that").
         const left = s.talon_remaining;
         const how = ui.selected.length
@@ -499,9 +499,9 @@ export function createOverlay(root, on) {
   let lastKind = null;
   const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   // A declaration option, two ways. On its button under your hand, the call
-  // as said at the table and what it scores if good (Andrew chose "Call +
+  // as said at the table and what it scores if good (the user chose "Call +
   // stake": "Point of five · +5"); in the worth card on the left, with
-  // Explain on, plainly what it is and what it scores (his "Call your 5
+  // Explain on, plainly what it is and what it scores (their "Call your 5
   // diamonds (worth 48): scores 5 if your opponent's point is worse").
   const NUMBER_WORDS = { 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight" };
   function optionShort(option) {
@@ -544,7 +544,7 @@ export function createOverlay(root, on) {
     if (fact) lines.push(el("p", { class: "ask" }, fact));
     // The long line -- what the rules make of this moment -- sits in the
     // column on the left when there is room, leaving only the question and
-    // its answers under the hand (Andrew: "long explanations ... on the left
+    // its answers under the hand (the user: "long explanations ... on the left
     // side, and shorthand on the bottom"); a phone keeps it here.
     const aside = !compact.matches;
     const ruleCard = $("rule");
@@ -573,7 +573,7 @@ export function createOverlay(root, on) {
     if (s.error) parts.push(el("div", { class: "error", role: "alert" }, s.error));
     switch (p.kind) {
       // Cutting is the player's own act, if they want it; if not, a button
-      // where the pointer rests (Andrew: "it should be optional to actually
+      // where the pointer rests (the user: "it should be optional to actually
       // pick a card").
       case "cut": {
         const lift = p.fewest + Math.floor(Math.random() * (p.most - p.fewest + 1));
@@ -646,7 +646,7 @@ export function createOverlay(root, on) {
   // to keep them lifted. Information about the hand, so down the left.
 
   // An interpretation of your hand, so it goes with Explain. By category, as
-  // it will be called (Andrew: "point: sequence: set: and then showed the
+  // it will be called (the user: "point: sequence: set: and then showed the
   // points you'd get (if you won each declaration), and why"): a category
   // won scores every holding of it -- all your sequences, all your sets --
   // but only your best point.
@@ -669,7 +669,7 @@ export function createOverlay(root, on) {
       any = true;
       const total = held.reduce((sum, h) => sum + Number(h.score ?? 0), 0);
       const now = category === calling;
-      // What a holding comes to, on hover (Andrew: the long explanations
+      // What a holding comes to, on hover (the user: the long explanations
       // "should be mouseover tooltips"); for the category being called, every
       // choice you have.
       const worse = category === "point" ? "point" : category === "sequences" ? "best sequence" : "best set";
@@ -715,7 +715,7 @@ export function createOverlay(root, on) {
 
   // ---- the tools under your hand: the sort, undo, the hint ----------------------
 
-  // Andrew: "sorting your hand should always be an option, with a md3 ...
+  // The user: "sorting your hand should always be an option, with a md3 ...
   // Segmented button near the deck".
   const SORTS = [["auto", "Auto"], ["suit", "Suit"], ["rank", "Rank"], ["combos", "Combinations"]];
   const sortSet = el("md-outlined-segmented-button-set", { class: "sort", "aria-label": "Order your hand" },
@@ -725,7 +725,7 @@ export function createOverlay(root, on) {
   });
   const undo = el("md-outlined-icon-button", { id: "undo", "data-tip": "Take back your last decision\nKey: U", "aria-label": "Undo" }, icon("undo"));
   undo.addEventListener("click", () => on.undo());
-  // Andrew: "the b. prescriptive part should be easy to turn off (maybe two
+  // The user: "the b. prescriptive part should be easy to turn off (maybe two
   // buttons at the bottom: one button shows you interpretations, another
   // shows straight-up hints? put these where the Hint button currently is)".
   const explainChip = el("md-filter-chip", { label: "Explain", "data-tip": "What the rules make of each moment, and how to act\nKey: E" });
@@ -761,7 +761,7 @@ export function createOverlay(root, on) {
 
   // ---- the live score --------------------------------------------------------
   //
-  // Andrew: "the immediacy of a WNBA on-screen live score display. 2 numbers,
+  // The user: "the immediacy of a WNBA on-screen live score display. 2 numbers,
   // one for each team- and when you score, there's a minor animation to
   // update the score- unless you score big, in which case there's a little
   // celebratory animation." The stage table above is the log; this is the
@@ -838,7 +838,7 @@ export function createOverlay(root, on) {
     host.append(burst);
   }
 
-  // A score, as a broadcast shows one (Andrew: "a little bubble replaces the
+  // A score, as a broadcast shows one (the user: "a little bubble replaces the
   // 100 and says '+3' and then goes away and i see 103 ... for big ones ...
   // confetti, or the text gets big and sort of wobbles"). The number steps
   // aside for a +N bubble sized by the score -- a point just swaps, a
@@ -871,7 +871,7 @@ export function createOverlay(root, on) {
   }
 
   // The same news at the table, where the eye already is: just above your
-  // hand, or just below your opponent's (Andrew: "somewhere near the middle
+  // hand, or just below your opponent's (the user: "somewhere near the middle
   // of the table ... so if the users' eyes are trained at the middle of the
   // screen, they'll see who won").
   function atTable(who, node) {
@@ -888,7 +888,7 @@ export function createOverlay(root, on) {
 
   // ---- the declarations, as a dialogue -----------------------------------------
   //
-  // Andrew: "during the declarations phase, i want two dialogue boxes to pop
+  // The user: "during the declarations phase, i want two dialogue boxes to pop
   // up every move- if you're going first, the first dialogue box' tail points
   // down to you, and the second dialogue box' tail points to the opponent ...
   // flip the tails if you're not going first." Each line of the declarations,
@@ -1052,7 +1052,7 @@ export function createOverlay(root, on) {
       renderNarration(s);
     },
     // The page opened: a tutorial, a new game, or -- if one is under way --
-    // carry on (Andrew: "when someone opens, there can be a button- new
+    // carry on (the user: "when someone opens, there can be a button- new
     // game, or tutorial").
     welcome(canContinue, choose) {
       const dialog = $("welcome");
@@ -1063,7 +1063,7 @@ export function createOverlay(root, on) {
       };
       dialog.replaceChildren(
         el("div", { slot: "headline" }, "Piquet"),
-        // Just the choice (Andrew: the tagline went).
+        // Just the choice (the user: the tagline went).
         canContinue ? el("div", { slot: "content", class: "welcome" }, el("p", { class: "welcome-note" }, "A partie is under way.")) : null,
         el("div", { slot: "actions" },
           canContinue ? el("md-text-button", { onclick: pick("new") }, "New game") : null,
@@ -1073,7 +1073,7 @@ export function createOverlay(root, on) {
       dialog.show();
     },
     // The tutorial's pages (web3d/tutorial.md), open at page `at`, with back
-    // and forward between them (Andrew: "they should be able to go back/fwd
+    // and forward between them (the user: "they should be able to go back/fwd
     // between them"). `seen(key)` as each page shows; `done` when closed.
     // With `popups`, the introduction says the rest will come by themselves.
     tutorial(pages, at, { seen, done, popups = false } = {}) {
@@ -1087,12 +1087,12 @@ export function createOverlay(root, on) {
       const title = el("span", { class: "tutorial-title" });
       const dots = el("span", { class: "tutorial-dots", "aria-hidden": "true" }, pages.map(() => el("span", { class: "dot" })));
       const content = el("div", { slot: "content", class: "tutorial-page" });
-      // Andrew: "a little x (md3) in the top-right of the tutorial pages".
+      // The user: "a little x (md3) in the top-right of the tutorial pages".
       const close = el("md-icon-button", { class: "tutorial-close", title: "Close (Esc)", "aria-label": "Close" }, symbol("close"));
       close.addEventListener("click", () => dialog.close());
       const back = el("md-text-button", { class: "tutorial-back" }, symbol("back"), "Back");
       const next = el("md-text-button", { class: "tutorial-next", "trailing-icon": true }, "Next", symbol("forward"));
-      // Andrew: "a little note above the left/right arrows in the opening
+      // The user: "a little note above the left/right arrows in the opening
       // tutorial page- something like click here to go to the next tutorial
       // page, but it's unnecessary now".
       const note = el("p", { class: "tutorial-note" },

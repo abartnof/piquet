@@ -3,7 +3,7 @@
 // from the windows -- and at the far end of the street they swirl into a
 // ring.
 //
-// From the prototype, and Andrew's notes on it: confetti, not ticker tape
+// From the prototype, and the user's notes on it: confetti, not ticker tape
 // ("looks too much like sperm now" -- so small squares, nothing long and
 // wiggly), and "the parade should never surpass the city limits": the parade
 // gathers speed, cruises, and slows to a stop inside the city, where a last

@@ -1,6 +1,6 @@
-// The tutorial: Andrew's four pages -- an introduction, then one before each
+// The tutorial: the user's four pages -- an introduction, then one before each
 // phase of play -- written in web3d/tutorial.md so they can be reworded
-// without touching code. Andrew: "four pieces here- intro, which is
+// without touching code. The user: "four pieces here- intro, which is
 // immediately followed by the exchange; then declarations and play of tricks
 // pop up before those phases of gameplay. users should be able to click on
 // the tutorials button at any time to bring these up, and they should be able

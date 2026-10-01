@@ -1,5 +1,5 @@
 // What the table says aloud, clip by clip, as Cavendish has players say it
-// (docs/VOICE.md; Andrew: "maximal speaking (anything a human would say,
+// (docs/VOICE.md; the user: "maximal speaking (anything a human would say,
 // we'll say)").
 
 import test from "node:test";
@@ -148,7 +148,7 @@ test("younger's point, when she wins it, is named as she reckons it", () => {
   assert.deepEqual(said(lines), ["them:point-4", "you:not-good", "you:point-5", "you:n-5"]);
 });
 
-// The dialogue boxes show the declarations' lines (Andrew: "two dialogue
+// The dialogue boxes show the declarations' lines (the user: "two dialogue
 // boxes to pop up every move"): each line says which kind of event it
 // belongs to.
 test("each line knows the kind of event it belongs to", () => {
@@ -240,7 +240,7 @@ test("across whole parties, every clip asked for exists in the phrase bank", () 
 
 // ---- QC over simulated parties ---------------------------------------------
 //
-// Andrew: "simulate a few games to make sure the audio passes your QC". The
+// The user: "simulate a few games to make sure the audio passes your QC". The
 // page speaks each move's new events as it happens; spoken so, whole parties
 // must say exactly what each deal says spoken at once, and every declaration
 // must run as Cavendish has it.

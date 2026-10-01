@@ -20,7 +20,7 @@ import { PAGE_KEYS, pageDue, pageFor, parseTutorial } from "./tutorial.js";
 import { createCelebrations } from "./celebrate/runner.js";
 import { createHud } from "./celebrate/hud.js";
 import { SCENES } from "./celebrate/scenes.js";
-// Andrew's words, as he wrote them: esbuild inlines the file as text.
+// The user's words, as written: esbuild inlines the file as text.
 import TUTORIAL_TEXT from "../tutorial.md";
 import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
@@ -32,12 +32,12 @@ const params = new URL(window.location.href).searchParams;
 const TESTING = params.has("test");
 
 const GAME_STORE = "piquet3d.game";
-// Versioned: your own calls became opt-in (Andrew: "by default, the
+// Versioned: your own calls became opt-in (the user: "by default, the
 // opponent's voice should be on, and the user's voice should be off"). A
 // stored set from before keeps every other choice, but not that one.
 const PREF_STORE = "piquet3d.prefs.2";
 const OLD_PREF_STORE = "piquet3d.prefs";
-// Versioned: "play my winners" became opt-in, and then hints did (Andrew:
+// Versioned: "play my winners" became opt-in, and then hints did (the user:
 // "when tutorial mode is on, both explanations and hints are on by default;
 // else, only explanations are on"). A stored set from before keeps every
 // other choice, but not hints, which it would hold only by the old default.
@@ -52,8 +52,8 @@ const DEFAULT_PREFS = {
   // yours off until you want it, and then in the other.
   voice: true, opponentVoice: "cori", sayMine: false,
 };
-// Playing out your winners is opt-in: Andrew, finding his cards played for
-// him mid-trick, "i didn't intend for that to happen".
+// Playing out your winners is opt-in: the user, finding their cards played
+// for them mid-trick, "i didn't intend for that to happen".
 const DEFAULT_AIDS = { hints: false, play_forced: true, play_winners: false, declare_for_me: false };
 
 function recall(key, fallback) {
@@ -98,7 +98,7 @@ async function main() {
   const numbers = (name) => (params.get(name) ? params.get(name).split(",").map(Number) : undefined);
   const stage = createScene(document.getElementById("stage"), {
     // The table top: your own pick if you made one, else one at random as
-    // the page opens -- kept while it is open, new parties and all (Andrew:
+    // the page opens -- kept while it is open, new parties and all (the user:
     // "a single table top is chosen- at random- when the user opens the
     // html. but it never changes (unless manually it's changed)").
     // ?table= to try one.
@@ -192,7 +192,7 @@ async function main() {
     begin(3, randomSeed());
   }
 
-  // ?ending -- the celebrations' staging (Andrew: "the dummy ending where
+  // ?ending -- the celebrations' staging (the user: "the dummy ending where
   // the game is basically over, and i get to scroll through the different
   // endings"): a partie played by a dull script into its last deal, until
   // you hold two cards. Play one; the last trick plays itself; the partie
@@ -239,10 +239,10 @@ async function main() {
   }
 
   // What was said, said aloud -- only what is new, and each line when its
-  // event is seen to happen on the table (Andrew: "the right audio plays at
+  // event is seen to happen on the table (the user: "the right audio plays at
   // the right occasion, and not before/after").
   //
-  // The declarations are shown as a dialogue besides (Andrew: "two dialogue
+  // The declarations are shown as a dialogue besides (the user: "two dialogue
   // boxes to pop up every move"): each of their lines in a box by its
   // speaker's hand, with the words the voice says, as it says them -- or
   // would, with the sound off.
@@ -264,7 +264,7 @@ async function main() {
     phasePages(prev, next, beats);
   }
 
-  // In the tutorial, each phase's page at the phase's very start (Andrew:
+  // In the tutorial, each phase's page at the phase's very start (the user:
   // "the pop ups pop up at the beginning of each of the phases"): when your
   // opponent moves first in it, the table stops just before their first move
   // and holds still until the page is closed; when you move first, the page
@@ -384,7 +384,7 @@ async function main() {
 
   // ---- the celebrations -------------------------------------------------------
   //
-  // At the end of a partie, one of them at random (Andrew: "in the real
+  // At the end of a partie, one of them at random (the user: "in the real
   // game, when the game ends, the user will just see one of the ending
   // games/animations, randomly chosen"); when staging, all of them in turn.
   const hud = createHud(document.getElementById("overlay"), stage.camera, {
@@ -491,13 +491,13 @@ async function main() {
 
   // ---- the tutorial ------------------------------------------------------------
   //
-  // Andrew's four pages (web3d/tutorial.md): the introduction when the
+  // The user's four pages (web3d/tutorial.md): the introduction when the
   // tutorial begins, then each phase's page when it comes -- the exchange's
-  // once the deal is decided (Andrew: "the second tutorial page should pop up
+  // once the deal is decided (the user: "the second tutorial page should pop up
   // after the player decides if they are younger/elder"), the declarations'
   // and the tricks' before those phases. The ? brings them up at any time.
   // Each pops up once, at its moment, whether or not it was paged to before
-  // (Andrew paged through them all, and then the exchange's never came).
+  // (the user paged through them all, and then the exchange's never came).
   const PAGES = parseTutorial(TUTORIAL_TEXT);
   let tutorial = recall(TUTORIAL_STORE, { on: false, seed: null, seen: [] });
   let reading = false;
@@ -568,7 +568,7 @@ async function main() {
     }
     // A new partie ends any celebration of the last.
     if (celebrations.playing()) celebrations.stop();
-    // A second partie has no tutorial (Andrew: "2nd partie has no more
+    // A second partie has no tutorial (the user: "2nd partie has no more
     // tutorial popups").
     if (tutorial.on) tutorialOff();
     begin(n, randomSeed());

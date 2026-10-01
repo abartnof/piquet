@@ -31,7 +31,7 @@ pub struct Decision {
 
 /// Everything one deal produced.
 ///
-/// The persistent move log. Andrew's product requirement is a record of agent
+/// The persistent move log. The user's product requirement is a record of agent
 /// decisions "so the correlation between training epochs and skill gained can
 /// be analyzed later", which needs the *decisions* and not only the scores.
 ///

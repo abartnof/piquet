@@ -109,7 +109,7 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
   // ---- the clock ----------------------------------------------------------
 
   // The table's clock can stop: at a gate -- a tutorial page at the start of
-  // a phase (Andrew: "the pop ups pop up at the beginning of each of the
+  // a phase (the user: "the pop ups pop up at the beginning of each of the
   // phases") -- the cards hold still until the gate is released, and then
   // carry on from where they were. Held time is taken off the clock, so
   // everything scheduled on it (the dialogue's boxes too, through `at`)
@@ -250,7 +250,7 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
 
   // Where to speak from, on the screen: just above your hand's top edge, or
   // just below your opponent's lowest -- near the middle of the table, where
-  // the eye already is, never over a card (Andrew). From the cards as they
+  // the eye already is, never over a card (the user). From the cards as they
   // lie now; before anyone holds any, from where the hand would be.
   function handEdge(who) {
     const zone = who === "you" ? "your-hand" : "their-hand";

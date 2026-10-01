@@ -66,7 +66,7 @@ function above(mesh) {
   return Math.min(...CORNERS.map((c) => c.clone().applyMatrix4(mesh.matrixWorld).y));
 }
 
-test("all seven of Andrew's celebrations are here, each with a name", () => {
+test("all seven of the user's celebrations are here, each with a name", () => {
   assert.deepEqual(Object.keys(SCENES), ["plates", "pong", "cupball", "disco", "parade", "macarena", "people"]);
   for (const [name, make] of Object.entries(SCENES)) assert.ok(make.title, name);
 });

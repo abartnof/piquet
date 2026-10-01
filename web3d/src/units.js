@@ -55,7 +55,7 @@ export const ZONES = Object.freeze({
   // the corner index -- and keeps a full hand in suits clear of the prompt.
   //
   // Both hands are held as people hold cards: at 75 degrees to the table,
-  // leaning back 15 from upright toward their holder (Andrew: "the hands are
+  // leaning back 15 from upright toward their holder (the user: "the hands are
   // sort of tilted away from the player at ~75 degrees").
   yourHand: Object.freeze({ centre: Object.freeze([0, 16, 26]), radius: 16, spread: 5.6, groupGap: 2.6, lean: 15 }),
   theirHand: Object.freeze({ centre: Object.freeze([0, 12, -22]), radius: 16, spread: 5.2, lean: 15 }),

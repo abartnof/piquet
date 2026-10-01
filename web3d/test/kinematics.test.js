@@ -253,7 +253,7 @@ test("a flip is a pile of one", () => {
   }
 });
 
-// Andrew, watching a card played: "there's sort of a sharp tug pulling the
+// The user, watching a card played: "there's sort of a sharp tug pulling the
 // card from the deck, and then it's placed on the table".
 test("a card played is tugged sharply out of the hand along its own length, then set down", () => {
   const held = pose([4, 16, 26], new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -15 * DEG)
@@ -280,7 +280,7 @@ test("a card played is tugged sharply out of the hand along its own length, then
   for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
 });
 
-// Andrew: "moving cards should start with strong jerks, then end with
+// The user: "moving cards should start with strong jerks, then end with
 // gravity-like acceleration. that means a lot of motion-easing."
 const speedAt = (path, t, dt = 1e-4) => path(Math.min(1, t + dt)).position.distanceTo(path(Math.max(0, t - dt)).position) / (Math.min(1, t + dt) - Math.max(0, t - dt));
 const fallAt = (path, t, dt = 1e-4) => -(path(Math.min(1, t + dt)).position.y - path(Math.max(0, t - dt)).position.y) / (Math.min(1, t + dt) - Math.max(0, t - dt));
@@ -350,7 +350,7 @@ test("a card taken up into a hand is flicked up at speed and slows under gravity
   for (const t of T) assert.ok(lowest(path(t)) >= -EPS, `through the table at t=${t}`);
 });
 
-// Andrew: when your opponent declares, "the cards should rise from the deck a
+// The user: when your opponent declares, "the cards should rise from the deck a
 // bit". A held card flicked up out of the fan, a moment there, and back.
 test("a card bobs up out of the hand along its own length, and falls back into place", () => {
   const held = pose([2, 12, -22], new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), Math.PI));

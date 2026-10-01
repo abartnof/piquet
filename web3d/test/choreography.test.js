@@ -127,7 +127,7 @@ test("a card played is laid down after the one it answers, with a pause to think
   assert.ok(theirs.delay >= mine.delay + mine.duration, "they answer after your card is down");
 });
 
-// The voice says each thing as it is seen to happen (Andrew: the right audio
+// The voice says each thing as it is seen to happen (the user: the right audio
 // "at the right occasion, and not before/after"), so the choreography says
 // when each new event happens on its clock: a card's when it lands, a call as
 // your opponent's cards stir, anything else once the motion before it is done.
@@ -210,7 +210,7 @@ test("a call names how many cards it holds", () => {
   for (const [said, n] of cases) assert.equal(cardsNamed(said), n, said);
 });
 
-// Andrew: "one card should always be on top if two cards collide, so we
+// The user: "one card should always be on top if two cards collide, so we
 // should always see one card fully cell-shaded above the other. i'm seeing
 // the cell shading breaking down during the tricks part." Two cards lying
 // over one another on the table, at any moment of any motion, must be a

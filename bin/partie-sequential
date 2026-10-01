@@ -5,7 +5,7 @@ as soon as the answer is clear.
 
     bin/partie-sequential [FIRST_SEED]
 
-Andrew, asked for an overnight budget: "could it be less, or perhaps if the
+The user, asked for a compute budget: "could it be less, or perhaps if the
 numbers are conclusive with fewer simulations, you cut the simulations
 short?" So the design is fixed here, before any data:
 

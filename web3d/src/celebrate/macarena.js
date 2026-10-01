@@ -4,7 +4,7 @@
 // Each time the eye has gone once round, another deck is thrown in from behind
 // you, lands, and builds another dancer, up to ten, all in step.
 //
-// From the prototype, in Andrew's words: "every time the camera makes a full
+// From the prototype, in the user's words: "every time the camera makes a full
 // circle around the macarena dancer, another dancing card person should
 // appear. they should appear as if someone threw a deck of cards off-screen,
 // and when the deck hit the table, the cards formed into a person. limit this

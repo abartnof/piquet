@@ -2,7 +2,7 @@
 // twenty-nine standing along the front of the table, cheering. You against
 // your opponent, first to five.
 //
-// From the prototype, in Andrew's words: "one card per paddle, one card as
+// From the prototype, in the user's words: "one card per paddle, one card as
 // the ball, the other cards cheering at the bottom of the screen. players can
 // drag their card with mouse/finger or use the up/down arrow keys" -- one
 // player, against the computer. Here at the table's scale: the paddles are

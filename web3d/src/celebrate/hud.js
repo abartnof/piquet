@@ -1,5 +1,5 @@
 // The words over a celebration, in the page's own Material style: a burst
-// where something lands (the prototype's comic-book "PIQUET!", which Andrew
+// where something lands (the prototype's comic-book "PIQUET!", which the user
 // asked for in place of a shout -- here in the page's type and colours), a
 // score chip, a result card, and a bar along the bottom with the scene's
 // name, the arrows to step through them when staging, and a way back.
@@ -61,7 +61,7 @@ export function createHud(root, camera, { staging = false, onStep, onClose } = {
         action ? el("md-filled-tonal-button", { onclick: action.fn }, action.label) : "");
     },
     // A burst at a point in the scene: a star in one of the page's bright
-    // colours, ink round it, and always the one word (Andrew: every burst in
+    // colours, ink round it, and always the one word (the user: every burst in
     // the endings "should just say 'Piquet!'").
     burst(point, { size = 1, colour } = {}) {
       const words = "Piquet!";
@@ -71,7 +71,7 @@ export function createHud(root, camera, { staging = false, onStep, onClose } = {
       const y = Math.min(88, Math.max(10, (-at.y * 0.5 + 0.5) * 100));
       // Wider than tall, as the word is, with shallow points: the word sits
       // in clear space inside the star's inner edge, never on its ink
-      // (Andrew: the text "collides with the outline").
+      // (the user: the text "collides with the outline").
       const n = 12;
       const points = [];
       for (let i = 0; i < n * 2; i++) {

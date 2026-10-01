@@ -1,5 +1,5 @@
 // The live score, as a broadcast shows a game's: two numbers, one a side,
-// the partie as it stands this instant (Andrew: "the immediacy of a WNBA
+// the partie as it stands this instant (the user: "the immediacy of a WNBA
 // on-screen live score display. 2 numbers, one for each team- and when you
 // score, there's a minor animation to update the score- unless you score
 // big, in which case there's a little celebratory animation"). The stage

@@ -88,7 +88,7 @@ pub enum Action {
 /// changes the rules: they change what the human is *asked*, never what
 /// happens.
 ///
-/// Andrew's brief for the table: "less persnickety, less needless clicking --
+/// The user's brief for the table: "less persnickety, less needless clicking --
 /// rather, effortless and fun", with every aid something that "could be
 /// turned off".
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -276,7 +276,7 @@ impl Event {
     /// One line of narration.
     ///
     /// The machine is always "your opponent". The ladder's rungs have names,
-    /// but Andrew's rule for the table is plain: "don't refer to the dealer as
+    /// but the user's rule for the table is plain: "don't refer to the dealer as
     /// a proper name, just call them your opponent."
     pub fn text(&self) -> String {
         const THEM: &str = "your opponent";

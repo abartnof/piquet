@@ -1,6 +1,6 @@
 // The celebrations: at the end of a partie, the cards celebrate.
 //
-// Andrew designed seven with Claude on the web (web3d/reference/
+// The user designed seven with Claude on the web (web3d/reference/
 // celebrations-prototype.html, kept in git at 272ff15) and asked for them
 // translated into the game:
 // "just use these as ideas, and translate the ideas into the game. use all

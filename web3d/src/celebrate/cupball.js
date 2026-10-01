@@ -3,7 +3,7 @@
 // sphere), joined by a string. You swing the cup with the pointer and try
 // to catch the ball in it.
 //
-// From the prototype, in Andrew's words: "the cards turn into a cup and a
+// From the prototype, in the user's words: "the cards turn into a cup and a
 // ball, attached by a string. the user jiggles the cup around and tries to
 // swing the ball into the cup. give the ball weight and make it swing around
 // somewhat realistically" -- and "can't be played with a keyboard, that's a

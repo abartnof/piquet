@@ -2,7 +2,7 @@
 // the other cards stand round in two arcs and bob; a mirror ball comes down,
 // turning, throwing its glints and its spots of light.
 //
-// From the prototype, in Andrew's words: "the disco ball should be shinier.
+// From the prototype, in the user's words: "the disco ball should be shinier.
 // think about how actual disco balls are made of many small surfaces" -- so
 // the ball is some five hundred flat mirror tiles, each lit afresh every frame
 // from four lamps (a little diffuse, and a sharp highlight toward the eye

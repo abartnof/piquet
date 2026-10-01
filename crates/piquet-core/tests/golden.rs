@@ -2142,7 +2142,7 @@ fn what_each_player_heard_and_saw_matches() {
 
 #[test]
 fn the_move_log_has_the_shape_the_python_writes() {
-    // Andrew's product requirement is a persistent record of agent decisions,
+    // The user's product requirement is a persistent record of agent decisions,
     // so that training epochs can later be correlated with skill gained. It is
     // only useful if something else can read it, so the keys and types are
     // pinned against the Python's own output rather than invented here.
@@ -2250,7 +2250,7 @@ use piquet_core::play::DealRecord;
 
 #[test]
 fn the_move_log_records_exactly_the_recorded_decisions() {
-    // The training log (Andrew: "so the correlation between training epochs
+    // The training log (the user: "so the correlation between training epochs
     // and skill gained can be analyzed later"), compared as parsed JSON: the
     // two writers may differ in whether they escape non-ASCII, and both parse
     // to the same log.

@@ -212,14 +212,14 @@ def check_undo_hints_settings(page, failures):
     back = state(page)
     if len(back["record"]) >= len(s["record"]):
         failures.append("U did not take anything back")
-    # H switches hints; E switches the interpretations (Andrew: facts, the
+    # H switches hints; E switches the interpretations (the user: facts, the
     # prescriptive layer, and hints -- the last two each easy to turn off).
     hints = back["aids"]["hints"]
     page.keyboard.press("h")
     if state(page)["aids"]["hints"] == hints:
         failures.append("H did not toggle hints")
     page.keyboard.press("h")
-    # The interpretation: beside the table on a wide screen (Andrew: "long
+    # The interpretation: beside the table on a wide screen (the user: "long
     # explanations ... on the left side, and shorthand on the bottom"),
     # under the hand only on a phone.
     told = "#rule:not([hidden]) .rule-text, #prompt .asked .note"
@@ -275,7 +275,7 @@ def main() -> int:
                 if state(page)["record"] != before:
                     failures.append("a reload did not resume the game in progress")
             s = state(page)
-            # The cards cast shadows (Andrew: "confirm that at every segment
+            # The cards cast shadows (the user: "confirm that at every segment
             # of the game, all cards are casting shadows"): drawn with them
             # and without, your hand held up, the frames differ. (Cards lying
             # flat hide their shadows under themselves, as real ones do.)
@@ -321,7 +321,7 @@ def main() -> int:
             failures.append(f"console errors in the motion demo: {demo.errors}")
         demo.context.close()
 
-        # The welcome and the tutorial: Andrew's four pages -- the introduction,
+        # The welcome and the tutorial: the user's four pages -- the introduction,
         # then each phase's page when it comes ("declarations and play of
         # tricks pop up before those phases ... click on the tutorials button
         # at any time ... go back/fwd between them").
@@ -330,7 +330,7 @@ def main() -> int:
         tut.wait_for_timeout(800)
         page_title = lambda: tut.locator("#tutorial .tutorial-title").inner_text()
         is_open = lambda: tut.locator("#tutorial").get_attribute("open") is not None
-        # Andrew: "a little x (md3) in the top-right of the tutorial pages".
+        # The user: "a little x (md3) in the top-right of the tutorial pages".
         close_x = lambda: tut.locator("#tutorial .tutorial-close").click()
         if page_title() != "Introduction":
             failures.append(f"the tutorial did not open on its introduction: {page_title()!r}")
@@ -338,7 +338,7 @@ def main() -> int:
         if not tut.locator("#tutorial .tutorial-note").is_visible():
             failures.append("the introduction has no note that the other pages come by themselves")
         shot(tut, "09-tutorial")
-        # One arrangement on every page (Andrew: "choose one alignment schema
+        # One arrangement on every page (the user: "choose one alignment schema
         # and stick with it"): Back at the left edge, Next at the right. And
         # paging ahead does not stop a page coming at its moment.
         edges = set()
@@ -351,7 +351,7 @@ def main() -> int:
                 tut.wait_for_timeout(300)
         if len(edges) != 1:
             failures.append(f"the tutorial's Back and Next move between pages: {sorted(edges)}")
-        # Closed, nothing follows until the deal is decided (Andrew: "the
+        # Closed, nothing follows until the deal is decided (the user: "the
         # second tutorial page should pop up after the player decides if they
         # are younger/elder").
         close_x()
@@ -466,7 +466,7 @@ def main() -> int:
 
         # You younger, so your opponent moves first in every phase: each page
         # comes at the phase's very start, the table held still behind it
-        # (Andrew: "the pop ups pop up at the beginning of each of the
+        # (the user: "the pop ups pop up at the beginning of each of the
         # phases").
         yng = open_page(browser, "test&welcome&level=2&seed=2")
         yng.locator("#welcome").get_by_role("button", name="Tutorial").click()
@@ -506,7 +506,7 @@ def main() -> int:
             failures.append(f"console errors in the younger tutorial: {yng.errors}")
         yng.context.close()
 
-        # The celebrations' staging (Andrew: "the dummy ending where the game
+        # The celebrations' staging (the user: "the dummy ending where the game
         # is basically over, and i get to scroll through the different
         # endings"): two cards left in the last deal; play one, the partie
         # ends, a celebration comes; the arrows step; the X gives the table
@@ -540,7 +540,7 @@ def main() -> int:
             failures.append(f"console errors in the celebrations: {end.errors}")
         end.context.close()
 
-        # In a real partie (Andrew: "regardless of if they win/lose ...
+        # In a real partie (the user: "regardless of if they win/lose ...
         # randomly chosen- if they don't do file?ending, they can't scroll
         # left/right to pick an ending"): one at random, no arrows.
         real = open_page(browser, "test&level=2&seed=31")
@@ -554,7 +554,7 @@ def main() -> int:
             failures.append("a real partie's celebration should still have its way back")
         real.context.close()
 
-        # No sound of any kind (Andrew: "i don't want the html to have any
+        # No sound of any kind (the user: "i don't want the html to have any
         # audio"): no recordings in the page, no audio made, no speech -- but
         # the declarations still come as a dialogue, in boxes.
         talk = open_page(browser, "test&level=2&seed=31")
@@ -588,7 +588,7 @@ def main() -> int:
             failures.append("the page spoke through the browser's own voice")
         if talk.locator("md-switch[data-pref=voice]").count() or talk.locator(".voice-choice").count():
             failures.append("settings still offer a voice the page does not have")
-        # The declarations as a dialogue (Andrew: "two dialogue boxes to pop
+        # The declarations as a dialogue (the user: "two dialogue boxes to pop
         # up every move"): both speak, in boxes by their own hands.
         boxes = talk.evaluate("window.__boxes")
         mine = [b for b in boxes if b["who"] == "you"]

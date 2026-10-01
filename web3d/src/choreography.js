@@ -217,7 +217,7 @@ export function stagesBetween(prev, next) {
         push({ kind: "trick", state: s, who: e.who });
         break;
       case "called":
-        // Your opponent's hand stirs as they call (Andrew): as many of its
+        // Your opponent's hand stirs as they call (the user): as many of its
         // cards as the call holds rise a little and fall back.
         if (e.who === "them" && cardsNamed(e.said) > 0) push({ kind: "declare", state: s, count: cardsNamed(e.said) });
         break;
@@ -365,7 +365,7 @@ class Plan {
     return end;
   }
 
-  // How a card goes from one pose to another (Andrew: cards "should start
+  // How a card goes from one pose to another (the user: cards "should start
   // with strong jerks, then end with gravity-like acceleration"): onto the
   // table it is tossed; up into a hand it rises, slowing under gravity into
   // the grip; only re-sorting within a hand or a pile keeps a guided glide.
@@ -492,7 +492,7 @@ class Plan {
     for (const e of cuts) {
       const mesh = chosen[e.who];
       const slot = owner.get(e.card);
-      // Andrew: "real people would peel the card out of the deck, then flip
+      // The user: "real people would peel the card out of the deck, then flip
       // it up and look at it." Peeled out of the spread towards its cutter,
       // face down, with a sharp start; flicked up into the hand, face to
       // the cutter, and looked at a moment; then tossed face up onto its
@@ -686,7 +686,7 @@ export function choreograph(prev, next, placement, view = {}, options = {}) {
   plan.direct(next); // settle: exactly layout(next), whatever came before
   const result = plan.result();
   // When each new event is seen to happen, in ms on this plan's clock -- for
-  // the voice (Andrew: the right audio "at the right occasion, and not
+  // the voice (the user: the right audio "at the right occasion, and not
   // before/after"). An event that moves no cards happens once the motion
   // before it is done.
   const beats = {};

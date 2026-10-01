@@ -1,5 +1,5 @@
 // The live score: two numbers, one a side, as a broadcast shows a game's
-// (Andrew: "the immediacy of a WNBA on-screen live score display. 2
+// (the user: "the immediacy of a WNBA on-screen live score display. 2
 // numbers, one for each team- and when you score, there's a minor animation
 // to update the score- unless you score big, in which case there's a little
 // celebratory animation").
@@ -78,7 +78,7 @@ test("a card played is shown on the table, not captioned", () => {
   assert.deepEqual(caption(events, 1), { who: "them", text: "“Quart.”" });
 });
 
-// Andrew: "i want all point scoring to work like that. and for big ones (eg
+// The user: "i want all point scoring to work like that. and for big ones (eg
 // winning more than just a single trick), you can add confetti, or the text
 // gets big and sort of wobbles".
 test("how big a score is: a single point, a handful, or a moment", () => {

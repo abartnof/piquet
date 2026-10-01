@@ -1,5 +1,5 @@
 // How the table looks from the chair: the hands held as people hold cards,
-// and nothing on the table hidden behind your own hand (Andrew, playing the
+// and nothing on the table hidden behind your own hand (the user, playing the
 // first 3D build: "the cards the user holds overlap visually with the cards
 // on the table").
 
@@ -180,7 +180,7 @@ for (const [w, h] of PHONES) {
   });
 }
 
-// Andrew's phone notes: "the hand is small". On the reference phone its
+// The user's phone notes: "the hand is small". On the reference phone its
 // cards stand well over twice the corner index they carry, and the table's
 // cards are big enough to tell apart at a glance.
 test("on a phone, your hand and the table's cards are big enough to read", () => {

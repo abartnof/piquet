@@ -473,7 +473,7 @@ mod holdings_tests {
 
     #[test]
     fn each_holding_says_what_it_scores_if_good() {
-        // Andrew: the worth list should say "point: sequence: set: and then
+        // The user: the worth list should say "point: sequence: set: and then
         // showed the points you'd get (if you won each declaration)".
         let held = Hand::parse("AS KS QS JS TS 9S AD KD QD QH 8C 7C").unwrap();
         let score_of = |text: &str| {

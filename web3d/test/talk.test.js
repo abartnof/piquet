@@ -1,5 +1,5 @@
 // What is said at the table, as the dialogue box shows it: your opponent's
-// words and points in one half, yours in the other (Andrew: "we speak a LOT
+// words and points in one half, yours in the other (the user: "we speak a LOT
 // in piquet- those things we say during gameplay are a part of the game").
 
 import test from "node:test";
@@ -114,7 +114,7 @@ test("every event of a partie is told somewhere, or deliberately left to the tab
   }
 });
 
-// Andrew: "think about how during WNBA broadcasts, 3-pointers have a little
+// The user: "think about how during WNBA broadcasts, 3-pointers have a little
 // on-screen animation in the score box. something like that would be fun
 // for special events (not for every event)".
 test("the rare big moments carry a flourish, and ordinary points do not", () => {

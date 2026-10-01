@@ -215,7 +215,7 @@ test("the same state always lays out the same way", () => {
   }
 });
 
-// Andrew: "the cards in the tricks are still clipping each other." Each
+// The user: "the cards in the tricks are still clipping each other." Each
 // card of a trick turns a little, as placed by a hand, so their corners may
 // meet: the one played second lies on the first, never at its level.
 test("the card that follows lies on the card led, a card's thickness above it", () => {

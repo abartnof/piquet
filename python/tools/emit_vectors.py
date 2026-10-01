@@ -1851,7 +1851,7 @@ def emit_match() -> dict:
     The heuristics vectors pin what the ladder *plays*; these pin what the
     log *says* about it -- each decision's ply, seat, phase, agent, hand,
     choice, options and forgone, and the deal's summary -- which is the
-    training log Andrew asked for, "so the correlation between training
+    training log the user asked for, "so the correlation between training
     epochs and skill gained can be analyzed later". Deterministic on the
     same seam as the heuristics vectors: erraticism zero, BALANCED.
 

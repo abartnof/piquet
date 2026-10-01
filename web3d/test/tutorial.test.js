@@ -1,6 +1,6 @@
-// The tutorial: Andrew's four pages (web3d/tutorial.md) -- an introduction,
+// The tutorial: the user's four pages (web3d/tutorial.md) -- an introduction,
 // then one before each phase of play -- what they say, and when they come.
-// Andrew: "make sure the rules that they specify are identical to how this
+// The user: "make sure the rules that they specify are identical to how this
 // videogame works", so the rules they state are checked against the engine's
 // own events, not only against their wording.
 

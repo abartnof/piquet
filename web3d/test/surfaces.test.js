@@ -1,5 +1,5 @@
 // The table top: eighteen procedural monochrome patterns, one chosen at
-// random when a partie begins and kept while it is played (Andrew's spec,
+// random when a partie begins and kept while it is played (the user's spec,
 // docs/TABLE3D.md). Everything but the final stroke onto a canvas is pure.
 
 import test from "node:test";

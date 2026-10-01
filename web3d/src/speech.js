@@ -1,5 +1,5 @@
 // What the table says aloud: the protocol's events as a queue of recorded
-// phrases, each with its speaker (Andrew: "maximal speaking (anything a human
+// phrases, each with its speaker (the user: "maximal speaking (anything a human
 // would say, we'll say)"). The phrases and their ids are web3d/tools/voice.py's;
 // how they are said follows Cavendish, *The Laws of Piquet* (1885) --
 // docs/VOICE.md. A pure function, so the page only plays what it returns.

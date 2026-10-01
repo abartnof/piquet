@@ -1,4 +1,4 @@
-// The table top: procedural monochrome patterns, after Andrew's spec
+// The table top: procedural monochrome patterns, after the user's spec
 // (docs/TABLE3D.md, "Table surface patterns"). A single ink drawn over a
 // flat light base into a 1024-pixel tile, which repeats across an unlit
 // table; no image assets. One pattern is chosen at random when the
@@ -57,7 +57,7 @@ export const PATTERNS = Object.freeze([
 
 // The pattern to lay: the player's own pick if they made one; else `saved`,
 // if the caller keeps one; else a new one at random. The page draws one
-// at random as it opens and keeps it while it is open (Andrew: "a single
+// at random as it opens and keeps it while it is open (the user: "a single
 // table top is chosen- at random- when the user opens the html. but it
 // never changes (unless manually it's changed)").
 export function chooseSurface({ chosen, saved, random = Math.random }) {

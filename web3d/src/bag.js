@@ -1,4 +1,4 @@
-// Saying a thing several ways without repeating yourself (Andrew: "i don't
+// Saying a thing several ways without repeating yourself (the user: "i don't
 // want *any* sounds to be repetitive"). Each thing said has a bag of the
 // ways it can be said: they come out in a shuffled order, every one before
 // any comes round again, and the bag is refilled so that its first is never

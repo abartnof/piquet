@@ -1,6 +1,6 @@
 // The physics of the celebrations: real gravity, in the table's units.
 //
-// Andrew's prototype (in git at 272ff15, web3d/reference/celebrations-prototype.html) set the
+// The user's prototype (in git at 272ff15, web3d/reference/celebrations-prototype.html) set the
 // rule these keep: "AUTHENTIC PHYSICS WHERE POSSIBLE. Things that fly must
 // follow real ballistic arcs under gravity ... do not fake with sine bounces
 // or straight-line tweens when a real trajectory is available." The table is

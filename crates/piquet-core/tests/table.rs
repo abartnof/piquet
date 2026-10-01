@@ -360,7 +360,7 @@ const ROSTER: [&str; 5] = ["Bess", "Cotton", "Cavendish", "Hoyle", "Foster"];
 
 #[test]
 fn the_opponent_is_never_named() {
-    // Andrew: "don't refer to the dealer as a proper name, just call them
+    // The user: "don't refer to the dealer as a proper name, just call them
     // your opponent." The roster's names are for the ladder, not the table.
     for level in 1..=5 {
         let mut table = Table::new(level, 90 + level);
