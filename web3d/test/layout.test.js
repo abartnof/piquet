@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { Vector3 } from "three";
 import { cardCorners } from "../src/kinematics.js";
 import { layout } from "../src/layout.js";
-import { arrange } from "../src/hand.js";
+import { arrange, sortMode } from "../src/hand.js";
 import { CAMERA, CARD, ZONES, ZONES_PORTRAIT } from "../src/units.js";
 import { partie } from "./partie.js";
 
@@ -168,6 +168,31 @@ test("the hand is fanned in the order chosen, left to right", () => {
     const right = new Vector3(1, 0, 0);
     const byX = [...hand].sort((a, b) => a.pose.position.dot(right) - b.pose.position.dot(right));
     assert.deepEqual(byX.map((x) => x.code), arrange(s, sort).flat());
+  }
+});
+
+// On a phone the fan spans the same angle however the hand is sorted and
+// however many cards are left -- the cards spread to fill it, up to a limit
+// -- so it never leaves the screen's width unused (the user: "the cards are
+// being held pretty tight in the hand, which is leaving white space around
+// the deck").
+test("on a phone, the fan spans its whole angle whatever the sort, until cards would spread too far", () => {
+  const zone = ZONES_PORTRAIT.yourHand;
+  const angle = (hand) => {
+    const dirs = hand.map((x) => new Vector3(0, 1, 0).applyQuaternion(x.pose.quaternion));
+    const tilt = dirs.map((d) => Math.atan2(d.x, Math.hypot(d.y, d.z)));
+    return (Math.max(...tilt) - Math.min(...tilt)) / (Math.PI / 180);
+  };
+  for (const s of states.filter((x) => x.prompt.kind === "play" || x.prompt.kind === "exchange")) {
+    for (const sort of ["auto", "suit", "rank"]) {
+      const hand = layout(s, { sort, zones: ZONES_PORTRAIT }).filter((x) => x.zone === "your-hand");
+      if (hand.length < 2) continue;
+      const fan = angle(hand);
+      const gaps = arrange(s, sortMode(s, sort)).length - 1;
+      const most = zone.spread * (hand.length - 1) + zone.groupGap * gaps;
+      if (most >= zone.span) assert.ok(Math.abs(fan - zone.span) < 0.6, `${hand.length} cards sorted by ${sort} fan ${fan.toFixed(1)} degrees, not ${zone.span}`);
+      else assert.ok(fan <= zone.span + 0.6, `${hand.length} cards fan ${fan.toFixed(1)} degrees`);
+    }
   }
 });
 

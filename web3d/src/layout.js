@@ -78,13 +78,20 @@ function wonRow(zone, tricks, { x, z, span }, { toward }) {
 function yourHand(state, view, zones) {
   const zone = zones.yourHand;
   const groups = arrange(state, sortMode(state, view.sort));
+  // With a `span` (a phone), the cards spread to fill that angle, however
+  // many groups the sort makes and however many cards are left -- but never
+  // wider apart than `spread`.
+  const count = groups.flat().length;
+  const spread = zone.span && count > 1
+    ? Math.min(zone.spread, (zone.span - (groups.length - 1) * zone.groupGap) / (count - 1))
+    : zone.spread;
   const raw = [];
   let angle = 0;
   groups.forEach((group, g) =>
     group.forEach((_, i) => {
       if (g > 0 && i === 0) angle += zone.groupGap * DEG;
       raw.push(angle);
-      angle += zone.spread * DEG;
+      angle += spread * DEG;
     }),
   );
   const middle = raw.length ? (raw[0] + raw[raw.length - 1]) / 2 : 0;

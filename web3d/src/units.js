@@ -42,7 +42,7 @@ export const CAMERA = Object.freeze({
 export const CAMERA_PORTRAIT = Object.freeze({
   position: Object.freeze([0, 40, 72]),
   target: Object.freeze([0, 0, 0]),
-  reach: Object.freeze({ up: 0.207, down: -0.363, across: 0.294 }),
+  reach: Object.freeze({ up: 0.207, down: -0.334, across: 0.298 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
@@ -86,7 +86,10 @@ export const ZONES = Object.freeze({
 export const ZONES_PORTRAIT = Object.freeze({
   // Held up at 50 degrees rather than 75, so the eye sees the faces nearly
   // square on and the hand reads large.
-  yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 14, spread: 4.4, groupGap: 2, lean: 40 }),
+  // The fan spans 29 degrees on a wide arc whatever the sort -- the cards
+  // spread to fill it, up to 5.5 degrees apart -- so it takes the screen's
+  // width and shows more of each card (layout.js).
+  yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 36, spread: 5.5, span: 29, groupGap: 2, lean: 40 }),
   theirHand: Object.freeze({ centre: Object.freeze([0, 8, -16]), radius: 14, spread: 3.8, lean: 15 }),
   ribbon: Object.freeze({ x: 16.5, z: -3, spacing: 1.05 }),
   yourCut: Object.freeze({ x: -5, z: 6.5 }),
