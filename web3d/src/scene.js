@@ -23,7 +23,8 @@ import {
   VSMShadowMap,
   WebGLRenderer,
 } from "three";
-import { aim } from "./framing.js";
+import { M3, M3_MS } from "./easing.js";
+import { aim, STRIPS } from "./framing.js";
 import { BASE, PATTERNS, drawSurface } from "./surfaces.js";
 import { CAMERA } from "./units.js";
 
@@ -46,11 +47,15 @@ export function createScene(
   // The share of the width the information column takes, across the table:
   // the table is framed in the play area beside it (framing.js).
   let inset = 0;
+  // Upright, the strips the table is framed between (framing.js): as they
+  // stand on the way to `target`, which they ease toward.
+  let strips = { ...STRIPS };
+  let target = { ...STRIPS };
   const stage = { portrait: false, onReframe: null };
   // Place the eye for this window: upright, or across. Explicit eye, at and
   // fov (from the page's query, for tuning) win.
   function frame(aspect) {
-    const { upright } = aim(camera, aspect, inset, canvas.clientHeight || undefined);
+    const { upright } = aim(camera, aspect, inset, canvas.clientHeight || undefined, strips);
     if (eye || at || fov) {
       if (eye) camera.position.set(...eye);
       if (at) camera.lookAt(...at);
@@ -176,5 +181,44 @@ export function createScene(
     return true;
   }
 
-  return Object.assign(stage, { scene, camera, renderer, key, render, registerInk, setInset, setSurface, frames: () => frames });
+  // The strips the overlay leaves on a phone, in CSS pixels, as measured:
+  // the table eases to its new framing as a Material 3 element changes size
+  // -- emphasized decelerate, a long duration -- or, `instant`, is simply
+  // there. The tween is the scene's own, so it runs whether or not the cards
+  // are moving.
+  let easing = null;
+  function setStrips(next, { instant = false } = {}) {
+    if (Math.abs(next.top - target.top) < 1 && Math.abs(next.foot - target.foot) < 1) return false;
+    target = { top: next.top, foot: next.foot };
+    const aspect = () => (canvas.clientWidth || 1) / (canvas.clientHeight || 1);
+    if (instant || !portrait) {
+      easing = null;
+      strips = { ...target };
+      frame(aspect());
+      render();
+      return true;
+    }
+    const restart = !easing;
+    easing = { from: { ...strips }, start: performance.now() };
+    const step = (now) => {
+      if (!easing) return;
+      const u = M3.emphasizedDecelerate((now - easing.start) / M3_MS.long2);
+      strips = {
+        top: easing.from.top + (target.top - easing.from.top) * u,
+        foot: easing.from.foot + (target.foot - easing.from.foot) * u,
+      };
+      frame(aspect());
+      render();
+      if (u < 1) requestAnimationFrame(step);
+      else easing = null;
+    };
+    if (restart) requestAnimationFrame(step);
+    return true;
+  }
+
+  return Object.assign(stage, {
+    scene, camera, renderer, key, render, registerInk, setInset, setStrips, setSurface,
+    strips: () => ({ ...target }),
+    frames: () => frames,
+  });
 }

@@ -493,8 +493,52 @@ async function main() {
   function reframe() {
     const beside = getComputedStyle(info).getPropertyValue("--beside").trim() === "1";
     if (stage.setInset(beside ? info.getBoundingClientRect().right + 8 : 0)) stage.render();
+    measureStrips();
   }
   window.addEventListener("resize", reframe);
+
+  // On a phone, the strips the overlay takes along the top and at the foot,
+  // measured, and the table framed between them -- so it has all the room
+  // the aids you have on leave it, and none of theirs (framing.js). What
+  // each moment needs is remembered at its tallest, by the kind of question,
+  // the aids on and the width: the table settles once into the room a phase
+  // needs, rather than breathing with every line of the prompt.
+  const tallest = new Map();
+  const GAP = 6; // between a strip and the cards
+  let measured = false;
+  let measuring = 0;
+  function measureStrips() {
+    if (measuring) return;
+    // After the overlay's buttons have drawn themselves.
+    measuring = requestAnimationFrame(() => {
+      measuring = 0;
+      if (!stage.portrait) return;
+      const s = engine.state();
+      if (ui.withheld) return; // the moment between rounds asks nothing
+      const box = (id) => {
+        const n = document.getElementById(id);
+        return n && !n.hidden && n.offsetParent && !n.classList.contains("floating") ? n.getBoundingClientRect() : null;
+      };
+      // A folded explanation counts; opened, it is read over the table, and
+      // what it pushes down is not measured until it folds again.
+      const open = document.getElementById("rule").classList.contains("open");
+      const top = Math.max(0, ...["bug", "rule", "worth"].map(box).filter(Boolean).map((r) => r.bottom)) + GAP;
+      const controls = box("controls");
+      const foot = controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
+      const key = `${s.prompt.kind}|${prefs.explain !== false}|${!!s.aids.hints}|${window.innerWidth}`;
+      const was = tallest.get(key) ?? { top: 0, foot: 0 };
+      const now = { top: open ? was.top || stage.strips().top : Math.max(was.top, top), foot: Math.max(was.foot, foot) };
+      tallest.set(key, now);
+      stage.setStrips(now, { instant: TESTING || !measured });
+      measured = true;
+    });
+  }
+  // The overlay's buttons draw themselves a moment after it renders, and an
+  // explanation opens and folds: measured again whenever the strips change.
+  if (window.ResizeObserver) {
+    const watch = new ResizeObserver(() => measureStrips());
+    for (const id of ["bug", "rule", "worth", "controls"]) watch.observe(document.getElementById(id));
+  }
 
   // Carry out a command. The engine answers for your opponent on this
   // thread, so outside the tests the page first shows that they are thinking
@@ -833,8 +877,9 @@ async function main() {
       for (let i = 0; i < lit.length; i += 4) if (Math.abs(lit[i] - bare[i]) + Math.abs(lit[i + 1] - bare[i + 1]) + Math.abs(lit[i + 2] - bare[i + 2]) > 12) n += 1;
       return n;
     },
-    // The heights the phone's table is framed between (framing.js).
-    strips: () => STRIPS,
+    // The heights the phone's table is framed between, as last measured
+    // (framing.js).
+    strips: () => stage.strips(),
   };
 }
 

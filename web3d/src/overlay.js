@@ -478,6 +478,48 @@ export function createOverlay(root, on) {
     return [null, null];
   }
 
+  // On a phone the explanation folds to two lines in the top strip; a tap
+  // opens it over the table, its chevron turning as Material 3's do, and
+  // another folds it. Whether it is open is yours to choose, and stays so
+  // from one moment to the next. The chevron shows only when there is more
+  // to read.
+  let ruleOpen = false;
+  function ruleFold() {
+    const card = $("rule");
+    const folding = compact.matches;
+    card.classList.toggle("open", folding && ruleOpen);
+    if (folding) {
+      card.setAttribute("role", "button");
+      card.tabIndex = 0;
+      card.setAttribute("aria-expanded", String(ruleOpen));
+    } else {
+      card.removeAttribute("role");
+      card.removeAttribute("tabindex");
+      card.removeAttribute("aria-expanded");
+    }
+    requestAnimationFrame(() => card.classList.toggle("clamped", folding && (ruleOpen || ruleLonger())));
+  }
+  // More than the two lines it folds to -- whatever its height is doing
+  // while it opens or folds.
+  function ruleLonger() {
+    const text = $("rule").querySelector(".rule-text");
+    if (!text) return false;
+    return text.scrollHeight > 2 * parseFloat(getComputedStyle(text).lineHeight) + 1;
+  }
+  function toggleRule() {
+    if (!compact.matches) return;
+    if (!ruleOpen && !ruleLonger()) return; // nothing more to read
+    ruleOpen = !ruleOpen;
+    ruleFold();
+  }
+  $("rule").addEventListener("click", toggleRule);
+  $("rule").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    toggleRule();
+  });
+  compact.addEventListener("change", ruleFold);
+
   let shownLayers = { explain: null, hints: null };
   let lastKind = null;
   const calmMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -528,21 +570,23 @@ export function createOverlay(root, on) {
     const arriving = (layer, on) => (on && shownLayers[layer] === false ? " arriving" : "");
     const lines = [];
     if (fact) lines.push(el("p", { class: "ask" }, fact));
-    // The long line -- what the rules make of this moment -- sits in the
-    // column on the left when there is room, leaving only the question and
-    // its answers under the hand (the user: "long explanations ... on the left
-    // side, and shorthand on the bottom"); a phone keeps it here.
-    const aside = !compact.matches;
+    // The long line -- what the rules make of this moment -- is information,
+    // so it goes with the information, leaving only the question and its
+    // answers under the hand (the user: "long explanations ... on the left
+    // side, and shorthand on the bottom"): in the column on the left, or on a
+    // phone in the strip along the top, folded to two lines (ruleFold).
     const ruleCard = $("rule");
     const told = rule && explain;
-    if (told && !aside) lines.push(el("p", { class: `note${arriving("explain", explain)}` }, rule));
-    if (told && aside) {
+    if (told) {
       if (ruleCard.hidden || ruleCard.dataset.text !== rule) {
         ruleCard.classList.toggle("arriving", ruleCard.hidden);
         ruleCard.dataset.text = rule;
-        ruleCard.replaceChildren(el("div", { class: "card-title" }, "What it means"), el("p", { class: "rule-text" }, rule));
+        const chevron = icon("expand");
+        chevron.classList.add("chevron");
+        ruleCard.replaceChildren(el("div", { class: "card-title" }, "What it means"), el("p", { class: "rule-text" }, rule), chevron);
       }
       ruleCard.hidden = false;
+      ruleFold();
     } else {
       ruleCard.hidden = true;
     }

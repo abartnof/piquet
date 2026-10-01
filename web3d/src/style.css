@@ -424,6 +424,9 @@ body {
   line-height: 1.4;
   color: var(--md-sys-color-on-surface-variant);
 }
+.rule-card > .chevron {
+  display: none; /* a phone folds the card; the column has room for all of it */
+}
 .rule-card.arriving {
   animation: layer 480ms var(--ease-in);
   animation: layer 480ms var(--spring);
@@ -1473,8 +1476,54 @@ kbd {
     padding-top: 3px;
     font-size: 12.5px;
   }
-  .asked .note {
+  /* What the rules make of the moment: two lines under the score, a tap
+     to read the rest, over the table; the chevron turns as it opens. */
+  .rule-card {
+    padding: 6px 10px 7px 14px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 0 6px;
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .rule-card .card-title {
     display: none;
+  }
+  .rule-text {
+    font-size: 13px;
+    line-height: 1.35;
+    max-height: calc(2 * 1.35em);
+    overflow: hidden;
+    transition: max-height 200ms var(--ease-out);
+  }
+  .rule-card.clamped {
+    cursor: pointer;
+  }
+  .rule-card.clamped:not(.open) .rule-text {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 0.9em), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 0.9em), transparent);
+  }
+  .rule-card.open .rule-text {
+    max-height: 30em;
+    transition: max-height 500ms var(--ease-in);
+  }
+  .rule-card .chevron {
+    display: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 0;
+    color: var(--md-sys-color-on-surface-variant);
+    transition: transform 300ms var(--spring);
+  }
+  .rule-card.clamped .chevron {
+    display: block;
+  }
+  .rule-card.open .chevron {
+    transform: rotate(180deg);
+  }
+  .rule-card:focus-visible {
+    outline: 2px solid var(--md-sys-color-primary);
+    outline-offset: -2px;
   }
   /* The question, a little smaller, so most fit one line. */
   .asked {
@@ -1606,6 +1655,7 @@ kbd {
     animation: none;
   }
   .chevron,
+  .rule-text,
   .fold-body,
   .fold-inner,
   .fold.open > .fold-head .chevron,

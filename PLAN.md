@@ -245,6 +245,35 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026 (evening): the phone held upright, cards larger, aids shown
+
+The user, playing upright on a phone: the cards "really small", a lot of
+table showing; and *"think about how it would look with ALL the on-screen
+displays on ... use all the white space well without colliding"*.
+
+- **Measured first**, at Safari's 393 x 664: the table was fitted to its
+  height and used half the width; your cards stood ~89 px tall, the
+  table's ~36 px wide.
+- **A lower eye and a tighter table** (`db6de16`): eye 40 cm up rather than
+  60; the table's rows a card and a little apart; the trick side by side;
+  your hand nearer. ~128 px and ~45 px, before the strips below. A grid
+  search over eye and hand placement chose it; the staging test now raises
+  held cards only when they can be raised, and the layout test's
+  footprints go round a card's edges (one axis was never tried).
+- **On a phone the explanation shows.** It was hidden there outright,
+  although Explain was on. It goes with the information, in the top strip
+  under the score: two lines, a tap opens the rest over the table, the
+  chevron turning on the spring.
+- **The table takes the room the strips leave.** The framing reserved the
+  strips at their tallest (worth card, three calls, hint) at all times.
+  Now the page measures them, remembers each kind of moment at its
+  tallest for the aids on, and the eye eases to the new framing (M3
+  emphasized decelerate, 500 ms). In play, with every aid on, your cards
+  stand ~160 px. The browser test plays two deals with Explain and Hints
+  on and holds the strips to the framing at every step.
+- **TODO 19** added: every icon button gets M3 motion.
+- Not merged to `main`.
+
 ### 1 October 2026 (later): the phone's worth card floats
 
 - **On a phone nothing in the top strip covers the bar's buttons.** The
@@ -906,6 +935,22 @@ Ordered by how much they are needed, not by size.
     two protocol events and a line in the point's explanation; a talon peek
     was measured to be useless against this opponent, which always draws
     them (see the log, 30 September).
+19. **Every icon that is a button moves, Material 3 style** (asked 1
+    October 2026: *"make sure all the icons we're using that are buttons
+    are suitably animated"*) -- **in every format**: a wide screen, a
+    tablet and a phone alike (the user: "in ALL formats- not just
+    phone"). Go through the table's icon buttons (the
+    top bar's new partie, game log, help and settings; undo; the hint's
+    Follow; the worth card's grip and chevron; the settings and tutorial
+    dialogs' buttons) and give each M3 motion: a state layer, a press
+    ripple, and where the icon means a change of state (a toggle, a fold, a
+    chevron) the icon itself turns or morphs on the spring. **All of it on
+    Material 3's motion tokens** (the user: "use md3 motion easing for
+    button animations"): the easing and duration tokens in
+    `web3d/src/easing.js` (`M3`, `M3_MS`) and `--ease`, `--ease-in`,
+    `--ease-out` and `--spring` in `style.css`, never ad-hoc curves or
+    `linear`; everything still off under `prefers-reduced-motion`. The
+    explanation's chevron on a phone already turns (1 October).
 
 ## Code review findings
 

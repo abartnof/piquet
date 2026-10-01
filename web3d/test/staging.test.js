@@ -124,7 +124,12 @@ const SORTS = ["auto", "suit", "rank", "combos"];
 // declare. Once play begins nothing is raised.
 const raised = (s) =>
   s.prompt.kind === "exchange" ? { selected: s.hand } : s.prompt.kind === "declare" ? { lifted: s.hand } : {};
-const bands = (height) => ({ top: 1 - (2 * STRIPS.top) / height, foot: -1 + (2 * STRIPS.foot) / height });
+const bands = (height, strips = STRIPS) => ({ top: 1 - (2 * strips.top) / height, foot: -1 + (2 * strips.foot) / height });
+// The strips as the page measures them, which follow what is on show: the
+// score alone and the bare question in play, up to the tallest -- the
+// explanation, what your hand is worth, a hint and three calls to choose
+// from.
+const STRIP_SETS = [STRIPS, { top: 100, foot: 96 }, { top: 214, foot: 230 }];
 
 // The upright eye fits its field to `reach`, so the reach must be the
 // table's own: nothing beyond it, and no slack to waste on a small screen.
@@ -157,19 +162,22 @@ for (const [w, h] of PHONES) {
   const camera = cameraFor(aspect, 0, h);
   const place = (s, extra = {}) => layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, ...extra });
 
-  test(`on a ${w} x ${h} phone, the table lies between the information and the controls`, () => {
-    assert.ok(framing(aspect, 0, h).upright);
-    const { top, foot } = bands(h);
-    for (const s of states) {
-      for (const x of SORTS.flatMap((sort) => place(s, { ...raised(s), sort }))) {
-        for (const [px, py] of onScreen(x.pose, camera)) {
-          assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
-          assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
-          assert.ok(Math.abs(px) < 0.98, `${x.zone} at x ${px.toFixed(3)}, off the side at ${s.phase}`);
+  for (const strips of STRIP_SETS) {
+    test(`on a ${w} x ${h} phone, the table lies between the information and the controls, ${strips.top} and ${strips.foot} px tall`, () => {
+      assert.ok(framing(aspect, 0, h, strips).upright);
+      const framed = cameraFor(aspect, 0, h, strips);
+      const { top, foot } = bands(h, strips);
+      for (const s of states) {
+        for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye: framed.position, ...raised(s), sort }))) {
+          for (const [px, py] of onScreen(x.pose, framed)) {
+            assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
+            assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
+            assert.ok(Math.abs(px) < 0.98, `${x.zone} at x ${px.toFixed(3)}, off the side at ${s.phase}`);
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   test(`on a ${w} x ${h} phone, nothing on the table hides behind your hand`, () => {
     for (const s of states) {

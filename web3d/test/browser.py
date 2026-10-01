@@ -746,26 +746,35 @@ def main() -> int:
         if width > 390:
             failures.append(f"a phone scrolls sideways: the page is {width}px wide")
         shot(phone, "07-phone")
-        # The table is framed between the strips framing.js assumes: the
-        # information along the top and the controls at the foot must keep
-        # to them, whatever is asked -- two whole deals, played quickly.
-        strips = phone.evaluate("window.piquet3d.strips()")
+        # The table is framed between the strips as the page measures them:
+        # the information along the top and the controls at the foot never
+        # stand taller than the table was framed for, whatever is asked --
+        # two whole deals, played quickly, with the explanation and hints on.
+        phone.evaluate("""localStorage.setItem('piquet3d.aids.3', JSON.stringify({hints: true, play_forced: true, play_winners: false, declare_for_me: false}))""")
+        goto(phone, "test&level=3&seed=7", fresh=False)
         worst = {"top": 0, "foot": 0}
+        least = {"top": 9999, "foot": 9999}
+        ruled = False
         for n in range(200):
             s = state(phone)
             if s["prompt"]["kind"] == "next_deal" and s["deal"] >= 2:
                 break
+            phone.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
+            strips = phone.evaluate("window.piquet3d.strips()")
+            for k in least:
+                least[k] = min(least[k], strips[k])
             bands = phone.evaluate("""() => {
                 const box = (id) => { const n = document.getElementById(id); return n && !n.hidden && n.offsetParent ? n.getBoundingClientRect() : null; };
-                const top = Math.max(...["bug", "worth"].map(box).filter(Boolean).map((r) => r.bottom));
+                const top = Math.max(...["bug", "worth", "rule"].map(box).filter(Boolean).map((r) => r.bottom));
                 const controls = box("controls");
                 const bar = box("topbar");
-                const covers = ["bug", "worth", "tab"].filter((id) => {
+                const covers = ["bug", "rule", "worth", "tab"].filter((id) => {
                     const r = box(id);
                     return r && bar && r.left < bar.right && r.right > bar.left && r.top < bar.bottom && r.bottom > bar.top;
                 });
                 return { top, foot: controls && controls.height ? innerHeight - controls.top : 0, covers };
             }""")
+            ruled = ruled or phone.evaluate("!document.getElementById('rule').hidden")
             if bands["covers"]:
                 failures.append(f"on a phone at {s['phase']}, {bands['covers']} cover the bar's buttons")
             for k in worst:
@@ -777,7 +786,11 @@ def main() -> int:
             if command is None:
                 break
             phone.evaluate(f"window.piquet3d.send({command!r})")
-        print(f"  phone strips at their tallest: top {worst['top']:.0f}px, foot {worst['foot']:.0f}px (framed for {strips['top']}, {strips['foot']})")
+        print(f"  phone strips: top {least['top']:.0f}-{worst['top']:.0f}px, foot {least['foot']:.0f}-{worst['foot']:.0f}px")
+        if not ruled:
+            failures.append("on a phone with Explain on, the explanation was never shown")
+        if least["top"] >= worst["top"] - 20 and least["foot"] >= worst["foot"] - 20:
+            failures.append(f"on a phone the table never took the room the strips leave: framed between {least} and {worst}")
         if phone.errors:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()

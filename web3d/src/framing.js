@@ -12,23 +12,27 @@
 //
 // Below PORTRAIT_BELOW the table is laid out for a phone held upright, under
 // its own eye, and the information sits along the top instead. There the
-// overlay's strips are fixed heights in CSS pixels, so a short window has
-// less room for the table than a tall one: the field is fitted to the band
-// between them, and the picture lifted into it.
+// overlay's strips are heights in CSS pixels, so a short window has less
+// room for the table than a tall one: the field is fitted to the band
+// between them, and the picture lifted into it. The page measures the
+// strips as they stand -- they grow with the explanation, what your hand is
+// worth, a hint, the calls to choose from -- so the table takes whatever
+// room they leave (the user: "use all the white space well without
+// colliding with the other elements").
 
 import { PerspectiveCamera } from "three";
 import { CAMERA, CAMERA_PORTRAIT, PORTRAIT_BELOW } from "./units.js";
 
-// The compact overlay's strips at their tallest, in CSS pixels: along the
-// top the score, and while you exchange and declare the folded line of what
-// your hand is worth; at the foot the prompt, its choices and the tools.
-// The browser test holds the page to them.
+// The compact overlay's strips, in CSS pixels, until the page has measured
+// its own: along the top the score, and while you exchange and declare the
+// folded line of what your hand is worth; at the foot the prompt, its
+// choices and the tools.
 export const STRIPS = Object.freeze({ top: 142, foot: 194 });
 
 // A phone as the tests and the page assume one, when no height is given.
 const PHONE_HEIGHT = 844;
 
-export function framing(aspect, inset = 0, height = PHONE_HEIGHT) {
+export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
   const upright = aspect < PORTRAIT_BELOW;
   if (!upright) {
     const area = aspect * (1 - inset);
@@ -40,8 +44,8 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT) {
   // enough for the table's reach to fill it -- or, on a squat window, wide
   // enough for its width -- and the lift that centres the table in it.
   const { up, down, across } = CAMERA_PORTRAIT.reach;
-  const top = 1 - (2 * STRIPS.top) / height;
-  const foot = -1 + (2 * STRIPS.foot) / height;
+  const top = 1 - (2 * strips.top) / height;
+  const foot = -1 + (2 * strips.foot) / height;
   const tan = Math.max((up - down) / (top - foot), across / (0.96 * aspect));
   const lift = (top + foot) / 2 - (up + down) / (2 * tan);
   const fov = (360 / Math.PI) * Math.atan(tan);
@@ -49,9 +53,9 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT) {
 }
 
 // Aim a camera as the page does, for a window of this shape (and, upright,
-// this height in CSS pixels).
-export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT) {
-  const f = framing(aspect, inset, height);
+// this height in CSS pixels, between these strips).
+export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
+  const f = framing(aspect, inset, height, strips);
   camera.position.set(...f.position);
   camera.lookAt(...f.target);
   camera.fov = f.fov;
@@ -69,8 +73,8 @@ export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT) {
   return f;
 }
 
-export function cameraFor(aspect, inset = 0, height = PHONE_HEIGHT) {
+export function cameraFor(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
   const camera = new PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
-  aim(camera, aspect, inset, height);
+  aim(camera, aspect, inset, height, strips);
   return camera;
 }
