@@ -189,6 +189,69 @@ def check_breaks(browser, failures, dealer):
     page.context.close()
 
 
+def check_phone_worth(browser, failures):
+    """On a phone, what your hand is worth floats: its folded line drags it
+    (the user: "make it floating so you can drag it around, since mobile
+    phone real estate is sparce"), a tap still opens it, it is never lost
+    off the screen, and it stays where it was put. Neither it nor the tab
+    covers the buttons at the top right (the user found it over the gear)."""
+    phone = open_page(browser, "test&level=1&seed=7", viewport={"width": 390, "height": 664})
+    for n in range(20):
+        s = state(phone)
+        if s["prompt"]["kind"] == "exchange":
+            break
+        phone.evaluate(f"window.piquet3d.send({dull(s, n)!r})")
+    phone.wait_for_timeout(300)
+    rect = lambda sel: phone.evaluate(
+        f"(() => {{ const r = document.querySelector({sel!r}).getBoundingClientRect(); return {{ x: r.left, y: r.top, right: r.right, bottom: r.bottom, h: r.height }}; }})()")
+    is_open = lambda: phone.evaluate("document.getElementById('worth').classList.contains('open')")
+    floating = lambda: phone.evaluate("document.getElementById('worth').classList.contains('floating')")
+    bar = rect("#topbar")
+    # The tab, opened from the score, keeps clear of the buttons too.
+    phone.locator("#bug").click()
+    phone.wait_for_timeout(400)
+    tab = phone.evaluate("(() => { const t = document.getElementById('tab'); const r = t.getBoundingClientRect(); return r.width ? { right: r.right, top: r.top, bottom: r.bottom } : null; })()")
+    if tab is None or (tab["right"] > bar["x"] and tab["top"] < bar["bottom"]):
+        failures.append(f"on a phone the opened tab covers the bar's buttons, or did not open: {tab}, bar {bar}")
+    phone.locator("#bug").click()
+    phone.wait_for_timeout(400)
+
+    def drag(dx, dy):
+        line = rect("#worth .worth-summary")
+        x, y = line["x"] + 60, line["y"] + line["h"] / 2
+        phone.mouse.move(x, y)
+        phone.mouse.down()
+        for i in range(1, 11):
+            phone.mouse.move(x + dx * i / 10, y + dy * i / 10)
+        phone.mouse.up()
+        phone.wait_for_timeout(200)
+
+    before = rect("#worth")
+    if before["right"] > bar["x"] and before["y"] < bar["bottom"]:
+        failures.append(f"on a phone, what your hand is worth covers the bar's buttons: {before}, bar {bar}")
+    drag(0, 250)
+    after = rect("#worth")
+    if not floating() or abs(after["y"] - before["y"] - 250) > 4 or is_open():
+        failures.append(f"dragging what your hand is worth: from {before['y']:.0f} to {after['y']:.0f}, floating {floating()}, opened {is_open()}")
+    phone.locator("#worth .worth-summary").click()
+    phone.wait_for_timeout(400)
+    if not is_open():
+        failures.append("after a drag, a tap did not open what your hand is worth")
+    drag(3000, 3000)
+    far = rect("#worth")
+    if far["x"] < 8 or far["y"] < 8 or far["right"] > 390 - 7 or far["bottom"] > 664 - 7:
+        failures.append(f"dragged past the edge, what your hand is worth left the screen: {far}")
+    kept = rect("#worth")
+    goto(phone, "test&level=1&seed=7", fresh=False)
+    phone.wait_for_timeout(300)
+    back = rect("#worth")
+    if abs(back["x"] - kept["x"]) > 2 or abs(back["y"] - kept["y"]) > 40:
+        failures.append(f"what your hand is worth did not stay where it was put: {kept} then {back}")
+    if phone.errors:
+        failures.append(f"console errors dragging on a phone: {phone.errors}")
+    phone.context.close()
+
+
 def take_turn(page, failures, n, checked):
     """One human decision, made by clicking. False once the partie is over."""
     s = state(page)
@@ -696,8 +759,15 @@ def main() -> int:
                 const box = (id) => { const n = document.getElementById(id); return n && !n.hidden && n.offsetParent ? n.getBoundingClientRect() : null; };
                 const top = Math.max(...["bug", "worth"].map(box).filter(Boolean).map((r) => r.bottom));
                 const controls = box("controls");
-                return { top, foot: controls && controls.height ? innerHeight - controls.top : 0 };
+                const bar = box("topbar");
+                const covers = ["bug", "worth", "tab"].filter((id) => {
+                    const r = box(id);
+                    return r && bar && r.left < bar.right && r.right > bar.left && r.top < bar.bottom && r.bottom > bar.top;
+                });
+                return { top, foot: controls && controls.height ? innerHeight - controls.top : 0, covers };
             }""")
+            if bands["covers"]:
+                failures.append(f"on a phone at {s['phase']}, {bands['covers']} cover the bar's buttons")
             for k in worst:
                 if bands[k] > worst[k]:
                     worst[k] = bands[k]
@@ -711,6 +781,7 @@ def main() -> int:
         if phone.errors:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()
+        check_phone_worth(browser, failures)
 
         browser.close()
 

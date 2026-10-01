@@ -245,6 +245,19 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026 (later): the phone's worth card floats
+
+- **On a phone nothing in the top strip covers the bar's buttons.** The
+  user found what the hand is worth over the settings gear: the strip ran
+  the full width while the bar's column of four buttons is 164 px tall.
+  The strip now stops short of the column (the score tab, opened from the
+  score, too).
+- **And the card floats** (the user: "make it floating so you can drag it
+  around, since mobile phone real estate is sparce"): its folded line,
+  with a grip, drags it anywhere; a tap still opens it; it is kept wholly
+  on the screen (`drag.js`) and stays where it was put. Phone only.
+- **Merged to `main`** with the work below, at the user's word.
+
 ### 1 October 2026: a moment between the declarations' rounds; the sort; the tutorial's words
 
 Work on `dev`.
@@ -267,9 +280,6 @@ Work on `dev`.
   your opponent won the cut and dealt (3 runs in 4, on `main`'s page as on
   `dev`'s). It now starts the tutorial again until you are younger; 4 runs
   in 4 pass.
-- **Not merged to `main`** (merging publishes): the user has not yet seen
-  the moment between rounds, and it has been run only in headless Chromium,
-  not in Safari.
 - **Left open:** the score bug still waits for a move's last spoken line,
   so when your opponent opens the next round in the same move, the last
   round's points tick after the new round's first call. It was so before;

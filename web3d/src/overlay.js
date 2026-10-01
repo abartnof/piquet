@@ -30,6 +30,7 @@ import "@material/web/labs/segmentedbuttonset/outlined-segmented-button-set.js";
 import { caption, live, scoredSince, tierOf } from "./scorebug.js";
 import { PATTERNS } from "./surfaces.js";
 import { leftNote } from "./leftovers.js";
+import { isDrag, keepOnScreen } from "./drag.js";
 
 const THEM = "your opponent";
 const Them = "Your opponent";
@@ -66,6 +67,7 @@ const ICONS = {
   explain: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>',
   hint: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
   close: '<path d="M6 6l12 12M18 6 6 18"/>',
+  grip: '<path d="M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01"/>',
 };
 
 // Material's own symbols, where the user asked for them -- back, forward, the
@@ -678,14 +680,19 @@ export function createOverlay(root, on) {
     }
     const chevron = icon("expand");
     chevron.classList.add("chevron");
-    const summary = el("button", { class: "worth-summary", "aria-expanded": String(worthOpen) },
+    const grip = icon("grip");
+    grip.classList.add("grip");
+    const summary = el("button", { class: "worth-summary", "aria-expanded": String(worthOpen), title: "Tap to open; drag to move" },
+      grip,
       el("span", { class: "worth-sum-title" }, "If good"),
       ...(any ? line : [el("span", { class: "worth-sum" }, "your hand calls nothing yet")]),
       chevron);
     summary.addEventListener("click", () => {
+      if (worthDragged) return; // the end of a drag, not a tap
       worthOpen = !worthOpen;
       card.classList.toggle("open", worthOpen);
       summary.setAttribute("aria-expanded", String(worthOpen));
+      placeWorth(); // opened, it is taller: still all on the screen
     });
     card.classList.toggle("open", worthOpen);
     card.replaceChildren(
@@ -695,6 +702,80 @@ export function createOverlay(root, on) {
     // The category being called in view, if the card has had to scroll.
     const now = card.querySelector(".worth-name.now");
     if (now) card.scrollTop = Math.max(0, now.offsetTop - card.offsetTop - 28);
+    placeWorth();
+  }
+
+  // On a phone the card floats, and its folded line drags it about (the
+  // user: "make it floating so you can drag it around, since mobile phone
+  // real estate is sparce"). It starts in the strip along the top, clear of
+  // the buttons there; once dragged it stays where it was put, partie to
+  // partie, always wholly on the screen. A tap still opens and folds it.
+  const WORTH_AT = "piquet3d.worth-at";
+  let worthAt = null;
+  try {
+    const kept = JSON.parse(localStorage.getItem(WORTH_AT));
+    if (Number.isFinite(kept?.x) && Number.isFinite(kept?.y)) worthAt = kept;
+  } catch (e) {
+    /* storage refused: it starts in the strip */
+  }
+  let worthDrag = null; // { id, from, start, moved }: a press on the line
+  let worthDragged = false; // the press just ended was a drag
+  function placeWorth() {
+    const card = $("worth");
+    const floating = compact.matches && !!worthAt && !card.hidden;
+    card.classList.toggle("floating", floating);
+    if (!floating) {
+      card.style.left = card.style.top = "";
+      return;
+    }
+    const { width, height } = card.getBoundingClientRect();
+    worthAt = keepOnScreen(worthAt, { width, height }, { width: window.innerWidth, height: window.innerHeight });
+    card.style.left = `${worthAt.x}px`;
+    card.style.top = `${worthAt.y}px`;
+  }
+  {
+    // The press is followed on the window, so that a finger or a pointer
+    // faster than the card still carries it; a tap stays the line's click.
+    const card = $("worth");
+    const move = (e) => {
+      if (!worthDrag || e.pointerId !== worthDrag.id) return;
+      const to = { x: e.clientX, y: e.clientY };
+      if (!worthDrag.moved) {
+        if (!isDrag(worthDrag.from, to)) return;
+        worthDrag.moved = true;
+        card.classList.add("dragging");
+      }
+      worthAt = { x: worthDrag.start.x + to.x - worthDrag.from.x, y: worthDrag.start.y + to.y - worthDrag.from.y };
+      placeWorth();
+    };
+    const drop = (e) => {
+      if (!worthDrag || e.pointerId !== worthDrag.id) return;
+      if (worthDrag.moved) {
+        worthDragged = true;
+        card.classList.remove("dragging");
+        try {
+          localStorage.setItem(WORTH_AT, JSON.stringify(worthAt));
+        } catch (err) {
+          /* it just won't be remembered */
+        }
+      }
+      worthDrag = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", drop);
+      window.removeEventListener("pointercancel", drop);
+    };
+    card.addEventListener("pointerdown", (e) => {
+      worthDragged = false;
+      if (!compact.matches || e.button > 0 || !e.target.closest(".worth-summary")) return;
+      const rect = card.getBoundingClientRect();
+      worthDrag = { id: e.pointerId, from: { x: e.clientX, y: e.clientY }, start: { x: rect.left, y: rect.top }, moved: false };
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", drop);
+      window.addEventListener("pointercancel", drop);
+    });
+    // Turned, or from a phone's width to a wide screen's and back.
+    window.addEventListener("resize", placeWorth);
+    compact.addEventListener("change", placeWorth);
   }
 
   // ---- the tools under your hand: the sort, undo, the hint ----------------------

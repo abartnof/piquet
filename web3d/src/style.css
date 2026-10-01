@@ -1403,10 +1403,12 @@ kbd {
   .brand {
     display: none;
   }
+  /* The strip stops short of the bar's column of buttons, so nothing in it
+     -- the score, what your hand is worth, the tab -- ever covers them. */
   .info {
     --beside: 0;
     left: 8px;
-    right: 8px;
+    right: 58px;
     top: 8px;
     bottom: auto;
     width: auto;
@@ -1432,7 +1434,6 @@ kbd {
   /* The live score in one row -- you, the deal, your opponent -- and the
      caption under it. */
   .bug {
-    margin-right: 50px;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
     gap: 0 8px;
@@ -1511,6 +1512,29 @@ kbd {
   .worth-card md-chip-set {
     flex-wrap: nowrap;
     overflow-x: auto;
+  }
+  /* Its folded line drags it about the screen; once moved it floats. */
+  .worth-summary {
+    touch-action: none;
+    cursor: grab;
+  }
+  .worth-summary .grip {
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 0 -4px 0 -6px;
+    stroke-width: 3;
+    color: var(--md-sys-color-outline);
+  }
+  .info > .worth-card.floating {
+    position: fixed;
+    width: min(340px, calc(100vw - 66px));
+    max-height: 60vh;
+    z-index: 3;
+  }
+  .worth-card.dragging {
+    cursor: grabbing;
+    box-shadow: 0 2px 4px rgb(0 0 0 / 0.2), 0 8px 24px 4px rgb(0 0 0 / 0.14);
   }
   .controls {
     left: 8px;
