@@ -6,7 +6,8 @@
 // the overlay; keeps the player's preferences, aids and game; and turns
 // clicks and keys into commands.
 
-import { loadTextures } from "./art.js";
+import { loadTextures, vectorWidth } from "./art.js";
+import { facesFor, jumboTextures, phoneHere } from "./faces.js";
 import { createDeck } from "./deck.js";
 import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
@@ -55,6 +56,7 @@ const OLD_AID_STORE = "piquet3d.aids.2";
 const TUTORIAL_STORE = "piquet3d.tutorial";
 const DEFAULT_PREFS = {
   tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random",
+  faces: "auto",
 };
 // Playing out your winners is opt-in: the user, finding their cards played
 // for them mid-trick, "i didn't intend for that to happen".
@@ -112,10 +114,9 @@ async function main() {
     at: numbers("at"),
     fov: numbers("fov") ? numbers("fov")[0] : undefined,
   });
-  const textures = await loadTextures(ART, {
-    anisotropy: Number(params.get("aniso")) || stage.renderer.capabilities.getMaxAnisotropy(),
-    pixelRatio: stage.renderer.getPixelRatio(),
-  });
+  const anisotropy = Number(params.get("aniso")) || stage.renderer.capabilities.getMaxAnisotropy();
+  const textures = await loadTextures(ART, { anisotropy, pixelRatio: stage.renderer.getPixelRatio() });
+  let facesShown = "classic"; // which faces the cards wear (showFaces, below)
   const deck = createDeck(stage, textures, { inkWidth: Number(params.get("ink") || 2.5) });
   let readyMs = 0;
   const hooks = {
@@ -128,7 +129,7 @@ async function main() {
       gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
       return performance.now() - t0;
     },
-    art: () => ({ vector: textures.vector, width: textures.width, ms: Math.round(textures.ms), readyMs: Math.round(readyMs) }),
+    art: () => ({ faces: facesShown, vector: textures.vector, width: textures.width, ms: Math.round(textures.ms), readyMs: Math.round(readyMs) }),
   };
 
   // The look spike, the angles and the motion demo are pages of their own.
@@ -150,6 +151,27 @@ async function main() {
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let prefs = recallPrefs({ ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
   if (!SORTS.includes(prefs.sort)) prefs = { ...prefs, sort: "auto" }; // a sort since retired
+
+  // The card faces: Jumbo Index on a phone, held either way, and the classic
+  // faces on an iPad or a computer -- or whichever you choose in Settings,
+  // changed where the cards lie (faces.js). ?faces=jumbo or classic to try.
+  const phone = phoneHere();
+  const faceSets = { classic: textures.faces };
+  function showFaces(choice) {
+    const want = facesFor(choice, phone);
+    if (want === facesShown) return;
+    faceSets[want] ??= jumboTextures(Object.keys(textures.faces), {
+      width: textures.width ?? vectorWidth(stage.renderer.getPixelRatio()),
+      anisotropy,
+    });
+    deck.setFaces(faceSets[want]);
+    // The set put away gives back its GPU memory; its images stay, to be
+    // uploaded again if it is chosen again.
+    for (const texture of Object.values(faceSets[facesShown])) texture.dispose();
+    facesShown = want;
+    stage.render();
+  }
+  showFaces(params.get("faces") ?? prefs.faces);
   // `withheld`: the moments between rounds still to come in this move, until
   // which your buttons wait.
   const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null, withheld: 0 };
@@ -479,7 +501,7 @@ async function main() {
         ? `Cut here: lift ${Math.min(Math.max(f.index + 1, s.prompt.fewest), s.prompt.most)} cards (Space)`
         : `${labelOf(f.code)}${s.prompt.kind === "play" && !s.prompt.legal.includes(f.code) ? ", which you may not play" : ""} (Space to ${s.prompt.kind === "play" ? "play" : ui.selected.includes(f.code) ? "keep" : "throw"})`
       : null;
-    overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus, tutorial: inTutorial() } });
+    overlay.render(s, { prefs, ui: { ...ui, busy: director.busy(), focusText: focus, tutorial: inTutorial(), faces: facesShown } });
     reframe();
     // In the tutorial, a phase you begin is introduced once the table is
     // still.
@@ -583,6 +605,7 @@ async function main() {
     store(PREF_STORE, prefs);
     if (name === "speed") director.timeline.speed = value;
     if (name === "sort") director.rearrange();
+    if (name === "faces") showFaces(value);
     if (name === "surface") {
       // Picking one lays it now, and for good; choosing Random keeps the
       // table in front of you until the page is next opened.

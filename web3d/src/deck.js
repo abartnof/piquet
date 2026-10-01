@@ -51,6 +51,15 @@ export function createDeck(stage, textures, { inkWidth = 2.5 } = {}) {
     mesh.userData.code = code;
   }
 
+  // Change every face's art -- to the Jumbo Index faces, or back to the
+  // classic ones (faces.js) -- on the cards where they lie.
+  function setFaces(faces) {
+    for (const [code, face] of Object.entries(faces)) {
+      known[code][0].map = face;
+      known[code][0].needsUpdate = true;
+    }
+  }
+
   // Which line a card is drawn with, and whether its face is dimmed (a card
   // that may not be played). Faces are one material per card, so dimming
   // one dims only that card.
@@ -60,7 +69,7 @@ export function createDeck(stage, textures, { inkWidth = 2.5 } = {}) {
     if (code) known[code][0].color.setScalar(dim ? 0.72 : 1);
   }
 
-  return { card, reveal, decorate, geometry, ink };
+  return { card, reveal, decorate, setFaces, geometry, ink };
 }
 
 export function place(mesh, pose) {

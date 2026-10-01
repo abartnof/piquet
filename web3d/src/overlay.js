@@ -278,6 +278,13 @@ export function createOverlay(root, on) {
     [["random", "A new one each time the page opens"], ...PATTERNS.map((p) => [p.id, p.name])].map(([v, words]) =>
       el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
   table.addEventListener("change", () => on.pref("surface", table.value));
+  // The card faces, in the user's words. Until one is chosen the faces are
+  // the device's -- large text on a phone, classic elsewhere (faces.js) --
+  // and the menu shows those; the change is made where the cards lie.
+  const faces = el("md-outlined-select", { "data-pref": "faces", label: "Card faces" },
+    [["classic", "Classic"], ["jumbo", "Large Text (Optimized for smaller screens)"]].map(([v, words]) =>
+      el("md-select-option", { value: v }, el("div", { slot: "headline" }, words))));
+  faces.addEventListener("change", () => on.pref("faces", faces.value));
   const copy = el("md-text-button", {}, "Copy game record");
   copy.addEventListener("click", () => on.copy(copy));
   const creditsOpen = el("md-text-button", {}, "Credits");
@@ -292,7 +299,7 @@ export function createOverlay(root, on) {
     el("div", { slot: "content", class: "settings" },
       el("h3", {}, "Help at the table"), tutorialRow, aidSwitches,
       el("h3", {}, "The table"), prefSwitches,
-      el("div", { class: "selects" }, levelInSettings, speed, table),
+      el("div", { class: "selects" }, levelInSettings, speed, table, faces),
       el("h3", {}, "Keys"),
       el("dl", { class: "keys" },
         [["← →", "move along your hand, or the pack when cutting"],
@@ -1146,6 +1153,7 @@ export function createOverlay(root, on) {
       for (const sw of root.querySelectorAll("md-switch[data-pref]")) sw.selected = !!prefs[sw.dataset.pref];
       speed.value = String(prefs.speed);
       table.value = prefs.surface ?? "random";
+      faces.value = ui.faces ?? "classic";
       renderTab(s, prefs);
       renderBug(s);
       renderPlayedForYou(s);

@@ -245,6 +245,31 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026 (night): large-text faces for phones
+
+The user, finding the cards still small on the phone, gave a recipe for
+"Jumbo Index" faces (committed as given, `d2507ac`, then removed once
+built in): corners only, the rank large in the platform's bold UI font, the
+suit larger beneath it on one axis, both ends.
+
+- **Built as given** (`web3d/src/faces.js`): Canvas 2D at load, no font
+  bundled. Two departures for the table, both mechanical: paper to the
+  edge (the table's ink line draws the edge and rounds the corners), and
+  drawn at the classic art's width for the screen.
+- **Phones get them, held either way; iPads and computers keep the classic
+  faces** -- a phone is a coarse pointer with a short side under 600 px.
+  Settings > Card faces, in the user's words: *Classic* or *Large Text
+  (Optimized for smaller screens)*; the change is made on the cards where
+  they lie, and the set put away frees its GPU memory.
+- **Left as it is, at the user's word:** in the upright fan each card shows
+  less than the index's width, so a 10 shows mostly its 1 and a Q is part
+  hidden -- "a bit of overlap is fine ... just keep the card design as i
+  gave it".
+- **Seen, not yet acted on:** a phone held sideways gets the wide layout,
+  which does not fit it -- the prompt sits on the hand and the information
+  column takes a third of the width.
+- **Merged to `main`** at the user's word.
+
 ### 1 October 2026 (evening): the phone held upright, cards larger, aids shown
 
 The user, playing upright on a phone: the cards "really small", a lot of

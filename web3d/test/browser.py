@@ -252,6 +252,39 @@ def check_phone_worth(browser, failures):
     phone.context.close()
 
 
+def check_faces(browser, failures):
+    """The card faces: large text on a phone, held either way, and classic on
+    a computer, until Settings chooses -- and the choice changes them where
+    the cards lie."""
+    for name, opts, want in [
+        ("an upright phone", dict(viewport={"width": 390, "height": 664}, is_mobile=True, has_touch=True), "jumbo"),
+        ("a phone held sideways", dict(viewport={"width": 844, "height": 390}, is_mobile=True, has_touch=True), "jumbo"),
+        ("a computer", dict(viewport={"width": 1280, "height": 800}), "classic"),
+    ]:
+        context = browser.new_context(**opts)
+        page = context.new_page()
+        page.errors = []
+        page.on("pageerror", lambda e: page.errors.append(str(e)))
+        page.requests = []
+        goto(page, "test&level=1&seed=7")
+        shown = page.evaluate("window.piquet3d.art().faces")
+        if shown != want:
+            failures.append(f"{name} shows the {shown} faces, not the {want}")
+        other = "classic" if want == "jumbo" else "jumbo"
+        page.get_by_role("button", name="Settings").click()
+        page.wait_for_timeout(400)
+        page.locator("md-outlined-select[data-pref=faces]").click()
+        page.wait_for_timeout(300)
+        label = "Classic" if other == "classic" else "Large Text (Optimized for smaller screens)"
+        page.locator("md-select-option", has_text=label).click()
+        page.wait_for_timeout(300)
+        if page.evaluate("window.piquet3d.art().faces") != other:
+            failures.append(f"on {name}, choosing {label} in Settings did not change the faces")
+        if page.errors:
+            failures.append(f"console errors changing the faces on {name}: {page.errors}")
+        context.close()
+
+
 def take_turn(page, failures, n, checked):
     """One human decision, made by clicking. False once the partie is over."""
     s = state(page)
@@ -795,6 +828,7 @@ def main() -> int:
             failures.append(f"console errors on a phone: {phone.errors}")
         phone.context.close()
         check_phone_worth(browser, failures)
+        check_faces(browser, failures)
 
         browser.close()
 

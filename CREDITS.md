@@ -21,6 +21,15 @@ Licence: **CC0 1.0 Universal** — a public-domain dedication
 required; it is given anyway, gladly. The game uses the 32 piquet cards (seven
 to ace in each suit), rasterised from the vector original.
 
+### The large-text faces
+
+The faces Settings calls **"Large Text (Optimized for smaller screens)"**,
+the default on a phone, are the project's own design (the user's, 1 October
+2026): no third-party art. They are drawn in the browser at load time
+(`web3d/src/faces.js`) in the device's own fonts -- its bold UI font for the
+ranks (San Francisco on an iPhone) and its symbol font for the suits -- so no
+font is bundled, fetched or redistributed.
+
 ### The back
 
 **"Reverso baraja española"**, by **Germarquezm**, from Wikimedia Commons (2013).
