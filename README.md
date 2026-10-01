@@ -1,12 +1,14 @@
 # Piquet
 
-**[Play it in your browser](https://abartnof.github.io/piquet/)**
+**[Play it in your browser](https://abartnof.github.io/piquet/)**, or to play
+offline, save [the page](https://github.com/abartnof/piquet/raw/main/web3d/piquet3d.html)
+(right-click, *Save Link As*) and open it.
 
 Piquet is a card game for two players and a 32-card pack. It was France's
 national card game from the sixteenth century until it faded after the First
-World War, and David Parlett calls it "still one of the most skill-rewarding
-card games for two". This is a version you can play against the computer, and
-learn as you play.
+World War, and [David Parlett](https://en.wikipedia.org/wiki/David_Parlett)
+calls it "still one of the most skill-rewarding card games for two". This is
+a version you can play against the computer, and learn as you play.
 
 ## Learning the game
 
@@ -23,7 +25,6 @@ The whole game is one self-contained web page, `web3d/piquet3d.html` (about
 3 MB). It needs no installation, no server and no network, so you can also
 download it and open it from disk.
 
-You play a partie of six deals against your opponent, settled by the rubicon.
 There are five levels of opponent, from one that "plays their highest card and
 hopes" to one that "reads the endgame exactly". Explanations, hints and undo
 can each be switched on or off.
@@ -33,9 +34,6 @@ can each be switched on or off.
   stronger levels work out what they can about your hand from what you declare
   and discard.
 - **The table** is drawn with three.js and Material Web (`web3d/`).
-- **The engine is checked against an oracle.** The project began in Python
-  (`python/`), and that version's answers are kept as golden test vectors
-  (`vectors/`) that the Rust engine must reproduce.
 - A **terminal version** plays the same game: `cargo run -p piquet-cli`.
 
 To build and test it yourself:
@@ -44,7 +42,7 @@ To build and test it yourself:
 python3 web3d/build.py                  # rebuild the page; needs Rust's wasm32 target and `npm ci` in web3d/
 cargo test --release                    # the engine
 (cd web3d && npm test)                  # the table
-(cd python && pytest)                   # the Python oracle
+(cd python && pytest)                   # the original Python version
 ```
 
 `docs/PIQUET.md` has the rules as implemented, with their sources;
@@ -54,7 +52,7 @@ cargo test --release                    # the engine
 ## Thanks
 
 - **John McLeod's [pagat.com](https://www.pagat.com/)**, our authority on the
-  rules, and **David Parlett**.
+  rules, and **[David Parlett](https://en.wikipedia.org/wiki/David_Parlett)**.
 - The period writers whose books we read on the
   [Internet Archive](https://archive.org): **Charles Cotton** (1674),
   **Edmond Hoyle** (1744), **Cavendish** (*The Laws of Piquet*),
