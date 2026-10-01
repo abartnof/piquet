@@ -1,135 +1,74 @@
 # Piquet
 
-A playable, teachable implementation of **Piquet** — the two-player 32-card
-game that was France's national card game from the sixteenth century until it
-faded after the First World War. David Parlett calls it "still one of the most
-skill-rewarding card games for two"; it is now played only by aficionados.
+**[Play it in your browser](https://abartnof.github.io/piquet/)**
 
-The audience is therefore *new players*, and teaching is a first-class goal
-rather than a bonus feature.
+Piquet is a card game for two players and a 32-card pack. It was France's
+national card game from the sixteenth century until it faded after the First
+World War, and David Parlett calls it "still one of the most skill-rewarding
+card games for two". This is a version you can play against the computer, and
+learn as you play.
 
-```
-cargo run -p piquet-cli -- --level 3
-```
+## Learning the game
 
-That cuts for the deal and plays you a partie of six deals against your
-opponent, settled by the rubicon. `--level 1..5` chooses how well they play;
-`--seed N` replays a partie exactly, cut and played the same way. The terminal
-and the browser table are two clients of one session (`piquet_core::table`),
-so a seed is the same partie in both.
+- **[pagat.com](https://www.pagat.com/notrump/piquet.html)**: the clearest
+  modern rules, and the ones this game follows.
+- **[Wikipedia](https://en.wikipedia.org/wiki/Piquet)**: the history and the
+  variants.
+- **The game's own tutorial**, offered on its welcome screen, introduces each
+  phase of play as you reach it.
 
-## What is here
+## How it works
 
-| | |
-|---|---|
-| `crates/piquet-core` | the engine: rules, scoring, inference, the agents, the exact endgame solver |
-| `crates/piquet-cli` | a terminal table you can sit down at |
-| `python/` | the **oracle** — the original implementation, which generates the vectors below |
-| `vectors/` | golden JSON: what the engine must compute, in a form both languages read |
-| `docs/DESIGN.md` | why everything is the way it is. The long one |
-| `docs/PIQUET.md` | the rules as implemented, with sources |
-| `docs/LITERATURE.md` | the sources themselves, from Cotton (1674) onward |
-| `PLAN.md` | where the work has got to and what is left |
+The whole game is one self-contained web page, `web3d/piquet3d.html` (about
+3 MB). It needs no installation, no server and no network, so you can also
+download it and open it from disk.
 
-## Two implementations, and why
+You play a partie of six deals against your opponent, settled by the rubicon.
+There are five levels of opponent, from one that "plays their highest card and
+hopes" to one that "reads the endgame exactly". Hints, explanations and undo
+are on by default, and each can be turned off.
 
-The project was built in Python and ported to Rust. The Python has not been
-deleted, because it is the **oracle**: it is the implementation that passes 520
-tests, and every value in `vectors/` was produced by it. A Rust engine that
-reproduces those vectors is, to exactly that extent, correct.
+- **The rules engine** is written in Rust (`crates/piquet-core`) and compiled to
+  WebAssembly inside the page. It deals, scores and plays your opponent, whose
+  stronger levels work out what they can about your hand from what you declare
+  and discard.
+- **The table** is drawn with three.js and Material Web (`web3d/`).
+- **The engine is checked against an oracle.** The project began in Python
+  (`python/`), and that version's answers are kept as golden test vectors
+  (`vectors/`) that the Rust engine must reproduce.
+- A **terminal version** plays the same game: `cargo run -p piquet-cli`.
 
-That is what the vectors are for. They do not make a port *easy* — plain,
-serialisable state does that. They make it **verifiable**, which is a different
-and larger favour: they turn "did I translate this correctly?" from a code
-review into a test run. They caught several things during the port that no
-amount of reading would have, including a display format buried in the event
-log and a sort whose tie-breaking differs between the two languages.
-
-## Running things
-
-Development happens on a cloud VM, in a git clone there; `docs/VM.md` covers
-starting it, getting in, and why `bin/vm`'s sync modes must not be used any
-more. On the VM:
+To build and test it yourself:
 
 ```
-source ~/.cargo/env                # cargo is not on the PATH otherwise
-cargo run -p piquet-cli            # play
-cargo fmt --check && cargo clippy --all-targets --release -- -D warnings \
-  && cargo test --release          # the whole gate
-./target/release/ladder            # rate the opponents against each other
-./target/release/bench 12          # time the exact solver by depth
+python3 web3d/build.py                  # rebuild the page; needs Rust's wasm32 target and `npm ci` in web3d/
+cargo test --release                    # the engine
+(cd web3d && npm test)                  # the table
+(cd python && pytest)                   # the Python oracle
 ```
 
-And from the laptop, `bin/vm --up`, `--status` and `--down` start, inspect
-and stop the instance.
+`docs/PIQUET.md` has the rules as implemented, with their sources;
+`docs/DESIGN.md` explains why the engine is built the way it is;
+`docs/TABLE3D.md` covers the table.
 
-The Python oracle runs from `python/`:
+## Thanks
 
-```
-cd python && ../.venv/bin/pytest
-python tools/emit_vectors.py       # regenerate the golden vectors
-```
+- **John McLeod's [pagat.com](https://www.pagat.com/)**, our authority on the
+  rules, and **David Parlett**.
+- The period writers whose books we read on the
+  [Internet Archive](https://archive.org): **Charles Cotton** (1674),
+  **Edmond Hoyle** (1744), **Cavendish** (*The Laws of Piquet*),
+  **A. Howard Cady** (1896) and **R. F. Foster** (*Foster's Complete Hoyle*,
+  1897).
+- **AustinGabriel64** for the card faces (CC0) and **Germarquezm** for the card
+  back (CC BY-SA 3.0), both from Wikimedia Commons.
+- **three.js**, and Google's **Material Design 3**, **Material Web**, **Lit**
+  and **Material Symbols**.
 
-There is also a **differential harness**, which is a different instrument from
-the vectors. The vectors are a specification: a handful of positions chosen
-because somebody could say why they mattered. This is the other kind of check
-— thousands of deals nobody chose, whose job is to find the divergence no one
-thought to write a case for.
-
-```
-python tools/differential.py 20000 > /tmp/corpus.jsonl   # the oracle plays
-cargo test --release --test differential                 # the Rust replays
-```
-
-The corpus is regenerable and deliberately not committed. Deals where the
-solver had to sample its opponent-hand candidates are marked and skipped: past
-`max_worlds` it takes a *random* sample, and there the two engines part company
-legitimately, because no two languages share a generator.
-
-Regenerate the vectors only when the engine's behaviour changes *on purpose*,
-and then read the diff. A changed vector is either a deliberate rule change or
-a regression, and the tests exist to make sure the difference is never silent.
-
-## A few things the engine knows that the books get wrong
-
-Every one of these was believed, written down, and then overturned by
-measurement. The full list is in `PLAN.md`.
-
-- The maximum score in a deal is **170**, not 153. Sets pay far better per card
-  than length does.
-- **Ducking beats cashing an ace**, because the ace takes the *last* trick,
-  which is worth two.
-- **A point is not a point.** Under the rubicon it is worth six when it carries
-  you over the line — and while your opponent cannot reach a hundred, a point
-  *to them* is worth about **+0.6 to you**, because a rubiconed loser pays the
-  sum of both scores and theirs is part of it.
-- **Elder's advantage is not structural**; it has to be used. He wins 52.5% of
-  deals when both players take the full exchange and 49.6% when they do not.
-- **Elder leads to the first trick blind.** Measured through the engine's own
-  inference, younger can know his hand exactly before a card is played while
-  he still has a couple of hundred possibilities open. She answers his calls
-  but names nothing of her own until he has led — and afterwards only what
-  she won — and that single rule is the whole asymmetry.
-
-## Status
-
-The rules engine, the opponents, the terminal table and a browser table
-(`web/piquet.html`, one file, open it from disk) are complete and the game is
-playable. Still to come: the training mode, and a mixed strategy for
-declarations. `PLAN.md` has the detail.
-
-**A three-dimensional table** — `web3d/piquet3d.html`, again one file that
-works offline — is playable too: the same engine, drawn with three.js as
-cel-shaded cards with ink outlines over a bright, plain table, every move
-animated the way a hand would make it (cards dealt two at a time, turned over
-on the table along an edge, tricks swept to their winner), with Material
-Design 3 controls, a running score tab, hints and undo. Its design, the
-physics of every motion and what was measured along the way are in
-`docs/TABLE3D.md`; `?demo` on the page shows the motions on a loop.
+`CREDITS.md` lists everything with its licence. `docs/LITERATURE.md` lists
+every source we read.
 
 ## Licence
 
-© 2026 Andrew Bartnof, under the MIT License (`LICENSE`). The card art, the
-libraries bundled into the pages and the other third-party pieces keep their
-own licences, listed with their authors in `CREDITS.md`; the card back is
-CC BY-SA 3.0.
+© 2026 Andrew Bartnof, under the MIT License (`LICENSE`). Third-party pieces
+keep their own licences, listed in `CREDITS.md`.
