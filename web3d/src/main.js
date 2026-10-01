@@ -551,9 +551,32 @@ async function main() {
       const was = tallest.get(key) ?? { top: 0, foot: 0 };
       const now = { top: open ? was.top || stage.strips().top : Math.max(was.top, top), foot: Math.max(was.foot, foot) };
       tallest.set(key, now);
-      stage.setStrips(now, { instant: TESTING || !measured });
-      measured = true;
+      reframeTo(now);
     });
+  }
+  // Room taken is given at once, so nothing is ever drawn under the
+  // overlay; room given back waits until the table is still and has
+  // finished speaking. The engine is in the play the moment your last
+  // declaration is made, while the table is still saying the declarations,
+  // and the eye moving then looked like a zoom in the middle of them (the
+  // user: "at some point, the camera zoomed in during the declarations").
+  let settling = null;
+  function reframeTo(next) {
+    clearTimeout(settling);
+    const was = stage.strips();
+    if (TESTING || !measured) {
+      measured = true;
+      stage.setStrips(next, { instant: true });
+      return;
+    }
+    const taken = { top: Math.max(was.top, next.top), foot: Math.max(was.foot, next.foot) };
+    stage.setStrips(taken);
+    if (taken.top === next.top && taken.foot === next.foot) return;
+    const settle = () => {
+      if (director.busy() || overlay.talking()) settling = setTimeout(settle, 250);
+      else stage.setStrips(next);
+    };
+    settling = setTimeout(settle, 250);
   }
   // The overlay's buttons draw themselves a moment after it renders, and an
   // explanation opens and folds: measured again whenever the strips change.

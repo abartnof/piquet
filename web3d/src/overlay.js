@@ -1286,6 +1286,11 @@ export function createOverlay(root, on) {
       $("afloat").append(node);
       return () => node.remove();
     },
+    // Whether the table is still talking: a line waiting its turn, the
+    // score waiting for the dialogue, or a box still up.
+    talking() {
+      return waiting.size > 0 || holdUntil > performance.now() || !!boxes.you || !!boxes.them;
+    },
     // An undo, a new partie: the dialogue is over.
     clearDialogue() {
       holdUntil = 0;
