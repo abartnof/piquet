@@ -97,7 +97,8 @@ test("the cards: 10 for seven tricks or more, nobody at six each, 40 for capot",
 });
 
 test("younger must exchange at least one card, up to what elder left", () => {
-  assert.match(all, /Younger hand:\s*Discards at least 1 card/);
+  assert.match(all, /Elder hand:\s*Discards 1 to 5 cards/);
+  assert.match(all, /Younger hand:\s*Discards 1 to 3 cards, or more if the elder hand left some untaken/);
   assert.doesNotMatch(all, /not to exchange at all/);
   // Elder exchanges first, 1 to 5; younger at least 1 and up to 3 plus
   // whatever elder left -- 7, when elder took only 1.

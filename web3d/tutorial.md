@@ -27,8 +27,8 @@ After all deals, the higher total wins the difference plus 100. If the loser did
 
 **How it works:** After the deal, each player has 12 cards and 8 sit face-down in the talon. The top 5 are reserved for the elder hand (non-dealer) and the bottom 3 for the younger hand (dealer).
 
-1. **Elder hand:** Discards **1 to 5** cards face-down (at least one is required) and draws the same number from the top of the talon.
-2. **Younger hand:** Discards **at least 1** card: up to 3, plus any the elder hand left untaken, and draws the same number. If the elder hand took only 3 cards, the younger hand can draw up to 5.
+1. **Elder hand:** Discards 1 to 5 cards face-down and draws the same number from the top of the talon.
+2. **Younger hand:** Discards 1 to 3 cards, or more if the elder hand left some untaken, and draws the same number. If the elder hand took only 3 cards, the younger hand can draw up to 5.
 3. **Peeking:** If the elder hand takes fewer than 5 cards, they may look at the ones they left.
 
 Discards stay private, but both players can see how many cards the other exchanged, which hints at hand strength.
