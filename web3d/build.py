@@ -3,10 +3,10 @@
 
     python3 web3d/build.py
 
-Compiles the engine to WebAssembly (as web/build.py does for the 2D page),
-bundles web3d/src with three.js and Material Web through esbuild, and inlines
-the engine, the bundle and the stylesheet into web3d/src/index.html. The page
-needs no server and no network: open it from disk and play.
+Compiles the engine to WebAssembly, bundles web3d/src with three.js and
+Material Web through esbuild, and inlines the engine, the bundle and the
+stylesheet into web3d/src/index.html. The page needs no server and no
+network: open it from disk and play.
 
 It prints what every part weighs. Over 5 MB it warns rather than fails: the user
 set that figure as a guideline for modesty ("i want this to be rather modest

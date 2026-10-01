@@ -1,6 +1,6 @@
 //! The table as a protocol: JSON out, one-line commands in.
 //!
-//! A client -- the browser page under `web/`, or anything that replaces it --
+//! A client -- the browser page under `web3d/`, or anything that replaces it --
 //! holds no game logic at all. It asks for the state, draws it, and sends back
 //! one of four commands:
 //!

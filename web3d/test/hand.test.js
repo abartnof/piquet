@@ -1,4 +1,4 @@
-// The order of the human's hand: the 2D page's grouping, for the 3D fan.
+// The order of the human's hand: the first, 2D page's grouping, for the 3D fan.
 
 import test from "node:test";
 import assert from "node:assert/strict";

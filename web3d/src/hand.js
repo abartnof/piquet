@@ -1,7 +1,7 @@
 // The order of the human's hand, as groups set apart from one another.
 //
-// The same logic as the 2D page (web/src/app.js, "the order of the hand"),
-// which the user asked for: while the hand is still being shaped -- the exchange
+// The same logic as the first, 2D page (since retired), which the user
+// asked for: while the hand is still being shaped -- the exchange
 // and the declarations -- the automatic order puts the best holdings first,
 // each set apart, and the rest after; once the play begins it goes back to
 // suits, with the colours alternating.
