@@ -1,9 +1,10 @@
 # The table protocol
 
-How a client plays Piquet against the engine. The browser page in `web/` is one
-such client and deliberately a disposable one; anything that replaces it — a
-three-dimensional table, a native app, a bot harness — talks to the engine in
-exactly this way and needs no game logic of its own.
+How a client plays Piquet against the engine. The 3D table in `web3d/` is one
+such client and deliberately a disposable one (it replaced a plain 2D page,
+`web/`, retired on 1 October 2026); anything that replaces it — a native app,
+a bot harness — talks to the engine in exactly this way and needs no game
+logic of its own.
 
 The engine side is `piquet_core::table` (the session: a partie advanced one
 human decision at a time) and `crates/piquet-wasm` (the same thing as JSON and
@@ -34,9 +35,12 @@ page keeps across a reload, and what "Copy game record" hands over.
 The same `level` and `seed` always produce the same partie — the same packs,
 the same opponent, the same style — and so do the terminal (`piquet --level L
 --seed S`) and every build of the engine, native or WebAssembly (checked byte
-for byte by `web/test/ffi.mjs`). A seed plus the list of accepted commands is
-therefore a complete record of a game: that is what the page's "Copy game
-record" produces, and replaying it reproduces the game exactly.
+for byte: both must end fifteen scripted parties exactly as
+`crates/piquet-wasm/tests/dull-parties.txt` records them -- `cargo test` for
+the native build, `web3d/test/wasm.test.js` for the WebAssembly one). A seed
+plus the list of accepted commands is therefore a complete record of a game:
+that is what the page's "Copy game record" produces, and replaying it
+reproduces the game exactly.
 
 ## Commands
 

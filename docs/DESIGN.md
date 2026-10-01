@@ -336,7 +336,7 @@ total.
 **pagat.com is our authority. Where sources disagree, pagat wins** -- with
 one recorded exception, R8, where pagat departs from the Cavendish laws it
 says it follows. The disagreements are still recorded, but the game plays one
-rule for each, never a switch between readings (Andrew, 30 September 2026:
+rule for each, never a switch between readings (the user, 30 September 2026:
 *"we don't need extra switches, just pick a scoring rule and we'll use
 that"*).
 
@@ -364,7 +364,7 @@ Sources consulted, roughly in order of trustworthiness:
 | R5 | Last trick worth? | 1 *bonus* | Cavendish Law 65: "The winner of the last trick scores **two** instead of one." fr-Wikipedia agrees (2 total); de-Wikipedia says 3 | **2 to its winner** — i.e. the normal 1 plus a bonus of 1. pagat's "one additional point" says the same thing; our earlier reading of this as a flat 1 was an ambiguity, not a conflict |
 | R6 | Exact ties in a category | Neither scores | Wikibooks and Parlett agree explicitly. fr-Wikipedia dissents: all valid combinations count regardless | **Neither scores**; equality still does not block pique or repique |
 | R7 | Scoring system | Rubicon, 6 deals | Parlett distinguishes Rubicon from basic "Saunt" (race to 100) | **Rubicon** |
-| R8 | In what order do scores reckon for a **pique**? | "For pique the scores are counted in the order they actually occur" -- so elder's declarations and first lead come before anything younger enters | **Cavendish** (1885, Laws 67 and 69, read verbatim): "The scores, whether obtained by the elder or younger hand, reckon in the following order: I. Carte blanche. II. Point. III. Sequences. …"; a pique is thirty "before his adversary has reckoned anything that deal". pagat says its rules are Cavendish's (1882), so this looks like pagat's slip, not a different game | **Cavendish's category order -- the exception to pagat.** Chosen by Andrew, 30 September 2026. The readings differ in 127 of 20,000 rung-4 deals (1 in 160): elder at 30 from sequences and sets while younger won the point has a pique on pagat, none on Cavendish |
+| R8 | In what order do scores reckon for a **pique**? | "For pique the scores are counted in the order they actually occur" -- so elder's declarations and first lead come before anything younger enters | **Cavendish** (1885, Laws 67 and 69, read verbatim): "The scores, whether obtained by the elder or younger hand, reckon in the following order: I. Carte blanche. II. Point. III. Sequences. …"; a pique is thirty "before his adversary has reckoned anything that deal". pagat says its rules are Cavendish's (1882), so this looks like pagat's slip, not a different game | **Cavendish's category order -- the exception to pagat.** Chosen by the user, 30 September 2026. The readings differ in 127 of 20,000 rung-4 deals (1 in 160): elder at 30 from sequences and sets while younger won the point has a pique on pagat, none on Cavendish |
 
 A note on **pique and repique bookkeeping**: French and German sources express
 these as the score *jumping to* 60 and 90 respectively, rather than as +30 and
@@ -610,8 +610,8 @@ subgame level.**
 Deals alone: C(32,12) x C(20,12) = **2.84e13**. Elder then has 1,585 legal
 discards (sum of C(12,k) for k=1..5), and the play tree follows. Suit
 symmetry divides by only 24. This is heads-up-limit-poker scale, which
-required a research cluster and terabytes of storage. It is not a
-pocket-money project, and no transition matrix will be built.
+required a research cluster and terabytes of storage. That is far beyond
+this project's budget, and no transition matrix will be built.
 
 ### 4.2 But the play phase is nearly perfect information
 
@@ -1412,9 +1412,9 @@ Recorded in full because the reasoning is long and the decision is not made.
 
 ### 13.1 What is actually required
 
-**A self-contained HTML page, well under 5 MB.** Andrew is agnostic about the
-language — he raises JavaScript only because of the packaging it allows, not
-because he wants JavaScript. A GUI should be *possible*; text-based is
+**A self-contained HTML page, well under 5 MB.** The user was agnostic about the
+language — JavaScript came up only because of the packaging it allows, not
+for its own sake. A GUI should be *possible*; text-based is
 acceptable.
 
 **Size does not constrain the choice.** The engine — rules, agents, solver,
@@ -1469,7 +1469,7 @@ restructuring it costs perhaps 10%, not 5×.
 
 ### 13.5 The candidates, ranked against the four goals
 
-Andrew's four goals, in his words: **quick training**, a **smart game**, a
+The user's four goals, in their words: **quick training**, a **smart game**, a
 **fast game**, a **GUI**. Two things have to be said before the table is
 readable.
 

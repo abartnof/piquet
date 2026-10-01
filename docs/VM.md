@@ -188,10 +188,6 @@ September 2026. The page's libraries and esbuild are pinned by
 in `web3d/` after a fresh clone. Headless Chromium draws WebGL 2 on
 SwiftShader, so the 3D page can be screenshotted without a GPU.
 
-    python3 web/build.py                                   # web/piquet.html
-    node web/test/ffi.mjs target/wasm32-unknown-unknown/release/piquet_wasm.wasm
-    .venv/bin/python web/test/browser.py [screenshot-dir]  # plays it by clicking
-
     (cd web3d && npm ci)                                   # once, after a clone
     python3 web3d/build.py                                 # web3d/piquet3d.html
     (cd web3d && npm test)                                 # the pure modules, in node

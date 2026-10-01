@@ -1,14 +1,16 @@
 # The 3D table — design and plan
 
 > A fresh session should be able to build this from this file alone. It holds
-> the brief (in Andrew's words), every decision taken and why, the physics, the
+> the brief (in the user's words), every decision taken and why, the physics, the
 > architecture, the tests, and a phased TODO with acceptance criteria. The
-> engine, protocol and 2D page it builds on are described in `PLAN.md`,
-> `docs/PROTOCOL.md` and `web/`. Written 27 September 2026, before any 3D code.
+> engine and protocol it builds on are described in `PLAN.md` and
+> `docs/PROTOCOL.md`. Written 27 September 2026, before any 3D code. Since
+> 1 October 2026 the 2D page it grew from (`web/`) is retired and the spoken
+> voice it once had (P13–P18) is removed; both survive in git history.
 
 ## 1. The brief, verbatim
 
-Andrew, 27 September 2026:
+The user, 27 September 2026:
 
 > "start to devise a new gui- 3d (threejs, if you prefer). the cards will be
 > these (Public domain complete playing card deck.svg). the back of the cards
@@ -47,7 +49,7 @@ Andrew, 27 September 2026:
 Standing rules that still apply (from `PLAN.md` and the project memory): TDD;
 atomic commits straight to `main`, often; `set -e` on multi-step shell
 commands; a single self-contained HTML page that stays modest (5 MB is a
-guideline, not a hard limit — Andrew: "i want this to be rather modest and
+guideline, not a hard limit — the user: "i want this to be rather modest and
 easy to use, but it's not a HARD limit"); everything offline;
 no proper names for the opponent — "your opponent"; every aid a toggle; the
 GUI is a client of the protocol and holds no rules.
@@ -56,7 +58,8 @@ GUI is a client of the protocol and holds no rules.
 
 A second client, **`web3d/piquet3d.html`**: the same engine and the same
 protocol as the 2D page (`web/piquet.html`), drawn as a small 3D scene. The 2D
-page stays — it is the fastest way to test the engine, and a fallback.
+page stayed at first, as the fastest way to test the engine and a fallback;
+it was retired on 1 October 2026.
 
 **The look, in one paragraph.** A bright, calm, slightly cartoonish scene: a
 clean pale surface that reads as "a table" only because things rest on it and
@@ -72,7 +75,7 @@ Design 3 surfaces: rounded, quiet, clear.
 **What "freed of grubby cards on dirty furniture" rules out**: green felt and
 wood textures; casino chips, ashtrays and lamps; paper grain and wear;
 dark moody lighting; skeuomorphic chrome on the controls. **What it keeps**:
-the cards themselves (the art Andrew chose), the table as a plane of contact,
+the cards themselves (the art the user chose), the table as a plane of contact,
 and the real choreography of the game — dealing in twos, the talon's five
 crossed over three, tricks face up in front of their winner.
 
@@ -96,10 +99,10 @@ checksums and measurements). Credits: `/CREDITS.md`.
 
 ### 3.2 The art pipeline: build both ways, and choose by eye
 
-Andrew's decision (27 September 2026): **keep the page small enough that we
+The user's decision (27 September 2026): **keep the page small enough that we
 can try the card art both ways — rasterised and vector — and see which we
 prefer.** So phase 3 builds both, behind a build flag, and puts them side by
-side before anything is settled. Neither is the default until he has looked.
+side before anything is settled. Neither is the default until the user has looked.
 
 **What each way buys.** Measured so far: the 32 piquet cards are 2.16 MB of
 the 2.33 MB SVG, the twelve courts alone 1.95 MB.
@@ -142,7 +145,7 @@ Three things the measuring turned up:
   until 7–8 s. The honest clock waits two animation frames after the first
   render (`piquet3d.art().readyMs`). Most of those seconds are SwiftShader
   emulating a GPU on two CPU cores — shader compiles, mipmaps, the shadow
-  blur — and a real GPU should take a fraction of that. **Andrew's machine is
+  blur — and a real GPU should take a fraction of that. **A real machine is
   the number that decides this**, and has not been taken.
 - The capped texture width is a memory decision, not a looks one: 33 textures
   at 1024 px with mipmaps would take ~250 MB of GPU memory; at 768, ~145 MB;
@@ -211,7 +214,7 @@ font via their tokens.)
   is maintained; check its changelog for deprecations when installing.
 - **esbuild 0.28.2** (MIT, build only) bundles `web3d/src/**` + three + Material
   Web into one minified IIFE, which `web3d/build.py` inlines into the page with
-  the wasm and the art, exactly as `web/build.py` does for the 2D page.
+  the wasm and the art, exactly as `web/build.py` did for the retired 2D page.
 - **Dependencies via npm with a lockfile.** `sudo apt install npm` on the VM;
   `web3d/package.json` pins exact versions; `package-lock.json` is committed;
   `node_modules/` is git-ignored; `npm ci` then `node_modules/.bin/esbuild`.
@@ -364,7 +367,7 @@ zero.
    toward the player during the transfer — in the air, in a hand, which is
    physically fine; the "no spinning in the air" rule is about turning cards
    *over on the table*.
-4. **Flip on the table** — Andrew's constraint. Rotate 180° about one edge
+4. **Flip on the table** — the user's constraint. Rotate 180° about one edge
    (the hinge), which stays on the table at its stack height the whole time;
    the card ends one card-width over, face up. θ from 0 to π/2 is driven by a
    finger (ease-out, decelerating to the top); θ from π/2 to π is a fall under
@@ -451,7 +454,7 @@ falls back to `PCFShadowMap` with a console warning — so the spike compares
 the two that remain: `PCFShadowMap` (five hardware-filtered taps on a rotated
 disk: a defined edge, slightly soft) and `VSMShadowMap` (a Gaussian blur: a
 soft, light, diffuse shadow, much like Material's elevation shadows).
-Provisionally **VSM**, pending Andrew's eye; `?shadow=pcf` shows the other.
+Provisionally **VSM**, pending the user's eye; `?shadow=pcf` shows the other.
 
 **What VSM costs, measured (P8).** The click-driven browser test crawled —
 13 to 27 s a turn — and the cause was not the test: every frame re-renders
@@ -470,16 +473,16 @@ table receives; cards cast and receive.
 
 ### 8.4 Colour
 One M3 seed colour generates the overlay's scheme (light theme). Proposal to
-show Andrew in the look spike: a clear blue seed (the card back is navy and
+show the user in the look spike: a clear blue seed (the card back is navy and
 white), with warm amber for "you" and a teal for "your opponent" in the score
 tab. The table: two or three candidate pale surfaces in the spike's
-screenshots — warm paper-white, pale sky, soft sage — for him to choose.
+screenshots — warm paper-white, pale sky, soft sage — for the user to choose.
 
 ## 9. The 2D overlay (Material Design 3)
 
 Floating surfaces over the canvas, nothing modal unless it must be.
 
-- **The score tab** — Andrew's spec: *a floating 2D running tab, a collapsible
+- **The score tab** — the user's spec: *a floating 2D running tab, a collapsible
   list with all the gameplay stages, the subtotal for each part running as it
   goes, for the player and for the opponent.*
   - A floating M3 card (top-right on a laptop; a bottom sheet on a phone),
@@ -566,16 +569,16 @@ Floating surfaces over the canvas, nothing modal unless it must be.
   tab's rows sum to the deal totals; undo, hints, settings, reload; a phone
   viewport; no console errors; screenshots at each stage, read back by eye.
 - **Budget**: the build prints the size of each part and warns over 5 MB;
-  size is weighed against what it buys, with Andrew, not treated as a wall.
+  size is weighed against what it buys, with the user, not treated as a wall.
 
-## 12. Open questions for Andrew (after the look spike)
+## 12. Open questions for the user (after the look spike)
 
 1. The table's colour and mood — from the spike's two or three candidates.
 2. Camera: fixed, or a slight parallax following the pointer?
 3. Play by clicking (now) — add drag-to-play?
 4. Declarations: keep the dialogue purely 2D, or have shown combinations
    lifted in 3D (needs the shown cards in the protocol)?
-5. Defaults for the aids stay as on the 2D page unless he says otherwise
+5. Defaults for the aids stay as on the 2D page unless the user says otherwise
    (hints on, play forced on, play winners on, declare for me off).
 
 ## 13. Phased TODO
@@ -600,7 +603,7 @@ throughout.
 - [x] **P2 — Look spike.** Table surface, hemisphere + directional light,
       soft shadows, toon materials, ink outline (Plan A) on a flat card, a
       floating tilted card and the table; a placeholder card texture.
-      Screenshots of two or three surface colours for Andrew. *Accept*: the
+      Screenshots of two or three surface colours for the user. *Accept*: the
       ink line is continuous around a flat card and a tilted one at several
       angles; shadows of a floating card are visible and soft; it looks
       bright and clean. Decide Plan A or B here.
@@ -611,20 +614,21 @@ throughout.
       `?ink=<px>`, `?eye=x,y,z&at=x,y,z&fov=deg` and `?angles` vary it.
       Camera settled at eye (0, 55, 60) looking at the table's centre; your
       opponent's hand is held **upright** (aimed at their own eye, it was
-      edge-on to you). Provisional defaults, awaiting Andrew: **sky**
+      edge-on to you). Provisional defaults, awaiting the user: **sky**
       surface, **VSM** shadows, 2.5 px ink.
 - [ ] **P3 — Card art, both ways.** Build **raster (WebP) and vector (SVG,
       rasterised at load)** behind a build flag (§3.2), take the listed
-      measurements, and show Andrew the two side by side — size, load time,
-      a close-up — for him to choose. Card geometry with three material
+      measurements, and show the user the two side by side — size, load time,
+      a close-up — to choose. Card geometry with three material
       groups and UVs (faces upright, the back not mirrored) and
       `outlineNormal`. *Accept*: every card renders the right face, upright,
       with the back on the reverse, in both variants; the comparison is in
-      front of Andrew; his choice recorded here.
-      *Built, awaiting his choice.* `python3 web3d/build.py --art svg` writes
-      `web3d/piquet3d-svg.html` (not committed); raster stays the default.
-      Measurements in §3.2. His machine's load time is still to be taken:
-      open each page and read `piquet3d.art().readyMs` in the console.
+      front of the user; the choice recorded here.
+      *Built; raster is the default and is what ships.* `python3
+      web3d/build.py --art svg` writes `web3d/piquet3d-svg.html` (not
+      committed). Measurements in §3.2. The load time on a real machine is
+      still to be taken: open each page and read `piquet3d.art().readyMs` in
+      the console.
 - [x] **P4 — Motion library (node-tested).** `easing.js`, `kinematics.js`,
       `timeline.js` with the invariants in §11. *Accept*: tests green; a
       demo page shows each primitive.
@@ -758,15 +762,14 @@ throughout.
       two packets to show their bottom cards, the cut cards slide out of the
       spread face down and roll over on the table where both players can
       read them, then roll back — the same information, and every turn of a
-      card on the table, as Andrew asked. **Left open, for Andrew**: the
+      card on the table, as the user asked. **Left open, for the user**: the
       idle sway would mean rendering every frame forever, the very cost the
       rest of the page avoids (render on demand), so it is not built; it
-      could be an opt-in "a living table" setting. And sound — a soft snap
-      as a card lands, a whisper as one slides — could be synthesised in
-      the page with no files at all, if he wants it.
+      could be an opt-in "a living table" setting. (Sound, considered here
+      too, was later ruled out: the page makes none.)
 
-- [x] **P10 — Andrew's notes from playing it (27 September 2026).** Nine,
-      given while he played the first build, all built:
+- [x] **P10 — The user's notes from playing it (27 September 2026).** Nine,
+      given while playing the first build, all built:
       1. *"sorting your hand should always be an option, with a md3 ...
          Segmented button near the deck (below?)"* — Material Web's
          outlined segmented button (labs), Auto / Suit / Rank /
@@ -822,7 +825,7 @@ throughout.
       hand's shadow reads as a heavy blob from the overhead eye. (Done: P14.)
 
 - [x] **P11 — The dialogue box, replaced by a live score (27 September).**
-      Seeing the two-halves box, Andrew: *"this box ... is no good. here's
+      Seeing the two-halves box, the user: *"this box ... is no good. here's
       what i want, ultimately: 1. the immediacy of a WNBA on-screen live
       score display. 2 numbers, one for each team- and when you score,
       there's a minor animation to update the score- unless you score big,
@@ -841,7 +844,7 @@ throughout.
       `talk.js` stays: it names the moments and writes the caption.
 
 - [x] **P12 — Motion, text layers, the cut, the table tops (27 September).**
-      Andrew's next round, all built:
+      The user's next round, all built:
       - *"moving cards should start with strong jerks, then end with
         gravity-like acceleration"* — §7.1's minimum-jerk glide is retired
         for anything thrown. `kinematics.toss` (onto the table: launched at
@@ -860,23 +863,23 @@ throughout.
         a toggle chip under the hand (**Explain**, **Hints**; E and H).
       - The "+N" is a bubble over nothing; the opponent's level lives in
         Settings only (*"unnecessary noise when the game is happening"*).
-      - **The table tops** (Andrew's spec, eighteen procedural monochrome
+      - **The table tops** (the user's spec, eighteen procedural monochrome
         patterns): `surfaces.js`, one ink over #EDEEF0, a seamless 1024 px
         tile repeating every 48 cm of an unlit table; shadows laid over it
         by a shadow-only sheet. Chosen at random when the page opens and
-        kept while it is open, new parties included (Andrew: *"a single
+        kept while it is open, new parties included (the user: *"a single
         table top is chosen- at random- when the user opens the html. but
         it never changes (unless manually it's changed)"*); a pick in
         Settings is kept for good. This settles §12's open
         question on the table's colour: the candidates "paper / sky / sage"
         are gone.
 
-- [x] **P13 — The voice (27 September, evening).** Everything a player
+- [x] **P13 — The voice (27 September, evening; removed 1 October 2026).** Everything a player
       says at the table, said aloud, as Cavendish (1885) has it spoken: the
       exchange's announcements, the point by length and value, sequences
       and sets called in full, younger's answers, each player counting
       aloud, pique, repique, capot, the cards, and a few niceties.
-      `docs/VOICE.md` is the plan and the record (pronunciation with its
+      `docs/VOICE.md` (removed; in git history) was the plan and the record (pronunciation with its
       sources, the inventory, the voices and why, the sizes). Two public-
       domain voices, Cori and Norman, 241 clips each as Ogg Opus; the page
       is 4.96 MB. `speech.js` (events -> clips, node-tested) and `voice.js`
@@ -924,7 +927,8 @@ throughout.
       110 px tall on the reference phone — and the browser test plays two
       deals on a phone holding the page's strips to `STRIPS`.
 
-- [x] **P15 — The voice, never the same twice (28 September).** Andrew:
+- [x] **P15 — The voice, never the same twice (28 September; removed 1 October
+      2026).** The user:
       *"i don't want *any* sounds to be repetitive- so, things like 'good',
       'not good', can become variations like 'ah, not good' or 'not good!'"*
       — and *"7mb is fine"*. Every group the voice says now has several
@@ -937,16 +941,16 @@ throughout.
       your opponent hands you the choice of deal, and remarks on a deal you
       win by thirty. Opus at 12 kb/s pays for it. `docs/VOICE.md` §3, §5.
 
-- [x] **P16 — The voice audited (28 September).** Andrew: *"a code review
+- [x] **P16 — The voice audited (28 September).** The user: *"a code review
       of the audio code, + simulate a few games to make sure the audio
       passes your QC"*. Nine defects fixed, among them your opponent's bare
       calls unspoken, the tie-break dialogue out of order, and speech
       running ahead of the cards — now each line waits for its event's
       moment on the animation's clock (`choreography.js` `beats`). The
       silence after deal 1 did not reproduce; the sound is now woken from
-      any sleep on every click and key. `docs/VOICE.md` §7 has the list.
+      any sleep on every click and key. `docs/VOICE.md` §7 (in git history) has the list.
 
-- [x] **P17 — The declarations as a dialogue (28 September).** Andrew:
+- [x] **P17 — The declarations as a dialogue (28 September).** The user:
       *"during the declarations phase, i want two dialogue boxes to pop up
       every move- if you're going first, the first dialogue box' tail
       points down to you, and the second dialogue box' tail points to the
@@ -960,16 +964,19 @@ throughout.
       +N, the caption — waits until the dialogue has been said, so a point
       is scored after "Good.", never before the call; the +N moves aside
       from a box it would cover. The coloured Good/Not good bubbles are
-      retired (*"don't worry about the color-coding"*).
+      retired (*"don't worry about the color-coding"*). Since 1 October 2026,
+      with the voice gone, the words and their turns come from
+      `web3d/tools/phrases.py` and `web3d/src/dialogue.js`.
 
-- [x] **P18 — The sound unwired (28 September).** Andrew: *"i don't want
+- [x] **P18 — The sound unwired (28 September).** The user: *"i don't want
       the html to have any audio"* — and then, *"it all sounds really
       tinny."* The default build embeds no recordings and makes no sound of
       any kind, not even the browser's own speech; the voice settings go
       with it. The dialogue boxes stay, silent, with the bank's words. The
-      page is 3.0 MB. `build.py --audio opus` restores the voice.
+      page is 3.0 MB. On 1 October 2026 the voice was removed from the repository entirely,
+      `build.py --audio` with it.
 
-- [x] **P19 — The tutorial, and a welcome (28 September).** Andrew: *"an
+- [x] **P19 — The tutorial, and a welcome (28 September).** The user: *"an
       introduction (concise, bullet points- nothing too wordy), and an
       introduction before each phase of play? when this 'tutorial' mode is
       on, hints+explanations are on by default ... then when someone opens,
@@ -982,22 +989,22 @@ throughout.
       partie (`tutorial.js`, node-tested for brevity and for the rules as
       the engine plays them). It survives a reload; a new partie ends it.
 
-- [x] **P20 — Andrew's tutorial: four pages, a ?, and a switch (30
-      September).** Andrew wrote the pages himself -- an introduction, the
+- [x] **P20 — The user's tutorial: four pages, a ?, and a switch (30
+      September).** The user wrote the pages -- an introduction, the
       exchange, the declarations, the tricks -- and asked that they be
       *"identical to how this videogame works"*. They live in
       **`web3d/tutorial.md`**, inlined as text by esbuild, so rewording them
       touches no code. Checked rule by rule against the engine and pagat;
-      eight corrections, each with his text's original reading in PLAN.md
-      ("Back, 30 September"), and `test/tutorial.test.js` holds every rule
+      eight corrections, each with the draft's original reading in PLAN.md
+      (the log, 30 September), and `test/tutorial.test.js` holds every rule
       they state against the engine's own events (a low card led scores a
       point, the last trick scores one more, younger takes 1 to 3 plus what
       elder left, the settlement's arithmetic, ...).
 
-      Behaviour, as he specified: picking **Tutorial** opens the
+      Behaviour, as specified: picking **Tutorial** opens the
       introduction, with a note above Back and Next that there is no need to
-      page ahead; the exchange's page pops up once the deal is decided (he
-      first had it follow the introduction at once, then: *"the second
+      page ahead; the exchange's page pops up once the deal is decided (at
+      first it followed the introduction at once, then: *"the second
       tutorial page should pop up after the player decides if they are
       younger/elder"*), and the declarations' and the tricks' pages the first
       time you act in those phases -- each page once, and reading ahead
@@ -1025,7 +1032,7 @@ throughout.
       tutorial page never opens over another dialog: turned on in Settings,
       it waits for Settings to close.
 
-- [x] **P21 — The celebrations (30 September).** Andrew designed seven
+- [x] **P21 — The celebrations (30 September).** The user designed seven
       end-of-partie celebrations with Claude on the web (the prototype,
       kept for its ideas until all seven were in, is in git at `272ff15`:
       `web3d/reference/celebrations-prototype.html`) and asked for them
@@ -1054,7 +1061,7 @@ throughout.
       key light travels with it), **Macarena** (a card person dances; a new
       deck is thrown in and becomes another dancer each lap, up to ten), and
       **Card people** (the eye through their legs, and back, forever).
-      Andrew's notes so far: the finale's cards "explode over the screen and
+      The user's notes: the finale's cards "explode over the screen and
       then go away"; the word clear of its star; every burst "Piquet!"; flat
       cards clean (0.02 cm above the table, as in play).
 
@@ -1066,17 +1073,16 @@ throughout.
 
 ## 14. Notes for the implementer
 
-- Read `docs/PROTOCOL.md` for the state and commands, and `web/src/app.js` for
-  a working client: the resume/replay logic, the sort grouping and the pacing
-  are worth reusing as-is.
-- `web/test/ffi.mjs` and `web/test/browser.py` show how the wasm is driven in
-  node and how the page is driven in Chromium on this VM.
+- Read `docs/PROTOCOL.md` for the state and commands. The retired 2D page
+  (`web/src/app.js`, in git history) was the first working client.
+- `web3d/test/partie.js` and `web3d/test/browser.py` show how the wasm is
+  driven in node and how the page is driven in Chromium on this VM.
 - The engine never needs to know the scene exists. If something seems to need
   an engine change, it is probably a protocol addition — make it there, with a
   test, and bump `protocol` if a client would notice.
 - `cargo` needs `source ~/.cargo/env`; Playwright is in the project `.venv`;
   shell commands with several steps start with `set -e`.
-- **Credit every asset as it arrives.** Andrew: "remember where we get all our
+- **Credit every asset as it arrives.** The user: "remember where we get all our
   assets, so we can credit them (now, that includes MD3)". Anything
   third-party — art, fonts, icons, libraries, build tools, design systems —
   gets its entry in `/CREDITS.md` (what, who, URL, version, licence, our

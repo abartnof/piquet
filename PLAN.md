@@ -1,35 +1,35 @@
-# Piquet — Living Plan
+# Piquet — Project Plan
 
-> Insurance against lost context. `docs/DESIGN.md` holds the *reasoning*,
-> `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the *sources*; this file
-> holds *where we are and what is left*. Last updated overnight, 30
-> September into 1 October 2026 (all seven celebrations in; TODO 1 measured
-> on whole parties -- see "Resume here (overnight ...)" below). Before that, overnight, autonomous: the 3D table has had every note Andrew sent
-> (`docs/TABLE3D.md` P10–P13, the voice included) and **its own phone pass**
-> (P14); **the golden vectors are complete** (fourteen modules, three Rust
-> port defects found and fixed); **the terminal is a client of the core
-> session** and cuts for the deal. TODO 1 has a calibrated world prior
-> fitted and waiting for Andrew's sign-off to measure on whole parties.
+> Working notes: where the project stands and what is left. `docs/DESIGN.md`
+> holds the *reasoning*, `docs/PIQUET.md` the *game*, `docs/LITERATURE.md` the
+> *sources*, `docs/TABLE3D.md` the *3D table*. Kept current as work lands, so
+> that a new session resumes from here rather than re-deriving it. Last
+> updated 1 October 2026, when the repository was made public.
 
 ## Where we are
 
-**Milestones 1–7 complete, and the Rust port with them. Python oracle suite
-green; 118 Rust tests.**
+**Milestones 1–7 complete, and the Rust port with them.** The Python oracle
+suite is green; the Rust suite has 206 tests, and the 3D table's pure modules
+are node-tested.
 
-**It is playable in a browser.** `web/piquet.html` is the whole game in one
-391 KB file — the engine compiled to WebAssembly and inlined, and a
-deliberately plain table. Open it from disk; no server. Andrew's goal for it
-is to play and send notes; "Copy game record" gives a seed and command list
-that replays any game exactly. Rebuild with `python3 web/build.py`.
+**It is playable in a browser, and public.** `web3d/piquet3d.html` is the
+whole game in one ~3 MB file: the engine compiled to WebAssembly and inlined,
+drawn with three.js as cel-shaded cards with ink outlines, with Material
+Design 3 controls, a running score tab, hints, explanations, undo, a
+tutorial, the declarations as dialogue boxes, and an end-of-partie
+celebration. Open it from disk; no server, no network. Since 1 October 2026
+GitHub Pages serves it too (see "Publishing"). `docs/TABLE3D.md` is its
+design and record, phases P0–P21. Settings → *Copy game record* gives a seed
+and command list that replays any game exactly. Rebuild with
+`python3 web3d/build.py`.
 
 **And in a terminal.** `cargo run -p piquet-cli -- --level 3` sits you down
 against your opponent for a partie of six deals, cutting for the deal and
 settling by the rubicon -- a client of the same session (`table.rs`) as the
-browser's page.
-Four measured rungs plus the exact-endgame solver, with styles and
-erraticism, and a mirrored-pair tournament that rates them.
+browser's page. Four measured rungs plus the exact-endgame solver, with
+styles and erraticism, and a mirrored-pair tournament that rates them.
 
-**The GUI is disposable by design.** Andrew: "don't get too attached to the
+**The GUI is disposable by design.** The user: "don't get too attached to the
 gui — we might move to 3d. but i'm interested in the game states, engine,
 etc being done." So the investment is in `table.rs` (the session, advanced
 one human decision at a time) and `docs/PROTOCOL.md` (the JSON a client
@@ -49,11 +49,12 @@ crates/piquet-core/src/
   heuristics.rs    the capability ladder, rungs 1–4
   style.rs         the third axis, calibrated by measurement
   inference.rs     which hands the opponent can possibly hold
+  prior.rs         the fitted world prior (conditional logit)
   solver.rs        exact endgame search, and the agent that uses it
   play.rs          running deals and parties; the move log
   table.rs         a partie as a session: Prompt / Action / Event, for any client
   options.rs       what a player may declare in a category (full, sink, short)
-  opponents.rs     the named roster, Bess to Foster, and seating one
+  opponents.rs     the internal roster, rung by rung, and seating one
   tournament.rs    mirrored-pair duels, Bradley-Terry ratings
   mt19937.rs       CPython's generator, for the one fixed-seed model constant
   rng.rs           the agents' own generator
@@ -62,12 +63,12 @@ crates/piquet-cli/src/
   render.rs        drawing a hand in the language the prompt accepts
 crates/piquet-wasm/src/
   lib.rs           the table as a protocol: JSON out, one-line commands in
-web/
-  src/             index.html, app.js, style.css -- the page, holding no rules
-  build.py         inlines the wasm and the page into web/piquet.html
-  piquet.html      the built, playable, single-file game (committed)
-  test/ffi.mjs     node drives the .wasm; native and wasm32 agree byte for byte
-  test/browser.py  headless Chromium plays whole parties by clicking
+web3d/
+  src/             the 3D table: scene, choreography, overlay, tutorial, celebrations -- no rules
+  build.py         bundles and inlines everything into web3d/piquet3d.html
+  piquet3d.html    the built, playable, single-file game (committed; GitHub Pages serves it)
+  test/            node tests for the pure modules; browser.py plays a partie in Chromium
+  tools/           the card art, the dialogue's phrases, the colour scheme
 python/            the oracle: the original, which generates the vectors
 vectors/           golden JSON, read by both languages
 docs/PROTOCOL.md   the contract a replacement client is written against
@@ -75,8 +76,8 @@ docs/PROTOCOL.md   the contract a replacement client is written against
 
 **The parity gate is met.** Both halves of it:
 
-- Every golden vector reproduces in Rust — twelve modules, from the pack through
-  the solver, including three complete deals replayed transition by
+- Every golden vector reproduces in Rust — fourteen modules, from the pack
+  through the solver, including three complete deals replayed transition by
   transition and all eighty rung-against-rung games.
 - The measured ladder reproduces. 500 mirrored pairs per pairing, anchored on
   random play: Python **L1 335, L2 776, L3 816, L4 863**; Rust **343, 774,
@@ -96,6 +97,37 @@ Over 60 parties of rung-4 play a side averages **145** across six deals, and
 **17 of 120** sides finish short of the rubicon. The threshold is a live
 threat, not a curiosity.
 
+## Publishing (1 October 2026)
+
+- **The repository is public** (`github.com/abartnof/piquet`), and **GitHub
+  Pages serves `main`'s root**: `index.html` forwards to
+  `web3d/piquet3d.html`, keeping any query (`?ending`, a seed), and
+  `.nojekyll` serves the tree as plain files. Checked over HTTP from the
+  repository root in Chromium: it lands on the game, no request leaves the
+  site, no console errors.
+- **Every commit that rebuilds `web3d/piquet3d.html` goes live** on the
+  public site within minutes. Commit a rebuilt page only once it has passed
+  the gate (Rust, node, and the browser test); source changes alone change
+  nothing players see.
+- The README was rewritten short: where to learn the game, how this one
+  works, and whom we thank.
+- A stray committed `web3d/piquet3d-svg.html` (a stale 3.3 MB comparison
+  build) was removed and is now git-ignored; `build.py --art svg` still makes
+  it.
+- **The spoken voice was removed entirely**: the recordings, the Piper
+  tooling, `docs/VOICE.md`, `docs/UTTERANCES.tsv`, and the voice settings.
+  The dialogue boxes keep their varied wording, now from
+  `web3d/tools/phrases.py` and `web3d/src/dialogue.js`.
+- **The 2D page (`web/`) was retired.** The 3D table replaced it; it stays in
+  git history (last built at `a5f2e34`). It took with it `web/test/ffi.mjs`,
+  a manual check that the native and WebAssembly engines agree byte for
+  byte. That check is now automatic: `crates/piquet-wasm/tests/dull-parties.txt`
+  records fifteen scripted parties (levels 1–5, seeds 1–3, a hash of each
+  final state), and both `cargo test` (native) and `web3d/test/wasm.test.js`
+  (the page's wasm) must reproduce it. `PIQUET_BLESS=1 cargo test` rewrites
+  it after a deliberate change of behaviour.
+- These notes were rewritten as project notes.
+
 ## Where the work happens
 
 **All development is on Google Cloud.** Nothing is built, tested or measured on
@@ -106,9 +138,9 @@ a laptop, and there is no Rust toolchain on one.
 | Project / zone | `abartnof-piquet`, `us-west1-b` |
 | Instance | `piquet-dev`, e2-standard-2 (2 vCPU, 8 GB), Debian 12 |
 | Disk | 50 GB, `autoDelete: False` — it survives the instance being deleted |
-| Toolchain | Rust 1.98.1 with clippy, rustfmt, rust-analyzer; Python 3.11.2, pytest 9.1.1 |
+| Toolchain | Rust 1.98.1 with clippy, rustfmt, rust-analyzer; Python 3.11.2, pytest 9.1.1; Node 18 |
 
-**Development now happens *on* the VM, not through it.** `~/piquet` there is a
+**Development happens *on* the VM, not through it.** `~/piquet` there is a
 real git clone tracking `origin/main`, with Claude Code installed, so the two
 checkouts are joined by GitHub rather than by rsync. `docs/VM.md` is the whole
 story: starting it, getting in, and the one foot-gun the change introduces.
@@ -121,12 +153,19 @@ On the VM itself, `cargo` is not on the PATH until `source ~/.cargo/env`. The
 whole gate — `cargo fmt --check`, `cargo clippy --all-targets --release -- -D
 warnings`, `cargo test --release` — takes about **3½ minutes** on the
 two-core machine, most of it compiling; the tests themselves are one minute,
-and one statistical binary is nearly all of that.
+and one statistical binary is nearly all of that. Playwright lives in the
+project `.venv`; Node 18 and Chromium come from apt, as do npm and
+`librsvg2-bin` (`sudo` works).
+
+**Stopping from inside works.** `sudo shutdown -h` on the VM reaches
+`TERMINATED` cleanly (the boot log shows a clean halt), which matters
+because the VM's service account cannot stop it through gcloud.
 
 **The gcloud CLI on the VM cannot see billing.** It runs as the instance's
 default service account, whose scopes cover neither `gcloud billing` nor
 `gcloud compute instances list`. The per-session spend check needs either
-`gcloud auth login` on the VM or a look at the Console.
+`gcloud auth login` on the VM (an interactive terminal) or a look at the
+Console (<https://console.cloud.google.com/billing>).
 
 ### What it costs, and the safeguard on it
 
@@ -145,8 +184,8 @@ rather than on spend, and an instance left running over a weekend.
 Two things guard it, deliberately of different kinds. A **budget on the billing
 account** (`Piquet — free trial credit`, $300) emails at 25 / 50 / 75 / 90 /
 100 % of spend and fires whether or not anyone is paying attention. And the
-spend is **checked at the start of each working session**, which Andrew asked
-for explicitly as an early warning rather than a backstop.
+spend is **checked at the start of each working session**, at the user's
+request, as an early warning rather than a backstop.
 
 Anything materially above the figures above means something is running that
 should not be, and it is almost always an instance nobody stopped:
@@ -154,88 +193,94 @@ should not be, and it is almost always an instance nobody stopped:
     bin/vm --status        # is it up, and what is it costing
     bin/vm --down          # stop it
 
-## Next action
+## Working conventions
 
-### Resume here (overnight, 30 September into 1 October -- Andrew asleep)
+- **Test-driven**: tests first, throughout.
+- **Atomic commits straight to `main`, often**; `PLAN.md` updated as each
+  piece of work lands; `set -e` on multi-step shell commands.
+- **One self-contained HTML page**, working offline, **modest in size** (5 MB
+  is a guideline, not a hard limit; weigh size against what it buys).
+- **Material Design 3** for the controls, bundled — no CDNs, no fonts or
+  icons fetched at runtime.
+- **"Your opponent", never a proper name**, in anything a player reads.
+- **Every aid a toggle.**
+- The look: *clean, bright, a bit cartoonish, not childish — freed of grubby
+  cards on dirty furniture.*
+- **The page makes no sound.**
+- **Every third-party asset credited in `CREDITS.md`** in the commit that
+  brings it in (design systems such as MD3 included).
+- **Consult the user before anything that spends money**, and before any long
+  compute run, with a runtime and cost estimate in hand.
 
-Andrew, going to bed: *"use your best judgement, so that when i wake up,
-it's all done. you can leave notes about what you did (ie ask for
-forgiveness, not permission) ... when you're done, make sure you're all
-committed on git, and then shut down the linux vm."* Everything below is
-committed and pushed; the VM was shut down from inside at the end.
+A new session should read, in this order: this file; `docs/TABLE3D.md`
+(§13 is the phase record); `docs/PROTOCOL.md`; `CREDITS.md`.
 
-**To look at first:** `web3d/piquet3d.html?ending` -- play one card, and
-all seven celebrations are one ‹ › away (TABLE3D P21). In a real partie one
-comes at random when it ends, whoever won, with no arrows.
+## Open for the user
 
-**Done tonight:**
-- **All seven celebrations**, translated from his prototype into the
-  table's norms (no sound, the normal look and card art, real gravity):
-  Plate smash, Card pong, Cup and ball, Disco, The parade, Macarena, Card
-  people. His notes applied as they came: the finale's cards "explode over
-  the screen and then go away"; "Piquet!" clear of its star, and the only
-  word any burst says; pong's paddles clean (flat cards rest 0.02 cm above
-  the table, as in play). The prototype file is deleted as he allowed (in
-  git at `272ff15`).
+In rough order:
+
+1. **TODO 1: make settling (with the prior) the level-5 default?** Measured a
+   real and modest gain on whole parties. It is also the question of whether
+   to use the prior — fitted to rung 4's discards — against a person at all.
+2. **An unvalidated lead:** the opponent as younger always exchanges the most
+   it may (7 cards when elder took 1). pagat: *"For younger hand it is more
+   frequently correct not to take the maximum, but still rare."* Against an
+   elder who takes five (the norm) that is three, and fine; whether
+   always-the-maximum costs points is unmeasured. Milestone 8's ground.
+3. **Should *declare for me* default on?** It removes the single biggest
+   source of clicks (three a deal), but the dialogue is the heart of the
+   game. Off today.
+4. **Only a real device can answer:** the art's load time
+   (`piquet3d.art().readyMs` in the console) and the frame rate on a real GPU.
+   The VM emulates one, so every timing in `docs/TABLE3D.md` is a worst case.
+5. Smaller: shadows are faint only where cards slide flat on the table —
+   lifting slides higher would fix it; an idle sway was not built because it
+   would mean rendering every frame forever (it could be an opt-in "living
+   table" setting).
+
+## Log
+
+Newest first. Each entry records what landed and what it found; the phase
+record for the 3D table is `docs/TABLE3D.md` §13.
+
+### 30 September – 1 October 2026: celebrations, tutorial timing, TODO 1 on whole parties
+
+- **All seven celebrations** (TABLE3D P21), translated from the user's
+  prototype into the table's norms (no sound, the normal look and card art,
+  real gravity): Plate smash, Card pong, Cup and ball, Disco, The parade,
+  Macarena, Card people. In a real partie one comes at random when it ends,
+  whoever won, with no arrows; **`web3d/piquet3d.html?ending`** stages them —
+  play one card, and all seven are one ‹ › away. The user's notes applied as
+  they came: the finale's cards "explode over the screen and then go away";
+  "Piquet!" clear of its star, and the only word any burst says; pong's
+  paddles clean (flat cards rest 0.02 cm above the table, as in play). The
+  prototype is in git at `272ff15`.
 - **The tutorial**: pages at each phase's very start (the table held behind
   them), one button arrangement on every page, pages pop up even if paged
   to. **The welcome** lost its tagline. **Shadows** measured present at every
   moment (faint only where cards slide flat).
-- **TODO 1 measured on whole parties**, the small way (below).
+- **TODO 1 measured on whole parties** — see TODO 1.
+- **Decided under delegated judgement** (the user: "i'll follow your
+  judgement"), each easy to reverse:
+  1. **Landscape: the long explanation moves to the left column** (a "What
+     it means" card under the score), so only the question and the answers
+     sit under the hand — the user's own rule, "long explanations ... on the
+     left side, and shorthand on the bottom". A phone keeps it under the
+     hand. (Measured before: at 1280 x 800 with Explain on, the controls
+     stood 188–269 px tall where the staging test assumed 112, so the prompt
+     covered the lower half of the fan while exchanging or declaring.)
+  2. **Phone: Explain and Hints stay in Settings.** The one row under a
+     phone's hand holds the sort and undo; per-partie choices belong in
+     Settings (keep the play screen quiet).
+  3. **Phone celebrations:** the field widens in portrait; pong's court runs
+     up the screen; the bar gives touch words.
+  4. **Faster reload at level 5: not done, on purpose** — see "Aids" below.
 
-**Decided on Andrew's behalf** ("i'll follow your judgement"), each easy to
-reverse:
-1. **Landscape: the long explanation moves to the left column** (a "What it
-   means" card under the score), so only the question and the answers sit
-   under the hand -- his own rule, "long explanations ... on the left side,
-   and shorthand on the bottom". A phone keeps it under the hand.
-2. **Phone: Explain and Hints stay in Settings.** The one row under a
-   phone's hand holds the sort and undo; per-partie choices belong in
-   Settings (his rule: keep the play screen quiet).
-3. **Phone celebrations:** the field widens in portrait; pong's court runs
-   up the screen; the bar gives touch words.
-4. **Faster reload at level 5: not done, on purpose.** It would mean saving
-   and restoring the level-5 opponent's generators (several Mersenne
-   Twisters inside its agents) through the core engine, where a slip would
-   silently change the replayed game -- for a 1-4 s wait that only happens
-   reloading a level-5 partie late on, which already says "Restoring your
-   game...". Say so if you want it anyway.
+### 30 September 2026: the user's tutorial text; the engine checked against pagat
 
-**TODO 1, measured (`bin/partie-sequential`, `measurements/partie/`).**
-Whole mirrored parties, the settling search against the flat one, both
-with the fitted prior; a sequential design fixed in advance (batches of
-100, O'Brien-Fleming boundaries 4.05/2.86/2.34/2.02), as Andrew asked --
-"if the numbers are conclusive with fewer simulations, you cut the
-simulations short". **Stopped at the second look: +8.26 ± 2.54 settlement
-points a mirrored pair (z 3.25), 200 pairs, about fifty minutes.** Settling
-beat flat in 70 pairs, lost 46, tied 84. Calibrated: a real gain and a
-modest one -- about four points a partie, against settlements that run to
-hundreds; measured in self-play at rung 5 with the prior on both sides.
-**Andrew's call:** make settling (with the prior) the level-5 default? That
-is also the old question of whether to use the prior -- fitted to rung 4's
-discards -- against a person at all.
-
-**For Andrew, in rough order:** play `?ending` and the game, and send notes;
-the level-5 default above; the unvalidated lead that the opponent as
-younger always exchanges the most it may (pagat: rarely right). The earlier
-list below (28 September) is now all answered or decided.
-
-### Later, 30 September: the celebrations under way (TABLE3D P21)
-
-Andrew's seven celebration ideas (from a Claude web chat) are being
-translated into the table's norms -- no sound, the normal look and card art,
-real gravity. The machinery, the `?ending` staging and **Plate smash** are
-in; the other six follow, each committed as it lands. Also that evening:
-the tutorial pages now come at each phase's very start (the table held
-behind them), one button arrangement on every page, and shadows measured
-present throughout (faint only where cards slide flat -- lifting slides
-higher is Andrew's call).
-
-### Back, 30 September: Andrew's tutorial, and the rules checked against pagat
-
-Andrew wrote the tutorial's four pages himself and asked that they be
-*"identical to how this videogame works"*, and then that the engine be
-checked against pagat once more first. Done in that order.
+The user wrote the tutorial's four pages and asked that they be *"identical
+to how this videogame works"*, and that the engine be checked against pagat
+once more first. Done in that order.
 
 **The engine against pagat, clause by clause** (pagat's page as fetched
 30 September, last updated 1 September 2026). Everything agrees -- pack,
@@ -245,20 +290,17 @@ lead, repique in category order, trick scoring, cards and capot, the
 rubicon, and the two extra deals then a draw (pagat's worked settlements
 are now tests, `57f8375`) -- **except**:
 
-1. **Pique's reckoning order -- decided: Cavendish, no switch.** (Andrew,
-   taking the recommendation: *"we don't need extra switches, just pick a
-   scoring rule and we'll use that."* Recorded as R8 in `docs/DESIGN.md`
-   §3.7, and §3.6 and §5.2 now describe the code.) The finding:
-   pagat: *"For pique the scores are counted in the order they actually
-   occur."* The engine counts it in Cavendish's Law 67 category order, as it
-   does repique, so younger's won point (entered after elder's lead, but
-   category II) blocks elder's pique. pagat's own repique example -- elder
-   30 in sequences and sets, younger the better point -- denies only the
-   repique, so on pagat elder has a pique there. **Measured: the readings
-   disagree in 127 of 20,000 rung-4 deals (1 in 160), 30 points each.**
-   The engine changed on 22 September (`6899b0e`, a code review calling
-   pagat's reading a bug); no flag, no R-row, and `docs/DESIGN.md` §3.6 and
-   §5.2 still describe pagat's reading -- the design and the code disagree.
+1. **Pique's reckoning order -- decided: Cavendish, no switch** (R8 in
+   `docs/DESIGN.md` §3.7; §3.6 and §5.2 now describe the code). pagat: *"For
+   pique the scores are counted in the order they actually occur."* The
+   engine counts it in Cavendish's Law 67 category order, as it does
+   repique, so younger's won point (entered after elder's lead, but category
+   II) blocks elder's pique. pagat's own repique example -- elder 30 in
+   sequences and sets, younger the better point -- denies only the repique,
+   so on pagat elder has a pique there. **Measured: the readings disagree in
+   127 of 20,000 rung-4 deals (1 in 160), 30 points each.** The engine had
+   changed on 22 September (`6899b0e`, a code review calling pagat's reading
+   a bug) with no flag and no R-row, leaving design and code disagreeing.
    **Cavendish, read verbatim** (*Laws of Piquet*, 1885, archive.org
    `lawsofpiquetadop00caveuoft`), sides with the engine. Law 67: "The
    scores, whether obtained by the elder or younger hand, reckon in the
@@ -267,11 +309,9 @@ are now tests, `57f8375`) -- **except**:
    pique is obtained on the score of thirty being made by the elder hand, in
    hand and play, before his adversary has reckoned anything that deal." So
    pagat, which gives its rules as "those published by Cavendish in 1882",
-   departs from Cavendish on exactly this point. A genuine source conflict:
-   pagat's words against the law it cites.
-   Andrew's standing rule says pagat, with Cavendish behind a flag. The
-   tutorial's words describe the engine as it is today ("points count in
-   round order"); they change with the rule.
+   departs from Cavendish on exactly this point. The user, taking the
+   recommendation: *"we don't need extra switches, just pick a scoring rule
+   and we'll use that."* The tutorial says "points count in round order".
 2. **The page never told elder the talon cards they left -- fixed
    (`6e95309`, `772ccff`).** The engine knew (`talon_seen`,
    `watched_them_take`) and the opponent used it. The first proposal, a
@@ -281,294 +321,78 @@ are now tests, `57f8375`) -- **except**:
    still there to look at. What the rule gives is knowing which they were and
    where they went: two protocol events, `looked` and `they_took`, in the
    game log, and the point's explanation names them ("You left J♠ 8♦; your
-   opponent drew them").
-   **A lead, unvalidated:** the opponent as younger always exchanges the
-   most it may -- 7 cards when elder took 1. pagat: "For younger hand it is
-   more frequently correct not to take the maximum, but still rare." Against
-   an elder who takes five (the norm) that is three, and fine; whether
-   always-the-maximum costs points is unmeasured. Milestone 8's ground.
+   opponent drew them"). This also surfaced the exchange lead in "Open for
+   the user".
 3. Known and small: younger's option to expose her untaken cards (TODO 10)
    and carte blanche's choreography (TODO 11) are not modelled; the table
    offers the full call, nothing, or one card short, where the engine (and
    pagat) accept any smaller holding.
 
-**Then, the same day:** the licence is **MIT, © 2026 Andrew Bartnof**
-(`LICENSE`, the crates, web3d's package, the page's Credits). Andrew took the
-recommendations on the rest: pique stays Cavendish's, with **no switch**
-(*"we don't need extra switches, just pick a scoring rule and we'll use
-that"* -- R8); "the first partie" means the tutorial's. The exchange's page
-now waits for the deal to be decided, and the introduction says the pages
-will come by themselves.
-
-**Hypothetical, not owed:** Andrew is designing end-of-partie celebration
-animations (cards celebrating) with Claude on the web. He may ask for a
-staging page -- a partie one trick shy of its end, with an arrow to step
-through animations -- and then for the animations he settles on to be
-integrated. Not started; don't start it unasked.
+**The licence** is **MIT, © 2026 Andrew Bartnof** (`LICENSE`, the crates,
+web3d's package, the page's Credits).
 
 **The tutorial (TABLE3D P20).** `web3d/tutorial.md` holds the four pages,
-Andrew's words with these corrections, each to what the engine does:
-leading scores for *any* card (his text had tens and higher -- piquet au
+the user's words with these corrections, each to what the engine does:
+leading scores for *any* card (the draft had tens and higher -- piquet au
 cent's rule); the last trick's extra point (missing); younger *must* take
-at least one card (his text allowed none); only elder may peek, at the cards
-they left (his text let either); repique needs the opponent not to have
-scored (missing); the settlement is the difference plus 100, or both totals
-plus 100 when the loser misses the rubicon (his text: "extra points for a
-big margin"); lying is one card fewer or nothing (what the table offers);
-ties score for neither; a line on the order points count in. Typos, "stock"
-made "talon" as the table says it, and elder and younger defined where
-first used. Andrew then asked for an X at the top right, popups only in the
-tutorial's partie, and a Settings switch, off by default. "The first
-partie" was read as the partie begun from **Tutorial**, not the first
-**New game** -- **for Andrew to confirm.**
+at least one card (the draft allowed none); only elder may peek, at the
+cards they left (the draft let either); repique needs the opponent not to
+have scored (missing); the settlement is the difference plus 100, or both
+totals plus 100 when the loser misses the rubicon (the draft: "extra points
+for a big margin"); lying is one card fewer or nothing (what the table
+offers); ties score for neither; a line on the order points count in.
+Typos, "stock" made "talon" as the table says it, and elder and younger
+defined where first used. Then: an X at the top right, pop-ups only in the
+tutorial's partie (confirmed: the partie begun from **Tutorial**, not the
+first **New game**), and a Settings switch, off by default. The exchange's
+page waits for the deal to be decided, and the introduction says the pages
+will come by themselves.
 
-### Resume here (closed up for the night, 28 September)
+### 28 September 2026: the phone's pass, the dialogue boxes, the voice built and unwired
 
-Everything is committed and pushed (`502e72b` and before); the VM was
-stopped by shutting it down from inside, since its service account cannot
-stop it through gcloud. The page is **silent** (3.0 MB), opens on a
-**welcome** (Tutorial / New game / Continue), has a light **tutorial**
-(TODO 15) and the **declaration dialogue boxes** (TODO 16). The voice is
-parked as TODO 14, costed in `docs/VOICE.md` §8.
+- **The phone's own pass** (TABLE3D P14). Measured first: at 390 x 844 the
+  strips took 564 of 844 px. Top strip 325 -> 138 px (the score in one row
+  beside two stacked buttons, a tap on it opens the tab; the worth card
+  folds to one line); foot 239 -> 190 px at its tallest (one row of tools;
+  Explain and Hints are Settings' switches on a phone; "Played for you"
+  floats). The upright field is now *fitted* to the band the strips leave
+  (`framing.js` `STRIPS`, `CAMERA_PORTRAIT.reach`), under a lower eye with
+  re-stacked zones. Your cards ~132 px tall at 390 x 844 (from ~60), ~91 px
+  at Safari's 664. Staging tests at five real phone sizes; the browser test
+  holds the page's strips to `STRIPS`. A follow-up found that sorting by
+  rank fans the hand wider and dipped it ~4 px into the controls on a
+  375 x 667 phone; the phone tests now cover every sort (`fd98353`).
+- **The declarations as dialogue boxes** (TABLE3D P17): each line of the
+  declarations in a box by its speaker's hand, the tail pointing to them;
+  each line takes its turn, so the answer follows the call, and the score
+  waits until the dialogue has been said. The words come from the phrase
+  bank, several ways of saying each thing, never the same twice running —
+  which also gave a point called short ("Two cards.") its box.
+- **The voice** (TABLE3D P13, P15, P16, P18): a spoken voice was built with
+  Piper TTS, audited, and unwired the same day (28 September) at the user's
+  request; it was removed from the repository on 1 October. What outlived
+  it: the engine's `decided` event carries `asked`, and each dialogue line
+  waits for its event's moment on the animation's clock
+  (`choreography.js` `beats`).
+- **A WebKit smoke test** (Playwright's WebKit 26.6 on Linux — Safari's
+  engine, not Safari): the page loads and plays, no console errors, the
+  dialogue boxes draw with their tails, at 1280 x 800 and on a phone. The
+  tests otherwise run Chromium, so real Safari remains the final check.
+- **Reload measured:** levels 1–4 replay in ~10 ms; level 5 (the solver)
+  takes 1.4–3.6 s late in a partie. See "Aids" below.
+- Engine and CLI, the same days: **the terminal became a client of the core
+  session**; **golden vectors for `match` and `tournament`** found three
+  Rust port defects (TODO 5); `round_robin` and `format_table` ported; the
+  CLI's interactive half tested; colour in the terminal; `chances` takes a
+  table of one's own. Details under "What the port left behind" and TODO 5.
 
-Waiting on Andrew, in rough order:
-1. Play the tutorial and the dialogue boxes; reword anything in
-   `web3d/src/tutorial.js`.
-2. Should a plain **New game** start with hints and explanations off? (A
-   tutorial turns them on; New game keeps the settings, on by default.)
-3. The landscape question box over the lower half of the fan (proposal:
-   move its explanation line to the left column -- see "Open for Andrew"
-   below).
-4. On a phone, Explain and Hints live only in Settings -- keep?
-5. Faster reload at level 5 (a save-format choice).
-6. The voice, if ever: whole phrases from Google (TODO 14); spending is his.
+### 27 September 2026: the 3D table, P0–P12
 
-Billing could not be checked from inside the VM (no billing scope); check
-<https://console.cloud.google.com/billing> -- the free-trial credit runs 90
-days from September.
-
-### Autonomous stretch, evening of 27 September (Andrew at dinner)
-
-Andrew: *"keep working until i tell you otherwise (or you exhaust the TODO
-list) ... don't do anything silly like deleting the repo."* Nothing that
-spends money. The running log, newest last:
-
-- **The voice** (`docs/VOICE.md`): pronunciation table with sources;
-  Cavendish's 1885 procedure for how piquet is spoken; `web3d/tools/voice.py`
-  (241 atoms a voice, tested) speaking through Piper with phoneme overrides
-  checked by reading espeak-ng's output; `speech.js` (events -> clips,
-  node-tested) and `voice.js` (playback); Settings: voice on/off, your
-  opponent's voice, your own calls. **Voices: Cori (British, female) and
-  Norman (American, male), both public domain and trained from scratch** --
-  every British male voice descends from "lessac", research-only data.
-  **Done and pushed** (`20646fa`…`9ceef4e`): 241 clips a voice as Ogg Opus,
-  Cori 745 kB and Norman 688 kB; **the page is 4.96 MB** with both. The
-  browser test proves the page speaks (clips bundled, decoded, a point
-  called aloud). Younger answers in the dialogue and names what she won as
-  she reckons it, as Cavendish has it. Open for Andrew: should the captions
-  say *knave* and *tierce major* like the voice?
-- TODO 12 found already done (`docs/LITERATURE.md`).
-- **Golden vectors for `match` and `tournament`** (TODO 5, now done):
-  three Rust port defects found and fixed -- the move log's bonus lost its
-  player, `ratings` panicked on an unknown anchor, and no pairs rated 0
-  instead of an even 0.5.
-- `round_robin` and `format_table` ported, with their printed forms as
-  vectors.
-- The CLI's interactive half tested: sixteen scripted-console tests of
-  `HumanAgent`'s prompts and refusals, through a console seam.
-- **The terminal is a client of the core session** (`Table`), as the page
-  is: it cuts for the deal, narrates your opponent's moves between your
-  decisions, and a test plays three whole parties through it with a machine
-  in your chair. The cut's limits are now public constants the page's wasm
-  reads too.
-- **The phone's own pass** (`docs/TABLE3D.md` P14). Measured first: at
-  390 x 844 the strips took 564 of 844 px. Top strip 325 -> 138 px (the
-  score in one row beside two stacked buttons, a tap on it opens the tab;
-  the worth card folds to one line); foot 239 -> 190 px at its tallest
-  (one row of tools; Explain and Hints are Settings' switches on a phone;
-  "Played for you" floats). The upright field is now *fitted* to the band
-  the strips leave (`framing.js` `STRIPS`, `CAMERA_PORTRAIT.reach`), under
-  a lower eye with re-stacked zones. Your cards ~132 px tall at 390 x 844
-  (from ~60), ~91 px at Safari's 664. Staging tests at five real phone
-  sizes; the browser test holds the page's strips to `STRIPS`. For Andrew:
-  on a phone, Explain and Hints left the tools row for Settings — a call
-  he may want to make differently. A follow-up found that sorting by rank
-  fans the hand wider and dipped it ~4 px into the controls on a 375 x 667
-  phone; the phone tests now cover every sort (`fd98353`).
-- The terminal has colour (red suits, `NO_COLOR` honoured), and `chances`
-  takes a table of one's own (`density_in` and friends), as the Python does.
-  The Rust/Python parity list is now clear but for `solver.partie_aware`,
-  unported on purpose.
-- **Reload measured**: levels 1–4 replay in ~10 ms; level 5 (the solver)
-  takes 1.4–3.6 s late in a partie. See "Faster reload" below.
-- **Landscape measured**: at 1280 x 800 the controls under the hand stand
-  188 px tall in play, 197 declaring and 269 exchanging with Explain on —
-  where the staging test assumes 112 (14%). So with Explain on, the prompt
-  card covers the lower half of the fan while exchanging or declaring; the
-  corner indices stay clear. Flagged to Andrew before; now with numbers.
-
-### Back, 28 September: the voice, never the same twice
-
-Andrew: *"i don't want *any* sounds to be repetitive"*, then *"just go ahead
-with your plan, 7mb is fine ... go back and look at the classic books ...
-remember to write these phrases down somewhere local as well."* Built
-(`docs/TABLE3D.md` P15, `docs/VOICE.md` §3): every group the voice says has
-several recordings, more for what is heard more; wordings from Cavendish,
-Cady and Foster (read afresh on the Internet Archive; seven books
-consulted, the table in `docs/VOICE.md`), each tagged with its source in
-**`docs/PHRASES.md`** — generated from the bank, tested to match. `bag.js`
-picks without repeating. Opus at 12 kb/s; the page is 6.11 MB.
-
-Then two notes from Andrew, playing the version on GitHub:
-- **The male voice babbled on *capot*** (*"kind of spastic ... a 'ne ne ne'
-  sound"*; *"yes, verified- that one is busted"*): the French terms had been
-  fed to the voices as raw phonemes. Now they are **respelt as English**
-  (his suggestion: *"english homonyms"*) -- cart, kuh-torz, kuh-pot, seez
-  yem, set yem, wheat yem -- and all seventeen groups using them re-recorded
-  in both voices (`docs/VOICE.md` §1). **For Andrew: listen again, to those
-  and anything else that babbles.** Reading phonemes is only a proxy.
-- **Defaults:** your opponent's voice on, yours off (the stored settings are
-  versioned so the change reaches a browser that had them on); in Settings,
-  **Your opponent's voice: Female | Male**, a toggle, yours the other.
-
-Then *"is that fully wired up with audio?"*, *"after deal 1, no audio
-plays"*, and *"a code review of the audio code, + simulate a few games"*:
-**the audio audit** (`docs/VOICE.md` §7, `docs/TABLE3D.md` P16). Nine
-defects fixed — the worst, your opponent's bare calls unspoken (a third of
-their sequence calls, half their set calls), the tie-break out of order,
-and speech running ahead of the cards. The engine's `decided` now carries
-`asked`. The silence after deal 1 did not reproduce in Chromium; the sound
-is now woken from any sleep on every click and key — **Andrew to say which
-browser, and whether it is cured.** QC kept as tests.
-
-Then the **dialogue boxes** (`docs/TABLE3D.md` P17): each line of the
-declarations in a box by its speaker's hand, tail to the speaker, timed to
-the voice; the score waits for the dialogue. Andrew plays in **Safari**:
-the tests run Chromium, so his Safari is the real check of the audio fixes.
-
-Then, late on 28 September: Andrew found the audio *"highly stilted"* and
-asked for it **unwired** — done, the page is silent (3.0 MB); the voice is
-parked as TODO 14 with a full count and prices (`docs/VOICE.md` §7–8). In
-the last half hour: the dialogue boxes' words now come from the phrase bank
-(`web3d/words.json`, written by `voice.py --doc`), not the recordings, which
-also gave a point called short ("Two cards.") its box; and a **WebKit smoke
-test** (Playwright's WebKit 26.6 on Linux — Safari's engine, not Safari):
-the page loads and plays, no console errors, the dialogue boxes draw with
-their tails, at 1280 x 800 and on a phone.
-
-**Open for Andrew when he is back** (nothing below is blocked on anything
-else):
-
-1. **Landscape prompt over the fan.** A proposal from his own rule ("long
-   explanations of the declarations on the left side, and shorthand on the
-   bottom"): move the prompt's explanatory line (the talon arithmetic, "what
-   do you call? Sinking a holding ...") into the left column, leaving the
-   question and the hint under the hand. Measured, that line is ~54 px
-   while exchanging (three lines of talon arithmetic) and ~19 px otherwise,
-   so it would take away most of the exchange's overlap and a little of the
-   rest; what remains is the question, the hint row and the buttons.
-2. **On a phone, Explain and Hints are in Settings only** (no room in one
-   row under the hand). Keep, or give them another home?
-3. **Faster reload at level 5** — a choice about the saved format (cache the
-   opponent's moves with its generator's state).
-3a. **The declaration dialogue boxes** (TODO 16) — built, silent, waiting
-   for his eye. And the tutorial mode (TODO 15) wants its design talk.
-4. Still open from before: captions in the voice's vocabulary (*knave*,
-   *tierce major*)? The whole-parties measurement of the prior (TODO 1)
-   needs his sign-off on runtime and cost. The tutorial-mode design
-   conversation (TODO 15). The P3 look choices. Whether to ship the prior
-   against humans.
-
-### Resume here (third session, 27 September): two threads
-
-**1. The 3D table — Andrew is playing it and sending notes.** His nine
-from this session are all built and pushed (`docs/TABLE3D.md` P10, commits
-`c8502b7`…`8ef2fe3`); the verbatim notes and what each became are there.
-He then rejected the dialogue box for a broadcast-style **live score bug**
-— two numbers, a tick for ordinary points, a celebration for big ones —
-with the stage table kept as the log (P11). Then (P12): thrown motion —
-cards tossed and flicked, not glided; an optional, lifelike cut; the
-opponent's cards bobbing as they call; facts / interpretation / hints with
-the last two as toggles; and eighteen procedural table tops, one at random
-each partie.
-The overlay is now *information left, buttons under the hand*, a standing
-rule (saved to memory). Whatever he sends next is the backlog. Owed from
-this round: **the phone's table** (small hand, the info strip covering the
-opponent's hand, a heavy shadow blob) -- done overnight, P14. His earlier
-open choices (below) still stand.
-
-**2. TODO 1 — the calibrated prior works; whole parties are next, and
-need Andrew's sign-off.** Measured this session: the prior is worth **+0.68
-a pair** to the solver outright (`bin/priorduel`, 47–11 of decided pairs),
-and with it **settling beats flat by +10.53 ± 3.16 a deal (3.3σ)** on the
-720 last deals, rubicon flips **15–2** where they had been 11–13
-(`measurements/settle/w30-prior.*`; `docs/DESIGN.md` §6.4a). **Whole
-parties:** timed at **9.8 s a mirrored pair** on one core; most pairs come
-out level and the spread is rare flips, so ~2,000 pairs (≈5½ core-hours)
-to see +5 a pair. Options for Andrew: the dev box, ~3 hours on both cores
-(≈$0.20); or a throwaway 16-vCPU Spot VM, ~25 minutes (≈$0.10, plus a few
-minutes' setup). **Shelved by Andrew (27 September)** in favour of the
-score display — not urgent, and it does not touch how the game feels. The
-instrument is built (`bin/partieprior`, `f1c2020`; 15.7 s a pair per thread
-with both vCPUs busy, so ~4½ hours on the dev box for 2,000 pairs; a Spot
-VM needs `gcloud auth login` on this VM first, and the free trial likely
-leaves only ~6 spare vCPUs). Also his call: whether to ship the prior
-against people at all. **Andrew's steer for when it resumes:** use
-fewer pairs — stop early on a conclusive trend. Do it properly: a
-sequential design with the stopping rule fixed beforehand (SPRT, or a
-few group-sequential looks), since peeking at will inflates false
-positives; and aim the pairs where the signal is, since most pairs come
-out level and the effect lives in rare rubicon flips. Talk it through
-with him before running.
-
-*Before the measurements, the setup:*
-`bin/prior` fits a per-rank weight on the opponent's possible hands
-(`prior.rs`, conditional logit) where the solver searches; the solver takes
-it via `SolverAgent::with_prior` (bit-identical without one). Held out, a
-doubtful seven is hers 12% of the time against a uniform belief of 46%, a
-king 96% against 55%; the fit matches (`measurements/prior-60.txt`). **Next
-step:** give `settle` a `--prior` switch (both agents, the fitted constant
-from `prior-60.txt`), run `settle 120 30 --prior --out
-measurements/settle/w30-prior.tsv` (~21 min on the dev box), and
-`--compare` it against `w30.tsv`: do the rubicon flips stop being a coin
-toss (11–13 today)? It is a diagnostic first — the prior describes rung 4's
-discards, and whether it is fair against a person is Andrew's call.
-
-**Billing check:** still blocked from the VM (its service account has no
-billing scope). Ask Andrew to glance at the Console, or run `gcloud auth
-login` on the VM himself.
-
-### The 3D table before this session — Andrew's choices, then onward
-
-Andrew asked for a three.js table (27 September 2026); **`docs/TABLE3D.md` is
-its plan and its record** — the brief verbatim, the look, the assets and
-their licences, the stack, the architecture, the physics of every motion,
-the tests, and a phased TODO with what each phase found.
-
-**Where it stands (27 September 2026, second session).** `web3d/piquet3d.html`
-is **playable end to end**, by mouse and on a phone held upright: the cut,
-the deal in pairs, the exchange, declarations, every trick, the partie's
-settlement, with the running score tab, hints, undo, your discards to
-consult, and a browser test that plays a whole partie by clicking. P0–P2 and
-P4–P9 done; **P3 waits only on Andrew's choice**.
-
-**Next, in order:**
-1. **Andrew's decisions**, all on the comparison page
-   (https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp): the table's surface,
-   the shadows' softness, the ink weight, and the card art — pictures or
-   drawings, which wants `piquet3d.art().readyMs` from both pages on his Mac.
-   Record each in §13 of `docs/TABLE3D.md`; delete whichever art page loses.
-   Also open: an idle sway (it would mean rendering forever — opt-in?),
-   synthesised sound (a toggle?), and the aids' defaults.
-   **Two things only his own devices can answer:** the art's load time
-   above, and the frame rate on a real GPU — the VM emulates one, so every
-   timing in `docs/TABLE3D.md` is a worst case.
-2. Then the plan's order below: **TODO 1, the partie objective** — both
-   suspects measured today, and the next step is written there — and
-   **Milestone 9, the training mode** — the 3D table already has its first
-   half (hints, refusals in the engine's words); `explain.rs` is the second.
-   The training mode's shape is a design conversation to have with Andrew
-   before building it.
+The user asked for a three.js table; **`docs/TABLE3D.md` is its plan and its
+record** — the brief verbatim, the look, the assets and their licences, the
+stack, the architecture, the physics of every motion, the tests, and a
+phased TODO with what each phase found. By the end of the day it was
+playable end to end, by mouse and on a phone held upright.
 
 - **P1** (`84b30fa`): `web3d/` — npm-pinned three 0.186.1 / Material Web /
   Lit / esbuild, `web3d/build.py` → one offline page, `web3d/test/browser.py`
@@ -579,17 +403,16 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
 - **P2** (`a4d11f0`): card geometry (node-tested), cel shading, the ink line —
   pushed *in the model, in the card's plane*; pushing on screen drew a wedge
   over every tilted card — and shadows. `web3d/src/spike.js` is a hand-set
-  table mid-deal, to be replaced by the real layout.
+  table mid-deal (`?spike`).
 - **P3** (`51c4a32`, `b2e6e53`): vector art (`build.py --art svg`) measured
-  against raster; both pages committed so Andrew can time them on his Mac.
+  against raster (TABLE3D §3.2). Raster is the default and is what ships.
 - **P4** (`ceaff44`): `easing.js`, `kinematics.js` (transfer, lay-down,
   pick-up, the rolling two-pivot flip that crests without stopping, slide,
   fan), `timeline.js`; `?demo` loops them, `piquet3d.demoAt(t)` freezes them
   for filmstrips.
 - **P5** (`e7c88e7`): `layout.js` — 32 slots from any state, faces only where
   the human may know them, tested over four whole parties
-  (`web3d/test/partie.js` plays them through the wasm). The page now shows
-  the real game at rest; `?spike` keeps the hand-set table.
+  (`web3d/test/partie.js` plays them through the wasm).
 - **P6** (`7bb0b09`): `choreography.js` replays the events between two states
   into the intermediate states and animates between their layouts;
   `director.js` plays it on the page. The cut, the deal in pairs, the
@@ -605,58 +428,47 @@ P4–P9 done; **P3 waits only on Andrew's choice**.
   named in a live region (`4082ac7`), every key listed in Settings
   (`2ea37ed`); and tablets, whose score tab had been covering the top bar's
   settings button (`540fd46`).
-- **TODO 1, paired and re-read (27 September, third session).** `settle`
-  records pairs, compares runs deal by deal, and replays one with belief
-  beside truth (`0f899e1`, `f6e3bef`; `SolverAgent::estimates` and
-  `values_in`, `fea4e07`). 90 worlds vs 30: +0.01 ± 0.79, because 85% of
-  searches are already exhaustive at 30. Rubicon flips go 11–13, a coin
-  toss; the steady gain is +2.2 a deal. Next: a calibrated world prior.
-- **TODO 1, both suspects measured (27 September).** On the same 720
-  mirrored last deals: today's baseline **257–49–414, net −3.40 ± 3.57**
-  (reproduced exactly by a second build; the old 248/46/426 predates the
-  fourth-leak fix); **ninety worlds** 257–44–419, −2.51; the **live pique**
-  played for (`79cfc82`) **266–33–421, −1.30 ± 3.55**, its whole gain in
-  pique deals (21 of 52 lost → 4 of 48). The net is still no distance from
-  zero. Table, reading and next steps in TODO 1; `docs/DESIGN.md` §6.4a.
-- **Andrew's four choices are on a comparison page:**
-  https://claude.ai/artifact/X7MRnVJw3iGsR7WbTDW6xp — table surface
-  (provisional: pale sky), shadows (soft/VSM), ink weight (2.5 px), and card
-  art (pictures/WebP), plus how to read `piquet3d.art().readyMs`. When he
-  answers, record it in §13 of `docs/TABLE3D.md` and delete the losing art
-  page.
+- **P10–P12**: the user's notes from playing it — the hand's sort bar, the
+  hands' tilt and shadows, thrown motion, information left and buttons under
+  the hand, a broadcast-style live score bug with the stage table kept as
+  the log, facts / explanations / hints as three layers (the last two
+  toggles), an optional lifelike cut, and eighteen procedural table tops.
+  Each note, verbatim, and what it became are in TABLE3D §13.
 - Lessons: three r186 **removed `PCFSoftShadowMap`**; `render()` returns long
   before the frame lands, so time to the second animation frame; every page
   load on the VM takes ~7 s because SwiftShader emulates the GPU.
 
-Read, in this order: this section; `docs/TABLE3D.md` (all of it); §13 of it
-again as the checklist; `docs/PROTOCOL.md`; `web/src/app.js` (a working client
-to borrow from); `CREDITS.md`.
+### 27 September 2026: the second round of notes on the 2D page
 
-Rules that bind the work, from Andrew: TDD; atomic commits straight to `main`,
-often; `PLAN.md` updated as each phase lands; `set -e` on multi-step shell
-commands; one self-contained HTML page, **modest in size** (5 MB is a
-guideline, not a hard limit — kept small enough to try the card art both
-raster and vector and choose by eye), **working offline**;
-Material Design 3 for the controls, bundled; **"your opponent", never a proper
-name**; every aid a toggle; the look is *clean, bright, a bit cartoonish, not
-childish — freed of grubby cards on dirty furniture*; **every third-party
-asset credited in `CREDITS.md` in the commit that brings it in** (MD3
-included); consult him before anything that spends money.
+After playing the first build the user asked for six things; all six were
+built and carried into the 3D table.
 
-Environment on the VM: `source ~/.cargo/env` for cargo; Playwright in the
-project `.venv`; Node 18 and Chromium from apt; npm and `librsvg2-bin` are
-installed in P1 (`sudo` works). The Google Cloud billing check is still
-blocked — the VM's gcloud has no billing scope, and `gcloud auth login` needs
-an interactive terminal (Andrew was going to run it over `ssh piquet-dev`).
+1. **Sort the hand to show the best holdings.** Auto / Suit / Rank /
+   Combinations. Auto groups by combination while exchanging and declaring
+   (best point, sequences, sets, then the rest) and by suit in play. Worth
+   chips lift a holding's cards; click to pin. Engine: `combos::holdings`
+   gives text + category + cards (protocol 2).
+2. **Show what the opponent does.** Their discards are a face-down pile with
+   its size (`View::opponent_discards`, derived from the view); their hand is
+   a face-down fan; the talon is a pile in the middle.
+3. **Played tricks, per the books.** Face up in front of whoever won them,
+   examinable any time — Cavendish p.108 and Law 60; pagat (`tricks_played`).
+4. **An easy way to turn hints off.**
+5. **No proper names.** "Your opponent" everywhere a player reads; levels are
+   described by skill (`e67e1e8`).
+6. **The cut for deal.** Verified from pagat, Cavendish Laws 3–4 and p.108,
+   Foster (1897) and Cotton (1674) — the older lower-card rule is recorded and
+   not followed (`docs/PIQUET.md`). The partie opens on a fanned pack; the
+   higher card chooses; the opponent, winning it, elects to deal first.
 
-**Stopping from inside works.** 27 September closed with `sudo shutdown -h`
-on the VM; the boot log shows a clean halt and a fresh boot thirteen hours
-later, so it reached `TERMINATED` (`docs/VM.md`).
+Loose ends from the round: the terminal now cuts too (28 September; an empty
+answer cuts the middle of the pack, the page's "Cut for me"), and the same
+seed at the same level, cut the same way, is the same partie at the terminal
+and on the page. A pushed page once read "Worth: [object Object]" — a patch
+that failed silently (`2b30cbd`); since then every multi-step shell command
+starts with `set -e`.
 
-
-### This session, 26 September 2026 — what landed
-
-In order, all committed and pushed:
+### 26 September 2026: the session, the protocol, the 2D page, the fourth leak
 
 1. **The settling search counts a repique already made** (`a84b34b`). Correct,
    and measured to change nothing: 248–46–426 against 249–46–425, net −4.50 ±
@@ -668,7 +480,8 @@ In order, all committed and pushed:
 2. Docs and lockfile caught up with the VM and the port.
 3. `options` and `opponents` moved from the CLI into the engine.
 4. **`table.rs`** — the session state machine; **`piquet-wasm`** — the JSON
-   protocol; **`docs/PROTOCOL.md`**; **`web/piquet.html`**, playable.
+   protocol; **`docs/PROTOCOL.md`**; and a plain 2D page (`web/`, retired
+   1 October 2026), playable.
 5. **The dialogue's fourth leak, fixed** (`0765838`): after elder led, the
    engine told him the shape of every holding younger declared, including
    ones she lost outright and never names (pagat; Foster 1897). 46% of deals.
@@ -681,135 +494,54 @@ In order, all committed and pushed:
    300 deals, his candidate count went from mean 55 to 75 (median 34 → 36):
    the leak had been sharpening his picture by about a quarter.
 
-### Andrew's second round of notes (27 Sept 2026) — done
+### Aids: making it effortless and fun (26–28 September)
 
-After playing the first build he asked for six things; all six are built,
-tested and pushed, and `web/piquet.html` is current (`a5f2e34`).
+The user's steer for the game layer: *"less persnickety, less needless
+clicking — rather, effortless and fun"* — reorder the hand usefully, keep a
+running tab of the scores, offer hints — and every aid a toggle.
 
-1. **Sort the hand in the first segment to show the best holdings.** A sort bar
-   beside the hand — Auto / Suit / Rank / Combinations. Auto groups by
-   combination while exchanging and declaring (best point, sequences, sets,
-   then the rest, each group set apart) and by suit in play. Worth chips lift a
-   holding's cards; click to pin. Engine: `combos::holdings` gives text +
-   category + cards (protocol 2).
-2. **Show what the opponent does.** Their discards are a face-down pile with its
-   size (`View::opponent_discards`, derived from the view); their hand is a
-   face-down fan; the talon is a pile in the middle.
-3. **Played tricks, per the books.** Face up in front of whoever won them,
-   examinable any time — Cavendish p.108 and Law 60; pagat (`tricks_played`).
-4. **An easy way to turn hints off.** A switch in the header, "Hide hints" on the
-   hint itself, and H.
-5. **No proper names.** "Your opponent" everywhere a player reads; levels are
-   described by skill (`e67e1e8`). Saved as a standing preference.
-6. **The cut for deal.** Verified from pagat, Cavendish Laws 3–4 and p.108,
-   Foster (1897) and Cotton (1674) — the older lower-card rule is recorded and
-   not followed (`docs/PIQUET.md`). The partie opens on a fanned pack; the
-   higher card chooses; the opponent, winning it, elects to deal first.
+**Engine (`table.rs`, then the protocol)** — done (`4baba8c`, `2e42573`,
+`8521b87`): `Aids` on the table, a record of every action from the human's
+seat, `Table::replay` and `undo`, `Table::hint`, and the protocol commands
+`undo` and `set <aid> on|off`. Scores carry their category, for the running
+tab.
 
-Loose ends from the round:
-
-- ~~The **terminal** does not cut yet.~~ **It does** (28 September): the CLI
-  is now a client of the core session, `piquet_core::table::Table`, as the
-  page is -- it narrates the session's events and answers its prompts -- so
-  it cuts for the deal, and the same seed at the same level, cut the same
-  way, is the same partie at the terminal and on the page. An empty answer
-  cuts the middle of the pack (the page's "Cut for me").
-- On a phone a combination group can break across the wrap of the hand.
-- A pushed page briefly read "Worth: [object Object]" — a patch that failed
-  silently (`2b30cbd`). The browser test now reads the worth line, and every
-  multi-step shell command starts with `set -e`.
-
-### Pick up here: making it effortless and fun
-
-Andrew's steer for the game layer: *"less persnickety, less needless
-clicking — rather, effortless and fun"*, with his examples of reordering the
-hand usefully, a running framework of where the game stands with a tab of the
-scores, and hints — and every aid a toggle. The plan, engine first where the
-logic belongs in the engine (TDD there), page second:
-
-**Engine (`table.rs`, then the protocol):**
-
-- [x] **Hints.** `Table::hint()` — what an advisor would do *from the human's
-      view*, so it can never leak. Advisor: rung 4 for the exchange and the
-      declarations, the solver in the endgame. Name the rung in the hint
-      ("Hoyle would throw…"), which is the ladder-based tutoring idea and the
-      first brick of Milestone 9.
-- [x] **Undo.** The table is deterministic, so undoing is replaying every
-      accepted action but the last human one. Misclicks stop mattering.
-- [x] **Auto-play forced cards** (one legal card — always so on the last
-      trick) as a table setting.
-- [x] **Declare for me** as a table setting: call everything without asking.
-      Open question for Andrew — the default. Three prompts a deal is the
-      single biggest source of clicks, but sinking is the interesting move and
-      a teaching game should show it exists.
-- [x] **The cards behind each option**, so a client can highlight what a
-      declaration or a "worth" line is made of.
-
-Engine half done (`4baba8c`, `2e42573`, `8521b87`): `Aids` on the table, a
-record of every action from the human's seat, `Table::replay` and `undo`,
-`Table::hint`, and the protocol commands `undo` and `set <aid> on|off`.
-Scores carry their category now, for the running tab.
-
-**Page:** done (`d702eda`, `53f4d0d`, `83db0c3`).
-
-- [x] Settings panel, every aid a toggle, remembered in `localStorage`.
-      Defaults: hints **on**, play forced cards **on**, declare for me
-      **off**, running tab on, undo on, trick pause on, hand by suit.
-- [x] "Where we are": the six deals as a strip with their scores, the phase
-      of this deal (exchange ▸ point ▸ sequences ▸ sets ▸ trick n of 12 ▸
-      count), and a running tab by category.
-- [x] Hand ordering: alternating colours, or by rank to spot quatorzes; cards
-      *slide* to new places; drawn cards marked "new" until play begins;
-      hovering a declaration option lifts the cards it is made of; hinted
-      cards glow.
-- [x] Hints with a **Follow** button; **Undo** (button, U, Ctrl+Z); Enter for
-      the main action; digits for declaration options; H toggles hints.
-- [x] Pacing: a finished trick stays on the table for 0.9 s; cards land.
+- **Hints.** `Table::hint()` — what an advisor would do *from the human's
+  view*, so it can never leak. Advisor: rung 4 for the exchange and the
+  declarations, the solver in the endgame — the first brick of Milestone 9.
+- **Undo.** The table is deterministic, so undoing is replaying every
+  accepted action but the last human one. Misclicks stop mattering.
+- **Auto-play forced cards** (one legal card — always so on the last trick).
+- **Declare for me**: call everything without asking (off by default; see
+  "Open for the user").
+- **Play my sure winners** (`ea7861a`, opt-in): when you are on lead and
+  every card you hold beats everything still unseen in its suit, play the
+  rest out for you.
+- **The cards behind each option**, so a client can highlight what a
+  declaration or a "worth" line is made of.
 
 Measured: forced-card play takes a partie from ~97 clicks to ~82; declare for
 me removes up to 18 more. **Undo is instant** — a snapshot stack, 3.2 s →
-2 ms at level 5 late in a partie. **Reload still replays**: up to ~3.3 s at
-level 5 late in a partie (the page says "Restoring your game…").
+2 ms at level 5 late in a partie.
 
-**Open questions for Andrew**, from playing it:
+**Faster reload — decided against (1 October).** A reload replays the
+partie: levels 1–4 in about 10 ms, level 5 (the exact solver) in 1.4–3.6 s
+late in a partie, about as long as playing it took (the page says "Restoring
+your game…"). Making it faster means saving and restoring the level-5
+opponent's generators (several Mersenne Twisters inside its agents) through
+the core engine, where a slip would silently change the replayed game — a
+risk to exact replay, for a few seconds' wait in one case.
 
-- Should **declare for me** default on? It is the single biggest source of
-  clicks (three a deal), but the dialogue is the heart of the game.
-- Are hints-on-by-default right, or should they wait to be asked for?
-- Anything persnickety left — the notes he sends back are the next backlog.
-
-**Next niceties, not started:**
-
-- [x] **Play my sure winners** as an aid (`ea7861a`, on by default): when you are on lead and every card
-      you hold beats everything still unseen in its suit, the rest of the
-      tricks are yours whatever happens — play them out for you. The end of
-      many deals is exactly this, and it is pure clicking.
-- [x] Collapse the narration by deal, the current one open.
-- [x] ~~Faster reload~~ -- **decided against, 1 October** (Andrew left it to
-      judgement): it needs the level-5 opponent's generators saved and
-      restored through the core engine, a risk to exact replay, for a
-      1-4 s wait on reloading a late level-5 partie. The original note:
-      record the opponent's moves too, so a reload applies
-      them instead of re-deciding them. Needs care — the opponent's generator
-      would then not have advanced, so the game would stop being reproducible
-      from seed and human actions alone.
-      **Measured 28 September** (node on the VM, replaying a record to the
-      start of deal 6): levels 1–4 replay in **about 10 ms**; only level 5,
-      the exact solver, is slow — **1.4 s and 3.6 s** on two seeds, about as
-      long as playing it took. So it is a level-5 problem only, and on a
-      phone likely a few times worse. One way that keeps reproducibility:
-      save the opponent's moves *and* its generator's state as a cache that
-      a reload trusts and a full replay can always re-derive. A choice about
-      the saved format, so Andrew's.
-- [ ] Say *why*, not just what: the hint's second half, `explain.rs`,
-      Milestone 9.
+Still open: **say *why*, not just what** — the hint's second half,
+`explain.rs`, Milestone 9.
 
 ### After that, in rough order of value
 
-0. ~~**The 3D table**~~ — built; its look waits on Andrew (above).
-1. **TODO 1, the partie objective** — the live pique first, then `max_worlds`.
+1. **TODO 1, the partie objective** — measured; the level-5 default is the
+   user's call.
 2. **Milestone 9, the training mode** — hints are its first half; `explain.rs`
-   (why a move is better, by which rung plays it) is the second.
+   (why a move is better, by which rung plays it) is the second. Its shape is
+   a design conversation to have with the user before building it.
 3. **Milestone 8, the exchange policy.** The only item that would spend money.
 4. **`piquet-py`** (PyO3), so thirty-line experiments stay thirty lines.
 5. **Milestone 10, CFR declarations.** Still the largest unknown.
@@ -818,11 +550,11 @@ level 5 late in a partie (the page says "Restoring your game…").
 
 | Decision | Choice |
 |---|---|
-| Rule authority | **pagat.com** wins all conflicts; variants behind flags |
+| Rule authority | **pagat.com**, except where it departs from the Cavendish laws it cites (pique's reckoning order, R8). One rule each; no switches between readings |
 | Game implemented | Rubicon Piquet, 32 cards, 6-deal partie |
-| Language | **Rust**, decided September 2026 — `docs/DESIGN.md` §13.5 ranked it first on three of the four goals, §2.2 audits what the port hits. Python stays as the oracle until parity |
+| Language | **Rust**, decided September 2026 — `docs/DESIGN.md` §13.5 ranked it first on three of the four goals, §2.2 audits what the port hits. Python stays as the oracle |
 | Where it runs | **Google Cloud only.** No toolchain on a laptop; development happens on the VM, joined to any other checkout by GitHub (`docs/VM.md`) |
-| Transport | `github.com/abartnof/piquet`, private. The 2017 attempt survives as `piquet-2017` |
+| Repository | `github.com/abartnof/piquet`, **public from 1 October 2026**; GitHub Pages serves the game from `main`. The 2017 attempt survives as `piquet-2017` |
 | Scoring model | Ordered **event log**, not a running total |
 | Bonus reckoning | Law 67's **order of precedence**, for pique and repique alike |
 | Seats vs people | `Player` is a seat and swaps each deal; `Side` plays the partie |
@@ -835,7 +567,8 @@ level 5 late in a partie (the page says "Restoring your game…").
 | Skill model | **Capability ladder**, not a noise dial. 4 rungs built; **2 proposed rungs deleted for failing measurement** |
 | Opponent style | Third axis, orthogonal to skill and erraticism. EV-neutral by calibration, stable for a whole partie |
 | Measurement | **Always mirrored pairs** (`tournament.duel`). Never independently shuffled deals |
-| UI | Terminal first |
+| UI | The terminal first, then a plain 2D page (retired 1 October 2026), now the **3D table** (`web3d/`) |
+| Sound | **None.** A spoken voice was built and removed (28 September – 1 October 2026) |
 | LLM involvement | None in gameplay; optional for phrasing tutor explanations |
 
 ## Milestones
@@ -847,7 +580,7 @@ level 5 late in a partie (the page says "Restoring your game…").
 - [x] 5. **Exact endgame solver** + inference; rung 5 (82.5%, +5.0 pts over L4)
 - [x] 6. **The partie** — six deals, alternating deal, rubicon settlement
 - [x] 7. **Terminal UI**; skill and erratic controls; a playable game
-- [ ] 8. Exchange policy — *runtime and cost agreed with Andrew first*
+- [ ] 8. Exchange policy — *runtime and cost agreed with the user first*
 - [ ] 9. Training mode
 - [ ] 10. CFR declarations
 
@@ -872,9 +605,10 @@ p = 4×10⁻⁴, and about a sixth of a rung of the ladder. For scale: rung 3 to
 rung 4 is +1.8 and the solver over rung 4 is +5.0.
 
 So it is a real effect and a small one, and the claim it was written up under —
-"the largest measured weakness in the AI" — was wrong. Not landed, because the
-weights are fitted to rung-4 discard habits and would be a guess against a
-human. The principled version is milestone 8's exchange policy read backwards.
+"the largest measured weakness in the AI" — was wrong. Not landed as a
+default, because the weights are fitted to rung-4 discard habits and would be
+a guess against a human. The principled version is milestone 8's exchange
+policy read backwards. (A fitted prior has since been built for TODO 1.)
 
 ### 2. `ratings()` around a shutout — fixed
 
@@ -949,12 +683,18 @@ should not have to rediscover them.
 Ordered by how much they are needed, not by size.
 
 1. **The partie objective — built, measured, not yet a default.**
-   **Whole parties, 1 October:** settling beats flat by **+8.26 ± 2.54
-   settlement points a mirrored pair** (z 3.25; both with the prior; a
-   sequential run stopped at 200 pairs -- `measurements/partie/`). Real and
-   modest. Making it the level-5 default is Andrew's call, tied to whether
-   the prior is fair against a person. The history: The search
-   now carries both totals to the leaf and settles there
+   **Whole parties (1 October):** settling beats flat by **+8.26 ± 2.54
+   settlement points a mirrored pair** (z 3.25), both with the fitted prior,
+   in self-play at rung 5. A sequential design fixed in advance, as the user
+   asked ("if the numbers are conclusive with fewer simulations, you cut the
+   simulations short"): batches of 100, O'Brien-Fleming boundaries
+   4.05/2.86/2.34/2.02; stopped at the second look, 200 pairs, about fifty
+   minutes (`bin/partie-sequential`, `measurements/partie/`). Settling won 70
+   pairs, lost 46, tied 84. Real and modest: about four points a partie,
+   against settlements that run to hundreds. **Making it the level-5 default
+   is the user's call**, tied to whether the prior is fair against a person.
+
+   The history. The search carries both totals to the leaf and settles there
    (`solver::card_settlements`), which is what `docs/DESIGN.md` §6.4a asked
    for. It costs only **1.6× at eight tricks**, far less than the state-space
    argument suggests, because the reachable point splits at a position are
@@ -991,22 +731,16 @@ Ordered by how much they are needed, not by size.
    `bb0fc35`), pique deals went from 21 lost of 52, costing 1,252 points,
    to **4 lost of 48, costing 26**; the other deals did not move. Sixteen
    fewer losses is about 1.8 sigma even treating the runs as independent,
-   and pairing on identical cards should only tighten that. **But the net
-   is still no distance from zero** (0.4 sigma), so settling at the leaf is
-   not yet shown to beat the flat search where it pays.
+   and pairing on identical cards should only tighten that. But the net was
+   still no distance from zero (0.4 sigma). What was left of the tail was
+   **28 rubicon flips in no-bonus deals**, 6,730 points at ~240 each. To
+   reproduce: `cargo build --release`, then `target/release/settle 120 30`.
 
-   What is left of the tail is **28 rubicon flips in no-bonus deals**, 6,730
-   points at ~240 each. Ninety worlds shaved five losses on its own (that
-   run predates the split, so from where is unknown); ninety worlds *with*
-   the live pique is the obvious next variant, once the comparison is
-   paired. To reproduce: `cargo build --release`, then
-   `target/release/settle 120 30` — the current search, live pique included.
-
-   **Paired, and the tail read again (27 September, third session).**
-   `settle --out FILE` records every pair with its pack; `--compare A B`
-   pairs two runs on identical deals; `--show FILE STANDING DEAL` replays
-   one pair with belief beside truth at every card. Records are in
-   `measurements/settle/`; `docs/DESIGN.md` §6.4a has the reasoning.
+   **Paired, and the tail read again (27 September).** `settle --out FILE`
+   records every pair with its pack; `--compare A B` pairs two runs on
+   identical deals; `--show FILE STANDING DEAL` replays one pair with belief
+   beside truth at every card. Records are in `measurements/settle/`;
+   `docs/DESIGN.md` §6.4a has the reasoning.
 
    - **90 worlds vs 30, paired: +0.01 ± 0.79** — the play differs in 26 of
      720 pairs. Because **85% of searched decisions have ≤30 consistent
@@ -1019,19 +753,19 @@ Ordered by how much they are needed, not by size.
      best over the worlds and worse in truth, the truth splitting exactly on
      who reaches a hundred.
 
-   **Next, in order:**
-
-   - **A calibrated world prior**, the lever that acts on the flips. Fit a
-     per-rank weight on consistent worlds (a conditional logit on the true
-     hand, fitted on deals the test does not use), give `SolverAgent` an
-     optional prior, and pair settling-with-prior against today's `w30`.
-     If the flips stop being a coin toss, that is the finding. Fitted to
-     rung-4 discards, so it is a diagnostic first; whether it is fair
-     against a human is a question for Andrew before it ships.
-   - **Then judge on whole parties**, which is what this TODO has always
-     said is the real test: `bin/parties` duels rungs today and needs a
-     settling-against-flat mode on `tournament::partie_duel`. Time a small
-     run first, and bring Andrew the estimate before a long one.
+   **The calibrated world prior (27 September)**, the lever that acts on the
+   flips. `bin/prior` fits a per-rank weight on the opponent's possible hands
+   (`prior.rs`, conditional logit) where the solver searches; the solver
+   takes it via `SolverAgent::with_prior` (bit-identical without one). Held
+   out, a doubtful seven is hers 12% of the time against a uniform belief of
+   46%, a king 96% against 55%; the fit matches (`measurements/prior-60.txt`).
+   It is worth **+0.68 a pair** to the solver outright (`bin/priorduel`, 47–11
+   of decided pairs), and with it **settling beats flat by +10.53 ± 3.16 a
+   deal (3.3σ)** on the 720 last deals, rubicon flips **15–2** where they had
+   been 11–13 (`measurements/settle/w30-prior.*`). Whole parties were then
+   timed at 9.8 s a mirrored pair on one core; most pairs come out level and
+   the effect lives in rare rubicon flips, which is why the whole-parties
+   run used a sequential design rather than a fixed ~2,000 pairs.
 
 2. **`rubicon nerve`, the fourth style dimension**, specified in
    `docs/DESIGN.md` §7.1 and now finally possible to implement — `chances`
@@ -1102,50 +836,34 @@ Ordered by how much they are needed, not by size.
 11. **Carte blanche's information timing.** Elder must announce how many cards
     he intends to discard so younger can choose hers before seeing his hand.
     We score the ten and skip the choreography.
-12. ~~**Documentation and citations.**~~ **Done** -- found so on 27
-    September: `docs/LITERATURE.md` ("The mathematics") carries Laplace
-    (1774), Zermelo (1929), Bradley and Terry (1952), Hunter (2004),
-    Waldegrave's *Le Her* via Montmort (1713) and Hoyle's hypergeometric
-    tail, with a table of where each is used in the code. The plan had not
-    caught up.
-
-13. **Card art.** Andrew has assets sourced. Not needed until the terminal UI
-    is replaced.
-
-14. **The voice, done properly — or not at all.** The Piper voice was built
-    and audited (`docs/VOICE.md`) and then unwired (28 September): Andrew,
-    *"i don't want the html to have any audio"*, then *"i think the audio is
-    a nice feature, but it all sounds really tinny."* The page ships no
-    sound; `web3d/build.py --audio opus` puts the Piper voice back. His
-    direction for a second try: two voices (your opponent's, yours), one
-    recording per event, "maximal" — whole utterances, not spliced parts —
-    from a first-class producer such as Google Cloud TTS (**spending needs
-    his sign-off**). Estimate given 28 September: whole utterances with the
-    counts kept separate come to about 400 a voice; fused with their counts,
-    thousands (1,090 seen in 400 parties and still climbing). Also owed if
-    it returns: "Two cards." for a two-card point was never recorded.
-
-15. **Tutorial mode — built, the light way** (`docs/TABLE3D.md` P19; Andrew's
-    own four pages replaced the first words on 30 September, P20). Andrew
-    chose, instead of a coach that flags moves: *"an introduction (concise,
+12. ~~**Documentation and citations.**~~ **Done**: `docs/LITERATURE.md` ("The
+    mathematics") carries Laplace (1774), Zermelo (1929), Bradley and Terry
+    (1952), Hunter (2004), Waldegrave's *Le Her* via Montmort (1713) and
+    Hoyle's hypergeometric tail, with a table of where each is used in the
+    code.
+13. ~~**Card art.**~~ **Done** — the 3D table's faces and back
+    (`web3d/art/`), credited in `CREDITS.md`.
+14. ~~**The voice.**~~ Built, unwired on 28 September and removed from the
+    repository on 1 October 2026. Closed; not owed.
+15. **Tutorial mode — built, the light way** (`docs/TABLE3D.md` P19; the
+    user's own four pages replaced the first words on 30 September, P20).
+    Chosen instead of a coach that flags moves: *"an introduction (concise,
     bullet points- nothing too wordy), and an introduction before each phase
     of play ... hints+explanations are on by default"*, with a welcome
-    offering New game or Tutorial. Done; for his review. A move-flagging
-    coach (solver values for the play, the top rung's choice elsewhere) and
-    `explain.rs`'s "why" remain possible later layers, not asked for now.
-
-16. **The declaration dialogue boxes — built, for Andrew to review.** Each
+    offering New game or Tutorial. A move-flagging coach (solver values for
+    the play, the top rung's choice elsewhere) and `explain.rs`'s "why"
+    remain possible later layers, not asked for.
+16. **The declaration dialogue boxes — built** (`docs/TABLE3D.md` P17). Each
     line of the declarations in a box by its speaker's hand, the tail
-    pointing to them (`docs/TABLE3D.md` P17). They run silently now,
-    timed as the voice would have been; the score waits for them.
-
+    pointing to them; each line takes its turn (`web3d/src/dialogue.js`),
+    and the score waits for them.
 17. ~~**Pique's reckoning order: pagat or Cavendish?**~~ **Decided 30
     September: Cavendish's category order, as the engine already played it;
     no switch.** R8 in `docs/DESIGN.md` §3.7; §3.6 and §5.2 corrected.
 18. ~~**Show elder the talon cards they left.**~~ **Done 30 September** as
     two protocol events and a line in the point's explanation; a talon peek
     was measured to be useless against this opponent, which always draws
-    them (see "Back, 30 September").
+    them (see the log, 30 September).
 
 ## Code review findings
 
@@ -1231,7 +949,7 @@ it costs?* Which is exactly what CFR is for.
 
 - **Ladder-based tutoring.** Because every rung is a working agent, the tutor
   can say *"a rung-2 player would lead this; a rung-4 player leads that,
-  because it heard your point"*. An explanation in terms of a **named skill the
+  because it heard your point"*. An explanation in terms of a **skill the
   player can go and learn**, rather than an EV number, and it costs almost
   nothing.
 - **Name the odds, not the score.** The scoreboard already says "18 more to
@@ -1244,8 +962,6 @@ it costs?* Which is exactly what CFR is for.
 - **Teach the blind first lead.** Now that elder really does lead before
   younger names anything, that is a genuine piece of piquet a tutor can point
   at, and it was invisible until the leak was closed.
-- **Historical opponents.** A rung-4 agent with a period style vector, named
-  for Cotton or Cavendish, as flavour. Cheap; possibly delightful.
 - **Let the player ask to see a combination.** The rules give this right and
   the engine models the information correctly, but nothing exposes it as an
   action.
@@ -1274,7 +990,7 @@ conviction first:
 | The hand-tuned discard must be leaving points on the table | A Monte Carlo with a hundredfold more compute per decision agrees with it five times in six |
 | Hoyle's three-to-two on younger's draw | Right, and the sentence pins down which sum he did: 23/57, or 1.478 to 1 |
 
-And three methodological ones:
+And the methodological ones:
 
 - **Deal luck swamps skill.** Never compare agents over independently shuffled
   deals; an ad-hoc harness without mirroring disagreed with itself by five
@@ -1294,11 +1010,10 @@ And three methodological ones:
 
 ## Notes to a future session
 
-- Andrew has wanted to build this for ~10 years. He prefers deliberate design
-  conversation to speed, enjoys tangents and side quests, and wants the result
-  to be *fun*, not merely correct.
-- **Consult him before any long or paid compute run**, with a runtime and cost
-  estimate in hand. Milestone 8 is the first one that needs it.
+- The project prefers deliberate design conversation to speed, welcomes
+  tangents, and wants the result to be *fun*, not merely correct.
+- **Consult the user before any long or paid compute run**, with a runtime and
+  cost estimate in hand. Milestone 8 is the first one that needs it.
 - `observation.py` is still the module most likely to be got subtly wrong. It
   has now leaked four times: `View.results` handed over the opponent's full
   declarations; `Announcement` published the tie-break unconditionally;
@@ -1309,13 +1024,14 @@ And three methodological ones:
   the dialogue for the browser table — reading it as a player would is a
   good audit.
 - Browser testing on the VM: `node` and `chromium` come from apt; Playwright
-  lives in the project `.venv` (`.venv/bin/python web/test/browser.py
+  lives in the project `.venv` (`.venv/bin/python web3d/test/browser.py
   [shot-dir]`). Screenshots can be read back to check the page by eye.
-- Tests: 95 in Rust, 520 in the Python oracle. The Python's fast loop once
-  drifted from sixteen seconds to sixty-three, and the drift was one test: a
-  full twelve-card solve, unmarked. **When a loop starts to feel slow, look for
-  the one test** (`--durations` in pytest; per-binary times in `cargo test`)
-  — it was not creeping decay, and it will be one test again.
+- Tests: 206 in Rust, the 3D table's node tests, and the Python oracle's
+  suite. The Python's fast loop once drifted from sixteen seconds to
+  sixty-three, and the drift was one test: a full twelve-card solve,
+  unmarked. **When a loop starts to feel slow, look for the one test**
+  (`--durations` in pytest; per-binary times in `cargo test`) — it was not
+  creeping decay, and it will be one test again.
 - The slow tests are the statistical ones and they have caught more real bugs
   than the unit tests, so they stay in the default run.
 - Re-measure `style.CALIBRATED` whenever the ladder changes. What counts as a
