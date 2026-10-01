@@ -272,7 +272,7 @@ displays on ... use all the white space well without colliding"*.
   stand ~160 px. The browser test plays two deals with Explain and Hints
   on and holds the strips to the framing at every step.
 - **TODO 19** added: every icon button gets M3 motion.
-- Not merged to `main`.
+- **Merged to `main`** at the user's word, to try on the phone.
 
 ### 1 October 2026 (later): the phone's worth card floats
 
