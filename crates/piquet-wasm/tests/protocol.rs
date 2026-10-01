@@ -576,3 +576,50 @@ fn the_cut_is_made_through_the_protocol() {
     }
     assert!(chose > 10 && ceded > 10, "{chose} / {ceded}");
 }
+
+/// FNV-1a, 64 bits: a hash simple enough to write the same in JavaScript
+/// (web3d/test/wasm.test.js), so the two builds can be compared.
+fn fnv1a(bytes: &[u8]) -> u64 {
+    bytes.iter().fold(0xcbf2_9ce4_8422_2325, |h, &b| {
+        (h ^ u64::from(b)).wrapping_mul(0x0000_0100_0000_01b3)
+    })
+}
+
+/// Whole parties at every level, played by the dull script: one line each,
+/// with a hash of the final state's exact bytes.
+fn dull_parties() -> String {
+    let mut out = String::new();
+    for level in 1..=5 {
+        for seed in 1..=3 {
+            let mut session = Session::new(level, seed);
+            let end = play_out(&mut session, |_, _| {});
+            out += &format!(
+                "level {level} seed {seed} {}-{} pays {} {:016x}\n",
+                end["partie"]["you"],
+                end["partie"]["them"],
+                end["settlement"]["points"],
+                fnv1a(session.state().as_bytes())
+            );
+        }
+    }
+    out
+}
+
+/// Every build of the engine, native or WebAssembly, plays the same partie
+/// from the same level and seed, byte for byte -- which is what makes a seed
+/// and its commands a complete game record. This is the native half; the
+/// WebAssembly half (web3d/test/wasm.test.js) checks the same file.
+/// `PIQUET_BLESS=1` rewrites the file, for a deliberate change of behaviour.
+#[test]
+fn the_dull_parties_end_as_recorded() {
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/tests/dull-parties.txt");
+    let now = dull_parties();
+    if std::env::var_os("PIQUET_BLESS").is_some() {
+        std::fs::write(path, &now).unwrap();
+    }
+    let recorded = std::fs::read_to_string(path).expect("the recorded parties");
+    assert_eq!(
+        now, recorded,
+        "the native engine no longer ends the dull parties as recorded"
+    );
+}

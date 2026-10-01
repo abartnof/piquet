@@ -1,0 +1,15 @@
+level 1 seed 1 110-244 pays 234 5974c0ce442e8dec
+level 1 seed 2 58-250 pays 408 c6fa3b5349eada59
+level 1 seed 3 118-139 pays 121 0a7d8602eeb1c72a
+level 2 seed 1 66-299 pays 465 ada2a324de6ee56a
+level 2 seed 2 42-259 pays 401 d5e08ebbd5765efa
+level 2 seed 3 71-185 pays 356 8a02fd19a0ed5619
+level 3 seed 1 60-311 pays 471 5bb7f8dbca22809a
+level 3 seed 2 27-383 pays 510 abe4aaf488b394c4
+level 3 seed 3 57-234 pays 391 9bd061440b6dcef1
+level 4 seed 1 59-312 pays 471 687951f750923ab2
+level 4 seed 2 27-383 pays 510 b977ff976551ebe0
+level 4 seed 3 57-234 pays 391 1bac2306938ed3e3
+level 5 seed 1 58-306 pays 464 eb5e86885f21c296
+level 5 seed 2 29-327 pays 456 6670487b08bd908f
+level 5 seed 3 52-244 pays 396 fc1eb88cc45e8623
