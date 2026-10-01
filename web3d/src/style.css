@@ -166,6 +166,7 @@ body {
 
 .info {
   --beside: 1; /* read by main.js: the table is framed beside this column */
+  --sideways: 0; /* and, at 1, between it and the controls (a phone held sideways) */
   position: absolute;
   left: 12px;
   top: 76px;
@@ -1403,7 +1404,7 @@ kbd {
    has the whole width between it and the controls. The strips' heights are
    what framing.js fits the table between (STRIPS there; the browser test
    holds this sheet to them). */
-@media (max-width: 700px), (orientation: portrait) and (max-width: 1100px) {
+@media (max-width: 700px), (orientation: portrait) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px) {
   /* The bar keeps its two buttons, stacked at the right of the top row; the
      score has the rest of the row. */
   .bar {
@@ -1647,6 +1648,95 @@ kbd {
     --md-filled-button-trailing-space: 12px;
     --md-outlined-button-leading-space: 12px;
     --md-outlined-button-trailing-space: 12px;
+  }
+}
+
+/* A phone held sideways: the compact overlay, laid out in columns -- the
+   information down the left under the bar's buttons, the controls down the
+   right, and the table in the middle at the window's full height (main.js
+   measures the columns; framing.js frames the table between them). The
+   user: "fix horizontal mode ... make use of all white space possible". */
+@media (orientation: landscape) and (max-height: 500px) {
+  .bar {
+    left: 8px;
+    right: auto;
+    top: 8px;
+    flex-direction: row;
+    gap: 2px;
+  }
+  .info {
+    --sideways: 1;
+    left: 8px;
+    right: auto;
+    top: 64px;
+    width: 232px;
+    max-height: calc(100% - 72px);
+  }
+  .info > .worth-card:not(.floating) {
+    flex: 0 1 auto;
+    min-height: 0;
+  }
+  /* The score in a narrow column: the deal over the two sides, as on a
+     wide screen, so each side has half the width for its name. */
+  .bug {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .period {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    flex-direction: row;
+    gap: 5px;
+  }
+  .side {
+    grid-row: 2;
+  }
+  .side.them {
+    grid-column: 3;
+  }
+  .caption {
+    grid-row: 3;
+  }
+  /* What your hand is worth wraps rather than running out of the column. */
+  .worth-summary {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    white-space: normal;
+  }
+  .tab {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+  .controls {
+    left: auto;
+    right: 8px;
+    bottom: 8px;
+    width: 232px;
+    align-items: stretch;
+  }
+  .prompt {
+    align-items: stretch;
+  }
+  .asked {
+    max-width: 100%;
+  }
+  .options {
+    justify-content: center;
+  }
+  .actions {
+    justify-content: center;
+  }
+  .tools {
+    align-self: center;
+  }
+  /* A card played for you, named over the table beside the column. */
+  .played-for-you {
+    left: auto;
+    right: calc(100% + 8px);
+    bottom: 0;
+    translate: none;
+    max-width: 300px;
+    width: max-content;
   }
 }
 

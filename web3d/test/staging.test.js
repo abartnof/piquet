@@ -194,6 +194,36 @@ for (const [w, h] of PHONES) {
   });
 }
 
+// ---- a phone, held sideways --------------------------------------------------
+//
+// The information runs down the left and the controls down the right, so the
+// table is the phone's stacked one, framed in the middle between them at the
+// window's full height (the user: "fix horizontal mode ... make use of all
+// white space possible"). An iPhone under Safari's bars and without them, an
+// old small phone, a large one.
+const SIDEWAYS = [[852, 353], [844, 390], [667, 375], [932, 430]];
+const SIDES = [{ left: 236, right: 236 }, { left: 200, right: 260 }];
+const EDGES = { top: 8, foot: 8 };
+for (const [w, h] of SIDEWAYS) {
+  for (const sides of SIDES) {
+    test(`on a ${w} x ${h} phone held sideways, the table lies between the columns, ${sides.left} and ${sides.right} px`, () => {
+      const aspect = w / h;
+      assert.ok(framing(aspect, 0, h, EDGES, sides).upright, "the stacked table");
+      const camera = cameraFor(aspect, 0, h, EDGES, sides);
+      const { top, foot } = bands(h, EDGES);
+      const [left, right] = [-1 + (2 * sides.left) / w, 1 - (2 * sides.right) / w];
+      for (const s of states) {
+        for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, ...raised(s), sort }))) {
+          for (const [px, py] of onScreen(x.pose, camera)) {
+            assert.ok(py < top + 1e-6 && py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, off the top or foot at ${s.phase}`);
+            assert.ok(px > left - 1e-6 && px < right + 1e-6, `${x.zone} at x ${px.toFixed(3)}, under a column (${left.toFixed(3)}, ${right.toFixed(3)}) at ${s.phase}`);
+          }
+        }
+      }
+    });
+  }
+}
+
 // The user's phone notes: "the hand is small". On the reference phone its
 // cards stand well over twice the corner index they carry, and the table's
 // cards are big enough to tell apart at a glance.

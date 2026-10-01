@@ -47,15 +47,17 @@ export function createScene(
   // The share of the width the information column takes, across the table:
   // the table is framed in the play area beside it (framing.js).
   let inset = 0;
-  // Upright, the strips the table is framed between (framing.js): as they
-  // stand on the way to `target`, which they ease toward.
+  // Upright, the strips the table is framed between (framing.js) -- and on
+  // a phone held sideways the columns, `left` and `right`: as they stand on
+  // the way to `target`, which they ease toward.
   let strips = { ...STRIPS };
   let target = { ...STRIPS };
   const stage = { portrait: false, onReframe: null };
   // Place the eye for this window: upright, or across. Explicit eye, at and
   // fov (from the page's query, for tuning) win.
   function frame(aspect) {
-    const { upright } = aim(camera, aspect, inset, canvas.clientHeight || undefined, strips);
+    const sides = strips.left === undefined ? null : { left: strips.left, right: strips.right };
+    const { upright } = aim(camera, aspect, inset, canvas.clientHeight || undefined, strips, sides);
     if (eye || at || fov) {
       if (eye) camera.position.set(...eye);
       if (at) camera.lookAt(...at);
@@ -187,11 +189,15 @@ export function createScene(
   // there. The tween is the scene's own, so it runs whether or not the cards
   // are moving.
   let easing = null;
+  const KEYS = ["top", "foot", "left", "right"];
   function setStrips(next, { instant = false } = {}) {
-    if (Math.abs(next.top - target.top) < 1 && Math.abs(next.foot - target.foot) < 1) return false;
-    target = { top: next.top, foot: next.foot };
+    const same = (a, b) => KEYS.every((k) => (a[k] === undefined) === (b[k] === undefined) && (a[k] === undefined || Math.abs(a[k] - b[k]) < 1));
+    if (same(next, target)) return false;
+    // Columns come and go with the phone's turning: at once, not eased.
+    const turned = (next.left === undefined) !== (strips.left === undefined);
+    target = Object.fromEntries(KEYS.filter((k) => next[k] !== undefined).map((k) => [k, next[k]]));
     const aspect = () => (canvas.clientWidth || 1) / (canvas.clientHeight || 1);
-    if (instant || !portrait) {
+    if (instant || turned || !portrait) {
       easing = null;
       strips = { ...target };
       frame(aspect());
@@ -203,10 +209,7 @@ export function createScene(
     const step = (now) => {
       if (!easing) return;
       const u = M3.emphasizedDecelerate((now - easing.start) / M3_MS.long2);
-      strips = {
-        top: easing.from.top + (target.top - easing.from.top) * u,
-        foot: easing.from.foot + (target.foot - easing.from.foot) * u,
-      };
+      strips = Object.fromEntries(Object.keys(target).map((k) => [k, (easing.from[k] ?? target[k]) + (target[k] - (easing.from[k] ?? target[k])) * u]));
       frame(aspect());
       render();
       if (u < 1) requestAnimationFrame(step);

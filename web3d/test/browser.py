@@ -285,6 +285,47 @@ def check_faces(browser, failures):
         context.close()
 
 
+def check_sideways(browser, failures):
+    """A phone held sideways: the information down the left, the controls down
+    the right, and the table framed between them -- neither column ever
+    wider than the table was framed for, no sideways scroll, through a deal
+    with Explain and Hints on."""
+    context = browser.new_context(viewport={"width": 852, "height": 353}, is_mobile=True, has_touch=True)
+    page = context.new_page()
+    page.errors = []
+    page.on("pageerror", lambda e: page.errors.append(str(e)))
+    page.on("console", lambda m: m.type == "error" and page.errors.append(m.text))
+    page.goto(f"{PAGE.as_uri()}?test&level=3&seed=7")
+    page.evaluate("localStorage.clear()")
+    page.evaluate("""localStorage.setItem('piquet3d.aids.3', JSON.stringify({hints: true, play_forced: true, play_winners: false, declare_for_me: false}))""")
+    goto(page, "test&level=3&seed=7", fresh=False)
+    for n in range(80):
+        s = state(page)
+        if s["prompt"]["kind"] == "next_deal":
+            break
+        page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
+        framed = page.evaluate("window.piquet3d.strips()")
+        cols = page.evaluate("""() => ({
+            left: document.getElementById('info').getBoundingClientRect().right,
+            right: innerWidth - document.getElementById('controls').getBoundingClientRect().left,
+            wide: document.documentElement.scrollWidth })""")
+        if "left" not in framed:
+            failures.append(f"a phone held sideways at {s['phase']} is not framed between columns: {framed}")
+            break
+        if cols["left"] > framed["left"] + 1 or cols["right"] > framed["right"] + 1:
+            failures.append(f"held sideways at {s['phase']}, the columns ({cols}) are wider than the table is framed for ({framed})")
+        if cols["wide"] > 852:
+            failures.append(f"a phone held sideways scrolls sideways: {cols['wide']}px")
+        command = dull(s, n)
+        if command is None:
+            break
+        page.evaluate(f"window.piquet3d.send({command!r})")
+    shot(page, "08-sideways")
+    if page.errors:
+        failures.append(f"console errors on a phone held sideways: {page.errors}")
+    context.close()
+
+
 def take_turn(page, failures, n, checked):
     """One human decision, made by clicking. False once the partie is over."""
     s = state(page)
@@ -829,6 +870,7 @@ def main() -> int:
         phone.context.close()
         check_phone_worth(browser, failures)
         check_faces(browser, failures)
+        check_sideways(browser, failures)
 
         browser.close()
 

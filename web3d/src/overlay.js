@@ -122,8 +122,9 @@ const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 export function createOverlay(root, on) {
   const $ = (id) => root.querySelector(`#${id}`);
-  // The compact overlay (a phone, or a tablet held upright) opens the tab on demand.
-  const COMPACT = "(max-width: 700px), (orientation: portrait) and (max-width: 1100px)";
+  // The compact overlay (a phone, either way up, or a tablet held upright)
+  // opens the tab on demand.
+  const COMPACT = "(max-width: 700px), (orientation: portrait) and (max-width: 1100px), (orientation: landscape) and (max-height: 500px)";
   const compact = window.matchMedia(COMPACT);
   let tabOpen = { deal: !compact.matches, partie: false };
   let lastFigures = new Map();

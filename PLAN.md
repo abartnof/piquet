@@ -245,6 +245,29 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026 (late): four phone notes from playing
+
+- **"The camera zoomed in during the declarations."** The engine is in the
+  play the moment your last declaration is made, while the table is still
+  saying them; the strips shrank then and the eye moved. Room is still
+  taken at once, but given back only once the cards are still and the
+  dialogue said (`overlay.talking()`).
+- **"Cards held pretty tight ... white space around the deck ... occluding."**
+  Measured: the fan's width was reserved for the rank sort's seven gaps,
+  so Auto and Suit filled ~76% of the width, each card showing ~16 px. On
+  a phone the fan now spans 29 degrees whatever the sort or the cards left
+  (`span` in `ZONES_PORTRAIT`), on a 36 cm arc: ~92% of the width, ~22 px
+  of each card, the cards as large.
+- **Dialogue vs notices.** Each speaker's boxes in a mild tint of their
+  score colour (yours blue, theirs rose), the notices between rounds white.
+- **A phone held sideways** had the wide layout: the information column a
+  third of the width and the prompt on the hand. Now the compact overlay in
+  columns -- bar and information down the left, the controls down the
+  right -- and the stacked table framed between them at full height
+  (`framing.js` `sides`, measured by the page). Staging tests at four
+  sideways sizes; the browser test plays a deal sideways with the aids on.
+- Merged to `main` at the user's word ("merge when you're done").
+
 ### 1 October 2026 (night): large-text faces for phones
 
 The user, finding the cards still small on the phone, gave a recipe for
@@ -265,9 +288,8 @@ suit larger beneath it on one axis, both ends.
   less than the index's width, so a 10 shows mostly its 1 and a Q is part
   hidden -- "a bit of overlap is fine ... just keep the card design as i
   gave it".
-- **Seen, not yet acted on:** a phone held sideways gets the wide layout,
-  which does not fit it -- the prompt sits on the hand and the information
-  column takes a third of the width.
+- **Seen, then fixed the same night:** a phone held sideways got the wide
+  layout (see "four phone notes" above).
 - **Merged to `main`** at the user's word.
 
 ### 1 October 2026 (evening): the phone held upright, cards larger, aids shown

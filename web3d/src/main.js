@@ -534,13 +534,26 @@ async function main() {
     // After the overlay's buttons have drawn themselves.
     measuring = requestAnimationFrame(() => {
       measuring = 0;
-      if (!stage.portrait) return;
+      // A phone held sideways has the information down the left and the
+      // controls down the right (style.css); the table goes between them.
+      const sideways = getComputedStyle(info).getPropertyValue("--sideways").trim() === "1";
+      if (!stage.portrait && !sideways) return;
       const s = engine.state();
       if (ui.withheld) return; // the moment between rounds asks nothing
       const box = (id) => {
         const n = document.getElementById(id);
         return n && !n.hidden && n.offsetParent && !n.classList.contains("floating") ? n.getBoundingClientRect() : null;
       };
+      if (sideways) {
+        const controls = box("controls");
+        const right = controls && controls.width ? window.innerWidth - controls.left + GAP : 0;
+        const key = `sideways|${s.prompt.kind}|${window.innerWidth}x${window.innerHeight}`;
+        const was = tallest.get(key) ?? { top: GAP, foot: GAP, left: 0, right: 0 };
+        const now = { top: GAP, foot: GAP, left: Math.max(was.left, info.getBoundingClientRect().right + GAP), right: Math.max(was.right, right) };
+        tallest.set(key, now);
+        reframeTo(now);
+        return;
+      }
       // A folded explanation counts; opened, it is read over the table, and
       // what it pushes down is not measured until it folds again.
       const open = document.getElementById("rule").classList.contains("open");
@@ -569,9 +582,14 @@ async function main() {
       stage.setStrips(next, { instant: true });
       return;
     }
-    const taken = { top: Math.max(was.top, next.top), foot: Math.max(was.foot, next.foot) };
+    // Turned, the columns come or go at once.
+    if ((was.left === undefined) !== (next.left === undefined)) {
+      stage.setStrips(next, { instant: true });
+      return;
+    }
+    const taken = Object.fromEntries(Object.keys(next).map((k) => [k, Math.max(was[k] ?? 0, next[k])]));
     stage.setStrips(taken);
-    if (taken.top === next.top && taken.foot === next.foot) return;
+    if (Object.keys(next).every((k) => taken[k] === next[k])) return;
     const settle = () => {
       if (director.busy() || overlay.talking()) settling = setTimeout(settle, 250);
       else stage.setStrips(next);
@@ -582,7 +600,7 @@ async function main() {
   // explanation opens and folds: measured again whenever the strips change.
   if (window.ResizeObserver) {
     const watch = new ResizeObserver(() => measureStrips());
-    for (const id of ["bug", "rule", "worth", "controls"]) watch.observe(document.getElementById(id));
+    for (const id of ["bug", "rule", "worth", "controls", "info"]) watch.observe(document.getElementById(id));
   }
 
   // Carry out a command. The engine answers for your opponent on this

@@ -19,6 +19,12 @@
 // worth, a hint, the calls to choose from -- so the table takes whatever
 // room they leave (the user: "use all the white space well without
 // colliding with the other elements").
+//
+// A phone held sideways has `sides`: the information down the left and the
+// controls down the right, in CSS pixels. Its table is the stacked one too,
+// framed in the middle between the columns -- the field fitted to that
+// band's width and the window's height, and the picture moved over into it
+// by the lens, as across the table.
 
 import { PerspectiveCamera } from "three";
 import { CAMERA, CAMERA_PORTRAIT, PORTRAIT_BELOW } from "./units.js";
@@ -32,8 +38,8 @@ export const STRIPS = Object.freeze({ top: 142, foot: 194 });
 // A phone as the tests and the page assume one, when no height is given.
 const PHONE_HEIGHT = 844;
 
-export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
-  const upright = aspect < PORTRAIT_BELOW;
+export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS, sides = null) {
+  const upright = aspect < PORTRAIT_BELOW || !!sides;
   if (!upright) {
     const area = aspect * (1 - inset);
     const fov = Math.max(CAMERA.fov, (360 / Math.PI) * Math.atan(CAMERA.widthTan / area));
@@ -46,16 +52,22 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIP
   const { up, down, across } = CAMERA_PORTRAIT.reach;
   const top = 1 - (2 * strips.top) / height;
   const foot = -1 + (2 * strips.foot) / height;
-  const tan = Math.max((up - down) / (top - foot), across / (0.96 * aspect));
+  // Between the columns, if any, in device coordinates: its share of the
+  // width, and its centre.
+  const width = aspect * height;
+  const left = sides ? -1 + (2 * sides.left) / width : -1;
+  const right = sides ? 1 - (2 * sides.right) / width : 1;
+  const share = (right - left) / 2;
+  const tan = Math.max((up - down) / (top - foot), across / (0.96 * aspect * share));
   const lift = (top + foot) / 2 - (up + down) / (2 * tan);
   const fov = (360 / Math.PI) * Math.atan(tan);
-  return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: 0, lift };
+  return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: (left + right) / 2, lift };
 }
 
 // Aim a camera as the page does, for a window of this shape (and, upright,
-// this height in CSS pixels, between these strips).
-export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
-  const f = framing(aspect, inset, height, strips);
+// this height in CSS pixels, between these strips and columns).
+export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS, sides = null) {
+  const f = framing(aspect, inset, height, strips, sides);
   camera.position.set(...f.position);
   camera.lookAt(...f.target);
   camera.fov = f.fov;
@@ -73,8 +85,8 @@ export function aim(camera, aspect, inset = 0, height = PHONE_HEIGHT, strips = S
   return f;
 }
 
-export function cameraFor(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS) {
+export function cameraFor(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIPS, sides = null) {
   const camera = new PerspectiveCamera(CAMERA.fov, aspect, CAMERA.near, CAMERA.far);
-  aim(camera, aspect, inset, height, strips);
+  aim(camera, aspect, inset, height, strips, sides);
   return camera;
 }
