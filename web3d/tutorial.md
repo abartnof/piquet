@@ -68,6 +68,7 @@ Your longest suit, meaning the most cards of one suit in your hand (like a flush
 A run of 3 or more consecutive cards in one suit, such as 9-8-7 or K-Q-J (like a straight flush in poker).
 
 - **Score:** 3 cards score 3, 4 cards score 4, 5 cards score 15, 6 cards score 16, 7 cards score 17, and 8 cards score 18.
+- **Names:** 3 cards are a *tierce*, 4 a *quart*, 5 a *quint*, 6 a *sixième*, 7 a *septième*, and 8 a *huitième*. "Quart to the king" is four in a row with the king on top.
 - **Who wins:** The longer run. If the runs are the same length, the run with the higher top card wins.
 - **Bonus:** If you win, you also score any other sequences in your hand.
 
@@ -76,6 +77,7 @@ A run of 3 or more consecutive cards in one suit, such as 9-8-7 or K-Q-J (like a
 Three or four cards of the same rank, 10 or higher (like three or four of a kind in poker).
 
 - **Score:** Three of a kind scores 3, and four of a kind scores 14.
+- **Names:** Three of a kind is a *trio*, and four of a kind a *quatorze* (French for 14, its score).
 - **Who wins:** Four beats three. If both have the same number, the higher rank wins.
 - **Bonus:** If you win, you also score any other sets in your hand.
 

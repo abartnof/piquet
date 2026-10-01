@@ -131,6 +131,19 @@ test("the declarations: what each scores, and what beats what", () => {
   for (const e of scored.filter((x) => x.category === "point")) assert.ok(e.amount >= 1 && e.amount <= 8);
 });
 
+// The user: "a newcomer has no idea what jargon like 'tierce' means". Every
+// name the table gives a sequence or a set is said on the page.
+test("the names the table calls sequences and sets by, and what they are", () => {
+  assert.match(all, /3 cards are a tierce, 4 a quart, 5 a quint, 6 a sixième, 7 a septième, and 8 a huitième/);
+  assert.match(all, /"Quart to the king" is four in a row with the king on top/);
+  assert.match(all, /Three of a kind is a trio, and four of a kind a quatorze/);
+  const named = scored
+    .filter((e) => e.category === "sequences" || e.category === "sets")
+    .flatMap((e) => e.what.split(", ").map((holding) => holding.split(" ")[0]));
+  assert.ok(new Set(named).size >= 3, `only ${[...new Set(named)]} in the test parties`);
+  for (const name of new Set(named)) assert.ok(all.includes(` a ${name}`), `"${name}" is never explained`);
+});
+
 test("lying: one card fewer than you hold, or nothing -- what the table offers", () => {
   assert.match(all, /claim one card fewer than you're holding, or nothing at all, but never more/);
   const declare = states.find((s) => s.prompt.kind === "declare" && s.prompt.options.length === 3);
