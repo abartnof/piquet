@@ -105,10 +105,11 @@ threat, not a curiosity.
   `.nojekyll` serves the tree as plain files. Checked over HTTP from the
   repository root in Chromium: it lands on the game, no request leaves the
   site, no console errors.
-- **Every commit that rebuilds `web3d/piquet3d.html` goes live** on the
-  public site within minutes. Commit a rebuilt page only once it has passed
-  the gate (Rust, node, and the browser test); source changes alone change
-  nothing players see.
+- **`main` is what players get**: Pages serves it, and any commit there that
+  rebuilds `web3d/piquet3d.html` goes live within minutes. So changes are made
+  on a **`dev` branch** (`git switch -c dev` the first time) and merged into
+  `main` only when a version is ready to play and has passed the gate (Rust,
+  node, and the browser test).
 - The README was rewritten short: where to learn the game, how this one
   works, and whom we thank.
 - A stray committed `web3d/piquet3d-svg.html` (a stale 3.3 MB comparison
@@ -196,8 +197,9 @@ should not be, and it is almost always an instance nobody stopped:
 ## Working conventions
 
 - **Test-driven**: tests first, throughout.
-- **Atomic commits straight to `main`, often**; `PLAN.md` updated as each
-  piece of work lands; `set -e` on multi-step shell commands.
+- **Atomic commits, often, on `dev`**; `main` only takes a merge of `dev`
+  once a version is ready to play (see "Publishing"). `PLAN.md` updated as
+  each piece of work lands; `set -e` on multi-step shell commands.
 - **One self-contained HTML page**, working offline, **modest in size** (5 MB
   is a guideline, not a hard limit; weigh size against what it buys).
 - **Material Design 3** for the controls, bundled — no CDNs, no fonts or
