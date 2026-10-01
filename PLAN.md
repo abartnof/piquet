@@ -245,6 +245,26 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026 (later still): size follows importance; the hand to the edges
+
+- **"No reason to have much white space at all on either side of the
+  hand."** Measured: upright, the fan filled 92% of the width in play and
+  73% while declaring (where the strips make height the limit). Now the
+  framing works out how much width it leaves, and the fan is drawn out to
+  take it (`fill`: a longer arc that sags no lower, `layout.js`
+  `flattened`), with a margin of 1% a side rather than 4%. The hand
+  re-fans as the eye moves.
+- **"My hand, what's face-up on the table ... should be largest. Anything
+  else is basically symbolic of what's unknown."** On a phone the
+  face-down cards are drawn small (their hand 0.55, talon and discard piles
+  0.6, the pack 0.75; `ZONES_PORTRAIT.scale`), the opponent's hand sits
+  lower, and the eye comes in on what is left. A card changes size along
+  its own motion (`choreography.js` `add`). Drawing the face-up cards
+  larger than life was tried and dropped: the motions' clearances are a
+  card's, and a 1.3x card dipped through the table on its way.
+- **Next:** a dialogue box can cover the trick on the table -- face-up, so
+  what matters most.
+
 ### 1 October 2026 (late): four phone notes from playing
 
 - **"The camera zoomed in during the declarations."** The engine is in the

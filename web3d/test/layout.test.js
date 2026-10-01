@@ -196,6 +196,27 @@ test("on a phone, the fan spans its whole angle whatever the sort, until cards w
   }
 });
 
+// The user: "my hand, what's face-up on the table (so i can see what's
+// common knowledge). those should be largest. anything else is basically
+// symbolic of what's unknown, so those can be smaller."
+test("on a phone, what you read is largest: your hand and the face-up cards; the face-down smaller", () => {
+  const FACE_DOWN = ["their-hand", "talon", "their-discards", "your-discards", "pack"];
+  const FACE_UP = ["trick", "your-tricks", "their-tricks", "cut"];
+  for (const s of states) {
+    for (const peek of [false, true]) {
+      for (const x of layout(s, { zones: ZONES_PORTRAIT, peek })) {
+        const k = x.pose.scale ?? 1;
+        if (x.zone === "your-hand") assert.equal(k, 1);
+        else if (x.zone === "your-discards" && peek && s.discards.length) assert.equal(k, 1, "held up to look at, your discards are face up to you");
+        else if (FACE_DOWN.includes(x.zone)) assert.ok(k < 0.8, `${x.zone} at ${k}`);
+        else if (FACE_UP.includes(x.zone)) assert.ok(k >= 1, `${x.zone} at ${k}`);
+      }
+    }
+  }
+  // Across the table, as before: every card its own size.
+  for (const x of layout(states[40])) assert.equal(x.pose.scale ?? 1, 1);
+});
+
 test("cards chosen to throw rise out of the hand, and a pointed-at holding rises less", () => {
   const s = states.find((x) => x.prompt.kind === "exchange");
   const [a, b] = s.hand;

@@ -42,7 +42,12 @@ export const CAMERA = Object.freeze({
 export const CAMERA_PORTRAIT = Object.freeze({
   position: Object.freeze([0, 40, 72]),
   target: Object.freeze([0, 0, 0]),
-  reach: Object.freeze({ up: 0.207, down: -0.334, across: 0.298 }),
+  reach: Object.freeze({ up: 0.165, down: -0.334, across: 0.298 }),
+  // Your hand's own reach across, and how much more it reaches for each unit
+  // its fan is lengthened (layout.js `fill`): framing.js lengthens it to
+  // take whatever width the window has to spare. Measured by the staging
+  // test; `perFill` is the steepest rate, so the hand never overruns.
+  hand: Object.freeze({ across: 0.298, perFill: 0.185 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
@@ -90,12 +95,12 @@ export const ZONES_PORTRAIT = Object.freeze({
   // spread to fill it, up to 5.5 degrees apart -- so it takes the screen's
   // width and shows more of each card (layout.js).
   yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 36, spread: 5.5, span: 29, groupGap: 2, lean: 40 }),
-  theirHand: Object.freeze({ centre: Object.freeze([0, 8, -16]), radius: 14, spread: 3.8, lean: 15 }),
+  theirHand: Object.freeze({ centre: Object.freeze([0, 6, -16]), radius: 14, spread: 3.8, lean: 15 }),
   ribbon: Object.freeze({ x: 16.5, z: -3, spacing: 1.05 }),
   yourCut: Object.freeze({ x: -5, z: 6.5 }),
   theirCut: Object.freeze({ x: 5, z: -12.5 }),
   talon: Object.freeze({ x: -15, z: -3.5 }),
-  yourDiscards: Object.freeze({ x: -16, z: 7, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
+  yourDiscards: Object.freeze({ x: -16, z: 7, peek: Object.freeze({ centre: Object.freeze([-7, 10, 13]), radius: 9, spread: 9 }) }),
   theirDiscards: Object.freeze({ x: -17, z: -14 }),
   yourPlay: Object.freeze({ x: 5, z: -2.5 }),
   theirPlay: Object.freeze({ x: -1.5, z: -4.5 }),
@@ -103,4 +108,18 @@ export const ZONES_PORTRAIT = Object.freeze({
   theirTricks: Object.freeze({ x: -8, z: -14, span: 22 }),
   pack: Object.freeze({ you: Object.freeze({ x: 9, z: 5 }), them: Object.freeze({ x: 9, z: -11 }) }),
   dealt: Object.freeze({ you: Object.freeze({ x: -2, z: 5 }), them: Object.freeze({ x: -2, z: -13 }) }),
+  // Size follows importance (the user: "my hand, what's face-up on the table
+  // (so i can see what's common knowledge). those should be largest.
+  // anything else is basically symbolic of what's unknown, so those can be
+  // smaller"): the face-down cards small; your hand and the face-up cards
+  // as they are, and the room the small ones give up lets the eye come in on
+  // them. (Larger than life was tried: the motions' clearances are a card's,
+  // and a card drawn larger dipped through the table on its way.)
+  scale: Object.freeze({
+    "their-hand": 0.55,
+    talon: 0.6,
+    "their-discards": 0.6,
+    "your-discards": 0.6,
+    pack: 0.75,
+  }),
 });

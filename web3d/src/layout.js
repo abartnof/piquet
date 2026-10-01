@@ -48,10 +48,11 @@ function pile(zone, codes, { x, z, faceUp = false, yaw = 0, from = 0, key = zone
 // tilted just enough to clear it, as cards spread on a table do -- so every
 // card's corner index shows, later cards lie on top, and the row stays on the
 // table instead of climbing a card's thickness per card.
-function row(entries, { x, z, spacing, faceUp = true, yaw = 0 }) {
-  const lean = Math.atan(STEP / spacing);
+// `scale`: the size the cards are drawn at (sized, below).
+function row(entries, { x, z, spacing, faceUp = true, yaw = 0, scale = 1 }) {
+  const lean = Math.atan((STEP * scale) / spacing);
   const tilt = new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), -lean); // left edge up
-  const height = REST + (CARD.width / 2) * Math.sin(lean) + (CARD.thickness / 2) * Math.cos(lean);
+  const height = REST + ((CARD.width * scale) / 2) * Math.sin(lean) + ((CARD.thickness * scale) / 2) * Math.cos(lean);
   return entries.map(({ zone, code, dz = 0, yaw: own }, i) => {
     const flat = lying({ x: x + i * spacing, z: z + dz, height: 0, faceUp, yaw: own ?? yaw });
     flat.quaternion.premultiply(tilt);
@@ -66,13 +67,13 @@ function row(entries, { x, z, spacing, faceUp = true, yaw = 0 }) {
 // both ends, so every one still shows a readable corner.
 const uprightTo = (who) => (who === "you" ? 0 : Math.PI);
 
-function wonRow(zone, tricks, { x, z, span }, { toward }) {
+function wonRow(zone, tricks, { x, z, span }, { toward, scale = 1 }) {
   const entries = tricks.flatMap((t) => [
     { zone, code: t.led, yaw: uprightTo(t.leader) },
     { zone, code: t.followed, dz: toward * PAIR_OFFSET, yaw: uprightTo(t.leader === "you" ? "them" : "you") },
   ]);
   const spacing = Math.min(1.3, Math.max(1.0, span / Math.max(1, entries.length - 1)));
-  return row(entries, { x, z, spacing });
+  return row(entries, { x, z, spacing, scale });
 }
 
 function yourHand(state, view, zones) {
@@ -80,16 +81,19 @@ function yourHand(state, view, zones) {
   const groups = arrange(state, sortMode(state, view.sort));
   // With a `span` (a phone), the cards spread to fill that angle, however
   // many groups the sort makes and however many cards are left -- but never
-  // wider apart than `spread`.
+  // wider apart than `spread`. And where the window has width to spare,
+  // `fill` lengthens the fan to take it (framing.js), flattening it so it
+  // sags no lower: the hand is never held tighter than the screen requires
+  // (the user: "no reason to have much white space at all on either side of
+  // the hand").
+  const { radius, span, spread: most, groupGap } = flattened(zone, view.fill ?? 1);
   const count = groups.flat().length;
-  const spread = zone.span && count > 1
-    ? Math.min(zone.spread, (zone.span - (groups.length - 1) * zone.groupGap) / (count - 1))
-    : zone.spread;
+  const spread = span && count > 1 ? Math.min(most, (span - (groups.length - 1) * groupGap) / (count - 1)) : most;
   const raw = [];
   let angle = 0;
   groups.forEach((group, g) =>
     group.forEach((_, i) => {
-      if (g > 0 && i === 0) angle += zone.groupGap * DEG;
+      if (g > 0 && i === 0) angle += groupGap * DEG;
       raw.push(angle);
       angle += spread * DEG;
     }),
@@ -100,7 +104,7 @@ function yourHand(state, view, zones) {
     angles: raw.map((a) => a - middle),
     centre,
     facing: toward(centre, 1),
-    radius: zone.radius,
+    radius,
     tilt: zone.lean * DEG,
   });
   const codes = groups.flat();
@@ -113,6 +117,25 @@ function yourHand(state, view, zones) {
     if (lift) pose.position.addScaledVector(new Vector3(0, 1, 0).applyQuaternion(pose.quaternion), lift);
     return { zone: "your-hand", index: i, code, pose };
   });
+}
+
+// A fan `fill` times as long round its arc, sagging no lower at its ends: a
+// larger radius over a smaller angle, its spacing and gaps in proportion.
+export function flattened(zone, fill = 1) {
+  if (!zone.span || fill <= 1) return zone;
+  const theta = zone.span * DEG;
+  const length = fill * zone.radius * theta;
+  const sag = zone.radius * (1 - Math.cos(theta / 2));
+  // The angle whose arc of this length sags as far: sag rises with it.
+  let lo = 1e-4;
+  let hi = theta;
+  for (let i = 0; i < 50; i++) {
+    const mid = (lo + hi) / 2;
+    if ((length / mid) * (1 - Math.cos(mid / 2)) < sag) lo = mid;
+    else hi = mid;
+  }
+  const scale = lo / theta;
+  return { ...zone, radius: length / lo, span: zone.span * scale, spread: zone.spread * scale, groupGap: zone.groupGap * scale };
 }
 
 function theirHand(count, zones) {
@@ -146,7 +169,7 @@ function cutLayout(state, zones) {
   const r = zones.ribbon;
   const ribbon = row(
     Array.from({ length: 32 - shown.length }, () => ({ zone: "pack", code: null })),
-    { x: r.x - (31 - shown.length) * r.spacing, z: r.z, spacing: r.spacing, faceUp: false },
+    { x: r.x - (31 - shown.length) * r.spacing, z: r.z, spacing: r.spacing, faceUp: false, scale: zones.scale?.pack },
   ).reverse(); // index 0 is the top of the pack, at the right
   ribbon.forEach((slot, i) => (slot.index = i));
   const cuts = shown.map((e) => {
@@ -167,12 +190,29 @@ export function layout(
     peek = false,
     eye = new Vector3(...CAMERA.position),
     zones = ZONES,
+    fill = 1,
   } = {},
 ) {
-  if (state.phase === "cut") return cutLayout(state, zones);
+  return sized(state.phase === "cut" ? cutLayout(state, zones) : laid(state, { sort, selected, lifted, fresh, peek, eye, zones, fill }), zones, peek);
+}
 
+// What matters is drawn largest (the user: "my hand, what's face-up on the
+// table (so i can see what's common knowledge). those should be largest.
+// anything else is basically symbolic of what's unknown, so those can be
+// smaller"): where the zones give sizes -- a phone -- each card takes its
+// zone's. Your discards held up to look at are face up to you, and full size.
+function sized(slots, zones, peek) {
+  if (!zones.scale) return slots;
+  for (const slot of slots) {
+    const k = zones.scale[slot.zone];
+    if (k && k !== 1 && !(peek && slot.zone === "your-discards")) slot.pose.scale = k;
+  }
+  return slots;
+}
+
+function laid(state, { sort, selected, lifted, fresh, peek, eye, zones, fill }) {
   const slots = [];
-  slots.push(...yourHand(state, { sort, selected, lifted, fresh, eye }, zones));
+  slots.push(...yourHand(state, { sort, selected, lifted, fresh, eye, fill }, zones));
   slots.push(...theirHand(12 - theirPlayed(state), zones));
 
   // The talon: three below and the rest crossed over them (Foster: "the five
@@ -224,7 +264,7 @@ export function layout(
   // Tricks won lie face up in front of their winner, and either player may
   // look at them at any time (Cavendish, Law 60).
   const won = (who) => state.tricks_played.filter((x) => x.winner === who);
-  slots.push(...wonRow("your-tricks", won("you"), zones.yourTricks, { toward: 1 }));
-  slots.push(...wonRow("their-tricks", won("them"), zones.theirTricks, { toward: -1 }));
+  slots.push(...wonRow("your-tricks", won("you"), zones.yourTricks, { toward: 1, scale: zones.scale?.["your-tricks"] }));
+  slots.push(...wonRow("their-tricks", won("them"), zones.theirTricks, { toward: -1, scale: zones.scale?.["their-tricks"] }));
   return slots;
 }

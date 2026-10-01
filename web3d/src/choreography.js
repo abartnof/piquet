@@ -43,6 +43,7 @@ import {
   slide,
   transfer,
 } from "./kinematics.js";
+import { minimumJerk } from "./easing.js";
 import { jitter, layout } from "./layout.js";
 import { CARD, ZONES } from "./units.js";
 
@@ -308,9 +309,20 @@ class Plan {
     this.motions = [];
   }
 
-  add(mesh, path, delay, duration, reveal) {
-    this.motions.push({ id: mesh.id, path, delay, duration, reveal });
+  // A card changes size as it goes, from the size it was to the size of
+  // where it lands (`to`; layout.js `sized`: on a phone the face-down cards
+  // are smaller, the face-up larger) -- along the motion's own clock, so it
+  // is never full size at a small card's height.
+  add(mesh, path, delay, duration, reveal, to) {
+    const from = mesh.pose.scale ?? 1;
+    const end = to?.scale ?? 1;
+    const sizedPath = from === 1 && end === 1 ? path : (t) => ({ ...path(t), scale: from + (end - from) * minimumJerk(t) });
+    this.motions.push({ id: mesh.id, path: sizedPath, delay, duration, reveal });
     return delay + duration;
+  }
+  // The size of the cards in a pile that is no layout's: the pack's.
+  pileSize() {
+    return this.zones.scale?.pack;
   }
 
   // Move every mesh to its slot in `target`, choosing each motion by where it
@@ -326,7 +338,7 @@ class Plan {
       const reveal = mesh.code !== slot.code ? (slot.code ? { code: slot.code } : { code: null, atEnd: true }) : undefined;
       if (moved || reveal) {
         const m = choose(mesh, slot) ?? { path: this.carry(mesh.pose, slot.pose), delay: 0, duration: TIMING.direct };
-        end = Math.max(end, this.add(mesh, m.path, start + m.delay, m.duration, reveal));
+        end = Math.max(end, this.add(mesh, m.path, start + m.delay, m.duration, reveal, slot.pose));
       }
       next[id] = { id, zone: slot.zone, index: slot.index, code: slot.code, pose: slot.pose };
     });
@@ -344,14 +356,19 @@ class Plan {
       zone,
       index: i,
       code: mesh.code,
-      pose: lying({
+      pose: this.sizedPile(lying({
         x: at.x,
         z: at.z,
         height: REST + i * STEP,
         faceUp: false,
         yaw: yawKeeping(mesh.pose, false) + jitter(`${zone}${i}`, 1.5),
-      }),
+      })),
     }));
+  }
+  sizedPile(pose) {
+    const k = this.pileSize();
+    if (k && k !== 1) pose.scale = k;
+    return pose;
   }
 
   // Move the given meshes to explicit poses, one motion each. A change of
@@ -361,7 +378,7 @@ class Plan {
     for (const { mesh, pose, path, delay = 0, duration, code = this.now[mesh.id].code } of pairs) {
       const was = this.now[mesh.id].code;
       const reveal = code === was ? undefined : code ? { code } : { code: null, atEnd: true };
-      end = Math.max(end, this.add(mesh, path, start + delay, duration, reveal));
+      end = Math.max(end, this.add(mesh, path, start + delay, duration, reveal, pose));
       this.now[mesh.id] = { ...this.now[mesh.id], pose, code };
     }
     this.clock = end;
@@ -411,7 +428,7 @@ class Plan {
     const start = this.clock;
     let end = start;
     fan.slice(from, from + n).forEach((mesh, i) => {
-      end = Math.max(end, this.add(mesh, bob(mesh.pose, 2.4), start + i * 45, TIMING.call));
+      end = Math.max(end, this.add(mesh, bob(mesh.pose, 2.4), start + i * 45, TIMING.call, undefined, mesh.pose));
     });
     this.clock = end;
   }
@@ -515,7 +532,7 @@ class Plan {
         [still(look), 1.1],
         [toss(look, slot.pose, { clearance: 2 }), 1],
       );
-      end = Math.max(end, this.add(mesh, path, start + (e.who === "them" ? 250 : 0), TIMING.cutShow, { code: e.card }));
+      end = Math.max(end, this.add(mesh, path, start + (e.who === "them" ? 250 : 0), TIMING.cutShow, { code: e.card }, slot.pose));
       this.now[mesh.id] = { id: mesh.id, zone: "cut", index: slot.index, code: e.card, pose: slot.pose };
     }
     // The rest of the spread closes up.
@@ -523,7 +540,7 @@ class Plan {
     const spread = this.now.filter((m) => m.zone === "pack").sort((a, b) => a.index - b.index);
     spread.forEach((mesh, i) => {
       const slot = rest[i];
-      end = Math.max(end, this.add(mesh, slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }), start + 200, TIMING.resort));
+      end = Math.max(end, this.add(mesh, slide(mesh.pose, slot.pose, { lift: ride(slot.pose) }), start + 200, TIMING.resort, undefined, slot.pose));
       this.now[mesh.id] = { id: mesh.id, zone: slot.zone, index: slot.index, code: null, pose: slot.pose };
     });
     this.clock = end + (this.pause ? TIMING.cutRead : 0);
@@ -616,7 +633,7 @@ class Plan {
           const mesh = top.shift();
           const at = this.zones.dealt[who];
           const n = piles[who].length;
-          const pose = lying({ x: at.x, z: at.z, height: REST + n * STEP, faceUp: false, yaw: jitter(`deal${who}${n}`, 3) });
+          const pose = this.sizedPile(lying({ x: at.x, z: at.z, height: REST + n * STEP, faceUp: false, yaw: jitter(`deal${who}${n}`, 3) }));
           piles[who].push({ mesh, pose });
           const delay = pair * TIMING.dealPair + k * TIMING.dealSecond;
           dealt.push({ mesh, pose, path: toss(mesh.pose, pose, { clearance: 3 }), delay, duration: TIMING.dealCard, code: null });

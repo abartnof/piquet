@@ -43,6 +43,9 @@ export function createDirector({ stage, deck, engine, view, settled, pace, timed
     const pose = base[id];
     mesh.quaternion.copy(pose.quaternion);
     mesh.position.copy(pose.position);
+    // On a phone the face-down cards are drawn smaller and the face-up
+    // larger, and a card changes size on its way (layout.js, choreography.js).
+    mesh.scale.setScalar(pose.scale ?? 1);
     if (lift[id]) {
       const onTable = placement[id] && placement[id].zone === "pack";
       const up = onTable ? new Vector3(0, 1, 0) : new Vector3(0, 1, 0).applyQuaternion(pose.quaternion);

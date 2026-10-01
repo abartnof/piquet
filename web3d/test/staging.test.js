@@ -166,13 +166,24 @@ for (const [w, h] of PHONES) {
     test(`on a ${w} x ${h} phone, the table lies between the information and the controls, ${strips.top} and ${strips.foot} px tall`, () => {
       assert.ok(framing(aspect, 0, h, strips).upright);
       const framed = cameraFor(aspect, 0, h, strips);
+      const { fill } = framing(aspect, 0, h, strips);
       const { top, foot } = bands(h, strips);
       for (const s of states) {
-        for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye: framed.position, ...raised(s), sort }))) {
-          for (const [px, py] of onScreen(x.pose, framed)) {
-            assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
-            assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
-            assert.ok(Math.abs(px) < 0.98, `${x.zone} at x ${px.toFixed(3)}, off the side at ${s.phase}`);
+        for (const sort of SORTS) {
+          const slots = layout(s, { zones: ZONES_PORTRAIT, eye: framed.position, ...raised(s), sort, fill });
+          for (const x of slots) {
+            for (const [px, py] of onScreen(x.pose, framed)) {
+              assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
+              assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
+              assert.ok(Math.abs(px) < 0.99, `${x.zone} at x ${px.toFixed(3)}, off the side at ${s.phase} (fill ${fill.toFixed(2)})`);
+            }
+          }
+          // And the fan, drawn out, still hides nothing on the table.
+          const hand = slots.filter((x) => x.zone === "your-hand").map((x) => outline(onScreen(x.pose, framed)));
+          for (const x of slots) {
+            if (x.zone.endsWith("hand")) continue;
+            const card = outline(onScreen(x.pose, framed));
+            for (const held of hand) assert.ok(!overlap(card, held), `${x.zone} behind your hand at ${s.phase}, fill ${fill.toFixed(2)}`);
           }
         }
       }
@@ -210,10 +221,11 @@ for (const [w, h] of SIDEWAYS) {
       const aspect = w / h;
       assert.ok(framing(aspect, 0, h, EDGES, sides).upright, "the stacked table");
       const camera = cameraFor(aspect, 0, h, EDGES, sides);
+      const { fill } = framing(aspect, 0, h, EDGES, sides);
       const { top, foot } = bands(h, EDGES);
       const [left, right] = [-1 + (2 * sides.left) / w, 1 - (2 * sides.right) / w];
       for (const s of states) {
-        for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, ...raised(s), sort }))) {
+        for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, ...raised(s), sort, fill }))) {
           for (const [px, py] of onScreen(x.pose, camera)) {
             assert.ok(py < top + 1e-6 && py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, off the top or foot at ${s.phase}`);
             assert.ok(px > left - 1e-6 && px < right + 1e-6, `${x.zone} at x ${px.toFixed(3)}, under a column (${left.toFixed(3)}, ${right.toFixed(3)}) at ${s.phase}`);
@@ -223,6 +235,30 @@ for (const [w, h] of SIDEWAYS) {
     });
   }
 }
+
+// The hand's own reach across, and the rate it grows as its fan is drawn
+// out, are what framing.js counts on to fill the width without overrunning.
+test("the hand's reach across, and how it grows with the fill, are as framing.js assumes", () => {
+  const eye = new Vector3(...CAMERA_PORTRAIT.position);
+  const ahead = new Vector3(...CAMERA_PORTRAIT.target).sub(eye).normalize();
+  const right = new Vector3().crossVectors(ahead, new Vector3(0, 1, 0)).normalize();
+  const { hand } = CAMERA_PORTRAIT;
+  for (const fill of [1, 1.2, 1.6, 2, 2.4]) {
+    let across = 0;
+    for (const s of states) {
+      for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, ...raised(s), eye, sort, fill }))) {
+        if (x.zone !== "your-hand") continue;
+        for (const c of cardCorners(x.pose).filter((_, i) => i % 2 === 1)) {
+          const d = c.clone().sub(eye);
+          across = Math.max(across, Math.abs(d.dot(right) / d.dot(ahead)));
+        }
+      }
+    }
+    const allowed = hand.across + hand.perFill * (fill - 1);
+    assert.ok(across <= allowed + 1e-6, `at fill ${fill} the hand reaches ${across.toFixed(4)}, beyond ${allowed.toFixed(4)}`);
+    if (fill === 1) assert.ok(across > hand.across - 0.003, `the hand reaches ${across.toFixed(4)}: hand.across should be its own`);
+  }
+});
 
 // The user's phone notes: "the hand is small". On the reference phone its
 // cards stand well over twice the corner index they carry, and the table's

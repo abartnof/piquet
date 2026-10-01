@@ -35,6 +35,12 @@ import { CAMERA, CAMERA_PORTRAIT, PORTRAIT_BELOW } from "./units.js";
 // choices and the tools.
 export const STRIPS = Object.freeze({ top: 142, foot: 194 });
 
+// Upright, the share of the band's width the table may take: a smidge
+// either side (the user: "just a smidge of white space will do!").
+const UPRIGHT_MARGIN = 0.98;
+// The longest a fan is drawn out, however wide the window.
+const MAX_FILL = 2.4;
+
 // A phone as the tests and the page assume one, when no height is given.
 const PHONE_HEIGHT = 844;
 
@@ -44,7 +50,7 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIP
     const area = aspect * (1 - inset);
     const fov = Math.max(CAMERA.fov, (360 / Math.PI) * Math.atan(CAMERA.widthTan / area));
     // The play area's centre, in normalised device coordinates.
-    return { upright, position: CAMERA.position, target: CAMERA.target, fov, shift: inset, lift: 0 };
+    return { upright, position: CAMERA.position, target: CAMERA.target, fov, shift: inset, lift: 0, fill: 1 };
   }
   // The band between the strips, in device coordinates; the field just tall
   // enough for the table's reach to fill it -- or, on a squat window, wide
@@ -58,10 +64,15 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIP
   const left = sides ? -1 + (2 * sides.left) / width : -1;
   const right = sides ? 1 - (2 * sides.right) / width : 1;
   const share = (right - left) / 2;
-  const tan = Math.max((up - down) / (top - foot), across / (0.96 * aspect * share));
+  const room = UPRIGHT_MARGIN * aspect * share; // across, per unit of the field's tangent
+  const tan = Math.max((up - down) / (top - foot), across / room);
   const lift = (top + foot) / 2 - (up + down) / (2 * tan);
   const fov = (360 / Math.PI) * Math.atan(tan);
-  return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: (left + right) / 2, lift };
+  // Where the field is set by the height, there is width to spare: your
+  // hand's fan is lengthened to take it (layout.js `fill`).
+  const { hand } = CAMERA_PORTRAIT;
+  const fill = Math.min(MAX_FILL, Math.max(1, 1 + (room * tan - hand.across) / hand.perFill));
+  return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: (left + right) / 2, lift, fill };
 }
 
 // Aim a camera as the page does, for a window of this shape (and, upright,

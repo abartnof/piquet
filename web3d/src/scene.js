@@ -24,7 +24,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { M3, M3_MS } from "./easing.js";
-import { aim, STRIPS } from "./framing.js";
+import { aim, framing, STRIPS } from "./framing.js";
 import { BASE, PATTERNS, drawSurface } from "./surfaces.js";
 import { CAMERA } from "./units.js";
 
@@ -222,6 +222,13 @@ export function createScene(
   return Object.assign(stage, {
     scene, camera, renderer, key, render, registerInk, setInset, setStrips, setSurface,
     strips: () => ({ ...target }),
+    // How far your hand's fan is drawn out to fill the width, for the
+    // framing the table is on its way to (framing.js).
+    fill: () => {
+      const height = canvas.clientHeight || 1;
+      const sides = target.left === undefined ? null : { left: target.left, right: target.right };
+      return framing((canvas.clientWidth || 1) / height, inset, height, target, sides).fill;
+    },
     frames: () => frames,
   });
 }

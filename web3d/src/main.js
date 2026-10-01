@@ -176,6 +176,7 @@ async function main() {
   // which your buttons wait.
   const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null, withheld: 0 };
   let cutDepth = 16;
+  let fill = 1; // how far your hand's fan is drawn out (refill, below)
   const view = () => ({
     sort: prefs.sort,
     selected: ui.selected,
@@ -186,6 +187,7 @@ async function main() {
     pause: prefs.pause,
     eye: stage.camera.position,
     zones: stage.portrait ? ZONES_PORTRAIT : ZONES,
+    fill: stage.portrait ? fill : 1,
   });
 
   // ---- the game: started, kept, restored -------------------------------------
@@ -574,25 +576,39 @@ async function main() {
   // and the eye moving then looked like a zoom in the middle of them (the
   // user: "at some point, the camera zoomed in during the declarations").
   let settling = null;
+  // Your hand's fan takes the width the framing leaves (framing.js): when
+  // that changes, the hand spreads or gathers as the eye moves.
+  function refill() {
+    const next = stage.portrait ? stage.fill() : 1;
+    if (Math.abs(next - fill) < 0.01) return;
+    fill = next;
+    director.rearrange();
+  }
   function reframeTo(next) {
     clearTimeout(settling);
     const was = stage.strips();
     if (TESTING || !measured) {
       measured = true;
       stage.setStrips(next, { instant: true });
+      refill();
       return;
     }
     // Turned, the columns come or go at once.
     if ((was.left === undefined) !== (next.left === undefined)) {
       stage.setStrips(next, { instant: true });
+      refill();
       return;
     }
     const taken = Object.fromEntries(Object.keys(next).map((k) => [k, Math.max(was[k] ?? 0, next[k])]));
     stage.setStrips(taken);
+    refill();
     if (Object.keys(next).every((k) => taken[k] === next[k])) return;
     const settle = () => {
       if (director.busy() || overlay.talking()) settling = setTimeout(settle, 250);
-      else stage.setStrips(next);
+      else {
+        stage.setStrips(next);
+        refill();
+      }
     };
     settling = setTimeout(settle, 250);
   }

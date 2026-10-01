@@ -39,8 +39,11 @@ for (const sx of [-1, 1]) {
   }
 }
 
+// A pose may carry a `scale`: on a phone the face-down cards are drawn
+// smaller and the face-up ones larger (layout.js).
 export function cardCorners(p) {
-  return CORNERS.map((c) => c.clone().applyQuaternion(p.quaternion).add(p.position));
+  const k = p.scale ?? 1;
+  return CORNERS.map((c) => c.clone().multiplyScalar(k).applyQuaternion(p.quaternion).add(p.position));
 }
 
 function rotateAbout(p, pivot, axis, angle) {
