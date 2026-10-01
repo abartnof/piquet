@@ -21,9 +21,14 @@ const EASE_MS = 90; // how quickly a lift follows the pointer
 // `settled(prev, next)`, if given, runs after the engine has answered and
 // before the change is choreographed: the moment for the app to update what
 // the view shows (cards just drawn, say), so the animation lands on it.
-// `timed(prev, next, beats)`, if given, runs once it is choreographed, with
-// when each new event will be seen to happen, in ms from now -- for the dialogue.
-export function createDirector({ stage, deck, engine, view, settled, timed, testing = false, manual = false, speed = 1 }) {
+// `pace(prev, next, dry)`, if given, runs before the change is choreographed,
+// and may hold events back: it returns { waits: { eventIndex: ms from now } }
+// (and whatever else it likes, handed on to `timed`), and may first try waits
+// out with `dry(waits)` -> { beats, duration }, which animates nothing.
+// `timed(prev, next, beats, paced)`, if given, runs once it is choreographed,
+// with when each new event will be seen to happen, in ms from now -- for the
+// dialogue -- and what `pace` returned.
+export function createDirector({ stage, deck, engine, view, settled, pace, timed, testing = false, manual = false, speed = 1 }) {
   const meshes = Array.from({ length: 32 }, () => deck.card(null));
   meshes.forEach((mesh, id) => (mesh.userData.id = id));
   let state = engine.state();
@@ -185,13 +190,20 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
     stage.render();
   }
 
-  function animate(prev, next) {
-    timeline.skip(); // anything still moving lands first
-    const result = choreograph(prev, next, placement, view(), { pause: view().pause !== false });
-    // Each event's moment, as the timeline will play it: at its speed, or at
-    // once when nothing is animated.
+  // The change choreographed from where the cards lie now, its waits given in
+  // ms of the table's clock; and each event's moment, as the timeline will
+  // play it: at its speed, or at once when nothing is animated.
+  function plan(prev, next, waits = {}) {
+    const scaled = Object.fromEntries(Object.entries(waits).map(([k, ms]) => [k, ms * timeline.speed]));
+    const result = choreograph(prev, next, placement, view(), { pause: view().pause !== false, waits: scaled });
     const beats = {};
     for (const [k, ms] of Object.entries(result.beats)) beats[k] = testing ? 0 : ms / timeline.speed;
+    return { result, beats, duration: testing ? 0 : result.duration / timeline.speed };
+  }
+
+  function animate(prev, next, waits) {
+    timeline.skip(); // anything still moving lands first
+    const { result, beats } = plan(prev, next, waits);
     placement = result.placement;
     const start = now();
     for (const m of result.motions) {
@@ -289,14 +301,20 @@ export function createDirector({ stage, deck, engine, view, settled, timed, test
       schedule({ at: now() + ms, gate: false, fn });
     },
     held: () => heldAt !== null,
+    // The table's clock, in ms: it stands still while the table is held.
+    clock: () => now(),
     send(command) {
       const prev = state;
       const accepted = engine.send(command);
       state = engine.state();
       if (accepted) {
         settled?.(prev, state);
-        const beats = animate(prev, state);
-        timed?.(prev, state, beats);
+        const paced = pace?.(prev, state, (waits) => {
+          const { beats, duration } = plan(prev, state, waits);
+          return { beats, duration };
+        }) ?? {};
+        const beats = animate(prev, state, paced.waits);
+        timed?.(prev, state, beats, paced);
       }
       else {
         decorate();

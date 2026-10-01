@@ -245,6 +245,28 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 1 October 2026: a moment between the declarations' rounds; the sort; the tutorial's words
+
+Work on `dev`.
+
+- **Each round of the declarations is introduced** (TABLE3D P22): "Point",
+  "Sequences", "Sets" for a second between the hands, once the round
+  before has been said; the table, your opponent and your buttons wait for
+  it to go. The director now paces a move before animating it, so a wait
+  can hold back their cards as well as their words. Browser-checked from
+  both seats (`?test&breaks`); the timing judged in table time with a
+  hand-driven clock, since this VM's software renderer takes 1–3 s over
+  the frame after each move.
+- **The sort is Auto, Suit or Rank.** Combinations differed from Auto only
+  in the play; a stored Combinations reads as Auto.
+- **The tutorial**: the exchange's lines lost their stray bold; the
+  Declarations page names the holdings the table calls by name (tierce …
+  huitième, trio, quatorze), tested against every name the engine scores.
+- **Left open:** the score bug still waits for a move's last spoken line,
+  so when your opponent opens the next round in the same move, the last
+  round's points tick after the new round's first call. It was so before;
+  fixing it means separating the score's moment from its caption's.
+
 ### 30 September – 1 October 2026: celebrations, tutorial timing, TODO 1 on whole parties
 
 - **All seven celebrations** (TABLE3D P21), translated from the user's

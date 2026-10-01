@@ -15,8 +15,10 @@ be played the way a person plays it, by clicking the spread, the cards and the
 buttons; that the running score tab agrees with the engine at every step;
 that a card that may not be played is refused on screen in the engine's
 words; that undo, the hints key, settings and a reload all work; that the
-motion demo runs; that a phone gets a working page with no sideways scroll;
-and that nothing is ever written to the console in error.
+motion demo runs; that each round of the declarations is introduced, with
+play held until its name has gone (`?test&breaks`); that a phone gets a
+working page with no sideways scroll; and that nothing is ever written to the
+console in error.
 """
 
 import io
@@ -132,6 +134,59 @@ def check_tab(page, failures, where):
     head = page.locator(".tab-head").first.inner_text()
     if f"{s['score']['you']}" not in head or f"{s['score']['them']}" not in head:
         failures.append(f"the tab's first line {head!r} disagrees with {s['score']} at {where}")
+
+
+# The moment between the declarations' rounds, as it lands on the page: each
+# box and card in the order it is put up, and when.
+AFLOAT_LOG = """() => {
+  window.__afloat = [];
+  new MutationObserver((ms) => { for (const m of ms) for (const n of m.addedNodes) if (n.classList)
+    window.__afloat.push({ t: performance.now(), cls: n.className, text: n.textContent }); })
+    .observe(document.getElementById('afloat'), { childList: true });
+  window.__overlap = 0;
+  setInterval(() => {
+    if (document.querySelector('#afloat .interlude') && document.querySelector('#prompt .options, #prompt .actions')) window.__overlap++;
+  }, 25);
+}"""
+
+
+def check_breaks(browser, failures, dealer):
+    """The user: "an on-screen thing pop up for a moment before each part of
+    the declarations, after each player is done speaking from the last one.
+    they may start again once the on-screen thing is gone." Played through
+    the first deal's declarations, as elder (`dealer them`: you open every
+    round) or younger (your opponent does, in the middle of your move)."""
+    where = "as elder" if dealer == "them" else "as younger"
+    page = open_page(browser, "test&breaks&level=1&seed=7")
+    page.evaluate(AFLOAT_LOG)
+    refused = 0
+    for _ in range(400):
+        s = state(page)
+        p = s["prompt"]
+        if p["kind"] == "play" or s["deal"] > 1:
+            break
+        command = {"cut": lambda: "cut 14", "choose_dealer": lambda: f"dealer {dealer}",
+                   "exchange": lambda: f"exchange {s['hand'][-1]}", "declare": lambda: "declare 0"}[p["kind"]]()
+        if not page.evaluate(f"window.piquet3d.send({command!r})"):
+            # Refused only while a round's name is up, or one is still to come.
+            refused += 1
+        page.wait_for_timeout(100)
+    page.wait_for_timeout(4000)
+    log = page.evaluate("window.__afloat")
+    cards = [(i, e) for i, e in enumerate(log) if e["cls"] == "interlude"]
+    if [e["text"] for _, e in cards] != ["Point", "Sequences", "Sets"]:
+        failures.append(f"{where}, the rounds were introduced as {[e['text'] for _, e in cards]}")
+    for i, card in cards:
+        boxes = [e for e in log[i + 1:] if e["cls"].startswith("dialogue")]
+        if boxes and boxes[0]["t"] < card["t"] + 950:
+            failures.append(f"{where}: \"{boxes[0]['text']}\" was said {boxes[0]['t'] - card['t']:.0f} ms into {card['text']}")
+    if page.evaluate("window.__overlap"):
+        failures.append(f"{where}, your buttons were up with a round's name")
+    if not refused:
+        failures.append(f"{where}, no move was ever held back for a round's name")
+    if page.errors:
+        failures.append(f"console errors in the declarations' breaks {where}: {page.errors}")
+    page.context.close()
 
 
 def take_turn(page, failures, n, checked):
@@ -505,6 +560,9 @@ def main() -> int:
         if yng.errors:
             failures.append(f"console errors in the younger tutorial: {yng.errors}")
         yng.context.close()
+
+        for dealer in ("them", "you"):
+            check_breaks(browser, failures, dealer)
 
         # The celebrations' staging (the user: "the dummy ending where the game
         # is basically over, and i get to scroll through the different

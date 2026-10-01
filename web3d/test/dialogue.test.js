@@ -74,3 +74,52 @@ test("how long a batch of lines will take, told before it is said", () => {
   assert.ok(until >= out[out.length - 1] + 200, `told ${until} ms; the last line begins at ${out[out.length - 1]}`);
   assert.ok(until < out[out.length - 1] + 2000);
 });
+
+// The moment between the declarations' rounds (breaks.js): a pause in the
+// dialogue, which comes once the line before it has been said, and which
+// nothing after it comes before.
+test("a pause comes once the line before it has been said, and nothing after it comes sooner", () => {
+  const out = said([
+    { who: "you", phrase: "point-5", delay: 0 },
+    { who: "them", phrase: "good", delay: 0 },
+    { pause: true, delay: 0 },
+    { who: "them", phrase: "point-5", delay: 0 },
+  ]);
+  assert.equal(out[2].words, null);
+  assert.ok(out[2].ms >= out[1].ms + 250 + 65 * out[1].words.length, `the pause at ${out[2].ms}, "${out[1].words}" at ${out[1].ms}`);
+  assert.ok(out[3].ms >= out[2].ms);
+  assert.ok(out[3].ms < out[2].ms + 50, "and the next line straight after it");
+});
+
+test("a pause waits for its moment, as a line does", () => {
+  const out = said([{ who: "you", phrase: "good", delay: 0 }, { pause: true, delay: 3000 }]);
+  assert.ok(out[1].ms >= 3000 - 5);
+});
+
+// The table is paced before it is played: the words are chosen once, so the
+// moments planned are the moments said.
+test("what is planned is what is said", () => {
+  const dialogue = createDialogue(BANK);
+  const lines = dialogue.words([
+    { who: "you", phrase: "point-5", delay: 0 },
+    { who: "them", phrase: "good", delay: 400 },
+    { pause: true, delay: 0 },
+    { who: "them", phrase: "good", delay: 0 },
+  ]);
+  const plan = dialogue.plan(lines);
+  const out = said(lines, dialogue);
+  assert.deepEqual(out.map((l) => l.words), lines.map((l) => (l.pause ? null : l.words)));
+  out.forEach((l, i) => assert.ok(Math.abs(l.ms - plan[i].ms) < 5, `line ${i}: planned ${plan[i].ms}, said ${l.ms}`));
+  assert.ok(plan[1].end > plan[1].ms + 250, "and when each will have been said");
+});
+
+// On the table's clock, which stops while the table is held still (a page of
+// the tutorial, the moment between rounds): the dialogue counts from it.
+test("on the clock it is given", () => {
+  let t = 0;
+  const dialogue = createDialogue(BANK, () => t);
+  said([{ who: "you", phrase: "point-5", delay: 0 }], dialogue);
+  t = 10_000; // long since said
+  const after = said([{ who: "them", phrase: "good", delay: 0 }], dialogue);
+  assert.equal(after[0].ms, 0);
+});

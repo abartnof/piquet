@@ -506,6 +506,9 @@ export function createOverlay(root, on) {
 
   function renderPrompt(s, ui, prefs) {
     const box = $("prompt");
+    // Until the moment between the declarations' rounds is over, nothing is
+    // asked: the old buttons shrink away, and the new spring in after it.
+    if (ui.withheld) s = { ...s, prompt: { kind: "withheld" }, hint: null, error: null };
     const p = s.prompt;
     const parts = [];
     const actions = (...buttons) => parts.push(el("div", { class: "actions" }, buttons));
@@ -1134,12 +1137,29 @@ export function createOverlay(root, on) {
       paused = false;
       if (holdUntil) holdUntil += ms;
     },
+    // The moment between the declarations' rounds: the round's name, between
+    // the hands, up for `ms` -- in, held, and gone gracefully -- and what was
+    // said in the round before taken down as it comes. Returns a function
+    // that takes it away, faded or not.
+    interlude(category, ms) {
+      ["you", "them"].forEach((who) => takeDown(who));
+      $("afloat").querySelector(".interlude")?.remove();
+      const name = { point: "Point", sequences: "Sequences", sets: "Sets" }[category] ?? category;
+      const node = el("div", { class: "interlude", role: "status" }, name);
+      const [you, them] = [on.anchor?.("you"), on.anchor?.("them")];
+      const at = you && them ? { x: (you.x + them.x) / 2, y: (you.y + them.y) / 2 } : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      Object.assign(node.style, { left: `${at.x}px`, top: `${at.y}px`, animationDuration: `${ms}ms` });
+      node.addEventListener("animationend", () => node.remove());
+      $("afloat").append(node);
+      return () => node.remove();
+    },
     // An undo, a new partie: the dialogue is over.
     clearDialogue() {
       holdUntil = 0;
       for (const timer of waiting) clearTimeout(timer);
       waiting.clear();
       ["you", "them"].forEach(takeDown);
+      $("afloat").querySelector(".interlude")?.remove();
     },
     // While your opponent thinks -- the engine runs on the page's own thread,
     // and at the top level a decision can take a second -- say so, under

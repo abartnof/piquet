@@ -14,6 +14,7 @@ import { decodeBase64, loadEngine } from "./engine.js";
 import { STRIPS } from "./framing.js";
 import { SORTS } from "./hand.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
+import { breaksBetween } from "./breaks.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
 import { createDialogue } from "./dialogue.js";
@@ -31,6 +32,12 @@ import { ZONES, ZONES_PORTRAIT } from "./units.js";
 
 const params = new URL(window.location.href).searchParams;
 const TESTING = params.has("test");
+// The tests play without the moment between the declarations' rounds, unless
+// one asks for it.
+const PACED = !TESTING || params.has("breaks");
+// How long the name of a declarations' round is up between rounds (the user:
+// "it shouldn't last long, maybe a second").
+const BREAK = 1000;
 
 const GAME_STORE = "piquet3d.game";
 // Versioned once, when a setting since removed changed its default; a set
@@ -143,7 +150,9 @@ async function main() {
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let prefs = recallPrefs({ ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
   if (!SORTS.includes(prefs.sort)) prefs = { ...prefs, sort: "auto" }; // a sort since retired
-  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null };
+  // `withheld`: the moments between rounds still to come in this move, until
+  // which your buttons wait.
+  const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null, withheld: 0 };
   let cutDepth = 16;
   const view = () => ({
     sort: prefs.sort,
@@ -225,31 +234,99 @@ async function main() {
     if (drew) ui.fresh = drew.drew;
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
     // An undo falls silent at once.
-    if (next.events.length < prev.events.length) {
-      dialogue.stop();
-      overlay.clearDialogue();
-      director.cancelTimed();
+    if (next.events.length < prev.events.length) hush();
+  }
+
+  // An undo, a new partie: nothing still to be said, or held for.
+  let hushes = 0;
+  function hush() {
+    hushes += 1;
+    ui.withheld = 0;
+    dialogue.stop();
+    overlay.clearDialogue();
+    director.cancelTimed();
+  }
+
+  // What is said in a move: only what is new.
+  function spoken(prev, next) {
+    const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
+    return [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
+  }
+
+  // The lines in the order they are said, each at its moment, with the moment
+  // between rounds before the first line of each round. `pauseAt(b)` is when
+  // that moment may come.
+  function sequence(lines, breaks, beats, pauseAt) {
+    const out = [];
+    let i = 0;
+    const until = (at) => {
+      for (; i < lines.length && lines[i].at < at; i++) out.push({ ...lines[i], delay: beats[lines[i].at] ?? 0 });
+    };
+    for (const b of breaks) {
+      until(b.at);
+      out.push({ pause: true, at: b.at, category: b.category, delay: pauseAt(b) });
     }
+    until(Infinity);
+    return out;
+  }
+
+  // The moment between the declarations' rounds (the user: "an on-screen
+  // thing pop up for a moment before each part of the declarations, after
+  // each player is done speaking from the last one. they may start again
+  // once the on-screen thing is gone"). It comes once the round before has
+  // been said, and the table is held back until then -- your opponent's
+  // cards stir for their next call only after it -- so each round's moment
+  // is found in turn, trying the move's timing out with that round's wait.
+  function pace(prev, next, dry) {
+    const breaks = PACED ? breaksBetween(prev, next) : [];
+    if (!breaks.length) return {};
+    const lines = dialogue.words(spoken(prev, next));
+    const waits = {};
+    breaks.forEach((b, n) => {
+      const { beats, duration } = dry(waits);
+      const items = sequence(lines, breaks.slice(0, n + 1), beats, (x) => waits[x.at] ?? beats[x.at] ?? duration);
+      const planned = dialogue.plan(items.slice(0, items.findIndex((x) => x.pause && x.at === b.at) + 1));
+      waits[b.at] = planned[planned.length - 1].ms;
+    });
+    return { waits, lines, breaks };
   }
 
   // The declarations as a dialogue (the user: "two dialogue boxes to pop up
   // every move"): only what is new, each line in a box by its speaker's
   // hand when its event is seen to happen on the table.
   const DIALOGUE = new Set(["called", "decided", "nothing_to_call"]);
-  function timed(prev, next, beats) {
+  function timed(prev, next, beats, paced = {}) {
     if (next.events.length < prev.events.length) return;
-    const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
-    const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
-    const timedLines = lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 }));
+    const breaks = paced.breaks ?? [];
+    const items = sequence(paced.lines ?? spoken(prev, next), breaks, beats, (b) => paced.waits[b.at]);
     // The score waits until the last line of the dialogue has been said.
-    const last = timedLines.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
-    if (last >= 0 && !TESTING) overlay.hold(dialogue.estimate(timedLines.slice(0, last + 1)));
+    const last = items.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
+    if (last >= 0 && !TESTING) overlay.hold(dialogue.estimate(items.slice(0, last + 1)));
     phasePages(prev, next, beats);
+    // Your buttons wait for the last moment between rounds in this move.
+    ui.withheld += breaks.length;
     // On the table's clock, so a tutorial page at the start of a phase holds
     // the boxes still along with the cards.
-    dialogue.say(timedLines, (line, words, ms) => {
-      if (DIALOGUE.has(line.kind)) director.at(ms, () => overlay.dialogue(line.who, words, 0, line.kind !== "decided"));
+    dialogue.say(items, (line, words, ms) => {
+      if (line.pause) director.gate(ms, (release) => between(line.category, release));
+      else if (DIALOGUE.has(line.kind)) director.at(ms, () => overlay.dialogue(line.who, words, 0, line.kind !== "decided"));
     });
+  }
+
+  // The round's name, up a moment while the table is held still; then the
+  // table carries on, and your buttons come once the last has gone.
+  function between(category, release) {
+    const hushed = hushes;
+    overlay.pauseScore();
+    const gone = overlay.interlude(category, BREAK);
+    setTimeout(() => {
+      gone(); // faded by now; and gone before your buttons come
+      if (hushed !== hushes) return; // an undo, a new partie: already let go
+      overlay.resumeScore(BREAK);
+      release();
+      ui.withheld = Math.max(0, ui.withheld - 1);
+      if (!ui.withheld) render();
+    }, BREAK);
   }
 
   // In the tutorial, each phase's page at the phase's very start (the user:
@@ -281,13 +358,15 @@ async function main() {
     });
   }
 
-  const dialogue = createDialogue(typeof WORDS === "object" ? WORDS : {});
+  // On the table's clock, which stands still while the table is held.
+  const dialogue = createDialogue(typeof WORDS === "object" ? WORDS : {}, () => director.clock());
   const director = createDirector({
     stage,
     deck,
     engine,
     view,
     settled,
+    pace,
     timed,
     testing: TESTING && !params.has("manual"),
     manual: params.has("manual"),
@@ -422,7 +501,9 @@ async function main() {
   // and gives itself a frame to paint it.
   let pending = false;
   function act(command) {
-    if (TESTING || command === "undo" || command.startsWith("set ")) return carryOut(command);
+    const move = !(command === "undo" || command.startsWith("set "));
+    if (move && ui.withheld) return false; // not until the moment between rounds is over
+    if (TESTING || !move) return carryOut(command);
     if (pending) return false;
     pending = true;
     if (director.busy()) director.skip();
@@ -494,7 +575,7 @@ async function main() {
   // In the tutorial, the phase's page the first time you act in it -- once
   // no other dialog is open (Settings, say, where it was just turned on).
   function introduce() {
-    if (!inTutorial() || reading || director.held() || director.busy() || document.querySelector("md-dialog[open]")) return;
+    if (!inTutorial() || reading || ui.withheld || director.held() || director.busy() || document.querySelector("md-dialog[open]")) return;
     const key = pageDue(engine.state(), tutorial.seen);
     if (!key) return;
     // Popped up: done. Paging to a page does not count.
@@ -550,9 +631,7 @@ async function main() {
     // tutorial popups").
     if (tutorial.on) tutorialOff();
     begin(n, randomSeed());
-    dialogue.stop();
-    overlay.clearDialogue();
-    director.cancelTimed();
+    hush();
     ui.selected = [];
     ui.lifted = [];
     director.restart();

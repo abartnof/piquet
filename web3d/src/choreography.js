@@ -10,7 +10,7 @@
 // on layout(next) whatever happened, and anything the reducer cannot follow --
 // an undo, a new partie -- is a single direct transition.
 //
-// choreograph(prev, next, placement, view) -> { motions, placement, duration, beats }
+// choreograph(prev, next, placement, view, options) -> { motions, placement, duration, beats }
 //
 //   placement  where each of the 32 meshes is: [{ id, zone, index, code, pose }]
 //   motions    [{ id, path, delay, duration, reveal }]: `reveal` is the face a
@@ -19,6 +19,9 @@
 //              stops showing when the motion lands (a card turned down).
 //   beats      { eventIndex: ms }: when each of next's new events is seen to
 //              happen, on the same clock -- for the dialogue.
+//   options    { pause, waits }: `pause` leaves a finished trick a moment;
+//              `waits` { eventIndex: ms } holds an event back until then,
+//              and everything after it with it.
 //
 // Faces follow the layout's rule: a mesh shows a face only when the state it
 // is moving towards lets the human know that card.
@@ -675,9 +678,14 @@ const HEARD_AT_START = new Set(["declare", "their-exchange"]);
 export function choreograph(prev, next, placement, view = {}, options = {}) {
   const plan = new Plan(placement, view, options);
   const stages = stagesBetween(prev, next);
+  // Held back: an event no sooner than its wait, and all after it with it
+  // (the moment between the declarations' rounds, breaks.js).
+  const waits = Object.entries(options.waits ?? {}).map(([at, ms]) => [Number(at), ms]);
+  const waitFor = (k) => Math.max(0, ...waits.filter(([at]) => at <= k).map(([, ms]) => ms));
   const marks = [];
   if (stages) {
     for (const stage of stages) {
+      plan.clock = Math.max(plan.clock, waitFor(stage.at));
       const start = plan.clock;
       plan[stage.kind](stage);
       marks.push({ at: stage.at, start, end: plan.clock, early: HEARD_AT_START.has(stage.kind) });
@@ -693,6 +701,7 @@ export function choreograph(prev, next, placement, view = {}, options = {}) {
   let done = 0;
   let m = 0;
   for (let k = prev.events.length; k < next.events.length; k++) {
+    done = Math.max(done, waitFor(k));
     const own = [];
     while (m < marks.length && marks[m].at <= k) {
       if (marks[m].at === k) own.push(marks[m]);

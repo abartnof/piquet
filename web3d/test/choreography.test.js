@@ -312,3 +312,53 @@ test("cards lying over one another never share the table, at any moment of any m
   }
   assert.deepEqual(clashes.slice(0, 8), [], `${clashes.length} clashes`);
 });
+
+// The moment between the declarations' rounds (breaks.js) holds the table
+// still: your opponent's cards stir for their next call only once it is over
+// (the user: "they may start again once the on-screen thing is gone").
+test("a wait holds back the event it is for, and everything after it, and nothing before", () => {
+  let checked = 0;
+  for (const [p, states] of parties.entries()) {
+    let placement = initialPlacement(states[0]);
+    for (let i = 1; i < states.length; i++) {
+      const prev = states[i - 1];
+      const next = states[i];
+      const free = choreograph(prev, next, placement);
+      const k = next.events.findIndex((e, n) => n > prev.events.length && e.kind === "called" && e.who === "them" && cardsNamed(e.said) > 0);
+      if (k > 0) {
+        const wait = free.beats[k] + 2500;
+        const held = choreograph(prev, next, placement, {}, { waits: { [k]: wait } });
+        const where = `partie ${p} step ${i}`;
+        run(placement, held, next, where);
+        for (let n = prev.events.length; n < next.events.length; n++) {
+          if (n < k) assert.equal(held.beats[n], free.beats[n], `${where}: event ${n} moved`);
+          else assert.ok(held.beats[n] >= wait, `${where}: event ${n} at ${held.beats[n]}, before the wait`);
+        }
+        assert.equal(held.beats[k], wait, `${where}: the call is heard as the cards stir, at the wait`);
+        const early = (r) => r.motions.filter((m) => m.delay < free.beats[k]).length;
+        assert.equal(early(held), early(free), `${where}: what moved before the wait still does`);
+        assert.ok(held.motions.some((m) => Math.abs(m.delay - wait) < 50 * cardsNamed(next.events[k].said) + 1), `${where}: no card stirs at the wait`);
+        checked++;
+      }
+      placement = free.placement;
+    }
+  }
+  assert.ok(checked > 10, `${checked} calls held`);
+});
+
+test("a wait for an event that moves no card still holds back what follows it", () => {
+  const states = parties[0];
+  for (let i = 1; i < states.length; i++) {
+    const prev = states[i - 1];
+    const next = states[i];
+    const k = next.events.findIndex((e, n) => n >= prev.events.length && e.kind === "decided");
+    const later = next.events.findIndex((e, n) => n > k && e.kind === "called" && e.who === "them" && cardsNamed(e.said) > 0);
+    if (k < 0 || later < 0) continue;
+    const placement = initialPlacement(prev);
+    const held = choreograph(prev, next, placement, {}, { waits: { [k]: 4000 } });
+    assert.ok(held.beats[k] >= 4000 && held.beats[later] >= 4000);
+    assert.ok(held.motions.filter((m) => m.delay >= 4000).length > 0, "the call's stir is held back");
+    return;
+  }
+  assert.fail("no decision followed by your opponent's call");
+});

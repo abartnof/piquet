@@ -1072,6 +1072,44 @@ throughout.
       table given back exactly) and in one (the staging steps through all
       seven; a real partie's has no arrows).
 
+- [x] **P22 — A moment between the declarations' rounds (1 October).**
+      The user: *"i'd like to have an on-screen thing pop up for a moment
+      before each part of the declarations, after each player is done
+      speaking from the last one. they may start again once the on-screen
+      thing is gone. it shouldn't last long, maybe a second, and it should
+      fade away gracefully- just a way to ensure the remarks from the
+      previous phase don't elide into the next phase."*
+
+      Before each round -- Point, Sequences, Sets -- its name comes up
+      between the hands for a second (`BREAK` in `main.js`): in on M3's
+      emphasized decelerate, held, and faded slowly; a fade alone under
+      reduced motion. It takes down the boxes of the round before.
+      `breaks.js` says where each round begins in a move: at its first
+      word, or, when the round is yours to open, after everything else in
+      the move. It comes once the round before has been said: it is a
+      pause in the dialogue's queue (`dialogue.js`), after the line before
+      it and before the one after. While it is up the table is held at a
+      gate, and your buttons are withheld until the move's last pause is
+      over (the old ones shrink away, the new spring in after).
+
+      Your opponent's cards stir as they call (`declare` stage), on the
+      animation's clock, which runs ahead of the words. A pause on the
+      dialogue alone would have let their cards stir for the next round
+      while the last was still being answered. So the director now asks
+      the app to **pace** each move before animating it: `pace(prev, next,
+      dry)` tries the move's timing out (`dry(waits)` choreographs without
+      animating), finds each pause's moment from the dialogue's `plan`
+      (with the words chosen once, by `words`, so the moment planned is the
+      moment said), and returns `waits`, which hold a stage of the
+      choreography back (`options.waits`). The dialogue now counts on the
+      table's clock (`director.clock()`), so time the table is held is not
+      counted as time passed.
+
+      Off under `?test`, which wants no waiting; `?test&breaks` turns it on
+      for the browser test, which plays the first deal's declarations from
+      each seat and checks the three names in order, no line of a round
+      before its name has gone, and no buttons while a name is up.
+
 ## 14. Notes for the implementer
 
 - Read `docs/PROTOCOL.md` for the state and commands. The retired 2D page

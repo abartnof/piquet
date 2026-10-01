@@ -1099,6 +1099,57 @@ md-assist-chip.pinned {
   }
 }
 
+/* The moment between the declarations' rounds: the round's name between the
+   hands, for about a second (the user: "it shouldn't last long, maybe a
+   second, and it should fade away gracefully"). In on M3's emphasized
+   decelerate, held, then let go slowly. Its length is set where it is shown;
+   the keyframes share it out. */
+.interlude {
+  translate: -50% -50%;
+  padding: 10px 30px 12px;
+  border-radius: 999px;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  color: var(--md-sys-color-on-surface);
+  background: var(--md-sys-color-surface-container-lowest);
+  box-shadow: var(--elevation-2);
+  animation: interlude 1000ms linear both;
+}
+@keyframes interlude {
+  0% {
+    opacity: 0;
+    transform: scale(0.88);
+    animation-timing-function: cubic-bezier(0.05, 0.7, 0.1, 1);
+  }
+  24% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  56% {
+    opacity: 1;
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+}
+@keyframes interlude-calm {
+  0% {
+    opacity: 0;
+  }
+  24%,
+  56% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 .num.cheer {
   display: inline-block;
   animation: cheer 900ms var(--ease);
@@ -1494,6 +1545,10 @@ kbd {
   .sort {
     --md-outlined-segmented-button-container-height: 32px;
   }
+  .interlude {
+    padding: 8px 24px 10px;
+    font-size: 24px;
+  }
   .options {
     gap: 4px;
   }
@@ -1510,6 +1565,9 @@ kbd {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .interlude {
+    animation-name: interlude-calm;
+  }
   .num.changed,
   .num.cheer,
   .n.bump,
