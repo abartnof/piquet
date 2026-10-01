@@ -40,9 +40,9 @@ export const CAMERA = Object.freeze({
 // eye's axis, up, down and to the side, as tangents, over whole parties
 // (the staging test measures it, and holds it to the table).
 export const CAMERA_PORTRAIT = Object.freeze({
-  position: Object.freeze([0, 60, 62]),
-  target: Object.freeze([0, 0, 2]),
-  reach: Object.freeze({ up: 0.305, down: -0.352, across: 0.255 }),
+  position: Object.freeze([0, 40, 72]),
+  target: Object.freeze([0, 0, 0]),
+  reach: Object.freeze({ up: 0.207, down: -0.363, across: 0.294 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
@@ -86,18 +86,18 @@ export const ZONES = Object.freeze({
 export const ZONES_PORTRAIT = Object.freeze({
   // Held up at 50 degrees rather than 75, so the eye sees the faces nearly
   // square on and the hand reads large.
-  yourHand: Object.freeze({ centre: Object.freeze([0, 12, 33]), radius: 14, spread: 4.4, groupGap: 2, lean: 40 }),
-  theirHand: Object.freeze({ centre: Object.freeze([0, 12, -20]), radius: 14, spread: 3.8, lean: 15 }),
+  yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 14, spread: 4.4, groupGap: 2, lean: 40 }),
+  theirHand: Object.freeze({ centre: Object.freeze([0, 8, -16]), radius: 14, spread: 3.8, lean: 15 }),
   ribbon: Object.freeze({ x: 16.5, z: -3, spacing: 1.05 }),
-  yourCut: Object.freeze({ x: -5, z: 7 }),
-  theirCut: Object.freeze({ x: 5, z: -13 }),
-  talon: Object.freeze({ x: -15, z: -5 }),
-  yourDiscards: Object.freeze({ x: -16, z: 10, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
-  theirDiscards: Object.freeze({ x: -17, z: -18 }),
-  yourPlay: Object.freeze({ x: 4.5, z: 0.5 }),
-  theirPlay: Object.freeze({ x: 1.5, z: -8 }),
-  yourTricks: Object.freeze({ x: -8, z: 10, span: 22 }),
-  theirTricks: Object.freeze({ x: -8, z: -18, span: 22 }),
-  pack: Object.freeze({ you: Object.freeze({ x: 9, z: 8 }), them: Object.freeze({ x: 9, z: -14 }) }),
-  dealt: Object.freeze({ you: Object.freeze({ x: -2, z: 8 }), them: Object.freeze({ x: -2, z: -17 }) }),
+  yourCut: Object.freeze({ x: -5, z: 6.5 }),
+  theirCut: Object.freeze({ x: 5, z: -12.5 }),
+  talon: Object.freeze({ x: -15, z: -3.5 }),
+  yourDiscards: Object.freeze({ x: -16, z: 7, peek: Object.freeze({ centre: Object.freeze([-7, 13, 12]), radius: 9, spread: 9 }) }),
+  theirDiscards: Object.freeze({ x: -17, z: -14 }),
+  yourPlay: Object.freeze({ x: 5, z: -2.5 }),
+  theirPlay: Object.freeze({ x: -1.5, z: -4.5 }),
+  yourTricks: Object.freeze({ x: -8, z: 7, span: 22 }),
+  theirTricks: Object.freeze({ x: -8, z: -14, span: 22 }),
+  pack: Object.freeze({ you: Object.freeze({ x: 9, z: 5 }), them: Object.freeze({ x: 9, z: -11 }) }),
+  dealt: Object.freeze({ you: Object.freeze({ x: -2, z: 5 }), them: Object.freeze({ x: -2, z: -13 }) }),
 });

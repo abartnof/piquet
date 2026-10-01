@@ -118,6 +118,12 @@ for (const aspect of ACROSS) {
 const PHONES = [[390, 844], [390, 664], [375, 667], [412, 915], [768, 1024]];
 // Every order the hand can be sorted in: more groups fan it wider.
 const SORTS = ["auto", "suit", "rank", "combos"];
+// A held card stands highest when it is raised, and that happens only while
+// the hand is being judged: chosen to throw in the exchange (when your side
+// of the table is still bare), pointed at from the worth card while you
+// declare. Once play begins nothing is raised.
+const raised = (s) =>
+  s.prompt.kind === "exchange" ? { selected: s.hand } : s.prompt.kind === "declare" ? { lifted: s.hand } : {};
 const bands = (height) => ({ top: 1 - (2 * STRIPS.top) / height, foot: -1 + (2 * STRIPS.foot) / height });
 
 // The upright eye fits its field to `reach`, so the reach must be the
@@ -129,7 +135,7 @@ test("the upright eye's reach is how far the table's cards reach", () => {
   const up = new Vector3().crossVectors(right, ahead);
   const seen = { up: -Infinity, down: Infinity, across: 0 };
   for (const s of states) {
-    for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, selected: s.hand, eye, sort }))) {
+    for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, ...raised(s), eye, sort }))) {
       for (const corner of cardCorners(x.pose).filter((_, i) => i % 2 === 1)) {
         const d = corner.clone().sub(eye);
         const [tx, ty] = [d.dot(right) / d.dot(ahead), d.dot(up) / d.dot(ahead)];
@@ -155,7 +161,7 @@ for (const [w, h] of PHONES) {
     assert.ok(framing(aspect, 0, h).upright);
     const { top, foot } = bands(h);
     for (const s of states) {
-      for (const x of SORTS.flatMap((sort) => place(s, { selected: s.hand, sort }))) {
+      for (const x of SORTS.flatMap((sort) => place(s, { ...raised(s), sort }))) {
         for (const [px, py] of onScreen(x.pose, camera)) {
           assert.ok(py < top + 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the information (${top.toFixed(3)}) at ${s.phase}`);
           assert.ok(py > foot - 1e-6, `${x.zone} at y ${py.toFixed(3)}, under the controls (${foot.toFixed(3)}) at ${s.phase}`);
@@ -168,7 +174,7 @@ for (const [w, h] of PHONES) {
   test(`on a ${w} x ${h} phone, nothing on the table hides behind your hand`, () => {
     for (const s of states) {
       for (const sort of SORTS) {
-        const slots = place(s, { selected: s.hand, sort });
+        const slots = place(s, { ...raised(s), sort });
         const hand = slots.filter((x) => x.zone === "your-hand").map((x) => outline(onScreen(x.pose, camera)));
         for (const x of slots) {
           if (x.zone.endsWith("hand")) continue;

@@ -88,9 +88,13 @@ test("cards face the right way: tricks up, piles down, your hand to you, theirs 
 });
 
 // Two footprints on the table overlap: the separating-axis test on their
-// corners, shrunk a hair so cards that merely touch do not count.
+// corners, shrunk a hair so cards that merely touch do not count. The
+// corners go in order round the face, so every edge is an edge of the card
+// and not a diagonal (a diagonal's axis separates nothing, and missed the
+// card's own).
 function footprint(pose) {
-  const c = cardCorners(pose).filter((_, i) => i % 2 === 0); // one face's four corners
+  const [a, b, c2, d] = cardCorners(pose).filter((_, i) => i % 2 === 0); // one face's four corners
+  const c = [a, b, d, c2];
   const centre = c.reduce((a, p) => a.add(p), new Vector3()).multiplyScalar(0.25);
   return c.map((p) => p.clone().sub(centre).multiplyScalar(0.99).add(centre)).map((p) => [p.x, p.z]);
 }
