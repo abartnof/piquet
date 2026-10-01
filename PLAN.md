@@ -262,6 +262,14 @@ Work on `dev`.
 - **The tutorial**: the exchange's lines lost their stray bold; the
   Declarations page names the holdings the table calls by name (tierce …
   huitième, trio, quatorze), tested against every name the engine scores.
+- **A flaky browser check fixed.** "As younger, the tutorial's pages hold
+  the table" depended on the tutorial's random seed, so it failed whenever
+  your opponent won the cut and dealt (3 runs in 4, on `main`'s page as on
+  `dev`'s). It now starts the tutorial again until you are younger; 4 runs
+  in 4 pass.
+- **Not merged to `main`** (merging publishes): the user has not yet seen
+  the moment between rounds, and it has been run only in headless Chromium,
+  not in Safari.
 - **Left open:** the score bug still waits for a move's last spoken line,
   so when your opponent opens the next round in the same move, the last
   round's points tick after the new round's first call. It was so before;
