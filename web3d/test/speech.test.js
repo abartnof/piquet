@@ -1,5 +1,5 @@
-// What the table says aloud, clip by clip, as Cavendish has players say it
-// (docs/VOICE.md; the user: "maximal speaking (anything a human would say,
+// What the table says, phrase by phrase, as Cavendish has players say it
+// (docs/PHRASES.md; the user: "maximal speaking (anything a human would say,
 // we'll say)").
 
 import test from "node:test";
@@ -9,7 +9,7 @@ import { speech } from "../src/speech.js";
 import { partie } from "./partie.js";
 
 const ev = (kind, fields) => ({ deal: 1, text: "", ...fields, kind });
-const said = (lines) => lines.map((l) => `${l.who}:${l.clip}`);
+const said = (lines) => lines.map((l) => `${l.who}:${l.phrase}`);
 
 // The declarations, as Cavendish has them spoken (pp. 60-67): elder calls
 // the shape; only when younger holds the same shape does she ask for the
@@ -159,12 +159,12 @@ test("each line knows the kind of event it belongs to", () => {
     ev("decided", { category: "point", winner: "you", asked: true }),
     ev("scored", { who: "you", amount: 5, category: "point", what: "point of 5 (48)" }),
   ], 1, 0);
-  assert.deepEqual(lines.map((l) => `${l.clip}@${l.kind}`), [
+  assert.deepEqual(lines.map((l) => `${l.phrase}@${l.kind}`), [
     "take-4@exchanged", "point-5@called", "what-make@decided", "value-48@decided", "good@decided", "n-5@scored",
   ]);
 });
 
-test("counting aloud: each side's running total, and the great moments named", () => {
+test("counting: each side's running total, and the great moments named", () => {
   const lines = speech([
     ev("deal_begins", { elder: "you" }),
     ev("scored", { who: "you", amount: 15, category: "sequences", what: "quint to the ace" }),
@@ -218,11 +218,10 @@ test("only what is new is said", () => {
   assert.deepEqual(said(speech(events, 1, 2)), ["them:not-good"]);
 });
 
-// Every clip the game asks for must have been recorded, in every voice, and
-// said in more than one way.
-test("across whole parties, every clip asked for exists in the phrase bank", () => {
+// Every phrase the game asks for must be in the bank (web3d/words.json).
+test("across whole parties, every phrase asked for exists in the phrase bank", () => {
   const bank = JSON.parse(readFileSync(new URL("../words.json", import.meta.url)));
-  const have = new Set(Object.keys(bank.groups).filter((id) => bank.groups[id].length >= 2));
+  const have = new Set(Object.keys(bank.groups).filter((id) => bank.groups[id].length >= 1));
   return Promise.all([[3, 7], [1, 11], [2, 23], [3, 404]].map(([l, s]) => partie(l, s))).then((parties) => {
     let asked = 0;
     for (const states of parties) {
@@ -230,18 +229,18 @@ test("across whole parties, every clip asked for exists in the phrase bank", () 
       for (let deal = 0; deal <= end.deal; deal++) {
         for (const line of speech(end.events, deal, 0)) {
           asked += 1;
-          assert.ok(have.has(line.clip), `no clip ${line.clip}`);
+          assert.ok(have.has(line.phrase), `no phrase ${line.phrase}`);
         }
       }
     }
-    assert.ok(asked > 400, `only ${asked} clips asked for`);
+    assert.ok(asked > 400, `only ${asked} phrases asked for`);
   });
 });
 
 // ---- QC over simulated parties ---------------------------------------------
 //
-// The user: "simulate a few games to make sure the audio passes your QC". The
-// page speaks each move's new events as it happens; spoken so, whole parties
+// Simulated parties, checked line by line. The page says each move's new
+// events as it happens; said so, whole parties
 // must say exactly what each deal says spoken at once, and every declaration
 // must run as Cavendish has it.
 const SHAPE = /^(point-\d|seq-\d$|set-\d$|nothing$)/;
@@ -273,12 +272,12 @@ test("QC: simulated parties are spoken whole, once, in Cavendish's order, counti
         if (e.deal !== d) return;
         // 2. Every line belongs to an event of this deal.
         if (e.kind === "deal_begins") elder = e.elder;
-        // 3. Elder's first call in each category is voiced, as its shape.
+        // 3. Elder's first call in each category is said, as its shape.
         if (e.kind === "called" && e.who === elder && first[e.category] === undefined) {
           first[e.category] = e.said;
           const lines = at(k);
           assert.equal(lines.length, 1, `${where}: "${e.said}" said as ${JSON.stringify(said(lines))}`);
-          assert.ok(lines[0].who === elder && SHAPE.test(lines[0].clip), `${where}: "${e.said}" said as ${lines[0].clip}`);
+          assert.ok(lines[0].who === elder && SHAPE.test(lines[0].phrase), `${where}: "${e.said}" said as ${lines[0].phrase}`);
           tally.calls++;
         }
         // 4. The answer, after the question and the tie-break when asked.
@@ -289,9 +288,9 @@ test("QC: simulated parties are spoken whole, once, in Cavendish's order, counti
             ? [`${younger}:${ASK[e.category]}`, `${elder}:TIE`, `${younger}:ANSWER`]
             : [`${younger}:ANSWER`];
           const shaped = lines.map((l, j) => {
-            const [who, clip] = l.split(":");
-            if (e.asked && j === 1 && TIE[e.category].test(clip)) return `${who}:TIE`;
-            if (ANSWER.has(clip)) return `${who}:ANSWER`;
+            const [who, phrase] = l.split(":");
+            if (e.asked && j === 1 && TIE[e.category].test(phrase)) return `${who}:TIE`;
+            if (ANSWER.has(phrase)) return `${who}:ANSWER`;
             return l;
           });
           assert.deepEqual(shaped, expect, `${where}: ${e.category} decided (asked ${e.asked}) said as ${JSON.stringify(lines)}`);
@@ -301,7 +300,7 @@ test("QC: simulated parties are spoken whole, once, in Cavendish's order, counti
         // 5. Each score's count is the running total.
         if (e.kind === "scored" && (e.who === "you" || e.who === "them")) {
           running[e.who] += e.amount;
-          const counts = at(k).filter((l) => l.clip.startsWith("n-"));
+          const counts = at(k).filter((l) => l.phrase.startsWith("n-"));
           if (running[e.who] <= 170) {
             assert.deepEqual(said(counts), [`${e.who}:n-${running[e.who]}`], `${where}: a score of ${e.amount} counted`);
             tally.counts++;

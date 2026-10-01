@@ -15,7 +15,7 @@ import { STRIPS } from "./framing.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
-import { createVoice } from "./voice.js";
+import { createDialogue } from "./dialogue.js";
 import { PAGE_KEYS, pageDue, pageFor, parseTutorial } from "./tutorial.js";
 import { createCelebrations } from "./celebrate/runner.js";
 import { createHud } from "./celebrate/hud.js";
@@ -26,15 +26,14 @@ import { createScene } from "./scene.js";
 import { buildSpike } from "./spike.js";
 import { ZONES, ZONES_PORTRAIT } from "./units.js";
 
-/* global WASM_BASE64, ART, VOICES */
+/* global WASM_BASE64, ART, WORDS */
 
 const params = new URL(window.location.href).searchParams;
 const TESTING = params.has("test");
 
 const GAME_STORE = "piquet3d.game";
-// Versioned: your own calls became opt-in (the user: "by default, the
-// opponent's voice should be on, and the user's voice should be off"). A
-// stored set from before keeps every other choice, but not that one.
+// Versioned once, when a setting since removed changed its default; a set
+// stored before that is still read.
 const PREF_STORE = "piquet3d.prefs.2";
 const OLD_PREF_STORE = "piquet3d.prefs";
 // Versioned: "play my winners" became opt-in, and then hints did (the user:
@@ -48,9 +47,6 @@ const OLD_AID_STORE = "piquet3d.aids.2";
 const TUTORIAL_STORE = "piquet3d.tutorial";
 const DEFAULT_PREFS = {
   tab: true, undo: true, pause: true, sort: "auto", speed: 1, explain: true, surface: "random",
-  // The voice (docs/VOICE.md): your opponent's on, in a woman's voice;
-  // yours off until you want it, and then in the other.
-  voice: true, opponentVoice: "cori", sayMine: false,
 };
 // Playing out your winners is opt-in: the user, finding their cards played
 // for them mid-trick, "i didn't intend for that to happen".
@@ -75,13 +71,9 @@ function recallAids() {
 }
 
 // The settings as stored, or as they were stored before the store was
-// versioned, less your own calls.
+// versioned.
 function recallPrefs(defaults) {
-  if (recall(PREF_STORE, null)) return recall(PREF_STORE, defaults);
-  const older = recall(OLD_PREF_STORE, null);
-  if (!older) return defaults;
-  const { sayMine, ...kept } = older;
-  return { ...defaults, ...kept };
+  return recall(PREF_STORE, null) ? recall(PREF_STORE, defaults) : recall(OLD_PREF_STORE, defaults);
 }
 
 function store(key, value) {
@@ -232,36 +224,30 @@ async function main() {
     if (["play", "complete", "cut"].includes(next.phase) || next.events.length < prev.events.length) ui.fresh = [];
     // An undo falls silent at once.
     if (next.events.length < prev.events.length) {
-      voice.stop();
+      dialogue.stop();
       overlay.clearDialogue();
       director.cancelTimed();
     }
   }
 
-  // What was said, said aloud -- only what is new, and each line when its
-  // event is seen to happen on the table (the user: "the right audio plays at
-  // the right occasion, and not before/after").
-  //
-  // The declarations are shown as a dialogue besides (the user: "two dialogue
-  // boxes to pop up every move"): each of their lines in a box by its
-  // speaker's hand, with the words the voice says, as it says them -- or
-  // would, with the sound off.
+  // The declarations as a dialogue (the user: "two dialogue boxes to pop up
+  // every move"): only what is new, each line in a box by its speaker's
+  // hand when its event is seen to happen on the table.
   const DIALOGUE = new Set(["called", "decided", "nothing_to_call"]);
   function timed(prev, next, beats) {
     if (next.events.length < prev.events.length) return;
     const deals = new Set(next.events.slice(prev.events.length).map((e) => e.deal));
     const lines = [...deals].flatMap((deal) => speech(next.events, deal, prev.events.length));
-    const heard = { ...prefs, voice: prefs.voice && voice.audible() && (!TESTING || params.has("voice")) };
     const timedLines = lines.map((line) => ({ ...line, delay: beats[line.at] ?? 0 }));
     // The score waits until the last line of the dialogue has been said.
     const last = timedLines.map((line) => DIALOGUE.has(line.kind)).lastIndexOf(true);
-    if (last >= 0 && !TESTING) overlay.hold(voice.estimate(timedLines.slice(0, last + 1)));
+    if (last >= 0 && !TESTING) overlay.hold(dialogue.estimate(timedLines.slice(0, last + 1)));
+    phasePages(prev, next, beats);
     // On the table's clock, so a tutorial page at the start of a phase holds
     // the boxes still along with the cards.
-    voice.say(timedLines, heard, (line, words, ms) => {
+    dialogue.say(timedLines, (line, words, ms) => {
       if (DIALOGUE.has(line.kind)) director.at(ms, () => overlay.dialogue(line.who, words, 0, line.kind !== "decided"));
     });
-    phasePages(prev, next, beats);
   }
 
   // In the tutorial, each phase's page at the phase's very start (the user:
@@ -293,14 +279,7 @@ async function main() {
     });
   }
 
-  const voices = typeof VOICES === "object" ? VOICES : {};
-  const voice = createVoice(voices);
-  // Sound may start, and be woken, from a click or a key; and when the page
-  // is shown again after another window had it.
-  if (voice.audible()) {
-    for (const kind of ["pointerdown", "keydown"]) document.addEventListener(kind, () => prefs.voice && voice.wake(), { capture: true });
-    document.addEventListener("visibilitychange", () => document.visibilityState === "visible" && prefs.voice && voice.wake());
-  }
+  const dialogue = createDialogue(typeof WORDS === "object" ? WORDS : {});
   const director = createDirector({
     stage,
     deck,
@@ -339,8 +318,6 @@ async function main() {
     act,
     // Where the table speaks from: the edge of a hand, on the screen.
     anchor: (who) => director.handEdge(who),
-    // Whether the page has a voice at all (the default build has none).
-    audible: voice.audible(),
     undo: () => act("undo"),
     tutorial: () => showTutorial(),
     tutorialMode: (on) => tutorialMode(on),
@@ -479,7 +456,6 @@ async function main() {
     store(PREF_STORE, prefs);
     if (name === "speed") director.timeline.speed = value;
     if (name === "sort") director.rearrange();
-    if (name === "voice" && !value) voice.stop();
     if (name === "surface") {
       // Picking one lays it now, and for good; choosing Random keeps the
       // table in front of you until the page is next opened.
@@ -572,7 +548,7 @@ async function main() {
     // tutorial popups").
     if (tutorial.on) tutorialOff();
     begin(n, randomSeed());
-    voice.stop();
+    dialogue.stop();
     overlay.clearDialogue();
     director.cancelTimed();
     ui.selected = [];
@@ -741,8 +717,6 @@ async function main() {
     placement: () => director.placement().map(({ id, zone, index, code }) => ({ id, zone, index, code })),
     // With ?manual: move the animation clock by hand, for stills.
     tick: (ms) => director.tick(ms),
-    // With ?voice (speech is off in tests otherwise): what the voice did.
-    voice: () => voice.stats(),
     // Whether the table is held still at a gate (a tutorial page at the
     // start of a phase).
     held: () => director.held(),

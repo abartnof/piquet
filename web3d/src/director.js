@@ -22,7 +22,7 @@ const EASE_MS = 90; // how quickly a lift follows the pointer
 // before the change is choreographed: the moment for the app to update what
 // the view shows (cards just drawn, say), so the animation lands on it.
 // `timed(prev, next, beats)`, if given, runs once it is choreographed, with
-// when each new event will be seen to happen, in ms from now -- for the voice.
+// when each new event will be seen to happen, in ms from now -- for the dialogue.
 export function createDirector({ stage, deck, engine, view, settled, timed, testing = false, manual = false, speed = 1 }) {
   const meshes = Array.from({ length: 32 }, () => deck.card(null));
   meshes.forEach((mesh, id) => (mesh.userData.id = id));

@@ -40,30 +40,12 @@ credits it on screen, not only here.
 The pinned originals, with checksums and measurements, are in
 `web3d/art/source/`.
 
-## The voices
-
-The spoken game (`docs/VOICE.md`) — kept in the repository, not shipped in
-the page since 28 September — is recorded in two synthetic voices, both
-by **Bryce Beattie** (<https://brycebeattie.com/files/tts/>), each trained
-from scratch on public-domain recordings from **LibriVox**
-(<https://librivox.org>), and released into the **public domain**:
-
-| Voice | Model | Accent | Source |
-|---|---|---|---|
-| Cori | `en_GB-cori-high` | British, female | <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_GB/cori/high> |
-| Norman | `en_US-norman-medium` | American, male | <https://huggingface.co/rhasspy/piper-voices/tree/main/en/en_US/norman/medium> |
-
-Chosen for their lineage as well as their licence: most other Piper voices
-are fine-tuned from "lessac", whose Blizzard 2013 recordings are licensed
-for research only, with no redistribution. The words they say, and how they
-say them, follow Cavendish (below, and `docs/VOICE.md`).
-
 ## Design system
 
 **Material Design 3**, by **Google** — <https://m3.material.io/>. The 3D
 table's controls follow its components, colour system, shape and motion
-guidance (Andrew: "clear designs, organic motion, and favors smooth lines over
-sharp lines"). The guidelines are Google's; the components are used through
+guidance, chosen for its "clear designs, organic motion, and ... smooth lines
+over sharp lines". The guidelines are Google's; the components are used through
 `@material/web` (below), and the colour scheme is generated from one seed
 colour with Google's Material Color Utilities (build tools, below). The
 motion curves and durations are the ones `@material/web` ships as tokens, and the
@@ -75,8 +57,7 @@ The page's own icons (undo, settings, narration, fold and unfold) are simple
 strokes drawn for it. Four come from **Material Symbols** (Outlined, weight
 400, 24 px), by **Google** — <https://github.com/google/material-design-icons>,
 Apache License 2.0: *arrow_back*, *arrow_forward* and *close* on the
-tutorial's pages, and *help* (the question mark) in the top bar, where
-Andrew asked for Material's own. Their SVG paths are copied into
+tutorial's pages, and *help* (the question mark) in the top bar. Their SVG paths are copied into
 `web3d/src/overlay.js`; no icon font is fetched or bundled.
 
 ## Software in the page
@@ -110,21 +91,17 @@ The rules engine and everything else in this repository are the project's own.
 | Material Color Utilities (`@material/material-color-utilities`) | 0.4.0 | Apache-2.0 | Generating the 3D table's colour scheme from one seed (`web3d/tools/scheme.mjs`) |
 | librsvg (`rsvg-convert`) | Debian 12 | LGPL-2.1+ | Rasterising the card art |
 | Pillow | current | MIT-CMU (HPND) | Cropping and encoding the card images |
-| Piper (`piper-tts`) | 1.8.0 | GPL-3.0-or-later | Speaking the voice's phrases (`web3d/tools/voice.py`) |
-| eSpeak NG | Debian 12 | GPL-3.0-or-later | Turning the phrases into phonemes, inside Piper; checking pronunciation |
-| FFmpeg | Debian 12 | LGPL-2.1+ / GPL | Trimming and encoding the voice's clips |
 
 ## Rules, history and method
 
 The sources behind the rules — pagat.com, Cavendish's *Laws of Piquet* (1892),
 Foster's *Complete Hoyle* (1897), Hoyle (1744), Cotton (1674) — and the
-mathematics behind the opponents are credited in `docs/LITERATURE.md`. How
-the game is *spoken* follows Cavendish's treatise in the 1885 edition, read
-from the Internet Archive's scan
-(<https://archive.org/details/lawsofpiquetadop00caveuoft>); public domain.
-The voice's other ways of saying things (`docs/PHRASES.md`) also draw on
-A. Howard Cady, *Piquet: a Treatise on the Game* (1896,
-<https://archive.org/details/piquettreatiseon00cady>) and *Foster's Complete
-Hoyle* (<https://archive.org/details/fosterscompleteh00fost>), both public
-domain, and on pagat.com's names for the combinations; each wording is
-tagged with its source.
+mathematics behind the opponents are credited in `docs/LITERATURE.md`.
+What the players say in the dialogue boxes (`docs/PHRASES.md`) follows
+Cavendish's treatise in the 1885 edition, read from the Internet Archive's
+scan (<https://archive.org/details/lawsofpiquetadop00caveuoft>), and also
+draws on A. Howard Cady, *Piquet: a Treatise on the Game* (1896,
+<https://archive.org/details/piquettreatiseon00cady>), *Foster's Complete
+Hoyle* (<https://archive.org/details/fosterscompleteh00fost>) and pagat.com's
+names for the combinations. All three books are in the public domain, and
+each wording is tagged with its source.

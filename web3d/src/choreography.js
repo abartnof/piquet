@@ -18,7 +18,7 @@
 //              drawn), or -- as { code: null, atEnd: true } -- the face it
 //              stops showing when the motion lands (a card turned down).
 //   beats      { eventIndex: ms }: when each of next's new events is seen to
-//              happen, on the same clock -- for the voice.
+//              happen, on the same clock -- for the dialogue.
 //
 // Faces follow the layout's rule: a mesh shows a face only when the state it
 // is moving towards lets the human know that card.
@@ -686,9 +686,9 @@ export function choreograph(prev, next, placement, view = {}, options = {}) {
   plan.direct(next); // settle: exactly layout(next), whatever came before
   const result = plan.result();
   // When each new event is seen to happen, in ms on this plan's clock -- for
-  // the voice (the user: the right audio "at the right occasion, and not
-  // before/after"). An event that moves no cards happens once the motion
-  // before it is done.
+  // the dialogue, so each line comes "at the right occasion, and not
+  // before/after" (the user). An event that moves no cards happens once the
+  // motion before it is done.
   const beats = {};
   let done = 0;
   let m = 0;

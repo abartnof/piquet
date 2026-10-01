@@ -1276,14 +1276,6 @@ md-dialog {
 .setting-text {
   display: grid;
 }
-/* Your opponent's voice: a toggle of two, beside its words. */
-.voice-choice {
-  flex: none;
-  --md-outlined-segmented-button-container-height: 36px;
-}
-.setting:has(.voice-choice) {
-  cursor: default;
-}
 .setting-title {
   font-weight: 600;
 }

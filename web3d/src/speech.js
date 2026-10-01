@@ -1,14 +1,14 @@
-// What the table says aloud: the protocol's events as a queue of recorded
-// phrases, each with its speaker (the user: "maximal speaking (anything a human
-// would say, we'll say)"). The phrases and their ids are web3d/tools/voice.py's;
-// how they are said follows Cavendish, *The Laws of Piquet* (1885) --
-// docs/VOICE.md. A pure function, so the page only plays what it returns.
+// What the table says: the protocol's events as a queue of phrases, each
+// with its speaker (the user: "maximal speaking (anything a human would say,
+// we'll say)"). The phrases and their ids are web3d/tools/phrases.py's; how
+// they are said follows Cavendish, *The Laws of Piquet* (1885) --
+// docs/PHRASES.md. A pure function, so the page only shows what it returns.
 //
-// speech(events, deal, since) -> [{ who, clip, at, kind }], for the events of `deal`
-// from index `since`: who is "you" or "them", clip a group of the bank --
-// something said in several ways, which the voice picks among (voice.js) --
-// `at` the index of the event it belongs to, so it can be said when that
-// event is seen to happen, and `kind` that event's kind.
+// speech(events, deal, since) -> [{ who, phrase, at, kind }], for the events of `deal`
+// from index `since`: who is "you" or "them", phrase a group of the bank --
+// something said in several ways, which the dialogue picks among
+// (dialogue.js) -- `at` the index of the event it belongs to, so it can be
+// said when that event is seen to happen, and `kind` that event's kind.
 //
 // The declarations follow Cavendish (pp. 60-67). Elder calls the shape -- "Five
 // cards.", "A quart.", "A trio." Only when younger holds the same shape does she
@@ -31,8 +31,8 @@ const RUN = /^(tierce|quart|quint|sixième|septième|huitième)(?: to the (\w+))
 const SET = /^(trio|quatorze)(?: of (\w+?)s)?$/;
 
 // A holding named in full -- "quint to the ace", "trio of queens" -- as the
-// group Cavendish's words are recorded under; null for a bare shape.
-function holdingClip(text) {
+// group Cavendish's words are kept under; null for a bare shape.
+function holdingPhrase(text) {
   const run = text.match(RUN);
   if (run && run[2]) return `seq-${LENGTH[run[1]]}-${RANK[run[2]]}`;
   const set = text.match(SET);
@@ -41,7 +41,7 @@ function holdingClip(text) {
 }
 
 // Its shape, whether named in full or not: "A quart.", "A trio.", "Five cards."
-function shapeClip(text) {
+function shapePhrase(text) {
   const point = text.match(/^point of (\d+)/);
   if (point) return `point-${point[1]}`;
   const run = text.match(RUN);
@@ -54,12 +54,12 @@ function shapeClip(text) {
 // The tie-break a call gives: the point's value -- "point of 5 (48)" as you
 // call it, "point of 4, making 41" as your opponent does -- or the best
 // holding named in full.
-function tiebreakClip(category, text) {
+function tiebreakPhrase(category, text) {
   if (category === "point") {
     const value = text.match(/\((\d+)\)|making (\d+)/);
     return value ? `value-${value[1] ?? value[2]}` : null;
   }
-  return holdingClip(text.split(", ")[0]);
+  return holdingPhrase(text.split(", ")[0]);
 }
 
 const holdings = (text) => String(text).split(", ");
@@ -68,11 +68,11 @@ export function speech(events, deal, since = 0) {
   const out = [];
   let at = 0;
   let kind = null;
-  const say = (who, clip) => clip && out.push({ who, clip, at, kind });
+  const say = (who, phrase) => phrase && out.push({ who, phrase, at, kind });
   let elder = null;
-  const count = { you: 0, them: 0 }; // each side's running total, said aloud
+  const count = { you: 0, them: 0 }; // each side's running total, as counted
   const called = {}; // category -> elder's first words
-  const named = new Set(); // the holdings said aloud in full this deal
+  const named = new Set(); // the holdings named in full this deal
 
   events.forEach((e, i) => {
     if (e.deal !== deal) return;
@@ -110,7 +110,7 @@ export function speech(events, deal, since = 0) {
         if (who !== elder || called[e.category] !== undefined) break;
         called[e.category] = e.said;
         if (!now) break;
-        say(who, e.said === "nothing" ? "nothing" : shapeClip(holdings(e.said)[0]));
+        say(who, e.said === "nothing" ? "nothing" : shapePhrase(holdings(e.said)[0]));
         break;
       }
       case "decided": {
@@ -123,7 +123,7 @@ export function speech(events, deal, since = 0) {
           const next = events.slice(i + 1).find((x) => x.deal === deal && x.kind === "called" && x.who === "them" && x.category === e.category);
           source = next ? next.said : null;
         }
-        const tiebreak = e.asked && source ? tiebreakClip(e.category, source) : null;
+        const tiebreak = e.asked && source ? tiebreakPhrase(e.category, source) : null;
         if (tiebreak && e.category !== "point") named.add(tiebreak);
         if (!now) break;
         if (tiebreak) {
@@ -145,16 +145,16 @@ export function speech(events, deal, since = 0) {
           if (point) {
             if (who !== elder) say(who, `point-${point[1]}`);
           } else {
-            for (const clip of holdings(e.what).map(holdingClip)) {
-              if (clip && !named.has(clip)) say(who, clip);
-              named.add(clip);
+            for (const phrase of holdings(e.what).map(holdingPhrase)) {
+              if (phrase && !named.has(phrase)) say(who, phrase);
+              named.add(phrase);
             }
           }
         }
         if (e.category === "bonus") say(who, String(e.what).includes("repique") ? "repique" : "pique");
         if (e.category === "cards") say(who, e.amount >= 40 ? "capot" : "the-cards");
         if (e.category === "carte_blanche") say(who, "carte-blanche-have");
-        // Counting aloud: the running total, as each score is made.
+        // Counting: the running total, as each score is made.
         if (count[who] > 0 && count[who] <= 170) say(who, `n-${count[who]}`);
         break;
       }

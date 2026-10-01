@@ -555,11 +555,15 @@ def main() -> int:
         real.context.close()
 
         # No sound of any kind (the user: "i don't want the html to have any
-        # audio"): no recordings in the page, no audio made, no speech -- but
-        # the declarations still come as a dialogue, in boxes.
+        # audio"): no audio made, no speech -- but the declarations still
+        # come as a dialogue, in boxes.
         talk = open_page(browser, "test&level=2&seed=31")
         talk.evaluate("""() => {
             window.__sound = { contexts: 0, spoken: 0 };
+            for (const name of ["AudioContext", "webkitAudioContext"]) {
+                const Made = window[name];
+                if (Made) window[name] = class extends Made { constructor(...a) { super(...a); window.__sound.contexts++; } };
+            }
             if (window.speechSynthesis) window.speechSynthesis.speak = () => window.__sound.spoken++;
             window.__boxes = [];
             new MutationObserver((changes) => changes.forEach((c) => c.addedNodes.forEach((n) => {
@@ -580,14 +584,11 @@ def main() -> int:
             else:
                 break
         talk.wait_for_timeout(4000)
-        heard = talk.evaluate("window.piquet3d.voice()")
-        clips = talk.evaluate("Object.values(VOICES).some((v) => v.clips)")
-        if clips or heard["recorded"] or heard["state"] is not None or heard["played"]:
-            failures.append(f"the page carries or makes sound: clips {clips}, {heard}")
-        if talk.evaluate("window.__sound.spoken"):
+        sound = talk.evaluate("window.__sound")
+        if sound["contexts"] or talk.locator("audio, video").count():
+            failures.append(f"the page makes sound: {sound}")
+        if sound["spoken"]:
             failures.append("the page spoke through the browser's own voice")
-        if talk.locator("md-switch[data-pref=voice]").count() or talk.locator(".voice-choice").count():
-            failures.append("settings still offer a voice the page does not have")
         # The declarations as a dialogue (the user: "two dialogue boxes to pop
         # up every move"): both speak, in boxes by their own hands.
         boxes = talk.evaluate("window.__boxes")

@@ -1,11 +1,9 @@
 # What the table says
 
-Every phrase the voice says, each in the ways it is said -- so that
-nothing is heard the same way twice running (Andrew: "i don't want
-*any* sounds to be repetitive"). Generated from the bank in
-`web3d/tools/voice.py` by `voice.py --doc`; edit the bank, not this
-file. The reasoning, the pronunciation and the sizes are in
-`docs/VOICE.md`.
+Every phrase the declarations' dialogue boxes say, each in the ways it
+is said -- so that nothing is said the same way twice running.
+Generated from the bank in `web3d/tools/phrases.py`; edit the bank,
+not this file.
 
 Sources:
 
@@ -13,7 +11,7 @@ Sources:
 - **Cy** -- A. Howard Cady, Piquet: a Treatise on the Game (1896)
 - **F** -- Foster's Complete Hoyle (1897 and later)
 - **P** -- pagat.com, the modern names
-- **A** -- Andrew
+- **A** -- the user
 - **T** -- the table's own
 
 | Group | Said | Source |
@@ -263,12 +261,9 @@ Sources:
 ## Numbers
 
 Every number from one to a hundred and seventy (`n-1` ... `n-170`), for counting
-aloud and for a point's value: the same words in several takes, at
-paces 1.0, 0.93, 1.08 -- three takes up to forty, heard a few
-times a partie, and two above (380 recordings).
+and for a point's value.
 
 A point's value, answering "What do they make?" (`value-24` ...
 `value-75`), is the number -- or, in the forties, what it is making,
 as Cavendish has it ("Forty-nine," or "Making nine") and Cady
-("Forty-seven," or "Making seven"): *Making one* ... *Making nine*,
-two takes each.
+("Forty-seven," or "Making seven"): *Making one* ... *Making nine*.

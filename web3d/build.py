@@ -101,34 +101,10 @@ def art(way: str) -> str:
     }, separators=(",", ":"))
 
 
-AUDIO = HERE / "audio"
-
-
-def voices(kind: str) -> str:
-    """The recorded phrases (web3d/tools/voice.py) as a JSON object: for each
-    voice, its manifest's particulars, every recording (base64), and the
-    groups the page picks among -- the voice at the table, offline
-    (docs/VOICE.md, docs/PHRASES.md). Empty if none have been made.
-
-    With `none`, the default, no sound at all: only the words of the
-    phrases, for the declarations' dialogue boxes (the user: "i don't want the
-    html to have any audio")."""
-    out = {}
-    if kind == "none":
-        # The phrase bank's words (web3d/tools/voice.py --doc writes them).
-        out["words"] = json.loads((ROOT / "web3d" / "words.json").read_text())
-        return json.dumps(out, separators=(",", ":"), ensure_ascii=False)
-    ext = {"mp3": "mp3", "opus": "ogg"}[kind]
-    for manifest in sorted(AUDIO.glob("*/manifest.json")):
-        spec = json.loads(manifest.read_text())
-        folder = manifest.parent
-        missing = [key for key in spec["files"] if not (folder / f"{key}.{ext}").exists()]
-        if missing:
-            sys.exit(f"{folder.name}: no recording of {', '.join(missing[:5])}: run web3d/tools/voice.py")
-        clips = {key: base64.b64encode((folder / f"{key}.{ext}").read_bytes()).decode("ascii") for key in spec["files"]}
-        out[spec["voice"]] = {"gender": spec["gender"], "format": ext, "clips": clips,
-                              "groups": spec["groups"], "texts": spec["files"]}
-    return json.dumps(out, separators=(",", ":"))
+def phrases() -> str:
+    """The phrase bank's words, for the declarations' dialogue boxes
+    (web3d/words.json, which web3d/tools/phrases.py writes)."""
+    return json.dumps(json.loads((HERE / "words.json").read_text()), separators=(",", ":"), ensure_ascii=False)
 
 
 def fill(template: str, values: dict[str, str]) -> str:
@@ -142,10 +118,6 @@ def fill(template: str, values: dict[str, str]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build the 3D table's single-file page.")
-    parser.add_argument("--audio", choices=["none", "opus", "mp3"], default="none",
-                        help="no sound, only the phrases' words for the dialogue boxes (the default: "
-                             "the user, 'i don't want the html to have any audio'); or the voice's "
-                             "clips as Ogg Opus or MP3")
     parser.add_argument("--art", choices=["webp", "svg"], default="webp",
                         help="ship the card art rasterised (webp, the default) or as vectors (svg), "
                              "which writes web3d/piquet3d-svg.html instead")
@@ -158,20 +130,20 @@ def main() -> int:
     style = (SRC / "style.css").read_text()
     engine = base64.b64encode(wasm).decode("ascii")
     cards = art(args.art)
-    speech = voices(args.audio)
+    words = phrases()
     page = fill((SRC / "index.html").read_text(), {
         "/*STYLE*/": style,
         "/*APP*/": code,
         "__WASM_BASE64__": engine,
         "/*ART*/": cards,
-        "/*VOICES*/": speech,
+        "/*WORDS*/": words,
     })
     out.write_text(page)
 
     size = len(page.encode())
     art_name = "the card art (WebP, base64)" if args.art == "webp" else "the card art (SVG)"
     rows = [("the engine (wasm, base64)", len(engine)), (art_name, len(cards.encode())),
-            ("the dialogue's words" if args.audio == "none" else f"the voices ({args.audio}, base64)", len(speech.encode())),
+            ("the dialogue's words", len(words.encode())),
             *owned.items(),
             ("stylesheet", len(style.encode()))]
     rows.append(("page skeleton", size - sum(n for _, n in rows)))

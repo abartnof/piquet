@@ -127,8 +127,8 @@ test("a card played is laid down after the one it answers, with a pause to think
   assert.ok(theirs.delay >= mine.delay + mine.duration, "they answer after your card is down");
 });
 
-// The voice says each thing as it is seen to happen (the user: the right audio
-// "at the right occasion, and not before/after"), so the choreography says
+// The dialogue says each thing as it is seen to happen ("at the right
+// occasion, and not before/after", the user), so the choreography says
 // when each new event happens on its clock: a card's when it lands, a call as
 // your opponent's cards stir, anything else once the motion before it is done.
 test("every new event has its moment on the animation's clock, in order", () => {
