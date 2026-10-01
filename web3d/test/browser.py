@@ -523,11 +523,24 @@ def main() -> int:
         # comes at the phase's very start, the table held still behind it
         # (the user: "the pop ups pop up at the beginning of each of the
         # phases").
-        yng = open_page(browser, "test&welcome&level=2&seed=2")
-        yng.locator("#welcome").get_by_role("button", name="Tutorial").click()
-        yng.wait_for_timeout(800)
-        yng.locator("#tutorial .tutorial-close").click()
-        yng.wait_for_timeout(700)
+        # The tutorial deals a new partie on a random seed, so who is elder
+        # is the cut's: cut until the deal is decided, and begin again until
+        # it makes you younger (about one try in two).
+        for _ in range(12):
+            yng = open_page(browser, "test&welcome&level=2&seed=2")
+            yng.locator("#welcome").get_by_role("button", name="Tutorial").click()
+            yng.wait_for_timeout(800)
+            yng.locator("#tutorial .tutorial-close").click()
+            yng.wait_for_timeout(700)
+            for _ in range(10):
+                kind = state(yng)["prompt"]["kind"]
+                if kind not in ("cut", "choose_dealer"):
+                    break
+                yng.evaluate("window.piquet3d.send('cut 14')" if kind == "cut" else "window.piquet3d.send('dealer you')")
+                yng.wait_for_timeout(1200)
+            if any(e["kind"] == "deal_begins" and e["elder"] == "them" for e in state(yng)["events"]):
+                break
+            yng.context.close()
         theirs = lambda kind: any(e["kind"] == kind and e.get("who") == "them" for e in state(yng)["events"])
         held = {}
         for _ in range(40):
