@@ -22,3 +22,6 @@ target/
 # the 3D table's libraries: pinned by web3d/package-lock.json, restored by `npm ci`
 node_modules/
 
+
+# The vector-art variant of the 3D table (`web3d/build.py --art svg`): a comparison, not shipped.
+web3d/piquet3d-svg.html
