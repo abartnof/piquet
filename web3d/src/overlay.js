@@ -698,7 +698,7 @@ export function createOverlay(root, on) {
 
   // The user: "sorting your hand should always be an option, with a md3 ...
   // Segmented button near the deck".
-  const SORTS = [["auto", "Auto"], ["suit", "Suit"], ["rank", "Rank"], ["combos", "Combinations"]];
+  const SORTS = [["auto", "Auto"], ["suit", "Suit"], ["rank", "Rank"]];
   const sortSet = el("md-outlined-segmented-button-set", { class: "sort", "aria-label": "Order your hand" },
     SORTS.map(([value, words]) => el("md-outlined-segmented-button", { label: words, "data-sort": value, "no-checkmark": true })));
   sortSet.addEventListener("segmented-button-set-selection", (e) => {
@@ -720,12 +720,7 @@ export function createOverlay(root, on) {
   let lastAids = {};
   $("tools").replaceChildren(sortSet, undo, explainChip, hintChip);
   // A phone has room for one row under your hand: the sort and undo. Its
-  // Explain and Hints are switches in Settings, and the sort's longest
-  // word is shortened.
-  const combos = sortSet.querySelector('[data-sort="combos"]');
-  const fit = () => (combos.label = compact.matches ? "Combos" : "Combinations");
-  compact.addEventListener("change", fit);
-  fit();
+  // Explain and Hints are switches in Settings.
 
   function renderTools(s, prefs, ui) {
     // Nothing to sort, undo or hint while cutting for the deal.

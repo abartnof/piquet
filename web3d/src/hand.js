@@ -14,9 +14,15 @@ const suitOf = (c) => SUIT_ORDER.indexOf(c[1]);
 export const bySuit = (a, b) => suitOf(a) - suitOf(b) || rankOf(a) - rankOf(b);
 const byRank = (a, b) => rankOf(a) - rankOf(b) || suitOf(a) - suitOf(b);
 
-// "auto", "suit", "rank" or "combos" -> the mode in force now.
+// The orders the player may choose. There was a fourth, Combinations, but it
+// differed from Auto only in the play, where holdings no longer matter (the
+// user: "isn't auto/suit/rank good enough?").
+export const SORTS = ["auto", "suit", "rank"];
+
+// A choice of SORTS -> the mode in force now: "suit", "rank" or "combos". A
+// choice no longer offered -- a Combinations kept from before -- is Auto.
 export function sortMode(state, preference) {
-  if (preference !== "auto") return preference;
+  if (preference !== "auto" && SORTS.includes(preference)) return preference;
   return ["exchange", "declare"].includes(state.prompt.kind) ? "combos" : "suit";
 }
 

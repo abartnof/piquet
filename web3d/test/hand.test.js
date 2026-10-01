@@ -2,7 +2,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { arrange, sortMode } from "../src/hand.js";
+import { SORTS, arrange, sortMode } from "../src/hand.js";
 
 const state = (over) => ({
   hand: ["AS", "KS", "9H", "AD", "KD", "QD", "JD", "7C", "AC", "8S", "9S", "TS"],
@@ -20,6 +20,14 @@ test("auto sorts by combination while the hand is being shaped, by suit in play"
   assert.equal(sortMode(state({ prompt: { kind: "declare" } }), "auto"), "combos");
   assert.equal(sortMode(state({ prompt: { kind: "play", legal: [] } }), "auto"), "suit");
   assert.equal(sortMode(state(), "rank"), "rank");
+});
+
+// The user: "isn't auto/suit/rank good enough?" Combinations differed from
+// Auto only in the play, where grouping by holdings helps nobody.
+test("the sorts offered are Auto, Suit and Rank; a Combinations kept from before is Auto", () => {
+  assert.deepEqual(SORTS, ["auto", "suit", "rank"]);
+  assert.equal(sortMode(state(), "combos"), "combos");
+  assert.equal(sortMode(state({ prompt: { kind: "play", legal: [] } }), "combos"), "suit");
 });
 
 test("by suit: spades, hearts, clubs, diamonds -- so the colours alternate -- high first", () => {

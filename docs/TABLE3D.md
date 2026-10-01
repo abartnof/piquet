@@ -265,7 +265,7 @@ carries a face.
 `layout(state) → Map<meshSlot, Pose>` is a pure function of the protocol state:
 
 - **Your hand**: `state.hand` in the chosen sort order (reuse the 2D page's
-  grouping logic: Auto/Suit/Rank/Combinations), fanned and floating (§6).
+  grouping logic: Auto/Suit/Rank), fanned and floating (§6).
 - **Their hand**: `12 − (tricks played) − (their card on the table)`
   anonymous cards, fanned and floating, backs to you.
 - **Talon**: `talon_remaining` cards; before the exchange, five crossed over
@@ -772,8 +772,9 @@ throughout.
       given while playing the first build, all built:
       1. *"sorting your hand should always be an option, with a md3 ...
          Segmented button near the deck (below?)"* — Material Web's
-         outlined segmented button (labs), Auto / Suit / Rank /
-         Combinations, always under the hand.
+         outlined segmented button (labs), Auto / Suit / Rank, always
+         under the hand. (A fourth, Combinations, differed from Auto only
+         in the play, and was dropped.)
       2. *"we speak a LOT in piquet- those things we say during gameplay are
          a part of the game ... a text box ... split into two
          vertically-stacked halves"* — the dialogue box: your opponent's
@@ -899,7 +900,7 @@ throughout.
         What your hand is worth folds to one line ("If good: Point 5 ·
         Sequences 3"), a tap to open it over the table.
       - **Foot, 239 -> 190 px at its tallest** (declaring, two rows of
-        choices). One row of tools — the sort ("Combos" for short) and
+        choices). One row of tools — the sort and
         undo; on a phone Explain and Hints are the switches in Settings.
         The question a size smaller so most fit a line; the choices' padding
         trimmed so three usually fit a row; "Played for you" floats over

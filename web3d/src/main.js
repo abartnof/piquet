@@ -12,6 +12,7 @@ import { buildDemo } from "./demo.js";
 import { createDirector } from "./director.js";
 import { decodeBase64, loadEngine } from "./engine.js";
 import { STRIPS } from "./framing.js";
+import { SORTS } from "./hand.js";
 import { createOverlay, label as labelOf } from "./overlay.js";
 import { speech } from "./speech.js";
 import { chooseSurface } from "./surfaces.js";
@@ -141,6 +142,7 @@ async function main() {
   // player has chosen a speed for themselves.
   const calm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let prefs = recallPrefs({ ...DEFAULT_PREFS, speed: calm ? 100 : DEFAULT_PREFS.speed });
+  if (!SORTS.includes(prefs.sort)) prefs = { ...prefs, sort: "auto" }; // a sort since retired
   const ui = { selected: [], lifted: [], pinned: null, pinnedCards: [], fresh: [], peek: false, focus: null };
   let cutDepth = 16;
   const view = () => ({
