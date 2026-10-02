@@ -556,15 +556,25 @@ async function main() {
         reframeTo(now);
         return;
       }
-      // A folded explanation counts; opened, it is read over the table, and
-      // what it pushes down is not measured until it folds again.
-      const open = document.getElementById("rule").classList.contains("open");
-      const top = Math.max(0, ...["bug", "rule", "worth"].map(box).filter(Boolean).map((r) => r.bottom)) + GAP;
+      // The explanation counts folded: opened, it is read over the table, so
+      // it and what it pushes down are measured as they would stand folded
+      // -- and hidden (Explain off), it counts for nothing, open or not.
+      const rule = box("rule");
+      let folding = 0; // how much taller the explanation stands than folded
+      if (rule) {
+        const text = document.getElementById("rule").querySelector(".rule-text");
+        if (text) {
+          const two = 2 * parseFloat(getComputedStyle(text).lineHeight);
+          folding = Math.max(0, text.offsetHeight - Math.min(text.scrollHeight, two));
+        }
+      }
+      const bottoms = [box("bug")?.bottom, rule && rule.bottom - folding, box("worth") && box("worth").bottom - folding];
+      const top = Math.max(0, ...bottoms.filter((b) => b !== undefined && b !== null && b !== false)) + GAP;
       const controls = box("controls");
       const foot = controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
       const key = `${s.prompt.kind}|${prefs.explain !== false}|${!!s.aids.hints}|${window.innerWidth}`;
       const was = tallest.get(key) ?? { top: 0, foot: 0 };
-      const now = { top: open ? was.top || stage.strips().top : Math.max(was.top, top), foot: Math.max(was.foot, foot), raised: raisable(s) };
+      const now = { top: Math.max(was.top, top), foot: Math.max(was.foot, foot), raised: raisable(s) };
       tallest.set(key, now);
       reframeTo(now);
     });

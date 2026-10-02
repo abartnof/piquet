@@ -245,6 +245,22 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 2 October 2026 (evening): Explain off gives the room back
+
+- **The bug** (the user: "when i turn on the explanations, the cards
+  compress- but when i turn off the explanations they don't decompress").
+  Once the explanation had been tapped open, switching Explain off hid it
+  but left it marked open, and an open explanation was not measured -- so
+  the table stayed framed for it, and that height was kept as the tallest
+  for Explain off. Now the explanation is always measured as it stands
+  folded (and what an open one pushes down, likewise), and a hidden one
+  counts for nothing. A browser check opens it and switches Explain off
+  and on.
+- **Seen once:** "as younger: 'Ah, not good.' was said 880 ms into
+  Sequences" -- the declarations' breaks check, timed by the wall clock
+  (950 ms), failed once in a full run on the VM; 8 of 8 alone and the full
+  run again passed. A timing flake to watch, not this change.
+
 ### 2 October 2026 (later): the hand to the edges in play, the index to fit it
 
 The user saw "loads of white space on either side of the hand" on the

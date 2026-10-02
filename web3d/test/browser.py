@@ -285,6 +285,45 @@ def check_faces(browser, failures):
         context.close()
 
 
+def check_explain_toggle(browser, failures):
+    """On a phone, the explanation opened and then Explain switched off: the
+    table takes back the room it gave (the user: "when i turn off the
+    explanations they don't decompress")."""
+    context = browser.new_context(viewport={"width": 393, "height": 664}, is_mobile=True, has_touch=True)
+    page = context.new_page()
+    page.errors = []
+    page.on("pageerror", lambda e: page.errors.append(str(e)))
+    page.goto(f"{PAGE.as_uri()}?test&level=1&seed=7")
+    page.evaluate("localStorage.clear()")
+    goto(page, "test&level=1&seed=7", fresh=False)
+    for n in range(10):
+        s = state(page)
+        if s["prompt"]["kind"] == "declare":
+            break
+        page.evaluate(f"window.piquet3d.send({dull(s, n)!r})")
+    settle = lambda: page.evaluate("new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))")
+    settle()
+    on = page.evaluate("window.piquet3d.strips().top")
+    page.locator("#rule").tap()
+    page.wait_for_timeout(600)
+    page.keyboard.press("e")
+    page.wait_for_timeout(600)
+    settle()
+    off = page.evaluate("window.piquet3d.strips().top")
+    bug = page.evaluate("document.getElementById('bug').getBoundingClientRect().bottom")
+    if off > bug + 20:
+        failures.append(f"Explain switched off with the explanation open, the table stays framed for it: top {off:.0f}px, the score ends at {bug:.0f}px (was {on:.0f}px)")
+    page.keyboard.press("e")
+    page.wait_for_timeout(600)
+    settle()
+    again = page.evaluate("[window.piquet3d.strips().top, document.getElementById('rule').getBoundingClientRect().bottom]")
+    if again[0] < again[1]:
+        failures.append(f"Explain switched on again, the table is framed under the explanation: top {again[0]:.0f}px, the explanation ends at {again[1]:.0f}px")
+    if page.errors:
+        failures.append(f"console errors switching Explain: {page.errors}")
+    context.close()
+
+
 def check_sideways(browser, failures):
     """A phone held sideways: the information down the left, the controls down
     the right, and the table framed between them -- neither column ever
@@ -871,6 +910,7 @@ def main() -> int:
         check_phone_worth(browser, failures)
         check_faces(browser, failures)
         check_sideways(browser, failures)
+        check_explain_toggle(browser, failures)
 
         browser.close()
 
