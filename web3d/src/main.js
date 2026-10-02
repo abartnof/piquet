@@ -528,6 +528,7 @@ async function main() {
   // the aids on and the width: the table settles once into the room a phase
   // needs, rather than breathing with every line of the prompt.
   const tallest = new Map();
+  let lastAids = null; // Explain and Hints as last measured
   const GAP = 6; // between a strip and the cards
   let measured = false;
   let measuring = 0;
@@ -541,7 +542,10 @@ async function main() {
       const sideways = getComputedStyle(info).getPropertyValue("--sideways").trim() === "1";
       if (!stage.portrait && !sideways) return;
       const s = engine.state();
-      if (ui.withheld) return; // the moment between rounds asks nothing
+      // The moment between rounds asks nothing: the foot then is the empty
+      // prompt's, and counts for nothing -- but the top is measured, so an
+      // aid switched then is answered then.
+      const pausing = ui.withheld > 0;
       const box = (id) => {
         const n = document.getElementById(id);
         return n && !n.hidden && n.offsetParent && !n.classList.contains("floating") ? n.getBoundingClientRect() : null;
@@ -556,27 +560,28 @@ async function main() {
         reframeTo(now);
         return;
       }
-      // The explanation counts folded: opened, it is read over the table, so
-      // it and what it pushes down are measured as they would stand folded
-      // -- and hidden (Explain off), it counts for nothing, open or not.
+      // The explanation takes no room from the table: it lies over the
+      // cards, and the table is framed as if it were not there -- nor what
+      // it pushes down (the user: the explanation "smashes down the cards and
+      // makes them too hard to read ... show me what it looks like if the
+      // explanation popup is allowed to collide with the cards").
       const rule = box("rule");
-      let folding = 0; // how much taller the explanation stands than folded
-      if (rule) {
-        const text = document.getElementById("rule").querySelector(".rule-text");
-        if (text) {
-          const two = 2 * parseFloat(getComputedStyle(text).lineHeight);
-          folding = Math.max(0, text.offsetHeight - Math.min(text.scrollHeight, two));
-        }
-      }
-      const bottoms = [box("bug")?.bottom, rule && rule.bottom - folding, box("worth") && box("worth").bottom - folding];
-      const top = Math.max(0, ...bottoms.filter((b) => b !== undefined && b !== null && b !== false)) + GAP;
+      const under = rule ? rule.height + (parseFloat(getComputedStyle(info).rowGap) || 0) : 0;
+      const worth = box("worth");
+      const bottoms = [box("bug")?.bottom, worth && worth.bottom - under].filter((b) => typeof b === "number");
+      const top = Math.max(0, ...bottoms) + GAP;
       const controls = box("controls");
-      const foot = controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
-      const key = `${s.prompt.kind}|${prefs.explain !== false}|${!!s.aids.hints}|${window.innerWidth}`;
+      const foot = pausing ? 0 : controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
+      const aids = `${prefs.explain !== false}|${!!s.aids.hints}`;
+      const key = `${s.prompt.kind}|${aids}|${window.innerWidth}`;
       const was = tallest.get(key) ?? { top: 0, foot: 0 };
-      const now = { top: Math.max(was.top, top), foot: Math.max(was.foot, foot), raised: raisable(s) };
+      const now = { top: Math.max(was.top, top), foot: Math.max(was.foot, foot) || stage.strips().foot, raised: raisable(s) };
       tallest.set(key, now);
-      reframeTo(now);
+      // An aid you switched yourself is answered at once; what the game's
+      // moves change waits for the table to be still (reframeTo).
+      const asked = lastAids !== null && aids !== lastAids;
+      lastAids = aids;
+      reframeTo(now, { asked });
     });
   }
   // Room taken is given at once, so nothing is ever drawn under the
@@ -606,9 +611,17 @@ async function main() {
     };
     spread();
   }
-  function reframeTo(next) {
+  function reframeTo(next, { asked = false } = {}) {
     clearTimeout(settling);
     const was = stage.strips();
+    // Switched by you (the user: "when i turn off the explanations they
+    // don't decompress" -- they did, once the table was still, which could
+    // be eight seconds): the eye moves now.
+    if (asked && measured && !TESTING) {
+      stage.setStrips(next);
+      refill();
+      return;
+    }
     if (TESTING || !measured) {
       measured = true;
       stage.setStrips(next, { instant: true });

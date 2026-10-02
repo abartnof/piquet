@@ -245,6 +245,24 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 2 October 2026 (night): the explanation lies over the cards
+
+The fix below was not the one wanted. The user: the explanation "smashes
+down the cards and makes them too hard to read, and they don't pop back up
+again after. easy solution- show me what it looks like if the explanation
+popup is allowed to collide with the cards in mobile?" Shown as before and
+after shots (a private page), and taken: on a phone held upright the
+explanation takes no room from the table -- it lies over its top, mostly
+over your opponent's face-down hand -- and the table is framed as if it
+were not there. The worth line still takes its own.
+
+Also found on the way, in WebKit (Playwright's, now installed on the VM):
+the table did give its room back after Explain went off, but only once the
+cards were still and the dialogue said -- up to 8 s, which looks like
+never. An aid you switch yourself is now answered at once; the game's own
+moves still wait. And the strips are measured during the moment between
+the declarations' rounds too (the foot then held as it was).
+
 ### 2 October 2026 (evening): Explain off gives the room back
 
 - **The bug** (the user: "when i turn on the explanations, the cards

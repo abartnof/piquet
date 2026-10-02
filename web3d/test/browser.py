@@ -286,9 +286,9 @@ def check_faces(browser, failures):
 
 
 def check_explain_toggle(browser, failures):
-    """On a phone, the explanation opened and then Explain switched off: the
-    table takes back the room it gave (the user: "when i turn off the
-    explanations they don't decompress")."""
+    """On a phone the explanation lies over the cards: opened, and Explain
+    switched off and on, the table keeps its room throughout (the user: "when
+    i turn off the explanations they don't decompress")."""
     context = browser.new_context(viewport={"width": 393, "height": 664}, is_mobile=True, has_touch=True)
     page = context.new_page()
     page.errors = []
@@ -316,9 +316,14 @@ def check_explain_toggle(browser, failures):
     page.keyboard.press("e")
     page.wait_for_timeout(600)
     settle()
-    again = page.evaluate("[window.piquet3d.strips().top, document.getElementById('rule').getBoundingClientRect().bottom]")
-    if again[0] < again[1]:
-        failures.append(f"Explain switched on again, the table is framed under the explanation: top {again[0]:.0f}px, the explanation ends at {again[1]:.0f}px")
+    # The explanation lies over the cards (the user: "show me what it looks
+    # like if the explanation popup is allowed to collide with the cards"):
+    # the table is framed up under it.
+    again = page.evaluate("[window.piquet3d.strips().top, document.getElementById('rule').hidden, document.getElementById('rule').getBoundingClientRect().bottom]")
+    if again[1]:
+        failures.append("Explain switched on again, the explanation did not come back")
+    elif again[0] >= again[2]:
+        failures.append(f"Explain switched on, the table gave the explanation room: framed from {again[0]:.0f}px, the explanation ends at {again[2]:.0f}px")
     if page.errors:
         failures.append(f"console errors switching Explain: {page.errors}")
     context.close()
@@ -878,7 +883,11 @@ def main() -> int:
                 least[k] = min(least[k], strips[k])
             bands = phone.evaluate("""() => {
                 const box = (id) => { const n = document.getElementById(id); return n && !n.hidden && n.offsetParent ? n.getBoundingClientRect() : null; };
-                const top = Math.max(...["bug", "worth", "rule"].map(box).filter(Boolean).map((r) => r.bottom));
+                // The explanation lies over the cards and takes no room: what
+                // it pushes down counts as if it were not there.
+                const rule = box("rule");
+                const under = rule ? rule.height + (parseFloat(getComputedStyle(document.getElementById("info")).rowGap) || 0) : 0;
+                const top = Math.max(box("bug")?.bottom ?? 0, box("worth") ? box("worth").bottom - under : 0);
                 const controls = box("controls");
                 const bar = box("topbar");
                 const covers = ["bug", "rule", "worth", "tab"].filter((id) => {
