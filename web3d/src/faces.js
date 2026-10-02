@@ -5,10 +5,12 @@
 // font is bundled or fetched.
 //
 // From the user's own recipe (1 October 2026), kept as given in the commit
-// that brought it, d2507ac. Two things differ, for the table: the face is
-// paper from edge to edge, because the table's ink line draws every card's
-// edge and rounds its corners (the classic art has no border either); and
-// the faces are drawn at the classic art's width for the screen (art.js).
+// that brought it, d2507ac. What differs, for the table: the face is paper
+// from edge to edge, because the table's ink line draws every card's edge
+// and rounds its corners (the classic art has no border either); the faces
+// are drawn at the classic art's width for the screen (art.js); and, at the
+// user's word (2 October), the index is fitted into the strip of each card
+// a fanned hand shows, rather than drawn at the recipe's sizes and covered.
 //
 // Settings calls them "Large Text (Optimized for smaller screens)" (the
 // user's words). The classic faces stay the default on iPads and computers; Settings can
@@ -25,11 +27,18 @@ export const JUMBO = Object.freeze({
   paper: "#fbfaf6",
   ink: "#15171c",
   red: "#c8202c",
-  axis: 1.0, // x of the line the rank and suit are centred on
   rankTop: 0.3, // y of the top of the rank's capitals
-  rankSize: 2.2, // one size for every rank, the ten included
-  suitTop: 2.15, // y of the top of the suit's ink
-  suitSize: 2.8,
+  rankSize: 2.2, // the recipe's sizes, one for every rank and one for every
+  suitSize: 2.8, // suit: the most either is drawn at
+  gap: 0.3, // between the rank's capitals and the suit's ink, at the recipe's sizes
+  // What a full hand fanned on a phone shows of each card: a strip this
+  // wide at its left, all down the index (faces.test.js measures it). The
+  // index is fitted into it with `margin` clear either side -- about 3.5 px
+  // on a phone -- so no rank or suit is ever under the next card (the user:
+  // "shrink the card graphics to be visible within that space (with a few
+  // pixels at least of space on the side, for visibility's sake)").
+  strip: 1.46,
+  margin: 0.25,
 });
 
 const RANK_FONT = "-apple-system, system-ui, sans-serif";
@@ -59,24 +68,44 @@ export function facesFor(choice, phone) {
 
 export const rankAndSuit = (code) => [code[0] === "T" ? "10" : code[0], code[1]];
 
-// One corner: the rank's capitals from rankTop, centred on the axis; the
-// suit placed by its measured ink -- its top at suitTop, its centre on the
-// axis -- so the four suits line up whatever symbol font the system has.
-function corner(ctx, u, rank, suit) {
+// The sizes that fit the strip, in units: the rank's, the largest at which
+// every one-character rank fits (the canvas narrows a 10 to the same room,
+// so every rank stands the same height); the suit's, the largest at which
+// every suit's ink fits. Measured in whatever fonts the system has.
+function fitted(ctx) {
+  const room = JUMBO.strip - 2 * JUMBO.margin;
+  const widest = (font, texts) => {
+    ctx.font = font;
+    return Math.max(...texts.map((t) => {
+      const m = ctx.measureText(t);
+      return m.actualBoundingBoxLeft + m.actualBoundingBoxRight;
+    }));
+  };
+  const rank = Math.min(JUMBO.rankSize, (100 * room) / widest(`700 100px ${RANK_FONT}`, ["7", "8", "9", "J", "Q", "K", "A"]));
+  const suit = Math.min(JUMBO.suitSize, (100 * room) / widest(`100px ${SUIT_FONT}`, Object.values(GLYPH)));
+  return { room, rank, suit, axis: JUMBO.margin + room / 2 };
+}
+
+// One corner: the rank's capitals from rankTop, centred in the strip; the
+// suit placed by its measured ink -- its top a gap below the rank, its
+// centre under the rank's -- so the four suits line up whatever symbol font
+// the system has.
+function corner(ctx, u, rank, suit, fit) {
   ctx.fillStyle = COLOUR[suit];
   ctx.textBaseline = "alphabetic";
-  ctx.font = `700 ${JUMBO.rankSize * u}px ${RANK_FONT}`;
+  ctx.font = `700 ${fit.rank * u}px ${RANK_FONT}`;
   ctx.textAlign = "center";
   const cap = ctx.measureText("H").actualBoundingBoxAscent;
-  ctx.fillText(rank, JUMBO.axis * u, JUMBO.rankTop * u + cap);
+  ctx.fillText(rank, fit.axis * u, JUMBO.rankTop * u + cap, fit.room * u);
 
-  ctx.font = `${JUMBO.suitSize * u}px ${SUIT_FONT}`;
+  ctx.font = `${fit.suit * u}px ${SUIT_FONT}`;
   ctx.textAlign = "left";
   const glyph = GLYPH[suit];
   const m = ctx.measureText(glyph);
   const inkLeft = -m.actualBoundingBoxLeft;
   const inkRight = m.actualBoundingBoxRight;
-  ctx.fillText(glyph, JUMBO.axis * u - (inkLeft + inkRight) / 2, JUMBO.suitTop * u + m.actualBoundingBoxAscent);
+  const suitTop = JUMBO.rankTop * u + cap + JUMBO.gap * (fit.rank / JUMBO.rankSize) * u;
+  ctx.fillText(glyph, fit.axis * u - (inkLeft + inkRight) / 2, suitTop + m.actualBoundingBoxAscent);
 }
 
 // The face of the card `code` ("TH", "AS", ...) on a 2D context `width`
@@ -88,12 +117,13 @@ export function drawJumbo(ctx, width, code) {
   const height = JUMBO.h * u;
   ctx.fillStyle = JUMBO.paper;
   ctx.fillRect(0, 0, width, height);
-  corner(ctx, u, rank, suit);
+  const fit = fitted(ctx);
+  corner(ctx, u, rank, suit, fit);
   ctx.save();
   ctx.translate(width / 2, height / 2);
   ctx.rotate(Math.PI);
   ctx.translate(-width / 2, -height / 2);
-  corner(ctx, u, rank, suit);
+  corner(ctx, u, rank, suit, fit);
   ctx.restore();
 }
 

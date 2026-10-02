@@ -245,6 +245,25 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 2 October 2026: the large-text index fitted to what the fan shows
+
+- **Measured** (the user: "check how much of each card is visible in the
+  hand"): a full hand on a phone, sorted by Auto or Suit, shows a strip of
+  each card 1.46 of the face's 7 units wide all down the index -- about a
+  fifth of the card, ~20 px. The recipe's index needed ~2.4 (the 10) and
+  ~2.2 (a suit): half again too wide, so the next card covered it. (Sorted
+  by rank, cards of a rank overlap further, ~1 unit; not designed for.)
+- **Fitted** ("shrink the card graphics to be visible within that space
+  (with a few pixels at least of space on the side)"): the rank at the
+  largest size where every one-character rank fits, the 10 narrowed to the
+  same room (`fillText`'s maxWidth), so every rank stands the same height;
+  the suit the largest that fits; both centred in the strip with 0.25 units
+  (~3.5 px) clear either side. `JUMBO.strip` is held to the fan by a test.
+- **Seen:** the index is now about the classic one's size, and a card face
+  up on the table -- otherwise blank -- reads weakly by it. A larger index
+  for cards on the table, or more of each card shown in the hand, are the
+  ways on.
+
 ### 1 October 2026 (later still): size follows importance; the hand to the edges
 
 - **"No reason to have much white space at all on either side of the
