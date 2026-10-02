@@ -551,7 +551,7 @@ async function main() {
         const right = controls && controls.width ? window.innerWidth - controls.left + GAP : 0;
         const key = `sideways|${s.prompt.kind}|${window.innerWidth}x${window.innerHeight}`;
         const was = tallest.get(key) ?? { top: GAP, foot: GAP, left: 0, right: 0 };
-        const now = { top: GAP, foot: GAP, left: Math.max(was.left, info.getBoundingClientRect().right + GAP), right: Math.max(was.right, right) };
+        const now = { top: GAP, foot: GAP, left: Math.max(was.left, info.getBoundingClientRect().right + GAP), right: Math.max(was.right, right), raised: raisable(s) };
         tallest.set(key, now);
         reframeTo(now);
         return;
@@ -564,7 +564,7 @@ async function main() {
       const foot = controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
       const key = `${s.prompt.kind}|${prefs.explain !== false}|${!!s.aids.hints}|${window.innerWidth}`;
       const was = tallest.get(key) ?? { top: 0, foot: 0 };
-      const now = { top: open ? was.top || stage.strips().top : Math.max(was.top, top), foot: Math.max(was.foot, foot) };
+      const now = { top: open ? was.top || stage.strips().top : Math.max(was.top, top), foot: Math.max(was.foot, foot), raised: raisable(s) };
       tallest.set(key, now);
       reframeTo(now);
     });
@@ -576,13 +576,25 @@ async function main() {
   // and the eye moving then looked like a zoom in the middle of them (the
   // user: "at some point, the camera zoomed in during the declarations").
   let settling = null;
+  // Whether your cards may be raised now -- chosen to throw, pointed at
+  // while declaring -- for which the framing keeps room at the sides.
+  const raisable = (s) => s.prompt.kind === "exchange" || s.prompt.kind === "declare";
   // Your hand's fan takes the width the framing leaves (framing.js): when
-  // that changes, the hand spreads or gathers as the eye moves.
+  // that changes, the hand spreads or gathers -- once the cards in motion
+  // have landed, if any are moving.
+  let refilling = false;
   function refill() {
     const next = stage.portrait ? stage.fill() : 1;
     if (Math.abs(next - fill) < 0.01) return;
     fill = next;
-    director.rearrange();
+    if (refilling) return;
+    refilling = true;
+    const spread = () => {
+      if (director.busy()) return void director.timeline.idle().then(() => setTimeout(spread, 0));
+      refilling = false;
+      director.rearrange();
+    };
+    spread();
   }
   function reframeTo(next) {
     clearTimeout(settling);
@@ -599,10 +611,14 @@ async function main() {
       refill();
       return;
     }
-    const taken = Object.fromEntries(Object.keys(next).map((k) => [k, Math.max(was[k] ?? 0, next[k])]));
+    // Room for raised cards is room too: given back, in play, only once
+    // the table is still.
+    const sizes = Object.keys(next).filter((k) => k !== "raised");
+    const taken = Object.fromEntries(sizes.map((k) => [k, Math.max(was[k] ?? 0, next[k])]));
+    taken.raised = next.raised || (was.raised ?? 1) > 0;
     stage.setStrips(taken);
     refill();
-    if (Object.keys(next).every((k) => taken[k] === next[k])) return;
+    if (sizes.every((k) => taken[k] === next[k]) && taken.raised === next.raised) return;
     const settle = () => {
       if (director.busy() || overlay.talking()) settling = setTimeout(settle, 250);
       else {

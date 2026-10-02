@@ -10,7 +10,9 @@
 // and rounds its corners (the classic art has no border either); the faces
 // are drawn at the classic art's width for the screen (art.js); and, at the
 // user's word (2 October), the index is fitted into the strip of each card
-// a fanned hand shows, rather than drawn at the recipe's sizes and covered.
+// a fanned hand shows, rather than drawn at the recipe's sizes and covered:
+// "make the font on each card *just* big enough to be seen in that space,
+// with a smidge of space on either side (a handful of pixels)".
 //
 // Settings calls them "Large Text (Optimized for smaller screens)" (the
 // user's words). The classic faces stay the default on iPads and computers; Settings can
@@ -69,9 +71,11 @@ export function facesFor(choice, phone) {
 export const rankAndSuit = (code) => [code[0] === "T" ? "10" : code[0], code[1]];
 
 // The sizes that fit the strip, in units: the rank's, the largest at which
-// every one-character rank fits (the canvas narrows a 10 to the same room,
-// so every rank stands the same height); the suit's, the largest at which
-// every suit's ink fits. Measured in whatever fonts the system has.
+// every one-character rank fits -- the 10, twice as wide, runs under the next
+// card, and its 1 says what it is (the user: "don't worry about 10, there is
+// no 1 so it's obvious when you're looking at 10") -- and the suit's, the
+// largest at which every suit's ink fits. Measured in whatever fonts the
+// system has.
 function fitted(ctx) {
   const room = JUMBO.strip - 2 * JUMBO.margin;
   const widest = (font, texts) => {
@@ -94,9 +98,12 @@ function corner(ctx, u, rank, suit, fit) {
   ctx.fillStyle = COLOUR[suit];
   ctx.textBaseline = "alphabetic";
   ctx.font = `700 ${fit.rank * u}px ${RANK_FONT}`;
-  ctx.textAlign = "center";
   const cap = ctx.measureText("H").actualBoundingBoxAscent;
-  ctx.fillText(rank, fit.axis * u, JUMBO.rankTop * u + cap, fit.room * u);
+  // A 10 is centred as one character would be on its 1, and runs on.
+  const wide = rank.length > 1;
+  ctx.textAlign = wide ? "left" : "center";
+  const left = wide ? (fit.axis - fit.room / 2) * u : fit.axis * u;
+  ctx.fillText(rank, left, JUMBO.rankTop * u + cap);
 
   ctx.font = `${fit.suit * u}px ${SUIT_FONT}`;
   ctx.textAlign = "left";

@@ -42,12 +42,13 @@ export const CAMERA = Object.freeze({
 export const CAMERA_PORTRAIT = Object.freeze({
   position: Object.freeze([0, 40, 72]),
   target: Object.freeze([0, 0, 0]),
-  reach: Object.freeze({ up: 0.165, down: -0.334, across: 0.298 }),
-  // Your hand's own reach across, and how much more it reaches for each unit
-  // its fan is lengthened (layout.js `fill`): framing.js lengthens it to
-  // take whatever width the window has to spare. Measured by the staging
-  // test; `perFill` is the steepest rate, so the hand never overruns.
-  hand: Object.freeze({ across: 0.298, perFill: 0.185 }),
+  reach: Object.freeze({ up: 0.165, down: -0.334, across: 0.244 }),
+  // Your hand's own reach across -- with its cards raised, and as it is held
+  // in play -- and how much more it reaches for each unit its fan is
+  // lengthened (layout.js `fill`): framing.js lengthens it to take whatever
+  // width the window has to spare. Measured by the staging test; `perFill`
+  // is the steepest rate, so the hand never overruns.
+  hand: Object.freeze({ across: 0.298, still: 0.289, perFill: 0.192 }),
 });
 
 // Narrower than this, the table is laid out for a phone held upright.
@@ -92,9 +93,10 @@ export const ZONES_PORTRAIT = Object.freeze({
   // Held up at 50 degrees rather than 75, so the eye sees the faces nearly
   // square on and the hand reads large.
   // The fan spans 29 degrees on a wide arc whatever the sort -- the cards
-  // spread to fill it, up to 5.5 degrees apart -- so it takes the screen's
-  // width and shows more of each card (layout.js).
-  yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 36, spread: 5.5, span: 29, groupGap: 2, lean: 40 }),
+  // spread to fill it, up to 9.5 degrees apart, where a short hand's cards
+  // all but stop overlapping -- so it takes the screen's width however many
+  // cards are left, and shows more of each card (layout.js).
+  yourHand: Object.freeze({ centre: Object.freeze([0, 10, 36]), radius: 36, spread: 9.5, span: 29, groupGap: 2, lean: 40 }),
   theirHand: Object.freeze({ centre: Object.freeze([0, 6, -16]), radius: 14, spread: 3.8, lean: 15 }),
   ribbon: Object.freeze({ x: 16.5, z: -3, spacing: 1.05 }),
   yourCut: Object.freeze({ x: -5, z: 6.5 }),

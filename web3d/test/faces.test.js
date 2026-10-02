@@ -159,11 +159,17 @@ test("the index fits the strip, with room either side: every rank and suit withi
     drawJumbo(ctx, 700, code);
     const u = 700 / JUMBO.w;
     const [rank, suit] = ctx.calls.filter((c) => c[0] === "fillText");
-    // The rank drawn no wider than the room (the canvas narrows a 10 to it).
-    assert.ok(Math.abs(rank[6] - room * u) < 1e-9, `${code}: the rank may take ${rank[6]} px`);
-    assert.ok(Math.abs(rank[2] - (JUMBO.margin + room / 2) * u) < 1e-9, `${code}: the rank is centred in the strip`);
-    const size = Number(suit[4].match(/([\d.]+)px/)[1]);
-    const ink = 0.8 * size; // the recorder's ink width for one glyph
+    // One character, centred in the strip, its ink within it; a 10 starts
+    // where the room does and runs on under the next card.
+    const size = Number(rank[4].match(/([\d.]+)px/)[1]);
+    if (code[0] === "T") assert.ok(Math.abs(rank[2] - JUMBO.margin * u) < 1e-9, `${code}: the 10 starts at the strip's margin`);
+    else {
+      assert.ok(Math.abs(rank[2] - (JUMBO.margin + room / 2) * u) < 1e-9, `${code}: the rank is centred in the strip`);
+      assert.ok(0.8 * size <= room * u + 1e-9, `${code}: the rank's ink is wider than the room`);
+    }
+    assert.equal(rank[6], undefined, "the canvas does not narrow it");
+    const suitSize = Number(suit[4].match(/([\d.]+)px/)[1]);
+    const ink = 0.8 * suitSize; // the recorder's ink width for one glyph
     assert.ok(suit[2] >= JUMBO.margin * u - 1e-9 && suit[2] + ink <= (JUMBO.strip - JUMBO.margin) * u + 1e-9, `${code}: the suit runs out of the strip`);
   }
 });

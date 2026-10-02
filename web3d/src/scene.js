@@ -189,9 +189,12 @@ export function createScene(
   // there. The tween is the scene's own, so it runs whether or not the cards
   // are moving.
   let easing = null;
-  const KEYS = ["top", "foot", "left", "right"];
-  function setStrips(next, { instant = false } = {}) {
-    const same = (a, b) => KEYS.every((k) => (a[k] === undefined) === (b[k] === undefined) && (a[k] === undefined || Math.abs(a[k] - b[k]) < 1));
+  // `raised`: 1 while your cards may be raised, 0 in play (framing.js) --
+  // eased like the rest, so the eye moves in smoothly as play begins.
+  const KEYS = ["top", "foot", "left", "right", "raised"];
+  function setStrips(given, { instant = false } = {}) {
+    const next = { ...given, raised: given.raised === false || given.raised === 0 ? 0 : 1 };
+    const same = (a, b) => KEYS.every((k) => (a[k] === undefined) === (b[k] === undefined) && (a[k] === undefined || Math.abs(a[k] - b[k]) < (k === "raised" ? 0.01 : 1)));
     if (same(next, target)) return false;
     // Columns come and go with the phone's turning: at once, not eased.
     const turned = (next.left === undefined) !== (strips.left === undefined);
@@ -209,7 +212,7 @@ export function createScene(
     const step = (now) => {
       if (!easing) return;
       const u = M3.emphasizedDecelerate((now - easing.start) / M3_MS.long2);
-      strips = Object.fromEntries(Object.keys(target).map((k) => [k, (easing.from[k] ?? target[k]) + (target[k] - (easing.from[k] ?? target[k])) * u]));
+      strips = Object.fromEntries(KEYS.filter((k) => target[k] !== undefined).map((k) => [k, (easing.from[k] ?? target[k]) + (target[k] - (easing.from[k] ?? target[k])) * u]));
       frame(aspect());
       render();
       if (u < 1) requestAnimationFrame(step);

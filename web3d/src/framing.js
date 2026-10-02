@@ -37,7 +37,7 @@ export const STRIPS = Object.freeze({ top: 142, foot: 194 });
 
 // Upright, the share of the band's width the table may take: a smidge
 // either side (the user: "just a smidge of white space will do!").
-const UPRIGHT_MARGIN = 0.98;
+const UPRIGHT_MARGIN = 0.985;
 // The longest a fan is drawn out, however wide the window.
 const MAX_FILL = 2.4;
 
@@ -64,14 +64,20 @@ export function framing(aspect, inset = 0, height = PHONE_HEIGHT, strips = STRIP
   const left = sides ? -1 + (2 * sides.left) / width : -1;
   const right = sides ? 1 - (2 * sides.right) / width : 1;
   const share = (right - left) / 2;
+  // Your hand reaches further while its cards may be raised -- chosen to
+  // throw, pointed at while declaring -- than in play (`strips.raised`:
+  // false or 0 in play, and between while the eye moves): framed as it is,
+  // it reaches the sides.
+  const { hand } = CAMERA_PORTRAIT;
+  const raised = strips.raised === undefined ? 1 : Number(strips.raised);
+  const held = hand.still + (hand.across - hand.still) * raised;
   const room = UPRIGHT_MARGIN * aspect * share; // across, per unit of the field's tangent
-  const tan = Math.max((up - down) / (top - foot), across / room);
+  const tan = Math.max((up - down) / (top - foot), Math.max(across, held) / room);
   const lift = (top + foot) / 2 - (up + down) / (2 * tan);
   const fov = (360 / Math.PI) * Math.atan(tan);
   // Where the field is set by the height, there is width to spare: your
   // hand's fan is lengthened to take it (layout.js `fill`).
-  const { hand } = CAMERA_PORTRAIT;
-  const fill = Math.min(MAX_FILL, Math.max(1, 1 + (room * tan - hand.across) / hand.perFill));
+  const fill = Math.min(MAX_FILL, Math.max(1, 1 + (room * tan - held) / hand.perFill));
   return { upright, position: CAMERA_PORTRAIT.position, target: CAMERA_PORTRAIT.target, fov, shift: (left + right) / 2, lift, fill };
 }
 

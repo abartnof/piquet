@@ -146,7 +146,8 @@ test("the upright eye's reach is how far the table's cards reach", () => {
         const [tx, ty] = [d.dot(right) / d.dot(ahead), d.dot(up) / d.dot(ahead)];
         seen.up = Math.max(seen.up, ty);
         seen.down = Math.min(seen.down, ty);
-        seen.across = Math.max(seen.across, Math.abs(tx));
+        // Across, the table's own cards: your hand's reach is apart (hand).
+        if (x.zone !== "your-hand") seen.across = Math.max(seen.across, Math.abs(tx));
       }
     }
   }
@@ -258,7 +259,47 @@ test("the hand's reach across, and how it grows with the fill, are as framing.js
     assert.ok(across <= allowed + 1e-6, `at fill ${fill} the hand reaches ${across.toFixed(4)}, beyond ${allowed.toFixed(4)}`);
     if (fill === 1) assert.ok(across > hand.across - 0.003, `the hand reaches ${across.toFixed(4)}: hand.across should be its own`);
   }
+  // In play no card is raised, and the hand reaches less far: `still`.
+  for (const fill of [1, 1.2, 1.6, 2, 2.4]) {
+    let across = 0;
+    for (const s of states.filter((x) => !["exchange", "declare"].includes(x.prompt.kind))) {
+      for (const x of SORTS.flatMap((sort) => layout(s, { zones: ZONES_PORTRAIT, eye, sort, fill }))) {
+        if (x.zone !== "your-hand") continue;
+        for (const c of cardCorners(x.pose).filter((_, i) => i % 2 === 1)) {
+          const d = c.clone().sub(eye);
+          across = Math.max(across, Math.abs(d.dot(right) / d.dot(ahead)));
+        }
+      }
+    }
+    const allowed = hand.still + hand.perFill * (fill - 1);
+    assert.ok(across <= allowed + 1e-6, `in play at fill ${fill} the hand reaches ${across.toFixed(4)}, beyond ${allowed.toFixed(4)}`);
+    if (fill === 1) assert.ok(across > hand.still - 0.003, `in play the hand reaches ${across.toFixed(4)}: hand.still should be its own`);
+  }
 });
+
+// In play, with nothing raised, the hand is framed as it is: it reaches the
+// sides, a smidge short of them (the user: "really minimal amount of white
+// space").
+for (const [w, h] of PHONES) {
+  test(`on a ${w} x ${h} phone in play, your hand reaches the sides`, () => {
+    const aspect = w / h;
+    for (const strips of STRIP_SETS) {
+      const still = { ...strips, raised: false };
+      const camera = cameraFor(aspect, 0, h, still);
+      const { fill } = framing(aspect, 0, h, still);
+      let widest = 0;
+      for (const s of states.filter((x) => x.prompt.kind === "play" && x.hand.length === 12)) {
+        for (const sort of ["auto", "suit"]) {
+          const hand = layout(s, { zones: ZONES_PORTRAIT, eye: camera.position, sort, fill }).filter((x) => x.zone === "your-hand");
+          const xs = hand.flatMap((x) => onScreen(x.pose, camera).map(([px]) => px));
+          for (const px of xs) assert.ok(Math.abs(px) < 0.995, `the hand off the side at ${px.toFixed(3)}`);
+          widest = Math.max(widest, Math.max(...xs) - Math.min(...xs));
+        }
+      }
+      assert.ok(widest / 2 > 0.95, `a full hand spans ${(50 * widest).toFixed(1)}% of the width, between ${strips.top} and ${strips.foot} px strips`);
+    }
+  });
+}
 
 // The user's phone notes: "the hand is small". On the reference phone its
 // cards stand well over twice the corner index they carry, and the table's

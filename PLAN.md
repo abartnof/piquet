@@ -245,6 +245,31 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 2 October 2026 (later): the hand to the edges in play, the index to fit it
+
+The user saw "loads of white space on either side of the hand" on the
+phone. Three causes, found and fixed:
+
+- **The framing kept room for raised cards in play.** A chosen card stands
+  out from the fan, so the field was set for your hand raised; in play
+  nothing is raised and the hand is ~3% narrower. The framing now knows
+  (`strips.raised`, eased 1 -> 0 as play begins, once the table is still);
+  in play your hand is framed as it is, 1.5% of the width spare a side.
+- **A short hand gathered into the middle.** Cards spread at most 5.5
+  degrees apart, so as cards were played the fan shrank. Now up to 9.5,
+  where a short hand's cards all but stop overlapping: the fan spans the
+  width down to a few cards.
+- **The hand re-fanned only when the cards were still.** A reframe during a
+  deal or a trick left the fan as it was until the next move; it now waits
+  for them to land and then spreads.
+
+Then, as the user ordered it: a full hand in play shows 1.46 of each
+card's 7 units -- ~21% -- and the large-text index is sized *just* to that:
+every one-character rank and every suit at the largest that fits, a
+handful of pixels clear either side. The 10 is not narrowed; it runs under
+the next card ("don't worry about 10 ... it's obvious when you're looking
+at 10").
+
 ### 2 October 2026: the large-text index fitted to what the fan shows
 
 - **Measured** (the user: "check how much of each card is visible in the
