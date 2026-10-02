@@ -318,12 +318,13 @@ def check_explain_toggle(browser, failures):
     settle()
     # The explanation lies over the cards (the user: "show me what it looks
     # like if the explanation popup is allowed to collide with the cards"):
-    # the table is framed up under it.
-    again = page.evaluate("[window.piquet3d.strips().top, document.getElementById('rule').hidden, document.getElementById('rule').getBoundingClientRect().bottom]")
+    # switching it changes nothing about the table (the user: "the cards get
+    # low and small and wide").
+    again = page.evaluate("[window.piquet3d.strips().top, document.getElementById('rule').hidden]")
     if again[1]:
         failures.append("Explain switched on again, the explanation did not come back")
-    elif again[0] >= again[2]:
-        failures.append(f"Explain switched on, the table gave the explanation room: framed from {again[0]:.0f}px, the explanation ends at {again[2]:.0f}px")
+    elif abs(again[0] - off) > 1:
+        failures.append(f"Explain switched on, the table gave it room: framed from {off:.0f}px, then {again[0]:.0f}px")
     if page.errors:
         failures.append(f"console errors switching Explain: {page.errors}")
     context.close()
@@ -883,11 +884,9 @@ def main() -> int:
                 least[k] = min(least[k], strips[k])
             bands = phone.evaluate("""() => {
                 const box = (id) => { const n = document.getElementById(id); return n && !n.hidden && n.offsetParent ? n.getBoundingClientRect() : null; };
-                // The explanation lies over the cards and takes no room: what
-                // it pushes down counts as if it were not there.
-                const rule = box("rule");
-                const under = rule ? rule.height + (parseFloat(getComputedStyle(document.getElementById("info")).rowGap) || 0) : 0;
-                const top = Math.max(box("bug")?.bottom ?? 0, box("worth") ? box("worth").bottom - under : 0);
+                // Only the score takes room: the explanation and what your
+                // hand is worth lie over the table.
+                const top = box("bug")?.bottom ?? 0;
                 const controls = box("controls");
                 const bar = box("topbar");
                 const covers = ["bug", "rule", "worth", "tab"].filter((id) => {

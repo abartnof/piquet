@@ -560,16 +560,13 @@ async function main() {
         reframeTo(now);
         return;
       }
-      // The explanation takes no room from the table: it lies over the
-      // cards, and the table is framed as if it were not there -- nor what
-      // it pushes down (the user: the explanation "smashes down the cards and
-      // makes them too hard to read ... show me what it looks like if the
-      // explanation popup is allowed to collide with the cards").
-      const rule = box("rule");
-      const under = rule ? rule.height + (parseFloat(getComputedStyle(info).rowGap) || 0) : 0;
-      const worth = box("worth");
-      const bottoms = [box("bug")?.bottom, worth && worth.bottom - under].filter((b) => typeof b === "number");
-      const top = Math.max(0, ...bottoms) + GAP;
+      // Only the score takes room from the table. What Explain puts up --
+      // the explanation, and what your hand is worth -- lies over the top of
+      // the table, mostly over your opponent's face-down hand, so switching
+      // it changes nothing about the cards (the user: the explanation
+      // "smashes down the cards and makes them too hard to read ... the cards
+      // get low and small and wide").
+      const top = (box("bug")?.bottom ?? 0) + GAP;
       const controls = box("controls");
       const foot = pausing ? 0 : controls && controls.height ? window.innerHeight - controls.top + GAP : STRIPS.foot;
       const aids = `${prefs.explain !== false}|${!!s.aids.hints}`;

@@ -245,6 +245,17 @@ In rough order:
 Newest first. Each entry records what landed and what it found; the phase
 record for the 3D table is `docs/TABLE3D.md` §13.
 
+### 2 October 2026 (late night): Explain changes nothing about the table
+
+The explanation lying over the cards was not enough: the user, in Safari,
+still saw the cards go "low and small and wide" with Explain on. The
+worth line ("If good ...") comes with Explain too, and still took its own
+strip. Now on a phone held upright only the score takes room at the top;
+the explanation and the worth line both lie over the table's top, mostly
+over your opponent's face-down hand (the worth line can be dragged away
+as before). Checked in WebKit: Explain off, on and off again, the table
+does not move.
+
 ### 2 October 2026 (night): the explanation lies over the cards
 
 The fix below was not the one wanted. The user: the explanation "smashes
